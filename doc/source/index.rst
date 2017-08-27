@@ -15,6 +15,7 @@ solutions.
    
    install
    modules
+   example_index
 
 
 Indices and tables
