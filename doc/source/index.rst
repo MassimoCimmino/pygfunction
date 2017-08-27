@@ -13,6 +13,7 @@ solutions.
 .. toctree::
    :maxdepth: 2
    
+   install
    modules
 
 
