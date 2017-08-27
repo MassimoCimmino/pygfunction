@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
 """ Example of definition of a bore field using pre-defined configurations.
 
-    The g-functions of fields of 3x2, 6x4 and 10x10 boreholes are calculated
-    for boundary condition of uniform heat extraction rate along the boreholes,
-    equal for all boreholes.
-
 """
 from __future__ import division, print_function, absolute_import
 
