@@ -8,3 +8,4 @@ Examples
    :maxdepth: 2
    
    example_regular_bore_field
+   example_custom_bore_field
