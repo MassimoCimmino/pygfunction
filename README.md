@@ -17,9 +17,10 @@ bore fields with hundreds of boreholes.
 Using *pygfunction*, *g*-functions can be calculated for any bore field
 configuration (i.e. arbitrarily positionned in space), including fields of
 boreholes with individually different lengths and radiuses. For regular fields
-of boreholes of equal size, seting-up the calculation of the *g*-function is as
-simple as a few lines of code. For example, the code for the calculation of the
-*g*-function of a field 10 x 10 square array of boreholes (100 boreholes total):
+of boreholes of equal size, setting-up the calculation of the *g*-function is
+as simple as a few lines of code. For example, the code for the calculation of
+the *g*-function of a field 10 x 10 square array of boreholes (100 boreholes
+total):
 
 ```
 time = [(i+1)*3600. for i in range(24)] # Calculate hourly for one day
@@ -53,17 +54,17 @@ in a local directory using git:
 git clone https://github.com/MassimoCimmino/pygfunction.git
 ```
 
-Once *pygfunction* copied to a local directory, you can verify that it is
+Once *pygfunction* is copied to a local directory, you can verify that it is
 working properly by running the examples in `pygfunction/examples/`.
 
 
 ## Contributing to *pygfunction*
 
-You can report bugs and propose enhancement on the [issue tracker]
-(https://github.com/MassimoCimmino/pygfunction/issues).
+You can report bugs and propose enhancement on the
+[issue tracker](https://github.com/MassimoCimmino/pygfunction/issues).
 
-To contribute code to *pygfunction*, follow the [contribution workflow]
-(CONTRIBUTING.md).
+To contribute code to *pygfunction*, follow the
+[contribution workflow](CONTRIBUTING.md).
 
 
 ## License
