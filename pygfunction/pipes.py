@@ -1488,7 +1488,7 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, method='LineSource'):
         Fluid-to-outer-pipe-wall thermal resistance (in m-K/W).
     method : str, defaults to 'LineSource'
         Method used to evaluate the thermal resistances:
-            'LineSource' : Line source approximation, from [#Hellstrom1991]_.
+            'LineSource' : Line source approximation, from [#Hellstrom1991b]_.
 
     Returns
     -------
@@ -1508,7 +1508,7 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, method='LineSource'):
 
     References
     ----------
-    .. [#Hellstrom1991] Hellstrom, G. (1991). Ground heat storage. Thermal
+    .. [#Hellstrom1991b] Hellstrom, G. (1991). Ground heat storage. Thermal
        Analyses of Duct Storage Systems I: Theory. PhD Thesis. University of
        Lund, Department of Mathematical Physics. Lund, Sweden.
 
