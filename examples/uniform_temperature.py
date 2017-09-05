@@ -9,6 +9,7 @@
 from __future__ import division, print_function, absolute_import
 
 import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 from matplotlib.ticker import AutoMinorLocator
 import numpy as np
 import os
@@ -36,6 +37,9 @@ def main():
 
     # Thermal properties
     alpha = 1.0e-6      # Ground thermal diffusivity (m2/s)
+
+    # Path to validation data
+    filePath = './data/CiBe14_uniform_temperature.txt'
 
     # Number of segments per borehole
     nSegments = 12
@@ -83,7 +87,7 @@ def main():
     # Initialize figure
     # -------------------------------------------------------------------------
 
-    plt.rc('figure', figsize=(80.0/25.4, 80.0*3.0/4.0/25.4))
+    plt.rc('figure')
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
     # Axis labels
@@ -107,6 +111,24 @@ def main():
                                                  nSegments=nSegments)
         # Draw g-function
         ax1.plot(np.log(time/ts), gfunc, 'k-', lw=1.5)
+    calculated = mlines.Line2D([], [],
+                               color='black',
+                               lw=1.5,
+                               label='pygfunction')
+
+    # -------------------------------------------------------------------------
+    # Load data from Cimmino and Bernier (2014)
+    # -------------------------------------------------------------------------
+    data = np.loadtxt(filePath, skiprows=55)
+    for i in range(3):
+        ax1.plot(data[:,0], data[:,i+1], 'bx', lw=1.5)
+    reference = mlines.Line2D([], [],
+                              color='blue',
+                              ls='None',
+                              lw=1.5,
+                              marker='x',
+                              label='Cimmino and Bernier (2014)')
+    ax1.legend(handles=[calculated, reference], loc='upper left')
 
     return
 
