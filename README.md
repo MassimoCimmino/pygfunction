@@ -22,7 +22,7 @@ as simple as a few lines of code. For example, the code for the calculation of
 the *g*-function of a field 10 x 10 square array of boreholes (100 boreholes
 total):
 
-```
+```python
 time = [(i+1)*3600. for i in range(24)] # Calculate hourly for one day
 boreField = gt.boreholes.rectangle_field(N_1=10, N_2=10, B_1=7.5, B_2=7.5, H=150., D=4., r_b=0.075)
 gFunc = gt.gfunction.uniform_temperature(boreField, time, alpha=1.0e-6)
@@ -60,7 +60,7 @@ working properly by running the examples in `pygfunction/examples/`.
 
 ## Contributing to *pygfunction*
 
-You can report bugs and propose enhancement on the
+You can report bugs and propose enhancements on the
 [issue tracker](https://github.com/MassimoCimmino/pygfunction/issues).
 
 To contribute code to *pygfunction*, follow the
