@@ -6,19 +6,21 @@ import scipy.interpolate as interp
 
 
 class _LoadAggregation(object):
-
+    """
+    Base class for load aggregation schemes.
+    """
     def __init__(self, dt, tmax, nSources=1):
         self.dt = dt                # Simulation time step
         self.tmax = tmax            # Maximum simulation time
         self.nSources = nSources    # Number of heat sources
         return
 
-    def initialize(self, time, g):
+    def initialize(self, g):
         raise NotImplementedError(
             'initialize class method not implemented, this '
             'method should do the start of simulation operations.')
 
-    def get_times_for_simulation(self, time, g):
+    def get_times_for_simulation(self):
         raise NotImplementedError(
             'get_times_for_simulation class method not implemented, this '
             'method should return a list of time values at which the '
