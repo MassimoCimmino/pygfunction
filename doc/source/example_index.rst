@@ -11,3 +11,4 @@ Examples
    example_custom_bore_field
    example_uniform_heat_extraction_rate
    example_uniform_temperature
+   example_load_aggregation
