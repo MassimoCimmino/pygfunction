@@ -217,7 +217,7 @@ class ClaessonJaved(_LoadAggregation):
         self._time = np.array(self._time)
 
 
-class MLAA(object):
+class MLAA(_LoadAggregation):
     """
     Multiple load aggregation algorithm (MLAA) of Bernier et al.
     [#Bernieretal2004]_.
@@ -466,7 +466,7 @@ class MLAA(object):
         self.Q4 = np.zeros(nSources)
 
 
-class Liu(object):
+class Liu(_LoadAggregation):
     """
     Hierarchical load aggregation algorithm of Liu [#Liu2005]_.
 
