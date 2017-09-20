@@ -283,6 +283,15 @@ class MLAA(object):
         self.g_d = g_d
     
     def next_time_step(self, time):
+        """
+        Shifts aggregated loads by one time step.
+
+        Parameters
+        ----------
+        time : float
+            Current value of time (in seconds).
+
+        """
         self._nt += 1
 
         # The number of non-aggregated time steps is equal to the number of
