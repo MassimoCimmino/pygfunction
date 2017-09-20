@@ -464,3 +464,258 @@ class MLAA(object):
         self.Q2 = np.zeros(nSources)
         self.Q3 = np.zeros(nSources)
         self.Q4 = np.zeros(nSources)
+
+
+class Liu(object):
+    """
+    Hierarchical load aggregation algorithm of Liu [#Liu2005]_.
+
+    Attributes
+    ----------
+    dt : float
+        Simulation time step (in seconds).
+    tmax : float
+        Maximum simulation time (in seconds).
+    nSources : int, optional
+        Number of heat sources with independent load histories.
+        Default is 1.
+    N1 : int, optional
+        Size (number of time steps) of small load aggregation cell.
+        Default is 24.
+    N2 : int, optional
+        Size (number of small cells) of medium load aggregation cell.
+        Default is 5.
+    N3 : int, optional
+        Size (number of medium cells) of large load aggregation cell.
+        Default is 73.
+    W1 : int, optional
+        Waiting period (number of time steps) for the creation of a small
+        load aggregation cell.
+        Default is 12.
+    W2 : int, optional
+        Waiting period (number of small cells) for the creation of a medium
+        load aggregation cell.
+        Default is 3.
+    W3 : int, optional
+        Waiting period (number of medium cells) for the creation of a large
+        load aggregation cell.
+        Default is 40.
+
+    References
+    ----------
+    .. [#Liu2005] Liu, X. (2005). Development and experimental validation
+       of simulation of hydronic snow melting systems for bridges. Ph.D.
+       Thesis. Oklahoma State University.
+    """
+    def __init__(self, dt, tmax, nSources=1,
+                 N1=24, N2=5, N3=73, W1=12, W2=3, W3=40):
+        
+        self.dt = dt                # Simulation time step
+        self.tmax = tmax            # Maximum simulation time
+        # Initialize load aggregation cells
+        self._build_cells(dt, tmax, nSources, N1, N2, N3, W1, W2, W3)
+
+    def initialize(self, g_d):
+        """
+        Initialize the load aggregation scheme.
+
+        Creates a matrix of thermal response factor
+        for later use in temporal superposition.
+
+        Parameters
+        ----------
+        g_d : array
+            Matrix of **dimensional** thermal response factors for temporal
+            superposition (:math:`g/(2 \pi k_s)`).
+            The expected size is (nSources, nSources, Nt), where Nt is the
+            number of time values at which the thermal response factors are
+            required. The time values are returned by
+            :func:`~load_aggregation.ClaessonJaved.get_times_for_simulation`.
+
+        Examples
+        --------
+        >>> 
+
+        """
+        self.g_d = g_d
+
+    def next_time_step(self, time):
+        """
+        Shifts aggregated loads by one time step.
+
+        Parameters
+        ----------
+        time : float
+            Current value of time (in seconds).
+
+        """
+        self._nt += 1   # Increment current time step
+        self._n0 += 1   # Increment current number of small cells
+
+        # Shift non-aggregated loads by one
+        for i in range(self._n0-1,0,-1):
+            self.Q0[:,i] = self.Q0[:,i-1]
+        # Current load is zero
+        self.Q0[:,0] = 0.0
+
+        # If the number of non-aggregated loads is equal to (N1 + W1),
+        # create a small aggregation cell
+        if self._n0 >= self.N1 + self.W1:
+            self._n1 += 1   # Increment number of small cells
+            # Shift small cells by one
+            for i in range(self._n1-1,0,-1):
+                self.Q1[:,i] = self.Q1[:,i-1]
+            # The value of the first small cell is equal to the average of the
+            # N1 last non-aggregated loads
+            self.Q1[:,0] = np.mean(self.Q0[:,self._n0-self.N1:self._n0], axis=1)
+            # Remove the N1 latest non-aggregated loads
+            self._n0 += -self.N1
+
+            # If the number of small cells is equal to (N2 + W2),
+            # create a medium aggregation cell
+            if self._n1 >= self.N2 + self.W2:
+                self._n2 += 1   # Increment number of medium cells
+                # Shift medium cells by one
+                for i in range(self._n2-1,0,-1):
+                    self.Q2[:,i] = self.Q2[:,i-1]
+                # The value of the first medium cell is equal to the average of
+                # the N2 last non-aggregated loads
+                self.Q2[:,0] = np.mean(self.Q1[:,self._n1-self.N2:self._n1],
+                                       axis=1)
+                # Remove the N2 latest small cells
+                self._n1 += -self.N2
+
+                # If the number of medium cells is equal to (N3 + W3),
+                # create a large aggregation cell
+                if self._n2 >= self.N3 + self.W3:
+                    self._n3 += 1   # Increment number of large cells
+                    # Shift large cells by one
+                    for i in range(self._n3-1,0,-1):
+                        self.Q3[:,i] = self.Q3[:,i-1]
+                    # The value of the first large cell is equal to the average
+                    # of the N3 last non-aggregated loads
+                    self.Q3[:,0] = np.mean(self.Q2[:,self._n2-self.N3:self._n2], axis=1)
+                    # Remove the N3 latest medium cells
+                    self._n2 += -self.N3
+
+    def get_times_for_simulation(self):
+        """
+        Returns a vector of time values at which the thermal response factors
+        are required.
+
+        Returns
+        -------
+        time_req : array
+            Time values at which the thermal response factors are required
+            (in seconds).
+
+        Examples
+        --------
+        >>> 
+
+        """
+        return np.array([(i+1)*self.dt for i in range(self.Nt)])
+
+    def set_current_load(self, Q):
+        """
+        Set the load at the current time step.
+
+        Parameters
+        ----------
+        Q_l : array
+            Current value of heat extraction rates per unit borehole length
+            (in watts per meter).
+
+        """
+        self.Q0[:,0] = Q
+
+    def temporal_superposition(self):
+        """
+        Returns the borehole wall temperature variations at the current time
+        step from the temporal superposition of past loads.
+
+        Returns
+        -------
+        deltaT : array
+            Values of borehole wall temperature drops at the current time step
+            (in degC).
+
+        .. Note::
+           *pygfunction* assumes positive values for heat
+           **extraction** and for borehole wall temperature **drops**. The
+           borehole wall temperature are thus given by :
+           :math:`T_b = T_g - \Delta T_b`.
+
+        """
+        deltaT = 0.
+        for i in range(0, self._n0-1):
+            deltaT += self.g_d[:,:,i].dot(self.Q0[:,i] - self.Q0[:,i+1])
+        deltaT += self.g_d[:,:,self._n0-1].dot(self.Q0[:,self._n0-1] - self.Q1[:,0])
+        for i in range(0, self._n1-1):
+            i2 = self._n0 + (i+1)*self.N1 - 1
+            deltaT += self.g_d[:,:,i2].dot(self.Q1[:,i] - self.Q1[:,i+1])
+        i2 = self._n0 + self._n1*self.N1 - 1
+        deltaT += self.g_d[:,:,i2].dot(self.Q1[:,self._n1-1] - self.Q2[:,0])
+        for i in range(0, self._n2-1):
+            i2 = self._n0 + self._n1*self.N1 + (i+1)*self.N2*self.N1 - 1
+            deltaT += self.g_d[:,:,i2].dot(self.Q2[:,i] - self.Q2[:,i+1])
+        i2 = self._n0 + self._n1*self.N1 + self._n2*self.N1*self.N2 - 1
+        deltaT += self.g_d[:,:,i2].dot(self.Q2[:,self._n2-1] - self.Q3[:,0])
+        for i in range(0, self._n3-1):
+            i2 = self._n0 + self._n1*self.N1 + self._n2*self.N2*self.N1 + (i+1)*self.N3*self.N2*self.N1 - 1
+            deltaT += self.g_d[:,:,i2].dot(self.Q3[:,i] - self.Q3[:,i+1])
+        i2 = self._n0 - 1 + (self._n1*self.N1
+                             + self._n2*self.N1*self.N2
+                             + self._n3*self.N1*self.N2*self.N3)
+        deltaT += self.g_d[:,:,i2].dot(self.Q3[:,self._n3-1])
+
+        return deltaT
+
+    def _build_cells(self, dt, tmax, nSources, N1, N2, N3, W1, W2, W3):
+        """
+        Initializes load aggregation cells.
+
+        Parameters
+        ----------
+        dt : float
+            Simulation time step (in seconds).
+        tmax : float
+            Maximum simulation time (in seconds).
+        nSources : int
+            Number of heat sources with independent load histories.
+        N1 : int
+            Size (number of time steps) of small load aggregation cell.
+        N2 : int
+            Size (number of small cells) of medium load aggregation cell.
+        N3 : int
+            Size (number of medium cells) of large load aggregation cell.
+        W1 : int
+            Waiting period (number of time steps) for the creation of a small
+            load aggregation cell.
+        W2 : int
+            Waiting period (number of small cells) for the creation of a medium
+            load aggregation cell.
+        W3 : int
+            Waiting period (number of medium cells) for the creation of a large
+            load aggregation cell.
+
+        """
+        self.Nt = int(np.ceil(tmax/dt))  # Total number of time steps
+        self._nt = 0 # Current time step
+        self._n0 = 0 # Current number of non-aggregated time steps
+        self._n1 = 0 # Current number of small cells
+        self._n2 = 0 # Current number of medium cells
+        self._n3 = 0 # Current number of large cells
+        self.N1 = N1
+        self.N2 = N2
+        self.N3 = N3
+        self.W1 = W1
+        self.W2 = W2
+        self.W3 = W3
+        # Initialize non-aggregated loads
+        self.Q0 = np.zeros((nSources, self.N1+self.W1))
+        # Initialize aggregated loads
+        self.Q1 = np.zeros((nSources, self.N2+self.W2))
+        self.Q2 = np.zeros((nSources, self.N3+self.W3))
+        N4 = int(np.ceil(self.Nt/(N1*N2*N3)))
+        self.Q3 = np.zeros((nSources, N4))
