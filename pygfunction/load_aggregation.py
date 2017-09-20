@@ -215,3 +215,243 @@ class ClaessonJaved(_LoadAggregation):
         # Initialize aggregated loads
         self.Q = np.zeros((nSources, len(self._time)))
         self._time = np.array(self._time)
+
+
+class MLAA(object):
+    """
+    Multiple load aggregation algorithm (MLAA) of Bernier et al.
+    [#Bernieretal2004]_.
+
+    Attributes
+    ----------
+    dt : float
+        Simulation time step (in seconds).
+    tmax : float
+        Maximum simulation time (in seconds).
+    nSources : int, optional
+        Number of heat sources with independent load histories.
+        Default is 1.
+    N0 : int, optional
+        Number of non-aggregated loads.
+        Default is 12.
+    N1 : int, optional
+        Number of time steps in first aggregation cell.
+        Default is 48.
+    N2 : int, optional
+        Number of time steps in second aggregation cell.
+        Default is 168.
+    N3 : int, optional
+        Number of time steps in third aggregation cell.
+        Default is 360.
+
+    References
+    ----------
+    .. [#Bernieretal2004] Bernier, M., Pinel, P., Labib, R. and Paillot, R.
+       (2004). A multiple load aggregation algorithm for annual hourly
+       simulations of GCHP systems. HVAC&R Research 10 (4): 471–487.
+    """
+    def __init__(self, dt, tmax, nSources=1,
+                 N0=12, N1=48, N2=168, N3=360, **kwargs):
+        self.dt = dt                # Simulation time step
+        self.tmax = tmax            # Maximum simulation time
+        self.nSources = nSources    # Number of heat sources
+        # Initialize load aggregation cells
+        self._build_cells(dt, tmax, nSources, N0, N1, N2, N3)
+
+    def initialize(self, g_d):
+        """
+        Initialize the load aggregation scheme.
+
+        Creates a matrix of thermal response factor
+        for later use in temporal superposition.
+
+        Parameters
+        ----------
+        g_d : array
+            Matrix of **dimensional** thermal response factors for temporal
+            superposition (:math:`g/(2 \pi k_s)`).
+            The expected size is (nSources, nSources, Nt), where Nt is the
+            number of time values at which the thermal response factors are
+            required. The time values are returned by
+            :func:`~load_aggregation.ClaessonJaved.get_times_for_simulation`.
+
+        Examples
+        --------
+        >>> 
+
+        """
+        self.g_d = g_d
+    
+    def next_time_step(self, time):
+        self._nt += 1
+
+        # The number of non-aggregated time steps is equal to the number of
+        # time steps until it reaches the predefined number of non-aggregated
+        # time steps
+        if self._nt < self.N0:
+            self._n0 = self._nt
+        else:
+            self._n0 = self.N0
+        # The non-aggregated loads are the n0 latest loads
+        self.Q0[:, -self._n0:] = self.Q[:, self._nt-self._n0:self._nt]
+
+        # Once the number of time steps reaches (N0 + N1), the first load
+        # aggregation cell is created
+        if self._nt >= self.N0 + self.N1:
+            self._n1 = self.N1
+            # Averaged loads in first cell
+            start = self._nt - (self._n0 + self._n1)
+            end = self._nt - (self._n0)
+            self.Q1 = np.mean(self.Q[:, start:end], axis=1)
+        else:
+            self._n1 = 0
+
+        # Once the number of time steps reaches (N0 + N1 + N2), the second load
+        # aggregation cell is created
+        if self._nt >= self.N0 + self.N1 + self.N2:
+            self._n2 = self.N2
+            # Averaged loads in second cell
+            start = self._nt - (self._n0 + self._n1 + self._n2)
+            end = self._nt - (self._n0 + self._n1)
+            self.Q2 = np.mean(self.Q[:, start:end], axis=1)
+        else:
+            self._n2 = 0
+
+        # Once the number of time steps reaches (N0 + N1 + N2 + N3), the third
+        # load aggregation cell is created
+        if self._nt >= self.N0 + self.N1 + self.N2 + self.N3:
+            self._n3 = self.N3
+            # Averaged loads in third cell
+            start = self._nt - (self._n0 + self._n1 + self._n2 + self._n3)
+            end = self._nt - (self._n0 + self._n1 + self._n2)
+            self.Q3 = np.mean(self.Q[:, start:end], axis=1)
+        else:
+            self._n3 = 0
+
+        # The number of time steps in the fourth aggregation cell is equal to
+        # the reminder of the load history
+        self._n4 = self._nt - (self._n0 + self._n1 + self._n2 + self._n3)
+        # Averaged loads in fourth cell
+        if self._n4 > 0:
+            start = 0
+            end = self._n4
+            self.Q4 = np.mean(self.Q[:, start:end], axis=1)
+
+    def get_times_for_simulation(self):
+        """
+        Returns a vector of time values at which the thermal response factors
+        are required.
+
+        Returns
+        -------
+        time_req : array
+            Time values at which the thermal response factors are required
+            (in seconds).
+
+        Examples
+        --------
+        >>> 
+
+        """
+        return np.array([(i+1)*self.dt for i in range(self.Nt)])
+
+    def set_current_load(self, Q):
+        """
+        Set the load at the current time step.
+
+        Parameters
+        ----------
+        Q_l : array
+            Current value of heat extraction rates per unit borehole length
+            (in watts per meter).
+
+        """
+        self.Q[:,self._nt-1] = Q
+        self.Q0[:,-1] = Q
+
+    def temporal_superposition(self):
+        """
+        Returns the borehole wall temperature variations at the current time
+        step from the temporal superposition of past loads.
+
+        Returns
+        -------
+        deltaT : array
+            Values of borehole wall temperature drops at the current time step
+            (in degC).
+
+        .. Note::
+           *pygfunction* assumes positive values for heat
+           **extraction** and for borehole wall temperature **drops**. The
+           borehole wall temperature are thus given by :
+           :math:`T_b = T_g - \Delta T_b`.
+
+        """
+        # Non-aggregated loads
+        deltaT = 0.
+        for i_t in range(self._n0-1):
+            g = self.g_d[:,:,i_t]
+            deltaT += g.dot(self.Q0[:,-(i_t+1)]
+                            - self.Q0[:,-(i_t+2)])
+        g = self.g_d[:,:,self._n0-1]
+        deltaT += g.dot(self.Q0[:,-self._n0] - self.Q1)
+
+        # First load aggregation cell
+        i_t = self._n0 + self._n1
+        deltaT += self.g_d[:,:,i_t-1].dot(self.Q1 - self.Q2)
+
+        # Second load aggregation cell
+        i_t = self._n0 + self._n1 + self._n2
+        deltaT += self.g_d[:,:,i_t-1].dot(self.Q2 - self.Q3)
+
+        # Third load aggregation cell
+        i_t = self._n0 + self._n1 + self._n2 + self._n3
+        deltaT += self.g_d[:,:,i_t-1].dot(self.Q3 - self.Q4)
+
+        # Fourth load aggregation cell
+        i_t = self._n0 + self._n1 + self._n2 + self._n3 + self._n4
+        deltaT += self.g_d[:,:,i_t-1].dot(self.Q4)
+
+        return np.reshape(deltaT, (self.nSources, 1))
+
+    def _build_cells(self, dt, tmax, nSources, N0, N1, N2, N3):
+        """
+        Initializes load aggregation cells.
+
+        Parameters
+        ----------
+        dt : float
+            Simulation time step (in seconds).
+        tmax : float
+            Maximum simulation time (in seconds).
+        nSources : int
+            Number of heat sources with independent load histories.
+        N0 : int
+            Number of non-aggregated time steps.
+        N1 : int
+            Number of time steps in first aggregation cell.
+        N2 : int
+            Number of time steps in second aggregation cell.
+        N3 : int
+            Number of time steps in third aggregation cell.
+
+        """
+        self.Nt = int(np.ceil(tmax/dt))  # Total number of time steps
+        self._nt = 0 # Current time step
+        self._n0 = 0 # Current number of non-aggregated time steps
+        self._n1 = 0 # Current number of time steps in first cell
+        self._n2 = 0 # Current number of time steps in second cell
+        self._n3 = 0 # Current number of time steps in third cell
+        self._n4 = 0 # Current number of time steps in fourth cell
+        self.N0 = N0
+        self.N1 = N1
+        self.N2 = N2
+        self.N3 = N3
+        # Initialize non-aggregated loads
+        self.Q = np.zeros((nSources, self.Nt))
+        self.Q0 = np.zeros((nSources, self.N0))
+        # Initialize aggregated loads
+        self.Q1 = np.zeros(nSources)
+        self.Q2 = np.zeros(nSources)
+        self.Q3 = np.zeros(nSources)
+        self.Q4 = np.zeros(nSources)
