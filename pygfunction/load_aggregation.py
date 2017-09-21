@@ -92,10 +92,6 @@ class ClaessonJaved(_LoadAggregation):
             required. The time values are returned by
             :func:`~load_aggregation.ClaessonJaved.get_times_for_simulation`.
 
-        Examples
-        --------
-        >>> 
-
         """
         # Build matrix of thermal response factor increments
         self.dg = np.zeros_like(g_d)
@@ -139,10 +135,6 @@ class ClaessonJaved(_LoadAggregation):
         time_req : array
             Time values at which the thermal response factors are required
             (in seconds).
-
-        Examples
-        --------
-        >>> 
 
         """
         return self._time
@@ -275,10 +267,6 @@ class MLAA(_LoadAggregation):
             required. The time values are returned by
             :func:`~load_aggregation.ClaessonJaved.get_times_for_simulation`.
 
-        Examples
-        --------
-        >>> 
-
         """
         self.g_d = g_d
     
@@ -356,10 +344,6 @@ class MLAA(_LoadAggregation):
         time_req : array
             Time values at which the thermal response factors are required
             (in seconds).
-
-        Examples
-        --------
-        >>> 
 
         """
         return np.array([(i+1)*self.dt for i in range(self.Nt)])
@@ -532,10 +516,6 @@ class Liu(_LoadAggregation):
             required. The time values are returned by
             :func:`~load_aggregation.ClaessonJaved.get_times_for_simulation`.
 
-        Examples
-        --------
-        >>> 
-
         """
         self.g_d = g_d
 
@@ -608,10 +588,6 @@ class Liu(_LoadAggregation):
         time_req : array
             Time values at which the thermal response factors are required
             (in seconds).
-
-        Examples
-        --------
-        >>> 
 
         """
         return np.array([(i+1)*self.dt for i in range(self.Nt)])
