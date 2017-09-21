@@ -30,18 +30,18 @@ class _BasePipe(object):
 
     def get_temperature(self, z, Tin, Tb, m_flow, fluid):
         """
-        Returns the fluid temperatures of the borehole.
+        Returns the fluid temperatures of the borehole at a depth (z).
 
         Parameters
         ----------
         z : float
             Depth (in meters) to evaluate the fluid temperatures.
         Tin : array
-            Array of inlet fluid temperatures (in Celsius).
+            Inlet fluid temperatures (in Celsius).
         Tb : array
-            Array of borehole wall temperatures (in Celsius).
+            Borehole wall temperatures (in Celsius).
         m_flow : array
-            Array inlet mass flow rates (in kg/s).
+            Inlet mass flow rates (in kg/s).
         fluid : fluid object
             Object with fluid properties
 
@@ -70,11 +70,11 @@ class _BasePipe(object):
         Parameters
         ----------
         Tin : array
-            Array of inlet fluid temperatures (in Celsius).
+            Inlet fluid temperatures (in Celsius).
         Tb : array
-            Array of borehole wall temperatures (in Celsius).
+            Borehole wall temperatures (in Celsius).
         m_flow : array
-            Array inlet mass flow rates (in kg/s).
+            Inlet mass flow rates (in kg/s).
         fluid : fluid object
             Object with fluid properties
 
@@ -93,6 +93,7 @@ class _BasePipe(object):
                                                          nSegments)
         # Evaluate outlet temperatures
         Tout = (a_in.dot(Tin) + a_b.dot(Tb)).flatten()
+
         return Tout
 
     def get_heat_extraction_rate(self, Tin, Tb, m_flow, fluid):
@@ -102,18 +103,18 @@ class _BasePipe(object):
         Parameters
         ----------
         Tin : array
-            Array of inlet fluid temperatures (in Celsius).
+            Inlet fluid temperatures (in Celsius).
         Tb : array
-            Array of borehole wall temperatures (in Celsius).
+            Borehole wall temperatures (in Celsius).
         m_flow : array
-            Array inlet mass flow rates (in kg/s).
+            Inlet mass flow rates (in kg/s).
         fluid : fluid object
             Object with fluid properties
 
         Returns
         -------
         Qb : array
-            Array of heat extraction rates along each borehole segment.
+            Heat extraction rates along each borehole segment.
 
         """
         Tb = np.reshape(Tb, (-1, 1))
@@ -123,6 +124,7 @@ class _BasePipe(object):
                                                            fluid,
                                                            nSegments)
         Qb = (a_in.dot(Tin) + a_b.dot(Tb)).flatten()
+
         return Qb
 
     def get_total_heat_extraction_rate(self, Tin, Tb, m_flow, fluid):
@@ -176,7 +178,7 @@ class _BasePipe(object):
         raise NotImplementedError(
             'coefficients_temperature class method not implemented, '
             'this method should return matrices for the relation: '
-            '[Tf](z) = [a_in].[Tin] + [a_b].[Tb]')
+            '[Tf](z) = [a_in] * [Tin] + [a_b] * [Tb]')
 
 
 class SingleUTube(_BasePipe):
@@ -187,60 +189,6 @@ class SingleUTube(_BasePipe):
     characteristics of the pipes and the grout material, as well as methods to
     evaluate fluid temperatures and heat extraction rates based on the work of
     Hellstrom [#Hellstrom1991]_.
-
-    The outlet fluid temperature is given by:
-
-        .. math::
-
-            T_{f,out} = \\frac{f_1(H)+f_2(H)}{f_3(H)-f_2(H)} T_{f,in}
-            + \\int_0^H \\frac{T_b(z)[f_4(H-z)+f_5(H-z)]}{f_3(H)-f_2(H)}dz
-
-    with:
-
-        .. math::
-
-            f_1(z) &= e^{\\beta z}[cosh(\\gamma z) - \\delta sinh(\\gamma z)]
-
-            f_2(z) &= e^{\\beta z}
-            [\\frac{\\beta_{12}}{\\gamma} sinh(\\gamma z)]
-
-            f_3(z) &= e^{\\beta z}[cosh(\\gamma z) + \\delta sinh(\\gamma z)]
-
-            f_4(z) &= e^{\\beta z}[\\beta_1 cosh(\\gamma z) -
-            (\\delta\\beta_1+\\frac{\\beta_2\\beta_{12}}{\\gamma})
-            sinh(\\gamma z)]
-
-            f_5(z) &= e^{\\beta z}[\\beta_2 cosh(\\gamma z) +
-            (\\delta\\beta_2+\\frac{\\beta_1\\beta_{12}}{\\gamma})
-            sinh(\\gamma z)]
-
-    and:
-
-        .. math::
-
-            \\beta_1 &= \\frac{1}{R_{11}^\\Delta \\dot{m} c_p}
-
-            \\beta_2 &= \\frac{1}{R_{22}^\\Delta \\dot{m} c_p}
-
-            \\beta_{12} &= \\frac{1}{R_{12}^\\Delta \\dot{m} c_p}
-
-            \\beta &= \\frac{\\beta_2 - \\beta_1}{2}
-
-            \\gamma &= \\sqrt{\\frac{(\\beta_1 + \\beta_2)^2}{4} +
-            \\beta_{12} (\\beta_1 + \\beta_2)}
-
-            \\delta &= \\frac{1}{\\gamma} (\\beta_{12}
-            + \\frac{\\beta_1 + \\beta_2}{2})
-
-    The fluid temperature in each pipe are then calculated from:
-
-        .. math::
-
-            T_{f,1}(z) &= T_{f,in} f_1(z) + T_{f,out} f_2(z)
-            + \\int_0^z T_b(\\zeta) f_4(z-\\zeta) d\\zeta
-
-            T_{f,2}(z) &= - T_{f,in} f_2(z) + T_{f,out} f_3(z)
-            - \\int_0^z T_b(\\zeta) f_5(z-\\zeta) d\\zeta
 
     Attributes
     ----------
@@ -283,7 +231,7 @@ class SingleUTube(_BasePipe):
         self.nPipes = 1
         self.nInlets = 1
         self.nOutlets = 1
-        
+
         # Delta-circuit thermal resistances
         self._Rd = thermal_resistances(pos, r_out, borehole.r_b,
                                        k_s, k_g, self.R_fp)[1]
@@ -296,31 +244,13 @@ class SingleUTube(_BasePipe):
 
             .. math::
 
-                \\mathbf{Q_b} = \\mathbf{A_{T_f}} T_{f,in}
-                + \\mathbf{A_{T_b}} \\mathbf{T_b}
-
-        with:
-
-            .. math::
-
-                \\mathbf{A_{T_f}} = \\left(\\mathbf{M}
-                (\\mathbf{B_{i,T_f}} - \\mathbf{B_{i+1,T_f}})\\right)^T
-
-                \\mathbf{A_{T_b}} = \\left(\\mathbf{M}
-                (\\mathbf{B_{i,T_b}} - \\mathbf{B_{i+1,T_b}})\\right)^T
-
-                \\mathbf{M} = \\left[ \\begin{matrix}
-                -\\dot{m} c_p & \\dot{m} c_p
-                \\end{matrix} \\right]
-
-        and with :math:`\\mathbf{B_{i,T_f}}` and :math:`\\mathbf{B_{i,T_b}}`
-        the coefficient matrices returned by the
-        coefficients_temperature evaluated at :math:`z=i\\frac{H}{N}`.
+                \\mathbf{Q_b} = \\mathbf{a_{in}} T_{f,in}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
         ----------
         m_flow : array
-            Array inlet mass flow rates (in kg/s).
+            Inlet mass flow rates (in kg/s).
         fluid : fluid object
             Object with fluid properties.
         nSegments : int
@@ -329,9 +259,9 @@ class SingleUTube(_BasePipe):
         Returns
         -------
         a_in : array
-            Array for inlet fluid temperature.
+            Array of coefficients for inlet fluid temperature.
         a_b : array
-            Array for borehole wall temperatures.
+            Array of coefficients for borehole wall temperatures.
 
         """
         self._hellstrom_coefficients(m_flow, fluid)
@@ -361,29 +291,13 @@ class SingleUTube(_BasePipe):
 
             .. math::
 
-                T_{f,out} = \\mathbf{A_{T_f}} T_{f,in}
-                + \\mathbf{A_{T_b}} \\mathbf{T_b}
-
-        with:
-
-            .. math::
-
-                \\mathbf{A_{T_f}} &= \\left[ \\begin{matrix}
-                \\frac{f_1(H)+f2(H)}{f_3(H)-f_2(H)}
-                \\end{matrix} \\right]
-
-                \\mathbf{A_{T_b}} &= \\left[ \\begin{matrix}
-                a_{0,T_b} & \\cdots & a_{N-1,T_b}
-                \\end{matrix} \\right]
-
-                a_{i,T_b} &=
-                \\int_{(N-i-1)\\frac{H}{N}}^{(N-i)\\frac{H}{N}}
-                \\frac{f_4(z) + f_5(z)}{f_3(H)-f_2(H)} dz
+                T_{f,out} = \\mathbf{a_{in}} T_{f,in}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
         ----------
         m_flow : array
-            Array inlet mass flow rates (in kg/s).
+            Inlet mass flow rates (in kg/s).
         fluid : fluid object
             Object with fluid properties.
         nSegments : int
@@ -392,9 +306,9 @@ class SingleUTube(_BasePipe):
         Returns
         -------
         a_in : array
-            Array for inlet fluid temperature.
+            Array of coefficients for inlet fluid temperature.
         a_b : array
-            Array for borehole wall temperatures.
+            Array of coefficients for borehole wall temperatures.
 
         """
         self._hellstrom_coefficients(m_flow, fluid)
@@ -408,75 +322,25 @@ class SingleUTube(_BasePipe):
             dF4 = self._F4(z2) - self._F4(z1)
             dF5 = self._F5(z2) - self._F5(z1)
             a_b[0, i] = (dF4 + dF5) / (self._f3(self.b.H) - self._f2(self.b.H))
+
         return a_in, a_b
 
     def coefficients_temperature(self, z, m_flow, fluid, nSegments):
         """
-        Build coefficient matrices to evaluate fluid temperatures.
+        Build coefficient matrices to evaluate fluid temperatures at a depth
+        (z).
 
         Returns coefficients for the relation:
 
             .. math::
 
-                \\mathbf{T_f}(z) = \\mathbf{A_{T_f}} T_{f,in}
-                + \\mathbf{A_{T_b}} \\mathbf{T_b}
-
-        with:
-
-            .. math::
-
-                \\mathbf{A_{T_f}} &= \\mathbf{C_{T_f}}\\mathbf{B_{T_f}}
-
-                \\mathbf{A_{T_b}} &= \\mathbf{C_{T_f}}\\mathbf{B_{T_b}}
-                + \\mathbf{C_{T_b}}
-
-        where the coefficient matrices :math:`\\mathbf{B}` are calculated
-        from the matrices return by the coefficients_outlet_temperature method:
-
-            .. math::
-
-                \\mathbf{B_{T_f}} = \\left[ \\begin{matrix}
-                1 \\\\
-                \\frac{f_1(H)+f2(H)}{f_3(H)-f_2(H)}
-                \\end{matrix} \\right]
-
-                \\mathbf{B_{T_b}} = \\left[ \\begin{matrix}
-                0 & \\cdots & 0 \\\\
-                b_{0,T_b} & \\cdots & b_{N-1,T_b}
-                \\end{matrix} \\right]
-
-                b_{i,T_b} =
-                \\int_{(N-i-1)\\frac{H}{N}}^{(N-i)\\frac{H}{N}}
-                \\frac{f_4(z) + f_5(z)}{f_3(H)-f_2(H)} dz
-
-        and the coefficient matrices :math:`\\mathbf{C}` are given by:
-
-            .. math::
-
-                \\mathbf{C_{T_f}} = \\left[ \\begin{matrix}
-                f_1(z) & f_2(z) \\\\
-                -f_2(z) & f_3(z)
-                \\end{matrix} \\right]
-
-                \\mathbf{C_{T_b}} = \\left[ \\begin{matrix}
-                c_{0,0,T_b} & \\cdots & c_{0,N-1,T_b} \\\\
-                c_{1,0,T_b} & \\cdots & c_{1,N-1,T_b}
-                \\end{matrix} \\right]
-
-                c_{0,i,T_b} =
-                \\int_{max\\left(0,z-(i+1)\\frac{H}{N}\\right)}
-                ^{max\\left(0,z-i\\frac{H}{N}\\right)}
-                f_4(z) dz
-
-                c_{1,i,T_b} =
-                - \\int_{max\\left(0,z-(i+1)\\frac{H}{N}\\right)}
-                ^{max\\left(0,z-i\\frac{H}{N}\\right)}
-                f_5(z) dz
+                \\mathbf{T_f}(z) = \\mathbf{a_{in}} T_{f,in}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
         ----------
         m_flow : array
-            Array inlet mass flow rates (in kg/s).
+            Inlet mass flow rates (in kg/s).
         fluid : fluid object
             Object with fluid properties.
         nSegments : int
@@ -485,9 +349,9 @@ class SingleUTube(_BasePipe):
         Returns
         -------
         a_in : array
-            Array for inlet fluid temperature.
+            Array of coefficients for inlet fluid temperature.
         a_b : array
-            Array for borehole wall temperatures.
+            Array of coefficients for borehole wall temperatures.
 
         """
         self._hellstrom_coefficients(m_flow, fluid)
@@ -602,72 +466,7 @@ class MultipleUTube(_BasePipe):
     Contains information regarding the physical dimensions and thermal
     characteristics of the pipes and the grout material, as well as methods to
     evaluate fluid temperatures and heat extraction rates based on the work of
-    Cimmino [#Cimmino2016]_ for boreholes with any number of U-Tubes.
-
-    The outlet fluid temperatures are given by:
-
-        .. math::
-
-            \\mathbf{E_{out}}(H)\\mathbf{T_{f,out}} =
-            \\mathbf{E_{in}}(H)\\mathbf{T_{f,in}}
-            + \\int_{0}^{H} \\left[ \\mathbf{I_{n_{pipes}}},
-            -\\mathbf{I_{n_{pipes}}} \\right]
-            \\mathbf{E}(H-z) \\mathbf{A} \\mathbf{1_{2n_{pipes}\\times 1}}
-            T_b(z) dz
-
-    where:
-
-        .. math::
-
-            \\mathbf{E}(z) = exp(\\mathbf{A}z)
-            = \\mathbf{V} exp(\\mathbf{D}z) \\mathbf{V}^{-1}
-
-    is the matrix exponential of :math:`\\mathbf{A}z`, :math:`\\mathbf{V}`
-    is the matrix of column eigenvectors of :math:`\\mathbf{A}` and
-    :math:`\\mathbf{D}` is a diagonal matrix of the eigenvalues of
-    :math:`\\mathbf{A}`. :math:`\\mathbf{T_{f,in}}` and
-    :math:`\\mathbf{T_{f,out}}` are column vectors of the fluid inlet and
-    outlet temperatures, :math:`\\mathbf{I_{n_{pipes}}}` is the
-    :math:`n_{pipes} \\times n_{pipes}` identity matrix,
-    :math:`\\mathbf{1_{2n_{pipes}}}` is column vector of ones of length
-    :math:`n_{pipes}` and :math:`n_{pipes}` is the number of U-tubes in the
-    borehole
-
-    :math:`\\mathbf{A}=[A_{i,j}]` is the coefficient matrix of the linear
-    system of differential equations for the fluid temperature, with:
-
-        .. math::
-
-            A_{i,j} = \\begin{cases}
-            \\frac{-S_{ij}}{\\dot{m}_i c_{p,i}}
-            &
-            \\text{if} \\,\\, i \\leq n_{pipes}
-            \\\\
-            \\frac{S_{ij}}{\\dot{m}_{i-n_{pipes}} c_{p,i-n_{pipes}}}
-            &
-            \\text{if} \\,\\, n_{pipes} < i \\leq 2n_{pipes}
-            \\end{cases}
-
-    where :math:`\\mathbf{S} = [S_{i,j}] = \\mathbf{R}^{-1}` is the inverse of
-    the thermal resistance matrix.
-
-    :math:`\\mathbf{E_{in}}(z)=[E_{in,i,j}(z)]` and
-    :math:`\\mathbf{E_{out}}(z)=[E_{out,i,j}(z)]` are given by:
-
-        .. math::
-
-            E_{in,i,j}(z) &= E_{i+n_{pipes},j}(z) - E_{i,j}
-
-            E_{out,i,j}(z) &= E_{i,j+n_{pipes}}(z)
-            - E_{i+n_{pipes},j+n_{pipes}}(z)
-
-    The fluid temperature in each pipe are then calculated from:
-
-        .. math::
-
-            \\mathbf{T_{f}}(z) = \\mathbf{E}(z) \\mathbf{T_{f}}(0)
-            -\\int_0^z \\mathbf{E}(z-\\zeta) \\mathbf{A}
-            \\mathbf{1_{2n_{pipes}\\times 1}} T_b(\\zeta) d\\zeta
+    Cimmino [#Cimmino2016]_ for boreholes with any number of U-tubes.
 
     Attributes
     ----------
@@ -687,9 +486,10 @@ class MultipleUTube(_BasePipe):
         Fluid to outter pipe wall thermal resistance (m-K/W).
     nPipes : int
         Number of U-Tubes.
-    config : str
-        Configuration of the U-Tube pipes, parallel or series. Defaults to
-        parallel.
+    config : str, defaults to 'parallel'
+        Configuration of the U-Tube pipes:
+            'parallel' : U-tubes are connected in parallel.
+            'series' : U-tubes are connected in series.
     nInlets : int
         Total number of pipe inlets, equals to 1.
     nOutlets : int
@@ -728,44 +528,8 @@ class MultipleUTube(_BasePipe):
 
             .. math::
 
-                \\mathbf{Q_b} = \\mathbf{A_{T_f}} T_{f,in}
-                + \\mathbf{A_{T_b}} \\mathbf{T_b}
-
-        with:
-
-            .. math::
-
-                \\mathbf{A_{T_f}} = \\left(\\mathbf{M}
-                (\\mathbf{B_{i,T_f}} - \\mathbf{B_{i+1,T_f}})\\right)^T
-
-                \\mathbf{A_{T_b}} = \\left(\\mathbf{M}
-                (\\mathbf{B_{i,T_b}} - \\mathbf{B_{i+1,T_b}})\\right)^T
-
-        :math:`\\mathbf{B_{i,T_f}}` and :math:`\\mathbf{B_{i,T_b}}`
-        the coefficient matrices returned by the
-        coefficients_temperature evaluated at :math:`z=i\\frac{H}{N}`.
-
-        :math:`\\mathbf{M}` is a configuration dependent mass flow rate vector.
-
-        For U-tubes in parallel:
-
-            .. math::
-
-                \\mathbf{M} = \\frac{\\dot{m} c_p}{n_{pipes}}
-                \\left[ \\begin{matrix}
-                -\\mathbf{1 \\times 1_{n_{pipes}}} &
-                \\mathbf{1 \\times 1_{n_{pipes}}}
-                \\end{matrix} \\right]
-
-        For U-tubes in series:
-
-            .. math::
-
-                \\mathbf{M} = {\\dot{m} c_p}
-                \\left[ \\begin{matrix}
-                -\\mathbf{1 \\times 1_{n_{pipes}}} &
-                \\mathbf{1 \\times 1_{n_{pipes}}}
-                \\end{matrix} \\right]
+                \\mathbf{Q_b} = \\mathbf{a_{in}} T_{f,in}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
         ----------
@@ -779,9 +543,9 @@ class MultipleUTube(_BasePipe):
         Returns
         -------
         a_in : array
-            Array for inlet fluid temperature.
+            Array of coefficients for inlet fluid temperature.
         a_b : array
-            Array for borehole wall temperatures.
+            Array of coefficients for borehole wall temperatures.
 
         """
         if self.config.lower() == 'parallel':
@@ -812,100 +576,20 @@ class MultipleUTube(_BasePipe):
 
     def coefficients_temperature(self, z, m_flow, fluid, nSegments):
         """
-        Build coefficient matrices to evaluate fluid temperatures.
+        Build coefficient matrices to evaluate fluid temperatures at a depth
+        (z).
 
         Returns coefficients for the relation:
 
             .. math::
 
-                \\mathbf{T_f}(z) = \\mathbf{A_{T_f}} T_{f,in}
-                + \\mathbf{A_{T_b}} \\mathbf{T_b}
-
-        with:
-
-            .. math::
-
-                \\mathbf{A_{T_f}} &= \\mathbf{E}(z)\\mathbf{B_{T_f}}
-
-                \\mathbf{A_{T_b}} &= \\mathbf{E}(z)\\mathbf{B_{T_b}}
-                + \\mathbf{C_{T_b}}
-
-        where :math:`\\mathbf{B_{T_f}}` and :math:`\\mathbf{B_{T_b}}` are
-        configuration-specific coefficient matrices.
-
-        For U-tubes in parallel:
-
-            .. math::
-
-                \\mathbf{B_{T_f}} = \\begin{bmatrix}
-                \\mathbf{1_{n_{pipes} \\times 1}} \\\\
-                \\mathbf{E_{out}^\\prime}^{-1} \\mathbf{E_{in}^\\prime}
-                \\end{bmatrix}
-
-            .. math::
-
-                \\mathbf{B_{T_f}} = \\begin{bmatrix}
-                \\mathbf{0_{n_{pipes} \\times N}} \\\\
-                \\mathbf{E_{out}^\\prime}^{-1} \\mathbf{E_{in}^\\prime}
-                \\end{bmatrix}
-
-        For U-tubes in series:
-
-            .. math::
-
-                \\mathbf{B_{T_f}} = \\begin{bmatrix}
-                \\begin{bmatrix}
-                1 \\\\ 0 \\\\ \\vdots \\\\ 0
-                \\end{bmatrix}
-                + 
-                \\begin{bmatrix}
-                0 & 0 & \\cdots & 0 \\\\
-                1 & 0 & \\cdots & 0 \\\\
-                \\vdots & \\ddots & \\ddots & \\vdots \\\\
-                0 & \\cdots & 1 & 0
-                \\end{bmatrix}
-                \\mathbf{E_{out}^\\prime}^{-1}
-                \\mathbf{E_{in}^\\prime} \\\\
-                \\mathbf{E_{out}^\\prime}^{-1}
-                \\mathbf{E_{in}^\\prime}
-                \\end{bmatrix}
-
-                \\mathbf{B_{T_b}} = \\begin{bmatrix}
-                \\begin{bmatrix}
-                0 & 0 & \\cdots & 0 \\\\
-                1 & 0 & \\cdots & 0 \\\\
-                \\vdots & \\ddots & \\ddots & \\vdots \\\\
-                0 & \\cdots & 1 & 0
-                \\end{bmatrix}
-                \\mathbf{E_{out}^\\prime}^{-1}
-                \\mathbf{E_{b}} \\\\
-                \\mathbf{E_{out}^\\prime}^{-1}
-                \\mathbf{E_{b}}
-                \\end{bmatrix}
-
-        The coefficient matrix :math:`\\mathbf{C_{T_b}}` is given by:
-
-            .. math::
-
-                \\mathbf{C_{T_b}} &= -\\mathbf{V}
-                \\mathbf{D}^{-1}
-                \\mathbf{\\Delta E_i}(z)
-                \\mathbf{V}^{-1}
-                \\mathbf{A}
-                \\mathbf{1_{2n_{pipes} \\times 1}}
-
-                \\mathbf{\\Delta E_i}(z) &=
-                exp\\left(\\mathbf{D} \\, max\\left(
-                z-\\frac{iH}{N}, 0
-                \\right)\\right)
-                -exp\\left(\\mathbf{D} \\, max\\left(
-                z-\\frac{(i+1)H}{N}, 0
-                \\right)\\right)
+                \\mathbf{T_f}(z) = \\mathbf{a_{in}} T_{f,in}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
         ----------
         m_flow : array
-            Array inlet mass flow rates (in kg/s).
+            Inlet mass flow rates (in kg/s).
         fluid : fluid object
             Object with fluid properties.
         nSegments : int
@@ -914,9 +598,9 @@ class MultipleUTube(_BasePipe):
         Returns
         -------
         a_in : array
-            Array for inlet fluid temperature.
+            Array of coefficients for inlet fluid temperature.
         a_b : array
-            Array for borehole wall temperatures.
+            Array of coefficients for borehole wall temperatures.
 
         """
         self._matrixExponentialsInOut(m_flow, fluid, nSegments)
@@ -980,85 +664,13 @@ class MultipleUTube(_BasePipe):
 
             .. math::
 
-                T_{f,out} = \\mathbf{A_{T_f}} T_{f,in}
-                + \\mathbf{A_{T_b}} \\mathbf{T_b}
-
-        where :math:`\\mathbf{A_{T_f}}` and :math:`\\mathbf{A_{T_b}}` are
-        configuration-specific matrices.
-
-        For U-tubes in parallel:
-
-            .. math::
-
-                \\mathbf{A_{T_f}} &= \\frac{1}{n_{pipes}}
-                \\mathbf{1_{1 \\times n_{pipes}}}
-                \\mathbf{E_{out}^\\prime}^{-1}(H)
-                \\mathbf{E_{in}^\\prime}(H)
-
-                \\mathbf{A_{T_b}} &=
-                \\mathbf{E_{out}^\\prime}^{-1}(H)
-                \\mathbf{E_{b}}
-
-                \mathbf{E_{in}^\\prime}(H) &= \mathbf{E_{in}}(H)
-                \\mathbf{1_{n_{pipes} \\times 1}}
-
-                \\mathbf{E_{out}^\\prime}(H) &= \\mathbf{E_{out}}(H)
-
-        For U-tubes in series:
-
-            .. math::
-
-                \\mathbf{A_{T_f}} &=
-                [\\mathbf{0_{1 \\times n_{pipes}-1}},
-                \\mathbf{1_{1 \\times 1}}]
-                \\mathbf{E_{out}^\\prime}^{-1}(H)
-                \\mathbf{E_{in}^\\prime}(H)
-
-                \\mathbf{A_{T_b}} &=
-                [\\mathbf{0_{1 \\times n_{pipes}-1}},
-                \\mathbf{1_{1 \\times 1}}]
-                \\mathbf{E_{out}^\\prime}^{-1}(H)
-                \\mathbf{E_{b}}
-
-                \mathbf{E_{in}^\\prime}(H) &= \mathbf{E_{in}}(H)
-                \\left[ \\begin{matrix}
-                \\mathbf{0_{n_{pipes}-1 \\times 1}} \\\\
-                \\mathbf{1_{1 \\times 1}}
-                \\end{matrix} \\right]
-
-                E_{out,i,j}^\\prime(H) &= E_{out,i,j}(H)
-                - E_{in,i,j+1}(H)
-                \\,\\text{for}\\,0 \\leq i \\leq n_{pipes}-1
-
-        :math:`\\mathbf{E_{b}}` is the coefficient matrix for borehole wall
-        temperatures:
-
-            .. math::
-                \\mathbf{E_{b}} &= [\\mathbf{E_{b,0}},
-                \\cdots ,
-                \\mathbf{E_{b,N-1}}]
-
-                \\mathbf{E_{b,i}} &= [\\mathbf{I_{n_{pipes}}},
-                -\\mathbf{I_{n_{pipes}}}]
-                \\mathbf{V}
-                \\mathbf{D}^{-1}
-                \\mathbf{\\Delta E_i}(H)
-                \\mathbf{V}^{-1}
-                \\mathbf{A}
-                \\mathbf{1_{2n_{pipes} \\times 1}}
-
-                \\mathbf{\\Delta E_i}(H) &=
-                exp\\left(\\mathbf{D}\\left(
-                H-\\frac{iH}{N}
-                \\right)\\right)
-                -exp\\left(\\mathbf{D}\\left(
-                H-\\frac{(i+1)H}{N}
-                \\right)\\right)
+                T_{f,out} = \\mathbf{a_{in}} T_{f,in}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
         ----------
         m_flow : array
-            Array inlet mass flow rates (in kg/s).
+            Inlet mass flow rates (in kg/s).
         fluid : fluid object
             Object with fluid properties.
         nSegments : int
@@ -1067,9 +679,9 @@ class MultipleUTube(_BasePipe):
         Returns
         -------
         a_in : array
-            Array for inlet fluid temperature.
+            Array of coefficients for inlet fluid temperature.
         a_b : array
-            Array for borehole wall temperatures.
+            Array of coefficients for borehole wall temperatures.
 
         """
         self._matrixExponentialsInOut(m_flow, fluid, nSegments)
@@ -1149,7 +761,44 @@ class MultipleUTube(_BasePipe):
 
 
 class IndependentMultipleUTube(_BasePipe):
+    """
+    Class for multiple U-Tube boreholes with independent U-tubes.
 
+    Contains information regarding the physical dimensions and thermal
+    characteristics of the pipes and the grout material, as well as methods to
+    evaluate fluid temperatures and heat extraction rates based on the work of
+    Cimmino [#Cimmino2016b]_ for boreholes with any number of U-tubes.
+
+    Attributes
+    ----------
+    pos : list of tuples
+        Position (x, y) (in meters) of the pipes inside the borehole.
+    r_in : float
+        Inner radius (in meters) of the U-Tube pipes.
+    r_out : float
+        Outter radius (in meters) of the U-Tube pipes.
+    borehole : Borehole object
+        Borehole class object of the borehole containing the U-Tube.
+    k_s : float
+        Soil thermal conductivity (in W/m-K).
+    k_g : float
+        Grout thermal conductivity (in W/m-K).
+    R_fp : float
+        Fluid to outter pipe wall thermal resistance (m-K/W).
+    nPipes : int
+        Number of U-Tubes.
+    nInlets : int
+        Total number of pipe inlets, equals to nPipes.
+    nOutlets : int
+        Total number of pipe outlets, equals to nPipes.
+
+    References
+    ----------
+    .. [#Cimmino2016b] Cimmino, M. (2016). Fluid and borehole wall temperature
+       profiles in vertical geothermal boreholes with multiple U-tubes.
+       Renewable Energy, 96, 137-147.
+
+    """
     def __init__(self, pos, r_in, r_out, borehole, k_s,
                  k_g, R_fp, nPipes):
         self.pos = pos
@@ -1186,22 +835,8 @@ class IndependentMultipleUTube(_BasePipe):
 
             .. math::
 
-                \\mathbf{Q_b} = \\mathbf{A_{T_f}} T_{f,in}
-                + \\mathbf{A_{T_b}} \\mathbf{T_b}
-
-        with:
-
-            .. math::
-
-                \\mathbf{A_{T_f}} = \\left(\\mathbf{M}
-                (\\mathbf{B_{i,T_f}} - \\mathbf{B_{i+1,T_f}})\\right)^T
-
-                \\mathbf{A_{T_b}} = \\left(\\mathbf{M}
-                (\\mathbf{B_{i,T_b}} - \\mathbf{B_{i+1,T_b}})\\right)^T
-
-        :math:`\\mathbf{B_{i,T_f}}` and :math:`\\mathbf{B_{i,T_b}}`
-        the coefficient matrices returned by the
-        coefficients_temperature evaluated at :math:`z=i\\frac{H}{N}`.
+                \\mathbf{Q_b} = \\mathbf{a_{in}} \\mathbf{T_{f,in}}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
         ----------
@@ -1215,18 +850,18 @@ class IndependentMultipleUTube(_BasePipe):
         Returns
         -------
         a_in : array
-            Array for inlet fluid temperature.
+            Array of coefficients for inlet fluid temperature.
         a_b : array
-            Array for borehole wall temperatures.
+            Array of coefficients for borehole wall temperatures.
 
         """
         cp = fluid.get_SpecificIsobaricHeatCapacity()
-        
+
         if not self._is_same_heat_extraction_rate(m_flow, cp, nSegments):
             m_flow_pipe = np.reshape(m_flow, (1, self.nPipes))
             M = cp*np.concatenate([-m_flow_pipe,
                                    m_flow_pipe], axis=1)
-    
+
             aQ = np.zeros((nSegments, self.nInlets))
             bQ = np.zeros((nSegments, nSegments))
 
@@ -1256,28 +891,20 @@ class IndependentMultipleUTube(_BasePipe):
 
     def coefficients_temperature(self, z, m_flow, fluid, nSegments):
         """
-        Build coefficient matrices to evaluate fluid temperatures.
+        Build coefficient matrices to evaluate fluid temperatures at a depth
+        (z).
 
         Returns coefficients for the relation:
 
             .. math::
 
-                \\mathbf{T_f}(z) = \\mathbf{A_{T_f}} T_{f,in}
-                + \\mathbf{A_{T_b}} \\mathbf{T_b}
-
-        with:
-
-            .. math::
-
-                \\mathbf{A_{T_f}} &= \\mathbf{E}(z)\\mathbf{B_{T_f}}
-
-                \\mathbf{A_{T_b}} &= \\mathbf{E}(z)\\mathbf{B_{T_b}}
-                + \\mathbf{C_{T_b}}
+                \\mathbf{T_f}(z) = \\mathbf{a_{in}} \\mathbf{T_{f,in}}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
         ----------
         m_flow : array
-            Array inlet mass flow rates (in kg/s).
+            Inlet mass flow rates (in kg/s).
         fluid : fluid object
             Object with fluid properties.
         nSegments : int
@@ -1286,9 +913,9 @@ class IndependentMultipleUTube(_BasePipe):
         Returns
         -------
         a_in : array
-            Array for inlet fluid temperature.
+            Array of coefficients for inlet fluid temperature.
         a_b : array
-            Array for borehole wall temperatures.
+            Array of coefficients for borehole wall temperatures.
 
         """
         # Intermediate matrices for [Tf](z=0) = [b_in] * Tin + [b_b] * [Tb]
@@ -1318,13 +945,13 @@ class IndependentMultipleUTube(_BasePipe):
 
             .. math::
 
-                T_{f,out} = \\mathbf{A_{T_f}} T_{f,in}
-                + \\mathbf{A_{T_b}} \\mathbf{T_b}
+                T_{f,out} = \\mathbf{a_{in}} \\mathbf{T_{f,in}}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
         ----------
         m_flow : array
-            Array inlet mass flow rates (in kg/s).
+            Inlet mass flow rates (in kg/s).
         fluid : fluid object
             Object with fluid properties.
         nSegments : int
@@ -1333,9 +960,9 @@ class IndependentMultipleUTube(_BasePipe):
         Returns
         -------
         a_in : array
-            Array for inlet fluid temperature.
+            Array of coefficients for inlet fluid temperature.
         a_b : array
-            Array for borehole wall temperatures.
+            Array of coefficients for borehole wall temperatures.
 
         """
         cp = fluid.get_SpecificIsobaricHeatCapacity()
@@ -1388,7 +1015,7 @@ class IndependentMultipleUTube(_BasePipe):
             self._m_flow = m_flow
             self._cp = cp
             self._nSegments = nSegments
-        
+
         Vm1 = self._Vm1
         D = self._D
         Dm1 = self._Dm1
@@ -1474,7 +1101,7 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, method='LineSource'):
     Parameters
     ----------
     pos : list
-        List of positions (tuple, in meters) (x,y) of pipes around the center
+        List of positions (x,y) (in meters) of pipes around the center
         of the borehole.
     r_out : float
         Outer radius of the pipes (in meters).
@@ -1493,9 +1120,9 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, method='LineSource'):
     Returns
     -------
     R : array
-        Matrix of thermal resistances.
+        Thermal resistances.
     Rd : array
-        Matrix of delta-circuit thermal resistances.
+        Delta-circuit thermal resistances.
 
     Examples
     --------
@@ -1567,6 +1194,7 @@ def fluid_friction_factor_circular_pipe(m_flow, r_in, visc, den, epsilon,
         Pipe roughness (in meters).
     tol : float
         Relative convergence tolerance on Darcy friction factor.
+        Default is 1.0e-6.
 
     Returns
     -------
@@ -1589,6 +1217,7 @@ def fluid_friction_factor_circular_pipe(m_flow, r_in, visc, den, epsilon,
     Re = den * V * D / visc
 
     if Re < 2.3e3:
+        # Darcy friction factor for laminar flow
         fDarcy = 64.0 / Re
     else:
         if Re * E > 65:
@@ -1604,6 +1233,7 @@ def fluid_friction_factor_circular_pipe(m_flow, r_in, visc, den, epsilon,
         else:
             # Blasius equation for smooth pipes
             fDarcy = 0.3164 * Re**(-0.25)
+
     return fDarcy
 
 
@@ -1655,4 +1285,5 @@ def convective_heat_transfer_coefficient_circular_pipe(m_flow, r_in, visc, den,
     Nu = 0.125*fDarcy * (Re - 1.0e3) * Pr / \
         (1.0 + 12.7 * np.sqrt(0.125*fDarcy) * (Pr**(2.0/3.0) - 1.0))
     h_fluid = k * Nu / D
+
     return h_fluid
