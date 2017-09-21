@@ -12,3 +12,4 @@ Examples
    example_uniform_heat_extraction_rate
    example_uniform_temperature
    example_load_aggregation
+   example_comparison_load_aggregation
