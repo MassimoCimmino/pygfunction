@@ -51,9 +51,7 @@ class _BasePipe(object):
             Fluid temperature (in Celsius) in each pipe.
 
         """
-        Tb = np.reshape(Tb, (-1, 1))
-        nSegments = len(Tb)
-        Tin = np.reshape(Tin, (-1, 1))
+        nSegments = len(np.atleast_1d(Tb))
         # Build coefficient matrices
         a_in, a_b = self.coefficients_temperature(z,
                                                   m_flow,
@@ -84,16 +82,16 @@ class _BasePipe(object):
             Outlet fluid temperatures (in Celsius) from each outlet pipe.
 
         """
-        Tb = np.reshape(Tb, (-1, 1))
-        nSegments = len(Tb)
-        Tin = np.reshape(Tin, (-1, 1))
+        nSegments = len(np.atleast_1d(Tb))
         # Build coefficient matrices
         a_in, a_b = self.coefficients_outlet_temperature(m_flow,
                                                          cp,
                                                          nSegments)
         # Evaluate outlet temperatures
         Tout = (a_in.dot(Tin) + a_b.dot(Tb)).flatten()
-
+        # Return float if Tin was supplied as scalar
+        if np.isscalar(Tin) and not np.isscalar(Tout):
+            Tout = np.asscalar(Tout)
         return Tout
 
     def get_heat_extraction_rate(self, Tin, Tb, m_flow, cp):
@@ -117,14 +115,14 @@ class _BasePipe(object):
             Heat extraction rates along each borehole segment.
 
         """
-        Tb = np.reshape(Tb, (-1, 1))
-        nSegments = len(Tb)
-        Tin = np.reshape(Tin, (-1, 1))
+        nSegments = len(np.atleast_1d(Tb))
         a_in, a_b = self.coefficients_heat_extraction_rate(m_flow,
                                                            cp,
                                                            nSegments)
         Qb = (a_in.dot(Tin) + a_b.dot(Tb)).flatten()
-
+        # Return float if Tb was supplied as scalar
+        if np.isscalar(Tb) and not np.isscalar(Qb):
+            Qb = np.asscalar(Qb)
         return Qb
 
     def get_total_heat_extraction_rate(self, Tin, Tb, m_flow, cp):
@@ -148,8 +146,8 @@ class _BasePipe(object):
             Total net heat extraction rate of the borehole.
 
         """
-        Q = m_flow * cp * (Tout - Tin).flatten()
         Tout = self.get_outlet_temperature(Tin, Tb, m_flow, cp)
+        Q = np.sum(m_flow * cp * (Tout - Tin))
         return Q
 
     def coefficients_heat_extraction_rate(self, m_flow, cp, nSegments):
