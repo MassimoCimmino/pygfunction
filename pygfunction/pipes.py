@@ -36,13 +36,13 @@ class _BasePipe(object):
         ----------
         z : float
             Depth (in meters) to evaluate the fluid temperatures.
-        Tin : array
+        Tin : float or array
             Inlet fluid temperatures (in Celsius).
         Tb : array
             Borehole wall temperatures (in Celsius).
-        m_flow : array
+        m_flow : float or array
             Inlet mass flow rates (in kg/s).
-        cp : float
+        cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
 
         Returns
@@ -69,18 +69,18 @@ class _BasePipe(object):
 
         Parameters
         ----------
-        Tin : array
+        Tin : float or array
             Inlet fluid temperatures (in Celsius).
-        Tb : array
+        Tb : float or array
             Borehole wall temperatures (in Celsius).
-        m_flow : array
+        m_flow : float or array
             Inlet mass flow rates (in kg/s).
-        cp : float
+        cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
 
         Returns
         -------
-        Tout : array
+        Tout : float or array
             Outlet fluid temperatures (in Celsius) from each outlet pipe.
 
         """
@@ -102,18 +102,18 @@ class _BasePipe(object):
 
         Parameters
         ----------
-        Tin : array
+        Tin : float or array
             Inlet fluid temperatures (in Celsius).
-        Tb : array
+        Tb : float or array
             Borehole wall temperatures (in Celsius).
-        m_flow : array
+        m_flow : float or array
             Inlet mass flow rates (in kg/s).
-        cp : float
+        cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
 
         Returns
         -------
-        Qb : array
+        Qb : float or array
             Heat extraction rates along each borehole segment.
 
         """
@@ -133,18 +133,18 @@ class _BasePipe(object):
 
         Parameters
         ----------
-        Tin : array
-            Array of inlet fluid temperatures (in Celsius).
-        Tb : array
-            Array of borehole wall temperatures (in Celsius).
-        m_flow : array
-            Array inlet mass flow rates (in kg/s).
-        cp : float
+        Tin : float or array
+            Inlet fluid temperatures (in Celsius).
+        Tb : float or array
+            Borehole wall temperatures (in Celsius).
+        m_flow : float or array
+            Inlet mass flow rates (in kg/s).
+        cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
 
         Returns
         -------
-        Q : float
+        Qb : float
             Total net heat extraction rate of the borehole.
 
         """
@@ -168,7 +168,7 @@ class _BasePipe(object):
         raise NotImplementedError(
             'coefficients_outlet_temperature class method not implemented, '
             'this method should return matrices for the relation: '
-            '[Tout] = [a_in].[Tin] + [a_b].[Tb]')
+            '[Tout] = [a_in] * [Tin] + [a_b] * [Tb]')
 
     def coefficients_temperature(self, z, m_flow, cp, nSegments):
         """ Returns coefficients for the relation
@@ -248,8 +248,8 @@ class SingleUTube(_BasePipe):
 
         Parameters
         ----------
-        m_flow : array
-            Inlet mass flow rates (in kg/s).
+        m_flow : float
+            Inlet mass flow rate (in kg/s).
         cp : float
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
@@ -294,7 +294,7 @@ class SingleUTube(_BasePipe):
 
         Parameters
         ----------
-        m_flow : array
+        m_flow : float
             Inlet mass flow rates (in kg/s).
         cp : float
             Fluid specific isobaric heat capacity (in J/kg.degC).
@@ -337,8 +337,8 @@ class SingleUTube(_BasePipe):
 
         Parameters
         ----------
-        m_flow : array
-            Inlet mass flow rates (in kg/s).
+        m_flow : float
+            Inlet mass flow rate (in kg/s).
         cp : float
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
@@ -530,7 +530,7 @@ class MultipleUTube(_BasePipe):
 
         Parameters
         ----------
-        m_flow : array
+        m_flow : float
             Inlet mass flow rate (in kg/s).
         cp : float
             Fluid specific isobaric heat capacity (in J/kg.degC).
@@ -584,8 +584,8 @@ class MultipleUTube(_BasePipe):
 
         Parameters
         ----------
-        m_flow : array
-            Inlet mass flow rates (in kg/s).
+        m_flow : float
+            Inlet mass flow rate (in kg/s).
         cp : float
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
@@ -665,7 +665,7 @@ class MultipleUTube(_BasePipe):
 
         Parameters
         ----------
-        m_flow : array
+        m_flow : float
             Inlet mass flow rates (in kg/s).
         cp : float
             Fluid specific isobaric heat capacity (in J/kg.degC).
@@ -835,9 +835,9 @@ class IndependentMultipleUTube(_BasePipe):
 
         Parameters
         ----------
-        m_flow : array
+        m_flow : float or array
             Inlet mass flow rate (in kg/s).
-        cp : float
+        cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
@@ -897,9 +897,9 @@ class IndependentMultipleUTube(_BasePipe):
 
         Parameters
         ----------
-        m_flow : array
+        m_flow : float or array
             Inlet mass flow rates (in kg/s).
-        cp : float
+        cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
@@ -944,9 +944,9 @@ class IndependentMultipleUTube(_BasePipe):
 
         Parameters
         ----------
-        m_flow : array
+        m_flow : float or array
             Inlet mass flow rates (in kg/s).
-        cp : float
+        cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
