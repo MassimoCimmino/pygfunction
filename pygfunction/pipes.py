@@ -151,13 +151,57 @@ class _BasePipe(object):
         return Q
 
     def coefficients_heat_extraction_rate(self, m_flow, cp, nSegments):
-        """ Returns coefficients for the relation
-            [Q_Segments] = [a_in] * [Tin] + [a_b] * [Tb]
         """
-        raise NotImplementedError(
-            'coefficients_heat_extraction_rate class method not implemented, '
-            'this method should return matrices for the relation: '
-            '[Q_Segments] = [a_in] * [Tin] + [a_b] * [Tb]')
+        Build coefficient matrices to evaluate heat extraction rates.
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                \\mathbf{Q_b} = \\mathbf{a_{in}} T_{f,in}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
+
+        Parameters
+        ----------
+        m_flow : float or array
+            Inlet mass flow rate (in kg/s).
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+        nSegments : int
+            Number of borehole segments.
+
+        Returns
+        -------
+        a_in : array
+            Array of coefficients for inlet fluid temperature.
+        a_b : array
+            Array of coefficients for borehole wall temperatures.
+
+        """
+        # Update model variables
+        self._update_coefficients(m_flow, cp, nSegments)
+        M = np.hstack((-self._m_flow_pipe*cp, self._m_flow_pipe*cp))
+        # Initialize coefficient matrices
+        a_in = np.zeros((nSegments, self.nPipes))
+        a_b = np.zeros((nSegments, nSegments))
+        # Heat extraction rates are calculated from an energy balance on a
+        # borehole segment.
+        z1 = 0.
+        aTf1, bTf1 = self.coefficients_temperature(z1,
+                                                   m_flow,
+                                                   cp,
+                                                   nSegments)
+        for i in range(nSegments):
+            z2 = (i + 1) * self.b.H / nSegments
+            aTf2, bTf2 = self.coefficients_temperature(z2,
+                                                       m_flow,
+                                                       cp,
+                                                       nSegments)
+            a_in[i, :] = M.dot(aTf1 - aTf2)
+            a_b[i, :] = M.dot(bTf1 - bTf2)
+            aTf1, bTf1 = aTf2, bTf2
+
+        return a_in, a_b
 
     def coefficients_outlet_temperature(self, m_flow, cp, nSegments):
         """ Returns coefficients for the relation
@@ -233,52 +277,6 @@ class SingleUTube(_BasePipe):
         self._Rd = thermal_resistances(pos, r_out, borehole.r_b,
                                        k_s, k_g, self.R_fp)[1]
 
-    def coefficients_heat_extraction_rate(self, m_flow, cp, nSegments):
-        """
-        Build coefficient matrices to evaluate heat extraction rates.
-
-        Returns coefficients for the relation:
-
-            .. math::
-
-                \\mathbf{Q_b} = \\mathbf{a_{in}} T_{f,in}
-                + \\mathbf{a_{b}} \\mathbf{T_b}
-
-        Parameters
-        ----------
-        m_flow : float
-            Inlet mass flow rate (in kg/s).
-        cp : float
-            Fluid specific isobaric heat capacity (in J/kg.degC).
-        nSegments : int
-            Number of borehole segments.
-
-        Returns
-        -------
-        a_in : array
-            Array of coefficients for inlet fluid temperature.
-        a_b : array
-            Array of coefficients for borehole wall temperatures.
-
-        """
-        self._hellstrom_coefficients(m_flow, cp)
-        M = m_flow*cp*np.array([[-1.0, 1.0]])
-        # Initialize coefficient matrices
-        a_in = np.zeros((nSegments, 1))
-        a_b = np.zeros((nSegments, nSegments))
-        # Heat extraction rates are calculated from an energy balance on a
-        # borehole segment.
-        for i in range(nSegments):
-            z1 = i * self.b.H / nSegments
-            z2 = (i + 1) * self.b.H / nSegments
-            aTf1, bTf1 = self.coefficients_temperature(z1, m_flow,
-                                                       cp, nSegments)
-            aTf2, bTf2 = self.coefficients_temperature(z2, m_flow,
-                                                       cp, nSegments)
-            a_in[i, :] = M.dot(aTf1 - aTf2)
-            a_b[i, :] = M.dot(bTf1 - bTf2)
-        return a_in, a_b
-
     def coefficients_outlet_temperature(self, m_flow, cp, nSegments):
         """
         Build coefficient matrices to evaluate outlet fluid temperature.
@@ -307,7 +305,7 @@ class SingleUTube(_BasePipe):
             Array of coefficients for borehole wall temperatures.
 
         """
-        self._hellstrom_coefficients(m_flow, cp)
+        self._update_coefficients(m_flow, cp, nSegments)
         a_in = ((self._f1(self.b.H) + self._f2(self.b.H))
                 / (self._f3(self.b.H) - self._f2(self.b.H)))
         a_in = np.array([[a_in]])
@@ -350,7 +348,7 @@ class SingleUTube(_BasePipe):
             Array of coefficients for borehole wall temperatures.
 
         """
-        self._hellstrom_coefficients(m_flow, cp)
+        self._update_coefficients(m_flow, cp, nSegments)
         # Intermediate matrices for [Tf](z=0) = [b_in] * Tin + [b_b] * [Tb]
         b0_in, b0_b = self.coefficients_outlet_temperature(m_flow,
                                                            cp,
@@ -440,14 +438,18 @@ class SingleUTube(_BasePipe):
             * (C*np.cosh(self._gamma*z) + S*np.sinh(self._gamma*z))
         return F5
 
-    def _hellstrom_coefficients(self, m_flow, cp):
+    def _update_coefficients(self, m_flow, cp, nSegments):
         """
         Evaluate dimensionless resistances for Hellstrom solution.
         """
+        # Mass flow rate in pipes
+        self._m_flow_pipe = m_flow
+        # Dimensionless delta-circuit conductances
         self._beta1 = 1./(self._Rd[0][0]*m_flow*cp)
         self._beta2 = 1./(self._Rd[1][1]*m_flow*cp)
         self._beta12 = 1./(self._Rd[0][1]*m_flow*cp)
         self._beta = 0.5*(self._beta2 - self._beta1)
+        # Eigenvalues
         self._gamma = np.sqrt(0.25*(self._beta1+self._beta2)**2
                               + self._beta12*(self._beta1+self._beta2))
         self._delta = 1./self._gamma \
