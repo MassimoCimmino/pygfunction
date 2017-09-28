@@ -232,8 +232,10 @@ class _BasePipe(object):
         b_in, b_b = self.coefficients_outlet_temperature(m_flow, cp, nSegments)
 
         # Coefficient matrices for temperatures at depth (z = 0):
-        # [T_f](0) = [c_in]*[T_{f,in}] + [c_out]*[T_{f,out}]
-        c_in, c_out = self._continuity_condition_head(m_flow, cp, nSegments)
+        # [T_f](0) = [c_in]*[T_{f,in}] + [c_out]*[T_{f,out}] + [c_b]*[T_b]
+        c_in, c_out, c_b = self._continuity_condition_head(m_flow,
+                                                           cp,
+                                                           nSegments)
 
         # Coefficient matrices from general solution:
         # [T_f](z) = [d_f0]*[T_f](0) + [d_b]*[T_b]
@@ -242,8 +244,8 @@ class _BasePipe(object):
         # Final coefficient matrices for temperatures at depth (z):
         # [T_f](z) = [a_in]**[T_{f,in}] + [a_b]*[T_b]
         a_in = d_f0.dot(c_in + c_out.dot(b_in))
-        a_b = np.linalg.multi_dot([d_f0, c_out, b_b]) + d_b
-        
+        a_b = d_f0.dot(c_b + c_out.dot(b_b)) + d_b
+
         return a_in, a_b
 
     def coefficients_heat_extraction_rate(self, m_flow, cp, nSegments):
