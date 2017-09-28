@@ -431,58 +431,65 @@ class SingleUTube(_BasePipe):
 
         return a_in, a_out, a_b
 
-    def coefficients_temperature(self, z, m_flow, cp, nSegments):
+    def _general_solution(self, z, m_flow, cp, nSegments):
         """
-        Build coefficient matrices to evaluate fluid temperatures at a depth
-        (z).
+        General solution for fluid temperatures at a depth (z).
 
         Returns coefficients for the relation:
 
             .. math::
 
-                \\mathbf{T_f}(z) = \\mathbf{a_{in}} T_{f,in}
+                \\mathbf{T_f}(z) = \\mathbf{a_{f0}} \\mathbf{T_{f}}(z=0)
                 + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
         ----------
-        m_flow : float
+        m_flow : float or array
             Inlet mass flow rate (in kg/s).
-        cp : float
+        cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
 
         Returns
         -------
-        a_in : array
+        a_f0 : array
             Array of coefficients for inlet fluid temperature.
         a_b : array
             Array of coefficients for borehole wall temperatures.
 
         """
-        self._update_coefficients(m_flow, cp, nSegments)
-        # Intermediate matrices for [Tf](z=0) = [b_in] * Tin + [b_b] * [Tb]
-        b0_in, b0_b = self.coefficients_outlet_temperature(m_flow,
-                                                           cp,
-                                                           nSegments)
-        b_in = np.concatenate([[[1.]], b0_in])
-        b_b = np.concatenate([np.zeros((1, nSegments)), b0_b])
-        # Intermediate matrices for [Tf](z) = [c_f] * [Tf](z=0) + [c_b] * [Tb]
-        c_f = np.array([[self._f1(z), self._f2(z)],
+        a_f0 = np.array([[self._f1(z), self._f2(z)],
                         [-self._f2(z), self._f3(z)]])
-        c_b = np.zeros((2, nSegments))
+
+        a_b = np.zeros((2*self.nPipes, nSegments))
         N = int(np.ceil(z/self.b.H*nSegments))
         for i in range(N):
             z1 = z - min((i+1)*self.b.H/nSegments, z)
             z2 = z - i * self.b.H / nSegments
             dF4 = self._F4(z2) - self._F4(z1)
             dF5 = self._F5(z2) - self._F5(z1)
-            c_b[0, i] = dF4
-            c_b[1, i] = -dF5
-        # Final matrices for [Tf](z) = [a_in] * Tin + [a_b] * [Tb]
-        a_in = c_f.dot(b_in)
-        a_b = (c_f.dot(b_b) + c_b)
-        return a_in, a_b
+            a_b[0, i] = dF4
+            a_b[1, i] = -dF5
+
+        return a_f0, a_b
+
+    def _update_coefficients(self, m_flow, cp, nSegments):
+        """
+        Evaluate dimensionless resistances for Hellstrom solution.
+        """
+        # Mass flow rate in pipes
+        self._m_flow_pipe = m_flow
+        # Dimensionless delta-circuit conductances
+        self._beta1 = 1./(self._Rd[0][0]*m_flow*cp)
+        self._beta2 = 1./(self._Rd[1][1]*m_flow*cp)
+        self._beta12 = 1./(self._Rd[0][1]*m_flow*cp)
+        self._beta = 0.5*(self._beta2 - self._beta1)
+        # Eigenvalues
+        self._gamma = np.sqrt(0.25*(self._beta1+self._beta2)**2
+                              + self._beta12*(self._beta1+self._beta2))
+        self._delta = 1./self._gamma \
+            * (self._beta12 + 0.5*(self._beta1+self._beta2))
 
     def _f1(self, z):
         """
@@ -549,23 +556,6 @@ class SingleUTube(_BasePipe):
         F5 = np.exp(self._beta*z) / denom \
             * (C*np.cosh(self._gamma*z) + S*np.sinh(self._gamma*z))
         return F5
-
-    def _update_coefficients(self, m_flow, cp, nSegments):
-        """
-        Evaluate dimensionless resistances for Hellstrom solution.
-        """
-        # Mass flow rate in pipes
-        self._m_flow_pipe = m_flow
-        # Dimensionless delta-circuit conductances
-        self._beta1 = 1./(self._Rd[0][0]*m_flow*cp)
-        self._beta2 = 1./(self._Rd[1][1]*m_flow*cp)
-        self._beta12 = 1./(self._Rd[0][1]*m_flow*cp)
-        self._beta = 0.5*(self._beta2 - self._beta1)
-        # Eigenvalues
-        self._gamma = np.sqrt(0.25*(self._beta1+self._beta2)**2
-                              + self._beta12*(self._beta1+self._beta2))
-        self._delta = 1./self._gamma \
-            * (self._beta12 + 0.5*(self._beta1+self._beta2))
 
 
 class MultipleUTube(_BasePipe):
