@@ -383,22 +383,23 @@ class SingleUTube(_BasePipe):
         self._Rd = thermal_resistances(pos, r_out, borehole.r_b,
                                        k_s, k_g, self.R_fp)[1]
 
-    def coefficients_outlet_temperature(self, m_flow, cp, nSegments):
+    def _continuity_condition(self, m_flow, cp, nSegments):
         """
-        Build coefficient matrices to evaluate outlet fluid temperature.
+        Equation that satisfies equal fluid temperatures in both legs of
+        each U-tube pipe at depth (z = H).
 
         Returns coefficients for the relation:
 
             .. math::
 
-                T_{f,out} = \\mathbf{a_{in}} T_{f,in}
+                \\mathbf{a_{out}} T_{f,out} = \\mathbf{a_{in}} T_{f,in}
                 + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
         ----------
-        m_flow : float
-            Inlet mass flow rates (in kg/s).
-        cp : float
+        m_flow : float or array
+            Inlet mass flow rate (in kg/s).
+        cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
@@ -407,15 +408,20 @@ class SingleUTube(_BasePipe):
         -------
         a_in : array
             Array of coefficients for inlet fluid temperature.
+        a_out : array
+            Array of coefficients for outlet fluid temperature.
         a_b : array
             Array of coefficients for borehole wall temperatures.
 
         """
-        self._update_coefficients(m_flow, cp, nSegments)
+        # Evaluate coefficient matrices from Hellstrom (1991):
         a_in = ((self._f1(self.b.H) + self._f2(self.b.H))
                 / (self._f3(self.b.H) - self._f2(self.b.H)))
         a_in = np.array([[a_in]])
-        a_b = np.zeros((1, nSegments))
+
+        a_out = np.array([[1.0]])
+
+        a_b = np.zeros((self.nOutlets, nSegments))
         for i in range(nSegments):
             z1 = (nSegments - i - 1) * self.b.H / nSegments
             z2 = (nSegments - i) * self.b.H / nSegments
@@ -423,7 +429,7 @@ class SingleUTube(_BasePipe):
             dF5 = self._F5(z2) - self._F5(z1)
             a_b[0, i] = (dF4 + dF5) / (self._f3(self.b.H) - self._f2(self.b.H))
 
-        return a_in, a_b
+        return a_in, a_out, a_b
 
     def coefficients_temperature(self, z, m_flow, cp, nSegments):
         """
