@@ -232,18 +232,17 @@ class _BasePipe(object):
         b_in, b_b = self.coefficients_outlet_temperature(m_flow, cp, nSegments)
 
         # Coefficient matrices for temperatures at depth (z = 0):
-        # [T_f](0) = [b_in0]*[T_{f,in}] + [b_b0]*[T_b]
-        b_in0 = np.vstack((np.eye(self.nInlets), b_in))
-        b_b0 = np.vstack((np.zeros((self.nInlets, nSegments)), b_b))
+        # [T_f](0) = [c_in]*[T_{f,in}] + [c_out]*[T_{f,out}]
+        c_in, c_out = self._continuity_condition_head(m_flow, cp, nSegments)
 
         # Coefficient matrices from general solution:
-        # [T_f](z) = [c_f0]*[T_f](0) + [c_b]*[T_b]
-        c_f0, c_b = self._general_solution(z, m_flow, cp, nSegments)
+        # [T_f](z) = [d_f0]*[T_f](0) + [d_b]*[T_b]
+        d_f0, d_b = self._general_solution(z, m_flow, cp, nSegments)
 
         # Final coefficient matrices for temperatures at depth (z):
         # [T_f](z) = [a_in]**[T_{f,in}] + [a_b]*[T_b]
-        a_in = c_f0.dot(b_in0)
-        a_b = c_f0.dot(b_b0) + c_b
+        a_in = d_f0.dot(c_in + c_out.dot(b_in))
+        a_b = np.linalg.multi_dot([d_f0, c_out, b_b]) + d_b
         
         return a_in, a_b
 
@@ -300,14 +299,23 @@ class _BasePipe(object):
 
         return a_in, a_b
 
-    def _continuity_condition(self, m_flow, cp, nSegments):
+    def _continuity_condition_base(self, m_flow, cp, nSegments):
         """ Returns coefficients for the relation
-            [b_out]*[T_{f,out}] = [b_in]*[T_{f,in}] + [b_b]*[T_b]
+            [a_out]*[T_{f,out}] = [a_in]*[T_{f,in}] + [a_b]*[T_b]
         """
         raise NotImplementedError(
-            '_continuity_condition class method not implemented, '
+            '_continuity_condition_base class method not implemented, '
             'this method should return matrices for the relation: '
-            '[b_out]*[T_{f,out}] = [b_in]*[T_{f,in}] + [b_b]*[T_b]')
+            '[a_out]*[T_{f,out}] = [a_in]*[T_{f,in}] + [a_b]*[T_b]')
+
+    def _continuity_condition_head(self, m_flow, cp, nSegments):
+        """ Returns coefficients for the relation
+            [T_f](z=0) = [a_in]*[T_{f,in}] + [a_out]*[T_{f,out}]
+        """
+        raise NotImplementedError(
+            '_continuity_condition_head class method not implemented, '
+            'this method should return matrices for the relation: '
+            '[T_f](z=0) = [a_in]*[T_{f,in}] + [a_out]*[T_{f,out}]')
 
     def _general_solution(self, z, m_flow, cp, nSegments):
         """ Returns coefficients for the relation
