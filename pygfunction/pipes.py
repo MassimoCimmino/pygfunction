@@ -391,7 +391,7 @@ class SingleUTube(_BasePipe):
         self._Rd = thermal_resistances(pos, r_out, borehole.r_b,
                                        k_s, k_g, self.R_fp)[1]
 
-    def _continuity_condition(self, m_flow, cp, nSegments):
+    def _continuity_condition_base(self, m_flow, cp, nSegments):
         """
         Equation that satisfies equal fluid temperatures in both legs of
         each U-tube pipe at depth (z = H).
@@ -438,6 +438,42 @@ class SingleUTube(_BasePipe):
             a_b[0, i] = (dF4 + dF5) / (self._f3(self.b.H) - self._f2(self.b.H))
 
         return a_in, a_out, a_b
+
+    def _continuity_condition_head(self, m_flow, cp, nSegments):
+        """
+        Build coefficient matrices to evaluate fluid temperatures at depth
+        (z = 0). These coefficients take into account connections between
+        U-tube pipes.
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                \\mathbf{T_f}(z=0) = \\mathbf{a_{in}} \\mathbf{T_{f,in}}
+                + \\mathbf{a_{out}} \\mathbf{T_{f,out}}
+
+        Parameters
+        ----------
+        m_flow : float or array
+            Inlet mass flow rate (in kg/s).
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+        nSegments : int
+            Number of borehole segments.
+
+        Returns
+        -------
+        a_in : array
+            Array of coefficients for inlet fluid temperature.
+        a_out : array
+            Array of coefficients for outlet fluid temperature.
+
+        """
+        # There is only one pipe
+        a_in = np.array([[1.0], [0.0]])
+        a_out = np.array([[0.0], [1.0]])
+
+        return a_in, a_out
 
     def _general_solution(self, z, m_flow, cp, nSegments):
         """
