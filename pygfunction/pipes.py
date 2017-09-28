@@ -150,6 +150,103 @@ class _BasePipe(object):
         Q = np.sum(m_flow * cp * (Tout - Tin))
         return Q
 
+    def coefficients_outlet_temperature(self, m_flow, cp, nSegments):
+        """
+        Build coefficient matrices to evaluate outlet fluid temperature.
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                \\mathbf{T_{f,out}} = \\mathbf{a_{in}} \\mathbf{T_{f,in}}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
+
+        Parameters
+        ----------
+        m_flow : float or array
+            Inlet mass flow rates (in kg/s).
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+        nSegments : int
+            Number of borehole segments.
+
+        Returns
+        -------
+        a_in : array
+            Array of coefficients for inlet fluid temperature.
+        a_b : array
+            Array of coefficients for borehole wall temperatures.
+
+        """
+        # Update model variables
+        self._update_coefficients(m_flow, cp, nSegments)
+
+        # Coefficient matrices from continuity condition:
+        # [b_out]*[T_{f,out}] = [b_in]*[T_{f,in}] + [b_b]*[T_b]
+        b_in, b_out, b_b = self._continuity_condition(m_flow, cp, nSegments)
+
+        # Final coefficient matrices for outlet temperatures:
+        # [T_{f,out}] = [a_in]*[T_{f,in}] + [a_b]*[T_b]
+        b_out_m1 = np.inv(b_out)
+        a_in = b_out_m1.dot(b_in)
+        a_b = b_out_m1.dot(b_b)
+
+        return a_in, a_b
+
+    def coefficients_temperature(self, z, m_flow, cp, nSegments):
+        """
+        Build coefficient matrices to evaluate fluid temperatures at a depth
+        (z).
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                \\mathbf{T_f}(z) = \\mathbf{a_{in}} \\mathbf{T_{f,in}}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
+
+        Parameters
+        ----------
+        z : float
+            Depth (in meters) to evaluate the fluid temperature coefficients.
+        m_flow : float or array
+            Inlet mass flow rate (in kg/s).
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+        nSegments : int
+            Number of borehole segments.
+
+        Returns
+        -------
+        a_in : array
+            Array of coefficients for inlet fluid temperature.
+        a_b : array
+            Array of coefficients for borehole wall temperatures.
+
+        """
+        # Update model variables
+        self._update_coefficients(m_flow, cp, nSegments)
+
+        # Coefficient matrices for outlet temperatures:
+        # [T_{f,out}] = [b_in]*[T_{f,in}] + [b_b]*[T_b]
+        b_in, b_b = self.coefficients_outlet_temperature(m_flow, cp, nSegments)
+
+        # Coefficient matrices for temperatures at depth (z = 0):
+        # [T_f](0) = [b_in0]*[T_{f,in}] + [b_b0]*[T_b]
+        b_in0 = np.vstack((np.eye(self.nInlets), b_in))
+        b_b0 = np.vstack((np.zeros((self.nInlets, nSegments)), b_b))
+
+        # Coefficient matrices from general solution:
+        # [T_f](z) = [c_f0]*[T_f](0) + [c_b]*[T_b]
+        c_f0, c_b = self._general_solution(z, m_flow, cp, nSegments)
+
+        # Final coefficient matrices for temperatures at depth (z):
+        # [T_f](z) = [a_in]**[T_{f,in}] + [a_b]*[T_b]
+        a_in = c_f0.dot(b_in0)
+        a_b = c_f0.dot(b_b0) + c_b
+        
+        return a_in, a_b
+
     def coefficients_heat_extraction_rate(self, m_flow, cp, nSegments):
         """
         Build coefficient matrices to evaluate heat extraction rates.
@@ -182,7 +279,7 @@ class _BasePipe(object):
         self._update_coefficients(m_flow, cp, nSegments)
         M = np.hstack((-self._m_flow_pipe*cp, self._m_flow_pipe*cp))
         # Initialize coefficient matrices
-        a_in = np.zeros((nSegments, self.nPipes))
+        a_in = np.zeros((nSegments, self.nInlets))
         a_b = np.zeros((nSegments, nSegments))
         # Heat extraction rates are calculated from an energy balance on a
         # borehole segment.
@@ -203,23 +300,32 @@ class _BasePipe(object):
 
         return a_in, a_b
 
-    def coefficients_outlet_temperature(self, m_flow, cp, nSegments):
+    def _continuity_condition(self, m_flow, cp, nSegments):
         """ Returns coefficients for the relation
-            [Tout] = [a_in] * [Tin] + [a_b] * [Tb]
+            [b_out]*[T_{f,out}] = [b_in]*[T_{f,in}] + [b_b]*[T_b]
         """
         raise NotImplementedError(
-            'coefficients_outlet_temperature class method not implemented, '
+            '_continuity_condition class method not implemented, '
             'this method should return matrices for the relation: '
-            '[Tout] = [a_in] * [Tin] + [a_b] * [Tb]')
+            '[b_out]*[T_{f,out}] = [b_in]*[T_{f,in}] + [b_b]*[T_b]')
 
-    def coefficients_temperature(self, z, m_flow, cp, nSegments):
+    def _general_solution(self, z, m_flow, cp, nSegments):
         """ Returns coefficients for the relation
-            [Tf](z) = [a_in] * [Tin] + [a_b] * [Tb]
+            [T_f](z) = [a_f0]*[T_f](0) + [a_b]*[T_b]
         """
         raise NotImplementedError(
-            'coefficients_temperature class method not implemented, '
+            '_general_solution class method not implemented, '
             'this method should return matrices for the relation: '
-            '[Tf](z) = [a_in] * [Tin] + [a_b] * [Tb]')
+            '[T_f](z) = [a_f0]*[T_f](0) + [a_b]*[T_b]')
+
+    def _update_coefficients(self, m_flow, cp, nSegments):
+        """
+        Evaluate common coefficients needed in other class methods.
+        """
+        raise NotImplementedError(
+            '_update_coefficients class method not implemented, '
+            'this method should Evaluate common coefficients needed in other '
+            'class methods.')
 
 
 class SingleUTube(_BasePipe):
