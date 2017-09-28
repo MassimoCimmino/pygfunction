@@ -453,6 +453,7 @@ class SingleUTube(_BasePipe):
 
                 \\mathbf{T_f}(z=0) = \\mathbf{a_{in}} \\mathbf{T_{f,in}}
                 + \\mathbf{a_{out}} \\mathbf{T_{f,out}}
+                + \\mathbf{a_{b}} \\mathbf{T_{b}}
 
         Parameters
         ----------
@@ -469,11 +470,14 @@ class SingleUTube(_BasePipe):
             Array of coefficients for inlet fluid temperature.
         a_out : array
             Array of coefficients for outlet fluid temperature.
+        a_b : array
+            Array of coefficients for borehole wall temperature.
 
         """
         # There is only one pipe
         a_in = np.array([[1.0], [0.0]])
         a_out = np.array([[0.0], [1.0]])
+        a_b = np.zeros((2.0, nSegments))
 
         return a_in, a_out
 
