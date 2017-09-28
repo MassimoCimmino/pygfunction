@@ -254,7 +254,7 @@ class _BasePipe(object):
 
             .. math::
 
-                \\mathbf{Q_b} = \\mathbf{a_{in}} T_{f,in}
+                \\mathbf{Q_b} = \\mathbf{a_{in}} \\mathbf{T_{f,in}}
                 + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
@@ -400,7 +400,7 @@ class SingleUTube(_BasePipe):
 
             .. math::
 
-                \\mathbf{a_{out}} T_{f,out} = \\mathbf{a_{in}} T_{f,in}
+                \\mathbf{a_{out}} T_{f,out} = \\mathbf{a_{in}} \\mathbf{T_{f,in}}
                 + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
