@@ -183,7 +183,7 @@ class _BasePipe(object):
 
         # Coefficient matrices from continuity condition:
         # [b_out]*[T_{f,out}] = [b_in]*[T_{f,in}] + [b_b]*[T_b]
-        b_in, b_out, b_b = self._continuity_condition(m_flow, cp, nSegments)
+        b_in, b_out, b_b = self._continuity_condition_base(m_flow, cp, nSegments)
 
         # Final coefficient matrices for outlet temperatures:
         # [T_{f,out}] = [a_in]*[T_{f,in}] + [a_b]*[T_b]
