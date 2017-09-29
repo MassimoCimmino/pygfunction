@@ -919,7 +919,7 @@ class MultipleUTube(_BasePipe):
         self._Dm1 = np.diag(1./self._L)
 
 
-class IndependentMultipleUTube(_BasePipe):
+class IndependentMultipleUTube(MultipleUTube):
     """
     Class for multiple U-Tube boreholes with independent U-tubes.
 
@@ -975,26 +975,16 @@ class IndependentMultipleUTube(_BasePipe):
         self._Rd = thermal_resistances(pos, r_out, borehole.r_b,
                                        k_s, k_g, self.R_fp)[1]
 
-        # Stored conditions
-        self._m_flow = np.nan
-        self._cp = np.nan
-        self._nSegments = np.nan
-        self._m_flow_Q = np.nan
-        self._cp_Q = np.nan
-        self._nSegments_Q = np.nan
-        self._m_flow_T0 = np.nan
-        self._cp_T0 = np.nan
-        self._nSegments_T0 = np.nan
-
-    def coefficients_heat_extraction_rate(self, m_flow, cp, nSegments):
+    def _continuity_condition_base(self, m_flow, cp, nSegments):
         """
-        Build coefficient matrices to evaluate heat extraction rates.
+        Equation that satisfies equal fluid temperatures in both legs of
+        each U-tube pipe at depth (z = H).
 
         Returns coefficients for the relation:
 
             .. math::
 
-                \\mathbf{Q_b} = \\mathbf{a_{in}} \\mathbf{T_{f,in}}
+                \\mathbf{a_{out}} T_{f,out} = \\mathbf{a_{in}} T_{f,in}
                 + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
@@ -1010,59 +1000,36 @@ class IndependentMultipleUTube(_BasePipe):
         -------
         a_in : array
             Array of coefficients for inlet fluid temperature.
+        a_out : array
+            Array of coefficients for outlet fluid temperature.
         a_b : array
             Array of coefficients for borehole wall temperatures.
 
         """
+        # Coefficient matrices from continuity condition:
+        # [b_u]*[T_{f,u}](z=0) = [b_d]*[T_{f,d}](z=0) + [b_b]*[T_b]
+        a_in, a_out, a_b = self._continuity_condition(m_flow, cp, nSegments)
 
-        if not self._is_same_heat_extraction_rate(m_flow, cp, nSegments):
-            m_flow_pipe = np.reshape(m_flow, (1, self.nPipes))
-            M = cp*np.concatenate([-m_flow_pipe,
-                                   m_flow_pipe], axis=1)
+        return a_in, a_out, a_b
 
-            aQ = np.zeros((nSegments, self.nInlets))
-            bQ = np.zeros((nSegments, nSegments))
-
-            z1 = 0.
-            aTf1, bTf1 = self.coefficients_temperature(z1,
-                                                       m_flow,
-                                                       cp,
-                                                       nSegments)
-            for i in range(nSegments):
-                z2 = (i + 1) * self.b.H / nSegments
-                aTf2, bTf2 = self.coefficients_temperature(z2,
-                                                           m_flow,
-                                                           cp,
-                                                           nSegments)
-                aQ[i, :] = M.dot(aTf1 - aTf2)
-                bQ[i, :] = M.dot(bTf1 - bTf2)
-                aTf1, bTf1 = aTf2, bTf2
-            self._a_in_Q = aQ
-            self._a_b_Q = bQ
-        else:
-            aQ = self._a_in_Q
-            bQ = self._a_b_Q
-            self._m_flow_Q = m_flow
-            self._cp_Q = cp
-            self._nSegments_Q = nSegments
-        return aQ, bQ
-
-    def coefficients_temperature(self, z, m_flow, cp, nSegments):
+    def _continuity_condition_head(self, m_flow, cp, nSegments):
         """
-        Build coefficient matrices to evaluate fluid temperatures at a depth
-        (z).
+        Build coefficient matrices to evaluate fluid temperatures at depth
+        (z = 0). These coefficients take into account connections between
+        U-tube pipes.
 
         Returns coefficients for the relation:
 
             .. math::
 
-                \\mathbf{T_f}(z) = \\mathbf{a_{in}} \\mathbf{T_{f,in}}
-                + \\mathbf{a_{b}} \\mathbf{T_b}
+                \\mathbf{T_f}(z=0) = \\mathbf{a_{in}} \\mathbf{T_{f,in}}
+                + \\mathbf{a_{out}} \\mathbf{T_{f,out}}
+                + \\mathbf{a_{b}} \\mathbf{T_{b}}
 
         Parameters
         ----------
         m_flow : float or array
-            Inlet mass flow rates (in kg/s).
+            Inlet mass flow rate (in kg/s).
         cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
@@ -1072,168 +1039,17 @@ class IndependentMultipleUTube(_BasePipe):
         -------
         a_in : array
             Array of coefficients for inlet fluid temperature.
+        a_out : array
+            Array of coefficients for outlet fluid temperature.
         a_b : array
-            Array of coefficients for borehole wall temperatures.
+            Array of coefficients for borehole wall temperature.
 
         """
-        # Intermediate matrices for [Tf](z=0) = [b_in] * Tin + [b_b] * [Tb]
-        b_in0, b_b0 = self.coefficients_outlet_temperature(m_flow,
-                                                           cp,
-                                                           nSegments)
-        b_in = np.concatenate((np.eye(self.nPipes),
-                               b_in0), axis=0)
-        b_b = np.concatenate((np.zeros((self.nPipes, nSegments)),
-                              b_b0), axis=0)
+        a_in = np.eye(2*self.nPipes, m=self.nPipes, k=0)
+        a_out = np.eye(2*self.nPipes, m=self.nPipes, k=-self.nPipes)
+        a_b = np.zeros((2*self.nPipes, nSegments))
 
-        # Final matrices for [Tf](z) = [a_in] * Tin + [a_b] * [Tb]
-        E, F = self._matrix_exponentials(z,
-                                         m_flow,
-                                         cp,
-                                         nSegments)[-2:]
-        a_in = E.dot(b_in)
-        a_b = E.dot(b_b) - F
-
-        return a_in, a_b
-
-    def coefficients_outlet_temperature(self, m_flow, cp, nSegments):
-        """
-        Build coefficient matrices to evaluate outlet fluid temperatures.
-
-        Returns coefficients for the relation:
-
-            .. math::
-
-                T_{f,out} = \\mathbf{a_{in}} \\mathbf{T_{f,in}}
-                + \\mathbf{a_{b}} \\mathbf{T_b}
-
-        Parameters
-        ----------
-        m_flow : float or array
-            Inlet mass flow rates (in kg/s).
-        cp : float or array
-            Fluid specific isobaric heat capacity (in J/kg.degC).
-        nSegments : int
-            Number of borehole segments.
-
-        Returns
-        -------
-        a_in : array
-            Array of coefficients for inlet fluid temperature.
-        a_b : array
-            Array of coefficients for borehole wall temperatures.
-
-        """
-
-        if not self._is_same_outlet_temperature(m_flow, cp, nSegments):
-            E_in, E_out, E_b, E, F = self._matrix_exponentials(self.b.H,
-                                                               m_flow,
-                                                               cp,
-                                                               nSegments)
-            E_out_inv = np.linalg.inv(E_out)
-            a_in = np.linalg.multi_dot([E_out_inv,
-                                        E_in])
-            a_b = np.linalg.multi_dot([E_out_inv,
-                                       E_b])
-            self._a_in_T0 = a_in
-            self._a_b_T0 = a_b
-            self._m_flow_T0 = m_flow
-            self._cp_T0 = cp
-            self._nSegments_T0 = nSegments
-        else:
-            a_in = self._a_in_T0
-            a_b = self._a_b_T0
-        return a_in, a_b
-
-    def _matrix_exponentials(self, z, m_flow, cp, nSegments):
-        """ Evaluate configuration-specific coefficient matrices
-        """
-        nPipes = self.nPipes
-
-        if not self._is_SameMatrix(m_flow, cp, nSegments):
-            # Coefficient matrix for differential equations
-            self._A = 1.0 / (self._Rd * cp)
-            for i in range(nPipes):
-                self._A[i, :] = self._A[i, :]/m_flow[i]
-                self._A[i+nPipes, :] = self._A[i+nPipes, :]/m_flow[i]
-            for i in range(2*nPipes):
-                self._A[i, i] = -self._A[i, i] - sum(
-                    [self._A[i, j] for j in range(2*nPipes) if not i == j])
-            for i in range(nPipes, 2*nPipes):
-                self._A[i, :] = - self._A[i, :]
-
-            # Eigenvalues and eigenvectors of A
-            self._L, self._V = np.linalg.eig(self._A)
-            self._Vm1 = np.linalg.inv(self._V)
-            self._D = np.diag(self._L)
-            self._Dm1 = np.linalg.inv(self._D)
-
-            # Update conditions
-            self._m_flow = m_flow
-            self._cp = cp
-            self._nSegments = nSegments
-
-        Vm1 = self._Vm1
-        D = self._D
-        Dm1 = self._Dm1
-        E = (self._V.dot(np.diag(np.exp(self._L*z)))).dot(Vm1)
-        IIm1 = np.concatenate((np.eye(nPipes),
-                               -np.eye(nPipes)), 1)
-        ZOI = np.concatenate((np.zeros((nPipes, nPipes)),
-                              np.eye(nPipes)), 0)
-        IOZ = np.concatenate((np.eye(nPipes),
-                              np.zeros((nPipes, nPipes))), 0)
-        Ones = np.ones((2*nPipes, 1))
-
-        # Coefficient matrix for borehole wall temperatures
-        F = np.zeros((2*nPipes, nSegments))
-        for v in range(nSegments):
-            dz1 = z - min(z, v*self.b.H/nSegments)
-            dz2 = z - min(z, (v + 1)*self.b.H/nSegments)
-            E1 = np.diag(np.exp(self._L*dz1))
-            E2 = np.diag(np.exp(self._L*dz2))
-            F[:,v:v+1] = np.linalg.multi_dot([self._V,
-                                              Dm1,
-                                              E1 - E2,
-                                              Vm1,
-                                              self._A,
-                                              Ones])
-
-        E_in = np.linalg.multi_dot([-IIm1, E, IOZ])
-        E_out = np.linalg.multi_dot([IIm1, E, ZOI])
-
-        E_b = np.linalg.multi_dot([IIm1, F])
-
-        return E_in, E_out, E_b, E, F
-
-    def _is_SameMatrix(self, m_flow, cp, nSegments, tol=1.0e-6):
-        dm_flow = np.max(np.abs((m_flow - self._m_flow) \
-                                / (self._m_flow + 1.0e-30)))
-        dcp = abs((cp - self._cp) / self._cp)
-        if nSegments == self._nSegments_Q and dm_flow < tol and dcp < tol:
-            is_SameMatrix = True
-        else:
-            is_SameMatrix = False
-        return is_SameMatrix
-
-    def _is_same_outlet_temperature(self, m_flow, cp, nSegments, tol=1.0e-6):
-        dm_flow = np.max(np.abs((m_flow - self._m_flow_T0) \
-                                / (self._m_flow_T0 + 1.0e-30)))
-        dcp = abs((cp - self._cp_T0) / self._cp_T0)
-        if nSegments == self._nSegments_T0 and dm_flow < tol and dcp < tol:
-            is_same_outlet_temperature = True
-        else:
-            is_same_outlet_temperature = False
-        return is_same_outlet_temperature
-
-    def _is_same_heat_extraction_rate(self, m_flow, cp, nSegments, tol=1.0e-6):
-        dm_flow = np.max(np.abs((m_flow - self._m_flow_Q) \
-                                / (self._m_flow_Q + 1.0e-30)))
-        dcp = abs((cp - self._cp_Q) / self._cp_Q)
-        if nSegments == self._nSegments_T0 and dm_flow < tol and dcp < tol:
-            is_same_heat_extraction_rate = True
-        else:
-            is_same_heat_extraction_rate = False
-        return is_same_heat_extraction_rate
+        return a_in, a_out, a_b
 
 
 def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, method='LineSource'):
