@@ -480,7 +480,7 @@ class SingleUTube(_BasePipe):
         a_out = np.array([[0.0], [1.0]])
         a_b = np.zeros((2.0, nSegments))
 
-        return a_in, a_out
+        return a_in, a_out, a_b
 
     def _general_solution(self, z, m_flow, cp, nSegments):
         """
