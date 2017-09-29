@@ -242,7 +242,7 @@ class _BasePipe(object):
         d_f0, d_b = self._general_solution(z, m_flow, cp, nSegments)
 
         # Final coefficient matrices for temperatures at depth (z):
-        # [T_f](z) = [a_in]**[T_{f,in}] + [a_b]*[T_b]
+        # [T_f](z) = [a_in]*[T_{f,in}] + [a_b]*[T_b]
         a_in = d_f0.dot(c_in + c_out.dot(b_in))
         a_b = d_f0.dot(c_b + c_out.dot(b_b)) + d_b
 
@@ -312,12 +312,13 @@ class _BasePipe(object):
 
     def _continuity_condition_head(self, m_flow, cp, nSegments):
         """ Returns coefficients for the relation
-            [T_f](z=0) = [a_in]*[T_{f,in}] + [a_out]*[T_{f,out}]
+            [T_f](z=0) = [a_in]*[T_{f,in}] + [a_out]*[T_{f,out}] + [a_b]*[T_b]
         """
         raise NotImplementedError(
             '_continuity_condition_head class method not implemented, '
             'this method should return matrices for the relation: '
-            '[T_f](z=0) = [a_in]*[T_{f,in}] + [a_out]*[T_{f,out}]')
+            '[T_f](z=0) = [a_in]*[T_{f,in}] + [a_out]*[T_{f,out}] '
+            '+ [a_b]*[T_b]')
 
     def _general_solution(self, z, m_flow, cp, nSegments):
         """ Returns coefficients for the relation
