@@ -187,7 +187,7 @@ class _BasePipe(object):
 
         # Final coefficient matrices for outlet temperatures:
         # [T_{f,out}] = [a_in]*[T_{f,in}] + [a_b]*[T_b]
-        b_out_m1 = np.inv(b_out)
+        b_out_m1 = np.linalg.inv(b_out)
         a_in = b_out_m1.dot(b_in)
         a_b = b_out_m1.dot(b_b)
 
@@ -704,7 +704,7 @@ class MultipleUTube(_BasePipe):
         # Coefficient matrices from continuity condition:
         # [b_u]*[T_{f,u}](z=0) = [b_d]*[T_{f,d}](z=0) + [b_b]*[T_b]
         b_d, b_u, b_b = self._continuity_condition(m_flow, cp, nSegments)
-        b_u_m1 = np.inv(b_u)
+        b_u_m1 = np.linalg.inv(b_u)
 
         if self.config == 'parallel':
             # Intermediate coefficient matrices:
@@ -713,7 +713,7 @@ class MultipleUTube(_BasePipe):
 
             # Intermediate coefficient matrices:
             # [T_{f,out}] = d_u*[T_{f,u}](z=0)
-            mcp = self._m_flow_pipe*cp
+            mcp = self._m_flow_pipe*cp * np.ones((1, self.nPipes))
             d_u = np.reshape(mcp/np.sum(mcp), (1,-1))
 
             # Final coefficient matrices for continuity at depth (z = H):
@@ -733,11 +733,11 @@ class MultipleUTube(_BasePipe):
             d_u = b_u - b_d.dot(c_u)
             d_in = b_d.dot(c_in)
             d_b = b_b
-            d_u_m1 = np.inv(d_u)
+            d_u_m1 = np.linalg.inv(d_u)
 
             # Intermediate coefficient matrices:
             # [T_{f,out}] = e_u*[T_{f,u}](z=0)
-            e_u = np.eye(self.nPipes, M=1, k=-self.nPipes)
+            e_u = np.eye(self.nPipes, M=1, k=-self.nPipes).T
 
             # Final coefficient matrices for continuity at depth (z = H):
             # [a_out][T_{f,out}] = [a_in]*[T_{f,in}] + [a_b]*[T_b]
@@ -781,10 +781,10 @@ class MultipleUTube(_BasePipe):
 
         """
         if self.config == 'parallel':
-            a_in = np.vstack((np.ones(self.nPipes, self.nInlets),
-                              np.zeros(self.nPipes, self.nInlets)))
-            a_out = np.vstack((np.zeros(self.nPipes, self.nOutlets),
-                              np.ones(self.nPipes, self.nOutlets)))
+            a_in = np.vstack((np.ones((self.nPipes, self.nInlets)),
+                              np.zeros((self.nPipes, self.nInlets))))
+            a_out = np.vstack((np.zeros((self.nPipes, self.nOutlets)),
+                               np.ones((self.nPipes, self.nOutlets))))
             a_b = np.zeros((2*self.nPipes, nSegments))
 
         elif self.config == 'series':
@@ -802,7 +802,7 @@ class MultipleUTube(_BasePipe):
             d_u = b_u - b_d.dot(c_u)
             d_in = b_d.dot(c_in)
             d_b = b_b
-            d_u_m1 = np.inv(d_u)
+            d_u_m1 = np.linalg.inv(d_u)
 
             # Intermediate coefficient matrices:
             # [T_f](z=0) = [e_d]*[T_{f,d}](z=0) + [e_u]*[T_{f,u}](z=0)
@@ -867,8 +867,8 @@ class MultipleUTube(_BasePipe):
         # Coefficient matrix for borehole wall temperatures
         IIm1 = np.hstack((np.eye(self.nPipes), -np.eye(self.nPipes)))
         Ones = np.ones((2*self.nPipes, 1))
-        a_b = np.zeros((self.nPipes, self.nSegments))
-        for v in range(self.nSegments):
+        a_b = np.zeros((self.nPipes, nSegments))
+        for v in range(nSegments):
             z1 = H - v*H/nSegments
             z2 = H - (v + 1)*H/nSegments
             dE = np.diag(np.exp(L*z1) - np.exp(L*z2))
