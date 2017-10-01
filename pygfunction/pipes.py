@@ -34,8 +34,8 @@ class _BasePipe(object):
 
         Parameters
         ----------
-        z : float
-            Depth (in meters) to evaluate the fluid temperatures.
+        z : float or array
+            Depths (in meters) to evaluate the fluid temperatures.
         Tin : float or array
             Inlet fluid temperatures (in Celsius).
         Tb : array
@@ -52,13 +52,21 @@ class _BasePipe(object):
 
         """
         nSegments = len(np.atleast_1d(Tb))
-        # Build coefficient matrices
-        a_in, a_b = self.coefficients_temperature(z,
-                                                  m_flow,
-                                                  cp,
-                                                  nSegments)
-        # Evaluate fluid temperatures
-        Tf = a_in.dot(Tin).flatten() + a_b.dot(Tb).flatten()
+        z_all = np.atleast_1d(z).flatten()
+        Tf = np.zeros((len(z_all), 2*self.nPipes))
+        for i in range(len(z_all)):
+            zi = z_all[i]
+            # Build coefficient matrices
+            a_in, a_b = self.coefficients_temperature(zi,
+                                                      m_flow,
+                                                      cp,
+                                                      nSegments)
+            # Evaluate fluid temperatures
+            Tf[i,:] = a_in.dot(Tin).flatten() + a_b.dot(Tb).flatten()
+
+        # Return 1d array if z was supplied as scalar
+        if np.isscalar(z):
+            Tf = Tf.flatten()
         return Tf
 
     def get_outlet_temperature(self, Tin, Tb, m_flow, cp):
