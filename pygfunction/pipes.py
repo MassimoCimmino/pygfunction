@@ -58,7 +58,7 @@ class _BasePipe(object):
                                                   cp,
                                                   nSegments)
         # Evaluate fluid temperatures
-        Tf = (a_in.dot(Tin) + a_b.dot(Tb)).flatten()
+        Tf = a_in.dot(Tin).flatten() + a_b.dot(Tb).flatten()
         return Tf
 
     def get_outlet_temperature(self, Tin, Tb, m_flow, cp):
@@ -88,7 +88,7 @@ class _BasePipe(object):
                                                          cp,
                                                          nSegments)
         # Evaluate outlet temperatures
-        Tout = (a_in.dot(Tin) + a_b.dot(Tb)).flatten()
+        Tout = a_in.dot(Tin).flatten() + a_b.dot(Tb).flatten()
         # Return float if Tin was supplied as scalar
         if np.isscalar(Tin) and not np.isscalar(Tout):
             Tout = np.asscalar(Tout)
@@ -119,7 +119,7 @@ class _BasePipe(object):
         a_in, a_b = self.coefficients_heat_extraction_rate(m_flow,
                                                            cp,
                                                            nSegments)
-        Qb = (a_in.dot(Tin) + a_b.dot(Tb)).flatten()
+        Qb = a_in.dot(Tin).flatten() + a_b.dot(Tb).flatten()
         # Return float if Tb was supplied as scalar
         if np.isscalar(Tb) and not np.isscalar(Qb):
             Qb = np.asscalar(Qb)
