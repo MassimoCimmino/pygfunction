@@ -890,6 +890,61 @@ class MultipleUTube(_BasePipe):
 
         return a_d, a_u, a_b
 
+    def _general_solution(self, z, m_flow, cp, nSegments):
+        """
+        General solution for fluid temperatures at a depth (z).
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                \\mathbf{T_f}(z) = \\mathbf{a_{f0}} \\mathbf{T_{f}}(z=0)
+                + \\mathbf{a_{b}} \\mathbf{T_b}
+
+        Parameters
+        ----------
+        m_flow : float or array
+            Inlet mass flow rate (in kg/s).
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+        nSegments : int
+            Number of borehole segments.
+
+        Returns
+        -------
+        a_f0 : array
+            Array of coefficients for inlet fluid temperature.
+        a_b : array
+            Array of coefficients for borehole wall temperatures.
+
+        """
+        # Load coefficients
+        A = self._A
+        V = self._V
+        Vm1 = self._Vm1
+        L = self._L
+        Dm1 = self._Dm1
+
+        # Matrix exponential at depth (z)
+        a_f0 = (V.dot(np.diag(np.exp(L*z)))).dot(Vm1)
+
+        # Coefficient matrix for borehole wall temperatures
+        a_b = np.zeros((2*self.nPipes, nSegments))
+        Ones = np.ones((2*self.nPipes, 1))
+        for v in range(nSegments):
+            dz1 = z - min(z, v*self.b.H/nSegments)
+            dz2 = z - min(z, (v + 1)*self.b.H/nSegments)
+            E1 = np.diag(np.exp(L*dz1))
+            E2 = np.diag(np.exp(L*dz2))
+            a_b[:,v:v+1] = np.linalg.multi_dot([V,
+                                                Dm1,
+                                                E2 - E1,
+                                                Vm1,
+                                                A,
+                                                Ones])
+
+        return a_f0, a_b
+
     def _update_coefficients(self, m_flow, cp, nSegments):
         """
         Evaluate eigenvalues and eigenvectors for the system of differential
