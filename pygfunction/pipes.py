@@ -1565,3 +1565,30 @@ def convective_heat_transfer_coefficient_circular_pipe(m_flow, r_in, visc, den,
     h_fluid = k * Nu / D
 
     return h_fluid
+
+
+def conduction_thermal_resistance_circular_pipe(r_in, r_out, k):
+    """
+    Evaluate the conduction thermal resistance for circular pipes.
+
+    Parameters
+    ----------
+    r_in : float
+        Inner radius of the pipes (in meters).
+    r_out : float
+        Outer radius of the pipes (in meters).
+    k : float
+        Pipe thermal conductivity (in W/m-K).
+
+    Returns
+    -------
+    R_pipe : float
+        Conduction thermal resistance (in m-K/W).
+
+    Examples
+    --------
+
+    """
+    R_pipe = np.log(r_out/r_in)/(2*pi*k)
+
+    return R_pipe
