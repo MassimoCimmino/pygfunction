@@ -189,6 +189,51 @@ class _BasePipe(object):
         Q = np.sum(m_flow * cp * (Tout - Tin))
         return Q
 
+    def coefficients_inlet_temperature(self, m_flow, cp, nSegments):
+        """
+        Build coefficient matrices to evaluate outlet fluid temperature.
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                \\mathbf{T_{f,in}} = \\mathbf{a_{q,f}} \\mathbf{Q_{f}}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
+
+        Parameters
+        ----------
+        m_flow : float or array
+            Inlet mass flow rates (in kg/s).
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+        nSegments : int
+            Number of borehole segments.
+
+        Returns
+        -------
+        a_qf : array
+            Array of coefficients for inlet fluid temperature.
+        a_b : array
+            Array of coefficients for borehole wall temperatures.
+
+        """
+        # Update model variables
+        self._update_coefficients(m_flow, cp, nSegments)
+
+        # Coefficient matrices for fluid heat extraction rates:
+        # [Q_{f}] = [b_in]*[T_{f,in}] + [b_b]*[T_{b}]
+        b_in, b_b = self.coefficients_fluid_heat_extraction_rate(m_flow,
+                                                                 cp,
+                                                                 nSegments)
+        b_in_m1 = np.linalg.inv(b_in)
+
+        # Matrices for fluid heat extraction rates:
+        # [T_{f,in}] = [a_qf]*[Q_{f}] + [a_b]*[T_{b}]
+        a_qf = b_in_m1
+        a_b = -b_in_m1.dot(b_b)
+
+        return a_qf, a_b
+
     def coefficients_outlet_temperature(self, m_flow, cp, nSegments):
         """
         Build coefficient matrices to evaluate outlet fluid temperature.
