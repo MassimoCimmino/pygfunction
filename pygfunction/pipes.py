@@ -1175,30 +1175,19 @@ class MultipleUTube(_BasePipe):
         """
         nPipes = self.nPipes
         # Format mass flow rate inputs
-        if np.isscalar(m_flow):
-            # Mass flow rate in each fluid circuit
-            if self.config.lower() == 'parallel':
-                m_flow_in = m_flow*np.ones(self.nInlets) / nPipes
-            elif self.config.lower() == 'series':
-                m_flow_in = m_flow*np.ones(self.nInlets)
-        else:
-            # Mass flow rate in each fluid circuit
-            if self.config.lower() == 'parallel':
-                m_flow_in = m_flow / nPipes
-            elif self.config.lower() == 'series':
-                m_flow_in = m_flow
-        self._m_flow_in = m_flow_in
         # Mass flow rate in pipes
-        m_flow_pipe = np.tile(m_flow_in, 2*self.nPipes)
+        if self.config.lower() == 'parallel':
+            m_flow_pipe = np.tile(m_flow/nPipes, 2*self.nPipes)
+        elif self.config.lower() == 'series':
+            m_flow_pipe = np.tile(m_flow, 2*self.nPipes)
         self._m_flow_pipe = m_flow_pipe
+        # Mass flow rate in each fluid circuit
+        m_flow_in = np.atleast_1d(m_flow)
+        self._m_flow_in = m_flow_in
 
         # Format heat capacity inputs
-        if np.isscalar(cp):
-            # Heat capacity in each fluid circuit
-            cp_in = cp*np.ones(self.nInlets)
-        else:
-            # Heat capacity in each fluid circuit
-            cp_in = cp
+        # Heat capacity in each fluid circuit
+        cp_in = np.atleast_1d(cp)
         self._cp_in = cp_in
         # Heat capacity in pipes
         cp_pipe = np.tile(cp_in, 2*self.nPipes)
