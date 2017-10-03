@@ -133,6 +133,37 @@ class _BasePipe(object):
             Qb = np.asscalar(Qb)
         return Qb
 
+    def get_fluid_heat_extraction_rate(self, Tin, Tb, m_flow, cp):
+        """
+        Returns the heat extraction rates of the borehole.
+
+        Parameters
+        ----------
+        Tin : float or array
+            Inlet fluid temperatures (in Celsius).
+        Tb : float or array
+            Borehole wall temperatures (in Celsius).
+        m_flow : float or array
+            Inlet mass flow rates (in kg/s).
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+
+        Returns
+        -------
+        Qf : float or array
+            Heat extraction rates from each fluid circuit (in Watts).
+
+        """
+        nSegments = len(np.atleast_1d(Tb))
+        a_in, a_b = self.coefficients_fluid_heat_extraction_rate(m_flow,
+                                                                 cp,
+                                                                 nSegments)
+        Qf = a_in.dot(Tin).flatten() + a_b.dot(Tb).flatten()
+        # Return float if Tb was supplied as scalar
+        if np.isscalar(Tb) and not np.isscalar(Qf):
+            Qf = np.asscalar(Qf)
+        return Qf
+
     def get_total_heat_extraction_rate(self, Tin, Tb, m_flow, cp):
         """
         Returns the total heat extraction rate of the borehole.
