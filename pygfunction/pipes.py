@@ -69,6 +69,39 @@ class _BasePipe(object):
             Tf = Tf.flatten()
         return Tf
 
+    def get_inlet_temperature(self, Qf, Tb, m_flow, cp):
+        """
+        Returns the outlet fluid temperatures of the borehole.
+
+        Parameters
+        ----------
+        Qf : float or array
+            Heat extraction from the fluid circuits (in Watts).
+        Tb : float or array
+            Borehole wall temperatures (in Celsius).
+        m_flow : float or array
+            Inlet mass flow rates (in kg/s).
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+
+        Returns
+        -------
+        Tin : float or array
+            Inlet fluid temperatures (in Celsius) into each inlet pipe.
+
+        """
+        nSegments = len(np.atleast_1d(Tb))
+        # Build coefficient matrices
+        a_qf, a_b = self.coefficients_inlet_temperature(m_flow,
+                                                        cp,
+                                                        nSegments)
+        # Evaluate outlet temperatures
+        Tin = a_qf.dot(Qf).flatten() + a_b.dot(Tb).flatten()
+        # Return float if Tin was supplied as scalar
+        if np.isscalar(Qf) and not np.isscalar(Tin):
+            Tin = np.asscalar(Tin)
+        return Tin
+
     def get_outlet_temperature(self, Tin, Tb, m_flow, cp):
         """
         Returns the outlet fluid temperatures of the borehole.
