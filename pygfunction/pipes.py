@@ -218,8 +218,8 @@ class _BasePipe(object):
             Total net heat extraction rate of the borehole (in Watts).
 
         """
-        Tout = self.get_outlet_temperature(Tin, Tb, m_flow, cp)
-        Q = np.sum(m_flow * cp * (Tout - Tin))
+        Qf = self.get_fluid_heat_extraction_rate(Tin, Tb, m_flow, cp)
+        Q = np.sum(Qf)
         return Q
 
     def coefficients_inlet_temperature(self, m_flow, cp, nSegments):
