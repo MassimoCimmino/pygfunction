@@ -102,7 +102,7 @@ class _BasePipe(object):
             Tout = np.asscalar(Tout)
         return Tout
 
-    def get_heat_extraction_rate(self, Tin, Tb, m_flow, cp):
+    def get_borehole_heat_extraction_rate(self, Tin, Tb, m_flow, cp):
         """
         Returns the heat extraction rates of the borehole.
 
@@ -120,13 +120,13 @@ class _BasePipe(object):
         Returns
         -------
         Qb : float or array
-            Heat extraction rates along each borehole segment.
+            Heat extraction rates along each borehole segment (in Watts).
 
         """
         nSegments = len(np.atleast_1d(Tb))
-        a_in, a_b = self.coefficients_heat_extraction_rate(m_flow,
-                                                           cp,
-                                                           nSegments)
+        a_in, a_b = self.coefficients_borehole_heat_extraction_rate(m_flow,
+                                                                    cp,
+                                                                    nSegments)
         Qb = a_in.dot(Tin).flatten() + a_b.dot(Tb).flatten()
         # Return float if Tb was supplied as scalar
         if np.isscalar(Tb) and not np.isscalar(Qb):
@@ -150,8 +150,8 @@ class _BasePipe(object):
 
         Returns
         -------
-        Qb : float
-            Total net heat extraction rate of the borehole.
+        Q : float
+            Total net heat extraction rate of the borehole (in Watts).
 
         """
         Tout = self.get_outlet_temperature(Tin, Tb, m_flow, cp)
@@ -256,7 +256,8 @@ class _BasePipe(object):
 
         return a_in, a_b
 
-    def coefficients_heat_extraction_rate(self, m_flow, cp, nSegments):
+    def coefficients_borehole_heat_extraction_rate(self,
+                                                   m_flow, cp, nSegments):
         """
         Build coefficient matrices to evaluate heat extraction rates.
 
@@ -287,6 +288,7 @@ class _BasePipe(object):
         # Update model variables
         self._update_coefficients(m_flow, cp, nSegments)
         M = np.hstack((-self._m_flow_pipe*cp, self._m_flow_pipe*cp))
+
         # Initialize coefficient matrices
         a_in = np.zeros((nSegments, self.nInlets))
         a_b = np.zeros((nSegments, nSegments))
