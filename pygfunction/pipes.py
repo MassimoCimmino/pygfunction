@@ -694,20 +694,51 @@ class SingleUTube(_BasePipe):
 
     def _update_coefficients(self, m_flow, cp, nSegments):
         """
-        Evaluate dimensionless resistances for Hellstrom solution.
+        Evaluate dimensionless resistances for Hellstrom (1991) solution.
         """
-        # Mass flow rate in pipes
-        self._m_flow_pipe = m_flow
+        # Format mass flow rate and heat capacity inputs
+        self._format_inputs(m_flow, cp, nSegments)
+        m_flow_in = self.m_flow_in
+        cp_in = self.cp_in
+
         # Dimensionless delta-circuit conductances
-        self._beta1 = 1./(self._Rd[0][0]*m_flow*cp)
-        self._beta2 = 1./(self._Rd[1][1]*m_flow*cp)
-        self._beta12 = 1./(self._Rd[0][1]*m_flow*cp)
+        self._beta1 = 1./(self._Rd[0][0]*m_flow_in[0]*cp_in[0])
+        self._beta2 = 1./(self._Rd[1][1]*m_flow_in[0]*cp_in[0])
+        self._beta12 = 1./(self._Rd[0][1]*m_flow_in[0]*cp_in[0])
         self._beta = 0.5*(self._beta2 - self._beta1)
         # Eigenvalues
         self._gamma = np.sqrt(0.25*(self._beta1+self._beta2)**2
                               + self._beta12*(self._beta1+self._beta2))
         self._delta = 1./self._gamma \
             * (self._beta12 + 0.5*(self._beta1+self._beta2))
+
+    def _format_inputs(self, m_flow, cp, nSegments):
+        """
+        Format mass flow rate and heat capacity inputs.
+        """
+        # Format mass flow rate inputs
+        if np.isscalar(m_flow):
+            # Mass flow rate in each fluid circuit
+            m_flow_in = m_flow*np.ones(self.nInlets)
+        else:
+            # Mass flow rate in each fluid circuit
+            m_flow_in = m_flow
+        self._m_flow_in = m_flow_in
+        # Mass flow rate in pipes
+        m_flow_pipe = np.tile(m_flow_in, 2*self.nPipes)
+        self._m_flow_pipe = m_flow_pipe
+
+        # Format heat capacity inputs
+        if np.isscalar(cp):
+            # Heat capacity in each fluid circuit
+            cp_in = cp*np.ones(self.nInlets)
+        else:
+            # Heat capacity in each fluid circuit
+            cp_in = cp
+        self._cp_in = cp_in
+        # Heat capacity in pipes
+        cp_pipe = np.tile(cp_in, 2*self.nPipes)
+        self._cp_pipe = cp_pipe
 
     def _f1(self, z):
         """
@@ -1118,15 +1149,13 @@ class MultipleUTube(_BasePipe):
         equations.
         """
         nPipes = self.nPipes
-        # Mass flow rate in pipes
-        if self.config.lower() == 'parallel':
-            m_flow_pipe = m_flow / self.nPipes
-        elif self.config.lower() == 'series':
-            m_flow_pipe = m_flow
-        self._m_flow_pipe = m_flow_pipe
+        # Format mass flow rate and heat capacity inputs
+        self._format_inputs(m_flow, cp, nSegments)
+        m_flow_pipe = self.m_flow_pipe
+        cp_pipe = self.cp_pipe
 
         # Coefficient matrix for differential equations
-        self._A = 1.0 / (self._Rd * m_flow_pipe * cp)
+        self._A = 1.0 / (self._Rd * m_flow_pipe * cp_pipe)
         for i in range(2*nPipes):
             self._A[i, i] = -self._A[i, i] - sum(
                 [self._A[i, j] for j in range(2*nPipes) if not i == j])
@@ -1139,6 +1168,41 @@ class MultipleUTube(_BasePipe):
         # Diagonal matrix of eigenvalues and inverse
         self._D = np.diag(self._L)
         self._Dm1 = np.diag(1./self._L)
+
+    def _format_inputs(self, m_flow, cp, nSegments):
+        """
+        Format mass flow rate and heat capacity inputs.
+        """
+        nPipes = self.nPipes
+        # Format mass flow rate inputs
+        if np.isscalar(m_flow):
+            # Mass flow rate in each fluid circuit
+            if self.config.lower() == 'parallel':
+                m_flow_in = m_flow*np.ones(self.nInlets) / nPipes
+            elif self.config.lower() == 'series':
+                m_flow_in = m_flow*np.ones(self.nInlets)
+        else:
+            # Mass flow rate in each fluid circuit
+            if self.config.lower() == 'parallel':
+                m_flow_in = m_flow / nPipes
+            elif self.config.lower() == 'series':
+                m_flow_in = m_flow
+        self._m_flow_in = m_flow_in
+        # Mass flow rate in pipes
+        m_flow_pipe = np.tile(m_flow_in, 2*self.nPipes)
+        self._m_flow_pipe = m_flow_pipe
+
+        # Format heat capacity inputs
+        if np.isscalar(cp):
+            # Heat capacity in each fluid circuit
+            cp_in = cp*np.ones(self.nInlets)
+        else:
+            # Heat capacity in each fluid circuit
+            cp_in = cp
+        self._cp_in = cp_in
+        # Heat capacity in pipes
+        cp_pipe = np.tile(cp_in, 2*self.nPipes)
+        self._cp_pipe = cp_pipe
 
 
 class IndependentMultipleUTube(MultipleUTube):
@@ -1272,6 +1336,26 @@ class IndependentMultipleUTube(MultipleUTube):
         a_b = np.zeros((2*self.nPipes, nSegments))
 
         return a_in, a_out, a_b
+
+    def _format_inputs(self, m_flow, cp, nSegments):
+        """
+        Format mass flow rate and heat capacity inputs.
+        """
+        # Format mass flow rate inputs
+        # Mass flow rate in each fluid circuit
+        m_flow_in = np.atleast_1d(m_flow)
+        self._m_flow_in = m_flow_in
+        # Mass flow rate in pipes
+        m_flow_pipe = np.tile(m_flow_in, 2*self.nPipes)
+        self._m_flow_pipe = m_flow_pipe
+
+        # Format heat capacity inputs
+        # Heat capacity in each fluid circuit
+        cp_in = np.atleast_1d(cp)
+        self._cp_in = cp_in
+        # Heat capacity in pipes
+        cp_pipe = np.tile(cp_in, 2*self.nPipes)
+        self._cp_pipe = cp_pipe
 
 
 def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, method='LineSource'):
