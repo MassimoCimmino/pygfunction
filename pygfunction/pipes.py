@@ -457,7 +457,7 @@ class _BasePipe(object):
 
         # Intermediate matrices for fluid heat extraction rates:
         # [Q_{f}] = [c_in]*[T_{f,in}] + [c_out]*[T_{f,out}]
-        MCP = self.m_flow_in * self.cp_in
+        MCP = self._m_flow_in * self._cp_in
         c_in = -np.diag(MCP)
         c_out = np.diag(MCP)
 
@@ -698,8 +698,8 @@ class SingleUTube(_BasePipe):
         """
         # Format mass flow rate and heat capacity inputs
         self._format_inputs(m_flow, cp, nSegments)
-        m_flow_in = self.m_flow_in
-        cp_in = self.cp_in
+        m_flow_in = self._m_flow_in
+        cp_in = self._cp_in
 
         # Dimensionless delta-circuit conductances
         self._beta1 = 1./(self._Rd[0][0]*m_flow_in[0]*cp_in[0])
@@ -911,7 +911,7 @@ class MultipleUTube(_BasePipe):
 
             # Intermediate coefficient matrices:
             # [T_{f,out}] = d_u*[T_{f,u}](z=0)
-            mcp = self._m_flow_pipe*cp * np.ones((1, self.nPipes))
+            mcp = self._m_flow_pipe[-self.nPipes:]*self._cp_pipe[-self.nPipes:]
             d_u = np.reshape(mcp/np.sum(mcp), (1,-1))
 
             # Final coefficient matrices for continuity at depth (z = H):
@@ -1151,8 +1151,8 @@ class MultipleUTube(_BasePipe):
         nPipes = self.nPipes
         # Format mass flow rate and heat capacity inputs
         self._format_inputs(m_flow, cp, nSegments)
-        m_flow_pipe = self.m_flow_pipe
-        cp_pipe = self.cp_pipe
+        m_flow_pipe = self._m_flow_pipe
+        cp_pipe = self._cp_pipe
 
         # Coefficient matrix for differential equations
         self._A = 1.0 / (self._Rd * m_flow_pipe * cp_pipe)
