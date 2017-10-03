@@ -935,7 +935,7 @@ class MultipleUTube(_BasePipe):
 
             # Intermediate coefficient matrices:
             # [T_{f,out}] = e_u*[T_{f,u}](z=0)
-            e_u = np.eye(self.nPipes, M=1, k=-self.nPipes).T
+            e_u = np.eye(self.nPipes, M=1, k=-self.nPipes+1).T
 
             # Final coefficient matrices for continuity at depth (z = H):
             # [a_out][T_{f,out}] = [a_in]*[T_{f,in}] + [a_b]*[T_b]
