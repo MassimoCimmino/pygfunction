@@ -1339,7 +1339,7 @@ class IndependentMultipleUTube(MultipleUTube):
         m_flow_in = np.atleast_1d(m_flow)
         self._m_flow_in = m_flow_in
         # Mass flow rate in pipes
-        m_flow_pipe = np.tile(m_flow_in, 2*self.nPipes)
+        m_flow_pipe = np.tile(m_flow_in, 2)
         self._m_flow_pipe = m_flow_pipe
 
         # Format heat capacity inputs
@@ -1347,7 +1347,7 @@ class IndependentMultipleUTube(MultipleUTube):
         cp_in = np.atleast_1d(cp)
         self._cp_in = cp_in
         # Heat capacity in pipes
-        cp_pipe = np.tile(cp_in, 2*self.nPipes)
+        cp_pipe = np.tile(cp_in, 2)
         self._cp_pipe = cp_pipe
 
 
