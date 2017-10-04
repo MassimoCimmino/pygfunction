@@ -1324,8 +1324,8 @@ class IndependentMultipleUTube(MultipleUTube):
             Array of coefficients for borehole wall temperature.
 
         """
-        a_in = np.eye(2*self.nPipes, m=self.nPipes, k=0)
-        a_out = np.eye(2*self.nPipes, m=self.nPipes, k=-self.nPipes)
+        a_in = np.eye(2*self.nPipes, M=self.nPipes, k=0)
+        a_out = np.eye(2*self.nPipes, M=self.nPipes, k=-self.nPipes)
         a_b = np.zeros((2*self.nPipes, nSegments))
 
         return a_in, a_out, a_b
