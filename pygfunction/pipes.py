@@ -645,7 +645,7 @@ class SingleUTube(_BasePipe):
         # There is only one pipe
         a_in = np.array([[1.0], [0.0]])
         a_out = np.array([[0.0], [1.0]])
-        a_b = np.zeros((2.0, nSegments))
+        a_b = np.zeros((2, nSegments))
 
         return a_in, a_out, a_b
 
