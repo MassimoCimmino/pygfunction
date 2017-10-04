@@ -272,9 +272,10 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
     return gFunction
 
 
-def equal_inlet_temperature(boreholes, UTube, m_flow, fluid, time, alpha,
-                            method='linear', nSegments=12, use_similarities=True,
-                            disTol=0.1, tol=1.0e-6, processes=None):
+def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
+                            method='linear', nSegments=12,
+                            use_similarities=True, disTol=0.1, tol=1.0e-6,
+                            processes=None):
     """
     Evaluate the g-function with equal inlet fluid temperatures.
 
@@ -287,11 +288,11 @@ def equal_inlet_temperature(boreholes, UTube, m_flow, fluid, time, alpha,
     ----------
     boreholes : list of Borehole objects
         List of boreholes included in the bore field.
-    UTube : pipe object
-        Model for pipes inside boreholes.
-    m_flow : float
-        Total fluid mass flow rate per borehole (kg/s).
-    fluid : fluid object
+    UTubes : list of pipe objects
+        Model for pipes inside each borehole.
+    m_flow : float or array
+        Fluid mass flow rate per borehole (in kg/s).
+    cp : fluid specific isobaric heat capacity (in J/kg.K)
         Model with fluid properties.
     time : array
         Values of time (in seconds) for which the g-function is evaluated.
@@ -339,6 +340,9 @@ def equal_inlet_temperature(boreholes, UTube, m_flow, fluid, time, alpha,
     nBoreholes = len(boreholes)
     # Total number of line sources
     nSources = nSegments*nBoreholes
+    # If m_flow is supplied as float, apply m_flow to all boreholes
+    if np.isscalar(m_flow):
+        m_flow = np.tile(m_flow, nBoreholes)
     # Initialize g-function
     gFunction = np.zeros_like(time)
     # Initialize segment heat extraction rates
@@ -404,16 +408,15 @@ def equal_inlet_temperature(boreholes, UTube, m_flow, fluid, time, alpha,
                           np.zeros((nSources, nSources + 1))), axis=1)
     # Include sub-matrices for relation between Tin, Tb and Qb
     for i in range(nBoreholes):
-        dEin, dEb = UTube.coefficients_heat_extraction_rate(m_flow,
-                                                            fluid,
-                                                            nSegments)
+        dEin, dEb = UTubes[i].coefficients_borehole_heat_extraction_rate(
+                m_flow[i], cp, nSegments)
         j1 = i*nSegments
         j2 = (i+1) * nSegments
         n1 = j1 + nSources
         n2 = j2 + nSources
         Hi = boreholes[i].H / nSegments
-        Eq2[j1:j2, -1] = -dEin.flatten() / (2.0*pi*UTube.k_s*Hi)
-        Eq2[j1:j2, n1:n2] = -dEb / (2.0*pi*UTube.k_s*Hi)
+        Eq2[j1:j2, -1] = -dEin.flatten() / (2.0*pi*UTubes[i].k_s*Hi)
+        Eq2[j1:j2, n1:n2] = -dEb / (2.0*pi*UTubes[i].k_s*Hi)
     # Equation for total heat extraction rate
     Eq3 = np.concatenate((np.array([[b.H for b in boreSegments]]),
                           np.zeros((1, nSources + 1))), axis=1)

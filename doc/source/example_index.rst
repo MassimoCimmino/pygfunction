@@ -13,3 +13,6 @@ Examples
    example_uniform_temperature
    example_load_aggregation
    example_comparison_load_aggregation
+   example_fluid_temperature
+   example_equal_inlet_temperature
+   example_multiple_independent_Utubes
