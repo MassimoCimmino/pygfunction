@@ -1159,7 +1159,7 @@ class MultipleUTube(_BasePipe):
         cp_pipe = self._cp_pipe
 
         # Coefficient matrix for differential equations
-        self._A = 1.0 / (self._Rd * m_flow_pipe * cp_pipe)
+        self._A = 1.0 / (self._Rd.T * m_flow_pipe * cp_pipe).T
         for i in range(2*nPipes):
             self._A[i, i] = -self._A[i, i] - sum(
                 [self._A[i, j] for j in range(2*nPipes) if not i == j])
