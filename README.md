@@ -28,6 +28,10 @@ boreField = gt.boreholes.rectangle_field(N_1=10, N_2=10, B_1=7.5, B_2=7.5, H=150
 gFunc = gt.gfunction.uniform_temperature(boreField, time, alpha=1.0e-6)
 ```
 
+Once the *g*-function is evaluated, *pygfunction* provides tools to predict
+borehole temperature variations (using load aggregation methods) and to evaluate
+fluid temperatures in the boreholes for several U-tube pipe configurations.
+
 
 ## Requirements
 
