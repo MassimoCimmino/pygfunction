@@ -394,9 +394,13 @@ class _BasePipe(object):
             Array of coefficients for borehole wall temperatures.
 
         """
+        nPipes = self.nPipes
         # Update model variables
         self._update_coefficients(m_flow, cp, nSegments)
-        M = np.hstack((-self._m_flow_pipe*cp, self._m_flow_pipe*cp))
+        m_flow_pipe = self._m_flow_pipe
+        cp_pipe = self._cp_pipe
+        mcp = np.hstack((-m_flow_pipe[0:nPipes],
+                         m_flow_pipe[-nPipes:]))*cp_pipe
 
         # Initialize coefficient matrices
         a_in = np.zeros((nSegments, self.nInlets))
@@ -414,8 +418,8 @@ class _BasePipe(object):
                                                        m_flow,
                                                        cp,
                                                        nSegments)
-            a_in[i, :] = M.dot(aTf1 - aTf2)
-            a_b[i, :] = M.dot(bTf1 - bTf2)
+            a_in[i, :] = mcp.dot(aTf1 - aTf2)
+            a_b[i, :] = mcp.dot(bTf1 - bTf2)
             aTf1, bTf1 = aTf2, bTf2
 
         return a_in, a_b
