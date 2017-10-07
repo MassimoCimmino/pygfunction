@@ -468,6 +468,163 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
     return gFunction
 
 
+def thermal_response_factors(
+        boreSegments, time, alpha, use_similarities=True,
+        splitRealAndImage=True, disTol=0.1, tol=1.0e-6, processes=None,
+        disp=False):
+    """
+    Evaluate segment-to-segment thermal response factors.
+
+    This function goes through the list of borehole segments and evaluates
+    the segments-to-segment response factors for all times in time.
+
+    Parameters
+    ----------
+    boreSegments : list of Borehole objects
+        List of borehole segments.
+    time : float or array
+        Values of time (in seconds) for which the g-function is evaluated.
+    alpha : float
+        Soil thermal diffusivity (in m2/s).
+    use_similarities : bool, optional
+        True if similarities are used to limit the number of FLS evaluations.
+        Default is True.
+    splitRealAndImage : bool, optional
+        Set to True if similarities are evaluated separately for real and image
+        sources. Set to False if similarities are evaluated for the sum of the
+        real and image sources.
+        Default is True.
+    disTol : float, optional
+        Absolute tolerance (in meters) on radial distance. Two distances
+        (d1, d2) between two pairs of boreholes are considered equal if the
+        difference between the two distances (abs(d1-d2)) is below tolerance.
+        Default is 0.1.
+    tol : float, optional
+        Relative tolerance on length and depth. Two lenths H1, H2
+        (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
+        Default is 1.0e-6.
+    processes : int, optional
+        Number of processors to use in calculations. If the value is set to
+        None, a number of processors equal to cpu_count() is used.
+        Default is None.
+    disp : bool, optional
+        Set to true to print progression messages.
+        Default is False.
+
+    Returns
+    -------
+    h_ij : array
+        Segment-to-segment thermal response factors.
+
+    """
+    # Total number of line sources
+    nSources = len(boreSegments)
+    # Number of time values
+    nt = len(np.atleast_1d(time))
+    # Prepare pool of workers for parallel computation
+    pool = Pool(processes=processes)
+    # Initialize chrono
+    tic = tim.time()
+
+    # Initialize segment-to-segment response factors
+    h_ij = np.zeros((nSources, nSources, nt))
+    # Calculation is based on the choice of use_similarities
+    if use_similarities:
+        # Calculations with similarities
+        if disp: print('Identifying similarities ...')
+        (nSimPos, simPos, disSimPos, HSimPos, DSimPos,
+         nSimNeg, simNeg, disSimNeg, HSimNeg, DSimNeg) = \
+            similarities(boreSegments,
+                         splitRealAndImage=splitRealAndImage,
+                         disTol=disTol,
+                         tol=tol,
+                         processes=processes)
+
+        toc1 = tim.time()
+        if disp:
+            print('{} sec'.format(toc1 - tic))
+            print('Calculating segment to segment response factors ...')
+
+        # Initialize FLS solution for the real source
+        hPos = np.zeros(nt)
+        # Initialize FLS solution for the image source
+        hNeg = np.zeros(nt)
+
+        # Similarities for real sources
+        for s in range(nSimPos):
+            n1 = simPos[s][0][0]
+            n2 = simPos[s][0][1]
+            b1 = boreSegments[n1]
+            b2 = boreSegments[n2]
+            if splitRealAndImage:
+                # FLS solution for real source only
+                func = partial(FLS, alpha=alpha, borehole1=b1, borehole2=b2,
+                               reaSource=True, imgSource=False)
+            else:
+                # FLS solution for combined real and image sources
+                func = partial(FLS, alpha=alpha, borehole1=b1, borehole2=b2,
+                               reaSource=True, imgSource=True)
+            # Evaluate the FLS solution at all times in parallel
+            hPos = np.array(pool.map(func, np.atleast_1d(time)))
+            # Assign thermal response factors to similar segment pairs
+            for (i, j) in simPos[s]:
+                h_ij[j, i, :] = hPos
+                h_ij[i, j, :] = b2.H/b1.H * hPos
+
+        # Similarities for image sources (only if splitRealAndImage=True)
+        if splitRealAndImage:
+            for s in range(nSimNeg):
+                n1 = simNeg[s][0][0]
+                n2 = simNeg[s][0][1]
+                b1 = boreSegments[n1]
+                b2 = boreSegments[n2]
+                # FLS solution for image source only
+                func = partial(FLS, alpha=alpha, borehole1=b1, borehole2=b2,
+                               reaSource=False, imgSource=True)
+                # Evaluate the FLS solution at all times in parallel
+                hNeg = np.array(pool.map(func, time))
+                # Assign thermal response factors to similar segment pairs
+                for (i, j) in simNeg[s]:
+                    h_ij[j, i, :] = h_ij[j, i, :] + hNeg
+                    h_ij[i, j, :] = b2.H/b1.H * h_ij[j, i, :]
+
+    else:
+        # Calculations without similarities
+        if disp:
+            print('Calculating segment to segment response factors ...')
+        for i in range(nSources):
+            # Segment to same-segment thermal response factor
+            # FLS solution for combined real and image sources
+            b2 = boreSegments[i]
+            func = partial(FLS, alpha=alpha, borehole1=b2, borehole2=b2)
+            # Evaluate the FLS solution at all times in parallel
+            h = np.array(pool.map(func, time))
+            h_ij[i, i, :] = h
+
+            # Segment to other segments thermal response factor
+            for j in range(i+1, nSources):
+                b1 = boreSegments[j]
+                # Evaluate the FLS solution at all times in parallel
+                func = partial(FLS, alpha=alpha, borehole1=b1, borehole2=b2)
+                h = np.array(pool.map(func, time))
+                h_ij[i, j, :] = h
+                h_ij[j, i, :] = b2.H / b1.H * h_ij[i, j, :]
+
+    toc2 = tim.time()
+    if disp:
+        print('{} sec'.format(toc2 - tic))
+
+    # Close pool of workers
+    pool.close()
+    pool.join()
+
+    # Return 2d array if time is a scalar
+    if np.isscalar(time):
+        h_ij = h_ij[:,:,0]
+
+    return h_ij
+
+
 def _borehole_segments(boreholes, nSegments):
     """
     Split boreholes into segments.
