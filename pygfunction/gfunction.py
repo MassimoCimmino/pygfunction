@@ -860,34 +860,32 @@ def _segment_to_segment_thermal_response_factors_symmetries(
     return h_ij
 
 
-def _temporal_superposition(time, nt, dh, nSources, Q):
+def _temporal_superposition(dh_ij, Q):
     """
     Temporal superposition for inequal time steps.
 
     Parameters
     ----------
-    time : array
-        Values of time (in seconds) for which the g-function is evaluated.
-    nt : int
-        index of the latest time value.
-    dh : array
+    dh_ij : array
         Values of the segment-to-segment thermal response factor increments at
         the given time step.
-    nSources : int
-        Total number of line sources.
-    Q : array
+    Q_reconstructed : array
         Heat extraction rates of all segments at all times.
 
     Returns
     -------
-    Tb0 : array
+    Tb_0 : array
         Current values of borehole wall temperatures assuming no heat
         extraction during current time step.
 
     """
-    # Borehole wall temperature assuming no heat extraction
-    Tb0 = 0.
+    # Number of heat sources
+    nSources = Q.shape[0]
+    # Number of time steps
+    nt = Q.shape[1]
+    # Borehole wall temperature
+    Tb_0 = np.zeros(nSources)
     # Spatial and temporal superpositions
-    for it in range(nt+1):
-        Tb0 += np.dot(dh[:,:,it], Q[:,it])
-    return Tb0
+    for it in range(nt):
+        Tb_0 += dh_ij[:,:,it].dot(Q[:,nt-it-1])
+    return Tb_0
