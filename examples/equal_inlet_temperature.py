@@ -126,16 +126,16 @@ def main():
 
     # Calculate the g-function for uniform heat extraction rate
     gfunc_uniform_Q = gt.gfunction.uniform_heat_extraction(
-            boreField, time, alpha)
+            boreField, time, alpha, disp=True)
 
     # Calculate the g-function for uniform borehole wall temperature
     gfunc_uniform_T = gt.gfunction.uniform_temperature(
-            boreField, time, alpha, nSegments=nSegments)
+            boreField, time, alpha, nSegments=nSegments, disp=True)
 
     # Calculate the g-function for equal inlet fluid temperature
     gfunc_equal_Tf_in = gt.gfunction.equal_inlet_temperature(
             boreField, UTubes, m_flow, cp_f, time, alpha,
-            nSegments=nSegments)
+            nSegments=nSegments, disp=True)
 
     # -------------------------------------------------------------------------
     # Plot g-functions

@@ -269,7 +269,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
 def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
                             method='linear', nSegments=12,
                             use_similarities=True, disTol=0.1, tol=1.0e-6,
-                            processes=None):
+                            processes=None, disp=False):
     """
     Evaluate the g-function with equal inlet fluid temperatures.
 
@@ -288,28 +288,39 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
         Fluid mass flow rate per borehole (in kg/s).
     cp : fluid specific isobaric heat capacity (in J/kg.K)
         Model with fluid properties.
-    time : array
+    time : float or array
         Values of time (in seconds) for which the g-function is evaluated.
     alpha : float
         Soil thermal diffusivity (in m2/s).
+    nSegments : int, optional
+        Number of line segments used per borehole.
+        Default is 12.
     method : string, defaults to 'linear'
         Interpolation method used for segment-to-segment thermal response
         factors. See documentation for scipy.interpolate.interp1d.
-    nSegments : int, defaults to 12
-        Number of line segments used per borehole.
-    use_similarities : boolean, defaults to True
-        True if symmetries are used to limit the number of FLS evaluations.
-    disTol : float, defaults to 0.1
+    use_similarities : bool, optional
+        True if similarities are used to limit the number of FLS evaluations.
+        Default is True.
+    disTol : float, optional
         Absolute tolerance (in meters) on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
         difference between the two distances (abs(d1-d2)) is below tolerance.
-    tol : float, defaults to 1.0e-6
+        Default is 0.1.
+    tol : float, optional
         Relative tolerance on length and depth. Two lenths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
+        Default is 1.0e-6.
+    processes : int, optional
+        Number of processors to use in calculations. If the value is set to
+        None, a number of processors equal to cpu_count() is used.
+        Default is None.
+    disp : bool, optional
+        Set to true to print progression messages.
+        Default is False.
 
     Returns
     -------
-    gFunction : array
+    gFunction : float or array
         Values of the g-function
 
     Examples
@@ -329,136 +340,118 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
        fields. International Journal of Heat and Mass Transfer, 91, 1119-1127.
 
     """
-    print('------------------------------------------------------------------')
+    if disp:
+        print(60*'-')
+        print('Calculating g-function for equal inlet fluid temperature')
+        print(60*'-')
+    # Initialize chrono
+    tic = tim.time()
     # Number of boreholes
     nBoreholes = len(boreholes)
     # Total number of line sources
     nSources = nSegments*nBoreholes
+    # Number of time values
+    nt = len(np.atleast_1d(time))
+    # Initialize g-function
+    gFunction = np.zeros_like(np.atleast_1d(time))
+    # Initialize segment heat extraction rates
+    Q = np.zeros((nSources, nt))
+
     # If m_flow is supplied as float, apply m_flow to all boreholes
     if np.isscalar(m_flow):
         m_flow = np.tile(m_flow, nBoreholes)
-    # Initialize g-function
-    gFunction = np.zeros_like(time)
-    # Initialize segment heat extraction rates
-    Nt = len(time)
+
     # Split boreholes into segments
     boreSegments = _borehole_segments(boreholes, nSegments)
-    t0 = tim.time()
-    if use_similarities:
-        print('Identifying similarities ...')
-        # Evaluate real and image symmetries in parallel
-        (nSimPos, simPos, disSimPos, HSimPos, DSimPos,
-         nSimNeg, simNeg, disSimNeg, HSimNeg, DSimNeg) = \
-            similarities(boreSegments,
-                       splitRealAndImage=True,
-                       disTol=disTol,
-                       tol=tol,
-                       processes=processes)
+    # Vector of time values
+    t = np.atleast_1d(time).flatten()
+    # Calculate segment to segment thermal response factors
+    h_ij = thermal_response_factors(
+        boreSegments, t, alpha, use_similarities=use_similarities,
+        splitRealAndImage=True, disTol=disTol, tol=tol, processes=processes,
+        disp=disp)
+    toc1 = tim.time()
 
-        t1 = tim.time()
-        print('{} sec (elapsed: {} sec)'.format(t1 - t0, t1 - t0))
-        print('Calculating segment to segment response factors ...')
-        # Evaluate segment-to-segment thermal response factors
-        h_ij = _segment_to_segment_thermal_response_factors_symmetries(
-                boreSegments, time, alpha, nSimPos, simPos, disSimPos, HSimPos,
-                DSimPos, nSimNeg, simNeg, disSimNeg, HSimNeg, DSimNeg,
-                splitRealAndImage=True, processes=processes)
-        t2 = tim.time()
-        print('{} sec (elapsed: {} sec)'.format(t2 - t1, t2 - t0))
-    else:
-        print('Calculating segment to segment response factors ...')
-        # Evaluate segment-to-segment thermal response factors
-        h_ij = _segment_to_segment_thermal_response_factors(
-                boreSegments, time, alpha, processes=processes)
-        t2 = tim.time()
-        print('{} sec (elapsed: {} sec)'.format(t2 - t0, t2 - t0))
-    print('Building and solving system of equations ...')
-    # Initialize segment heat extraction rates
-    Q = np.zeros((nSources, Nt))
-    # Vector [0.]
-    Z = np.zeros(1)
-    # Time values for interpolation of past  loads
-    t_Q = np.concatenate((Z, time))
-    # Time differences for interpolation of past  loads
-    dt = t_Q[1:] - t_Q[:-1]
-    # Cummulative values of heat extracted
-    Qdt = np.zeros((nSources, Nt + 1))
+    if disp:
+        print('Building and solving system of equations ...')
+    # -------------------------------------------------------------------------
+    # Build a system of equation [A]*[X] = [B] for the evaluation of the
+    # g-function. [A] is a coefficient matrix, [X] = [Qb,Tb] is a state
+    # space vector of the borehole heat extraction rates and borehole wall
+    # temperature (equal for all segments), [B] is a coefficient vector.
+    # -------------------------------------------------------------------------
+    
     # Segment lengths
-    Hu = np.array([b.H for b in boreSegments])
-    # Borehole wall temperature for zero heat extraction rate at latest time
-    # step
-    Tb0 = np.zeros(nSources)
-    # Create list of spline objects for segment-to-segment thermal response
-    # factors
-    S_dt = interp1d(time,
-                    h_ij,
-                    kind=method,
-                    axis=2)
-    # Segment-to-segment heat extraction rate increments
-    h_dt = S_dt(dt)
-    dh = np.concatenate((h_ij[:,:,0:1], h_ij[:,:,1:]-h_ij[:,:,:-1]), axis=2)
-    # Equations for segment heat extraction rates
-    Eq2 = np.concatenate((-np.eye(nSources),
-                          np.zeros((nSources, nSources + 1))), axis=1)
-    # Include sub-matrices for relation between Tin, Tb and Qb
+    Hb = np.array([b.H for b in boreSegments])
+    # Vector of time steps
+    dt = np.hstack((t[0], t[1:] - t[:-1]))
+    # Spline object for thermal response factors
+    h_dt = interp1d(t, h_ij, kind=method, axis=2)
+    # Thermal response factors evaluated at t=dt
+    h_dt = h_dt(dt)
+    # Thermal response factor increments
+    dh_ij = np.concatenate((h_ij[:,:,0:1], h_ij[:,:,1:]-h_ij[:,:,:-1]), axis=2)
+
+    # Energy balance on borehole segments:
+    # [Q_{b,i}] = [a_in]*[T_{f,in}] + [a_{b,i}]*[T_{b,i}]
+    A_eq2 = np.hstack((-np.eye(nSources), np.zeros((nSources, nSources + 1))))
+    B_eq2 = np.zeros(nSources)
     for i in range(nBoreholes):
-        dEin, dEb = UTubes[i].coefficients_borehole_heat_extraction_rate(
+        # Coefficients for current borehole
+        a_in, a_b = UTubes[i].coefficients_borehole_heat_extraction_rate(
                 m_flow[i], cp, nSegments)
+        # Matrix coefficients ranges
+        # Rows
         j1 = i*nSegments
         j2 = (i+1) * nSegments
+        # Columns
         n1 = j1 + nSources
         n2 = j2 + nSources
+        # Segment length
         Hi = boreholes[i].H / nSegments
-        Eq2[j1:j2, -1] = -dEin.flatten() / (2.0*pi*UTubes[i].k_s*Hi)
-        Eq2[j1:j2, n1:n2] = -dEb / (2.0*pi*UTubes[i].k_s*Hi)
-    # Equation for total heat extraction rate
-    Eq3 = np.concatenate((np.array([[b.H for b in boreSegments]]),
-                          np.zeros((1, nSources + 1))), axis=1)
-    # Solve the system of equations at all times
-    for p in range(Nt):
-        H_dt = h_dt[:,:,p]
-        # Superpose heat extraction rates, if necessary
-        if p > 0:
-            # Reconstruct load history
-            # Add heat extracted last time step to cummulative heat extracted
-            Qdt[:,p] = Qdt[:,p-1] + Q[:,p-1] * dt[p-1]
-            Qdt[:,p+1] = Qdt[:,p]
-            # Create interpolation object for cummulative heat extracted
-            SQdt = interp1d(t_Q[:p+2],
-                            Qdt[:,:p+2],
-                            kind='linear', axis=1)
-            # Times needed for load reconstruction
-            tS = np.cumsum(dt[p::-1])
-            # Interpolate cummulative heat extracted
-            Qdt_reconstructed = SQdt(tS)
-            # Split heat extracted per time step
-            Qdt_reconstructed[:,1:] -= Qdt_reconstructed[:,:-1].copy()
-            # Calculate heat extraction rate
-            Q_reconstructed = Qdt_reconstructed / dt[p::-1]
-            # Superpose past loads
-            Tb0 = _temporal_superposition(time, p, dh, nSources,
-                                          Q_reconstructed[:,::-1])
-        # Equations for spatial superposition
-        Eq1 = np.concatenate((H_dt,
-                              -np.eye(nSources),
-                              np.zeros((nSources, 1))), axis=1)
-        # Matrix system of equations
-        A = np.concatenate((Eq1, Eq2, Eq3), axis=0)
-        B = np.concatenate((-Tb0,
-                            np.zeros(nSources),
-                            np.array([np.sum(Eq3)])), axis=0)
+        A_eq2[j1:j2, -1:] = a_in / (-2.0*pi*UTubes[i].k_s*Hi)
+        A_eq2[j1:j2, n1:n2] = a_b / (-2.0*pi*UTubes[i].k_s*Hi)
+    
 
+    # Energy conservation: sum([Qb*Hb]) = sum([Hb])
+    A_eq3 = np.hstack((Hb, np.zeros(nSources + 1)))
+    B_eq3 = np.atleast_1d(np.sum(Hb))
+
+    # Build and solve the system of equations at all times
+    for p in range(nt):
+        # Current thermal response factor matrix
+        h_ij_dt = h_dt[:,:,p]
+        # Reconstructed load history
+        Q_reconstructed = load_history_reconstruction(t[0:p+1], Q[:,0:p+1])
+        # Borehole wall temperature for zero heat extraction at current step
+        Tb_0 = _temporal_superposition(dh_ij, Q_reconstructed)
+        # Spatial superposition: [Tb] = [Tb0] + [h_ij_dt]*[Qb]
+        A_eq1 = np.hstack((h_ij_dt,
+                           -np.eye(nSources),
+                           np.zeros((nSources, 1))))
+        B_eq1 = -Tb_0
+        # Assemble equations
+        A = np.vstack((A_eq1, A_eq2, A_eq3))
+        B = np.hstack((B_eq1, B_eq2, B_eq3))
+        # Solve the system of equations
         X = np.linalg.solve(A, B)
-
         # Store calculated heat extraction rates
         Q[:,p] = X[0:nSources]
-
         # The gFunction is equal to the average borehole wall temperature
-        Tb = X[nSources:2*nSources].dot(Hu) / np.sum(Hu)
-        gFunction[p] = Tb
-    t3 = tim.time()
-    print('{} sec (elapsed: {} sec)'.format(t3 - t2, t3 - t0))
-    print('------------------------------------------------------------------')
+        Tb = X[nSources:2*nSources]
+        gFunction[p] = Tb.dot(Hb) / np.sum(Hb)
+
+    toc2 = tim.time()
+    if disp:
+        print('{} sec'.format(toc2 - toc1))
+        print('Total time for g-function evaluation: {} sec'.format(
+                toc2 - tic))
+        print(60*'-')
+
+    # Return float if time is a scalar
+    if np.isscalar(time):
+        gFunction = np.asscalar(gFunction)
+
     return gFunction
 
 
