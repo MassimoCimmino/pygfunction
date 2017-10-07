@@ -59,10 +59,10 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
     >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
     >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
     >>> alpha = 1.0e-6
-    >>> time = [1.0*10**i for i in range(4, 12)]
+    >>> time = np.array([1.0*10**i for i in range(4, 12)])
     >>> gt.gfunction.uniform_heat_extraction([b1, b2], time, alpha)
-    [0.75978163  1.84860837  2.98861057  4.33496051  6.29199383  8.13636888
-     9.08401497  9.20736188]
+    array([ 0.75978163,  1.84860837,  2.98861057,  4.33496051,  6.29199383,
+        8.13636888,  9.08401497,  9.20736188])
 
     """
     if disp:
@@ -133,9 +133,10 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
     nSegments : int, optional
         Number of line segments used per borehole.
         Default is 12.
-    method : string, defaults to 'linear'
+    method : string, optional
         Interpolation method used for segment-to-segment thermal response
         factors. See documentation for scipy.interpolate.interp1d.
+        Default is linear.
     use_similarities : bool, optional
         True if similarities are used to limit the number of FLS evaluations.
         Default is True.
@@ -166,10 +167,10 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
     >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
     >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
     >>> alpha = 1.0e-6
-    >>> time = [1.0*10**i for i in range(4, 12)]
-    >>> uniform_temperature([b1, b2], time, alpha)
-    [0.75978079  1.84859851  2.98852756  4.33406497  6.27830732  8.05746656
-     8.93697282  9.04925079]
+    >>> time = np.array([1.0*10**i for i in range(4, 12)])
+    >>> gt.gfunction.uniform_temperature([b1, b2], time, alpha)
+    array([ 0.75978079,  1.84859851,  2.98852756,  4.33406497,  6.27830732,
+        8.05746656,  8.93697282,  9.04925079])
 
     References
     ----------
@@ -295,9 +296,10 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
     nSegments : int, optional
         Number of line segments used per borehole.
         Default is 12.
-    method : string, defaults to 'linear'
+    method : string, optional
         Interpolation method used for segment-to-segment thermal response
         factors. See documentation for scipy.interpolate.interp1d.
+        Default is 'linear'.
     use_similarities : bool, optional
         True if similarities are used to limit the number of FLS evaluations.
         Default is True.
@@ -328,10 +330,10 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
     >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
     >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
     >>> alpha = 1.0e-6
-    >>> time = [1.0*10**i for i in range(4, 12)]
-    >>> gfunction.uniform_temperature([b1, b2], time, alpha)
-    [0.75978079  1.84859851  2.98852756  4.33406497  6.27830732  8.05746656
-     8.93697282  9.04925079]
+    >>> time = np.array([1.0*10**i for i in range(4, 12)])
+    >>> gt.gfunction.uniform_temperature([b1, b2], time, alpha)
+    array([ 0.75978079,  1.84859851,  2.98852756,  4.33406497,  6.27830732,
+        8.05746656,  8.93697282,  9.04925079])
 
     References
     ----------
@@ -376,9 +378,10 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
         print('Building and solving system of equations ...')
     # -------------------------------------------------------------------------
     # Build a system of equation [A]*[X] = [B] for the evaluation of the
-    # g-function. [A] is a coefficient matrix, [X] = [Qb,Tb] is a state
-    # space vector of the borehole heat extraction rates and borehole wall
-    # temperature (equal for all segments), [B] is a coefficient vector.
+    # g-function. [A] is a coefficient matrix, [X] = [Qb,Tb,Tf_in] is a state
+    # space vector of the borehole heat extraction rates, borehole wall
+    # temperatures and inlet fluid temperature (equal for all boreholes),
+    # [B] is a coefficient vector.
     # -------------------------------------------------------------------------
     
     # Segment lengths
@@ -411,7 +414,6 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
         Hi = boreholes[i].H / nSegments
         A_eq2[j1:j2, -1:] = a_in / (-2.0*pi*UTubes[i].k_s*Hi)
         A_eq2[j1:j2, n1:n2] = a_b / (-2.0*pi*UTubes[i].k_s*Hi)
-    
 
     # Energy conservation: sum([Qb*Hb]) = sum([Hb])
     A_eq3 = np.hstack((Hb, np.zeros(nSources + 1)))
@@ -518,7 +520,8 @@ def thermal_response_factors(
     # Calculation is based on the choice of use_similarities
     if use_similarities:
         # Calculations with similarities
-        if disp: print('Identifying similarities ...')
+        if disp:
+            print('Identifying similarities ...')
         (nSimPos, simPos, disSimPos, HSimPos, DSimPos,
          nSimNeg, simNeg, disSimNeg, HSimNeg, DSimNeg) = \
             similarities(boreSegments,
