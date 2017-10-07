@@ -104,7 +104,8 @@ def main():
     # -------------------------------------------------------------------------
     for field in [boreField1, boreField2, boreField3]:
         # Calculate g-function
-        gfunc = gt.gfunction.uniform_heat_extraction(field, time, alpha)
+        gfunc = gt.gfunction.uniform_heat_extraction(field, time, alpha,
+                                                     disp=True)
         # Draw g-function
         ax1.plot(np.log(time/ts), gfunc, 'k-', lw=1.5)
     calculated = mlines.Line2D([], [],

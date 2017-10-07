@@ -13,7 +13,8 @@ from .heat_transfer import similarities
 
 
 def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
-                            disTol=0.1, tol=1.0e-6, processes=None):
+                            disTol=0.1, tol=1.0e-6, processes=None,
+                            disp=False):
     """
     Evaluate the g-function with uniform heat extraction along boreholes.
 
@@ -24,23 +25,33 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
     ----------
     boreholes : list of Borehole objects
         List of boreholes included in the bore field.
-    time : array
+    time : float or array
         Values of time (in seconds) for which the g-function is evaluated.
     alpha : float
         Soil thermal diffusivity (in m2/s).
-    use_similarities : boolean, defaults to True
+    use_similarities : bool, optional
         True if similarities are used to limit the number of FLS evaluations.
-    disTol : float, defaults to 0.1
+        Default is True.
+    disTol : float, optional
         Absolute tolerance (in meters) on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
         difference between the two distances (abs(d1-d2)) is below tolerance.
-    tol : float, defaults to 1.0e-6
+        Default is 0.1.
+    tol : float, optional
         Relative tolerance on length and depth. Two lenths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
+        Default is 1.0e-6.
+    processes : int, optional
+        Number of processors to use in calculations. If the value is set to
+        None, a number of processors equal to cpu_count() is used.
+        Default is None.
+    disp : bool, optional
+        Set to true to print progression messages.
+        Default is False.
 
     Returns
     -------
-    gFunction : array
+    gFunction : float or array
         Values of the g-function
 
     Examples
@@ -54,55 +65,48 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
      9.08401497  9.20736188]
 
     """
-    print('------------------------------------------------------------------')
+    if disp:
+        print(60*'-')
+        print('Calculating g-function for uniform heat extraction rate')
+        print(60*'-')
+    # Initialize chrono
+    tic = tim.time()
     # Number of boreholes
     nBoreholes = len(boreholes)
-    # Initialize borehole-to-borehole response factors
-    h_ij = np.zeros((nBoreholes, nBoreholes))
-    # Initialize g-function
-    gFunction = np.zeros(len(time))
+    # Number of time values
+    nt = len(np.atleast_1d(time))
     # Initialize heat extraction rates
     Q = np.ones(nBoreholes)
+    # Initialize g-function
+    gFunction = np.zeros_like(np.atleast_1d(time))
     # Borehole lengths
     H = np.array([b.H for b in boreholes])
-    t0 = tim.time()
-    if use_similarities:
-        print('Identifying similarities ...')
-        # Identify symmetries
-        (nSimPos, simPos, disSimPos, HSimPos, DSimPos,
-         nSimNeg, simNeg, disSimNeg, HSimNeg, DSimNeg) = \
-            similarities(boreholes,
-                       splitRealAndImage=False,
-                       disTol=disTol,
-                       tol=tol,
-                       processes=processes)
 
-        t1 = tim.time()
-        print('{} sec (elapsed: {} sec)'.format(t1 - t0, t1 - t0))
-        print('Calculating segment to segment response factors ...')
-        # Calculate borehole to borehole thermal response factors
-        h_ij = _segment_to_segment_thermal_response_factors_symmetries(
-                boreholes, time, alpha, nSimPos, simPos, disSimPos, HSimPos,
-                DSimPos, nSimNeg, simNeg, disSimNeg, HSimNeg, DSimNeg,
-                splitRealAndImage=False, processes=processes)
-        t2 = tim.time()
-        print('{} sec (elapsed: {} sec)'.format(t2 - t1, t2 - t0))
-    else:
-        print('Calculating segment to segment response factors ...')
-        # Symmetries unused, go through all pairs of boreholes
-        h_ij = _segment_to_segment_thermal_response_factors(
-                boreholes, time, alpha, processes=processes)
-        t2 = tim.time()
-        print('{} sec (elapsed: {} sec)'.format(t2 - t0, t2 - t0))
-    print('Building and solving system of equations ...')
-    Nt = len(time)
-    for i in range(Nt):
+    # Calculate borehole to borehole thermal response factors
+    h_ij = thermal_response_factors(
+        boreholes, time, alpha, use_similarities=use_similarities,
+        splitRealAndImage=False, disTol=disTol, tol=tol, processes=processes,
+        disp=disp)
+    toc1 = tim.time()
+
+    # Evaluate g-function at all times
+    if disp:
+        print('Building and solving system of equations ...')
+    for i in range(nt):
         Tb = h_ij[:,:,i].dot(Q)
         # The g-function is the average of all borehole wall temperatures
         gFunction[i] = np.dot(Tb, H) / sum(H)
-    t3 = tim.time()
-    print('{} sec (elapsed: {} sec)'.format(t3 - t2, t3 - t0))
-    print('------------------------------------------------------------------')
+    toc2 = tim.time()
+
+    if disp:
+        print('{} sec'.format(toc2 - toc1))
+        print('Total time for g-function evaluation: {} sec'.format(
+                toc2 - tic))
+        print(60*'-')
+
+    # Return float if time is a scalar
+    if np.isscalar(time):
+        gFunction = np.asscalar(gFunction)
 
     return gFunction
 
