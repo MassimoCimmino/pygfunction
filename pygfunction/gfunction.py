@@ -629,6 +629,47 @@ def thermal_response_factors(
     return h_ij
 
 
+def load_history_reconstruction(time, Q):
+    """
+    Reconstructs the load history.
+
+    This function calculates an equivalent load history for an inverted order
+    of time step sizes.
+
+    Parameters
+    ----------
+    time : array
+        Values of time (in seconds) in the load history.
+    Q : array
+        Heat extraction rates (in Watts) of all segments at all times.
+
+    Returns
+    -------
+    Q_reconstructed : array
+        Reconstructed load history.
+
+    """
+    # Number of heat sources
+    nSources = Q.shape[0]
+    # Time step sizes
+    dt = np.hstack((time[0], time[1:]-time[:-1]))
+    # Time vector
+    t = np.hstack((0., time))
+    # Inverted time step sizes
+    dt_reconstructed = dt[::-1]
+    # Reconstructed time vector
+    t_reconstructed = np.hstack((0., np.cumsum(dt_reconstructed)))
+    # Accumulated heat extracted
+    f = np.hstack((np.zeros((nSources, 1)), np.cumsum(Q*dt, axis=1)))
+    # Create interpolation object for accumulated heat extracted
+    sf = interp1d(t, f, kind='linear', axis=1)
+    # Reconstructed load history
+    Q_reconstructed = (sf(t_reconstructed[1:]) - sf(t_reconstructed[:-1])) \
+        / dt_reconstructed
+
+    return Q_reconstructed
+
+
 def _borehole_segments(boreholes, nSegments):
     """
     Split boreholes into segments.
