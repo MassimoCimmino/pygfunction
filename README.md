@@ -19,7 +19,7 @@ configuration (i.e. arbitrarily positionned in space), including fields of
 boreholes with individually different lengths and radiuses. For regular fields
 of boreholes of equal size, setting-up the calculation of the *g*-function is
 as simple as a few lines of code. For example, the code for the calculation of
-the *g*-function of a field 10 x 10 square array of boreholes (100 boreholes
+the *g*-function of a 10 x 10 square array of boreholes (100 boreholes
 total):
 
 ```python
@@ -63,7 +63,7 @@ Once *pygfunction* is copied to a local directory, you can verify that it is
 working properly by running the examples in `pygfunction/examples/`.
 
 
-## Quick start
+## Documentation
 
 *pygfunction*'s documentation is hosted on
 [ReadTheDocs](https://pygfunction.readthedocs.io).
