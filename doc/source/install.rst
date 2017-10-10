@@ -13,12 +13,12 @@ Setting up pygfunction
 	- sphinx (>= 1.5.1)
 	- numpydoc (>= 0.6.0)
 
-**Users** - [Download the latest release
-](https://github.com/MassimoCimmino/pygfunction/releases).
+**Users** - `Download the latest release
+<https://github.com/MassimoCimmino/pygfunction/releases>`_.
 
-**Developers** - To get the latest version of the code, you can [download the
-repository from github](https://github.com/MassimoCimmino/pygfunction) or clone
-the project in a local directory using git:
+**Developers** - To get the latest version of the code, you can `download the
+repository from github <https://github.com/MassimoCimmino/pygfunction>`_ or
+clone the project in a local directory using git:
 
 ```
 git clone https://github.com/MassimoCimmino/pygfunction.git

@@ -49,8 +49,7 @@ following packages are needed to build the documentation:
 
 ## Quick start
 
-**Users** - [Download the latest release
-](https://github.com/MassimoCimmino/pygfunction/releases).
+**Users** - [Download the latest release](https://github.com/MassimoCimmino/pygfunction/releases).
 
 **Developers** - To get the latest version of the code, you can [download the
 repository from github](https://github.com/MassimoCimmino/pygfunction) or clone
