@@ -37,6 +37,12 @@ packagePath = os.path.normpath(
 sys.path.append(packagePath)
 import pygfunction
 
+from recommonmark.parser import CommonMarkParser
+
+source_parsers = {
+    '.md': CommonMarkParser,
+}
+
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
@@ -54,7 +60,7 @@ templates_path = ['_templates']
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+source_suffix = ['.rst', '.md']
 
 # The encoding of source files.
 #
