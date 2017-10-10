@@ -11,11 +11,18 @@ Setting up pygfunction
 
 *pygfunction*'s- documentation is built using:
 	- sphinx (>= 1.5.1)
-	- sphinx-bootstrap-theme (>= 0.4.14)
 	- numpydoc (>= 0.6.0)
 
-To use *pygfunction*, clone or download the repository from
-https://github.com/MassimoCimmino/pygfunction to a local directory.
+**Users** - [Download the latest release
+](https://github.com/MassimoCimmino/pygfunction/releases).
+
+**Developers** - To get the latest version of the code, you can [download the
+repository from github](https://github.com/MassimoCimmino/pygfunction) or clone
+the project in a local directory using git:
+
+```
+git clone https://github.com/MassimoCimmino/pygfunction.git
+```
 
 Test that *pygfunction* is running correctly by running any of the
 provided examples in ``../pygfunction/examples/``

@@ -44,15 +44,17 @@ following packages are needed to run *pygfunction* and its examples:
 The documentation is generated using [Sphinx](http://www.sphinx-doc.org). The
 following packages are needed to build the documentation:
 - sphinx (>= 1.5.1)
-- sphinx-bootstrap-theme (>= 0.4.14)
 - numpydoc (>= 0.6.0)
 
 
 ## Quick start
 
-To get the latest version of the code, you can [download the repository from
-github](https://github.com/MassimoCimmino/pygfunction) or clone the project
-in a local directory using git:
+**Users** - [Download the latest release
+](https://github.com/MassimoCimmino/pygfunction/releases).
+
+**Developers** - To get the latest version of the code, you can [download the
+repository from github](https://github.com/MassimoCimmino/pygfunction) or clone
+the project in a local directory using git:
 
 ```
 git clone https://github.com/MassimoCimmino/pygfunction.git
@@ -60,6 +62,12 @@ git clone https://github.com/MassimoCimmino/pygfunction.git
 
 Once *pygfunction* is copied to a local directory, you can verify that it is
 working properly by running the examples in `pygfunction/examples/`.
+
+
+## Quick start
+
+*pygfunction*'s documentation is hosted on
+[ReadTheDocs](https://pygfunction.readthedocs.io).
 
 
 ## Contributing to *pygfunction*
