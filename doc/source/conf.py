@@ -45,9 +45,9 @@ source_parsers = {
 
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.doctest',
-    'sphinx.ext.todo',
+#    'sphinx.ext.autosummary',
+#    'sphinx.ext.doctest',
+#    'sphinx.ext.todo',
     'sphinx.ext.mathjax',
     'numpydoc'
 ]
