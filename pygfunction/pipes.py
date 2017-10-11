@@ -2,6 +2,7 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 from scipy.constants import pi
+from scipy.special import binom
 
 
 class _BasePipe(object):
@@ -1585,3 +1586,195 @@ def conduction_thermal_resistance_circular_pipe(r_in, r_out, k):
     R_pipe = np.log(r_out/r_in)/(2*pi*k)
 
     return R_pipe
+
+
+def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
+              x_T=np.empty(0), y_T=np.empty(0),
+              eps=1e-5, it_max=100):
+    """
+    Multipole method to calculate borehole thermal resistances in a borehole
+    heat exchanger.
+
+    Adapted from the work of Claesson and Hellstrom [#Claesson2011]_.
+
+    Parameters
+    ----------
+    pos : list
+        List of positions (x,y) (in meters) of pipes around the center
+        of the borehole.
+    r_out : array
+        Outer radius of the pipes (in meters).
+    r_b : float
+        Borehole radius (in meters).
+    k_s : float
+        Soil thermal conductivity (in W/m-K).
+    k_g : float
+        Grout thermal conductivity (in W/m-K).
+    Rfp : array
+        Fluid-to-outer-pipe-wall thermal resistance (in m-K/W).
+    J : int
+        Number of multipoles per pipe to evaluate the thermal resistances.
+        J=1 or J=2 usually gives sufficient accuracy. J=0 corresponds to the
+        line source approximation.
+    Q_p : array
+        Thermal energy flows (in W/m) from pipes.
+    T_b_av : float
+        Average borehole wall temperature (in degC).
+    eps : float, optional
+        Iteration relative accuracy.
+        Default is 1e-5.
+    it_max : int, optional
+        Maximum number of iterations.
+        Default is 100.
+    x_T : array, optional
+        x-coordinates (in meters) to calculate temperatures.
+        Default is np.empty(0).
+    y_T : array
+        y-coordinates (in meters) to calculate temperatures.
+        Default is np.empty(0).
+
+    Returns
+    -------
+    T_f : array
+        Fluid temperatures (in degC) in the pipes.
+    T : array
+        Requested temperatures (in degC).
+    it : int
+        Total number of iterations
+    eps_max : float
+        Maximum error.
+
+    References
+    ----------
+    .. [#Claesson2011] Claesson, J., & Hellstrom, G. (2011).
+       Multipole method to calculate borehole thermal resistances in a borehole
+       heat exchanger. HVAC&R Research, 17(6), 895-911. 
+
+    """
+    # Pipe coordinates in complex form
+    n_p = len(pos)
+    z_p = np.array([pos[i][0] + 1.j*pos[i][1] for i in range(n_p)])
+
+    # -------------------------------------
+    # Thermal resistance matrix R0 (EQ. 33)
+    # -------------------------------------
+    pikg = 1.0 / (2.0*pi*k_g)
+    sigma = (k_g - k_s)/(k_g + k_s)
+    beta_p = 2*pi*k_g*Rfp
+    R0 = np.zeros((n_p, n_p))
+    for i in range(n_p):
+        rbm = r_b**2/(r_b**2 - np.abs(z_p[i])**2)
+        R0[i, i] = pikg*(np.log(r_b/r_p[i]) + beta_p[i] + sigma*np.log(rbm))
+        for j in range(n_p):
+            if i != j:
+                dz = np.abs(z_p[i] - z_p[j])
+                rbm = r_b**2/np.abs(r_b**2 - z_p[j]*np.conj(z_p[i]))
+                R0[i, j] = pikg*(np.log(r_b/dz) + sigma*np.log(rbm))
+
+    # Initialize maximum error and iteration counter
+    eps_max = 1.0e99
+    it = 0
+    # -------------------
+    # Multipoles (EQ. 38)
+    # -------------------
+    if J > 0:
+        P = np.zeros((n_p, J), dtype=np.cfloat)
+        coeff = -np.array([[(1 - (k+1)*beta_p[m])/(1 + (k+1)*beta_p[m])
+                           for k in range(J)] for m in range(n_p)])
+        while eps_max > eps and it < it_max:
+            it += 1
+            eps_max = 0.
+            F = _F_mk(Q_p, P, n_p, J, r_b, r_p, z_p, pikg, sigma)
+            P_new = coeff*np.conj(F)
+            if it == 1:
+                diff0 = np.max(np.abs(P_new-P)) - np.min(np.abs(P_new-P))
+            diff = np.max(np.abs(P_new-P)) - np.min(np.abs(P_new-P))
+            eps_max = diff / diff0
+            P = P_new
+
+    # --------------------------
+    # Fluid temperatures(EQ. 32)
+    # --------------------------
+    T_f = T_b + R0.dot(Q_p)
+    if J > 0:
+        for m in range(n_p):
+            dTfm = 0. + 0.j
+            for n in range(n_p):
+                for j in range(J):
+                    # Second term
+                    if n != m:
+                        dTfm += P[n,j]*(r_p[n]/(z_p[m]-z_p[n]))**(j+1)
+                    # Third term
+                    dTfm += sigma*P[n,j]*(r_p[n]*np.conj(z_p[m]) \
+                                   /(r_b**2 - z_p[n]*np.conj(z_p[m])))**(j+1)
+            T_f[m] += np.real(dTfm)
+
+    # ------------------------------
+    # Requested temperatures(EQ. 28)
+    # ------------------------------
+    n_T = len(x_T)
+    T = np.zeros(n_T)
+    for i in range(n_T):
+        z_T = x_T[i] + 1.j*y_T[i]
+        dT0 = 0. + 0.j
+        dTJ = 0. + 0.j
+        for n in range(n_p):
+            if np.abs(z_T - z_p[n])/r_p[n] < 1.0:
+                # Coordinate inside pipe
+                T[i] = T_f[n]
+                break
+            # Order 0
+            if np.abs(z_T) <= r_b:
+                W0 = np.log(r_b/(z_T - z_p[n])) \
+                        + sigma*np.log(r_b**2/(r_b**2 - z_p[n]*np.conj(z_T)))
+            else:
+                W0 = (1. + sigma)*np.log(r_b/(z_T - z_p[n])) \
+                        + sigma*(1. + sigma)/(1. - sigma)*np.log(r_b/z_T)
+            dT0 += Q_p[n]*pikg*W0
+            # Multipoles
+            for j in range(J):
+                if np.abs(z_T) <= r_b:
+                    WJ = (r_p[n]/(z_T - z_p[n]))**(j+1) \
+                            + sigma*((r_p[n]*np.conj(z_T))
+                                     /(r_b**2 - z_p[n]*np.conj(z_T)))**(j+1)
+                else:
+                    WJ = (1. + sigma)*(r_p[n]/(z_T - z_p[n]))**(j+1)
+                dTJ += P[n,j]*WJ
+        T[i] += T_b + np.real(dT0 + dTJ)
+                
+
+    return T_f, T, it, eps_max
+            
+
+def _F_mk(Q_p, P, n_p, J, r_b, r_p, z, pikg, sigma):
+    """ 
+    Complex matrix F_mk from Claesson and Hellstrom (2011), EQ. 34
+    """
+    F = np.zeros((n_p, J), dtype=np.cfloat)
+    for m in range(n_p):
+        for k in range(J):
+            fmk = 0. + 0.j
+            for n in range(n_p):
+                # First term
+                if m != n:
+                    fmk += Q_p[n]*pikg/(k+1)*(r_p[m]/(z[n] - z[m]))**(k+1)
+                # Second term
+                fmk += sigma*Q_p[n]*pikg/(k+1)*(r_p[m]*np.conj(z[n])/(
+                        r_b**2 - z[m]*np.conj(z[n])))**(k+1)
+                for j in range(J):
+                    # Third term
+                    if m != n:
+                        fmk += P[n,j]*binom(j+k+1, j) \
+                                *r_p[n]**(j+1)*(-r_p[m])**(k+1) \
+                                /(z[m] - z[n])**(j+k+2)
+                    # Fourth term
+                    j_pend = np.min((k, j)) + 1
+                    for jp in range(j_pend):
+                        fmk += sigma*np.conj(P[n,j])*binom(j+1, jp) \
+                                *binom(j+k-jp+1, j)*r_p[n]**(j+1) \
+                                *r_p[m]**(k+1)*z[m]**(j+1-jp) \
+                                *np.conj(z[n])**(k+1-jp) \
+                                /(r_b**2 - z[m]*np.conj(z[n]))**(k+j+2-jp)
+            F[m,k] = fmk
+
+    return F
