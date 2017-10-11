@@ -1352,13 +1352,13 @@ class IndependentMultipleUTube(MultipleUTube):
         self._cp_pipe = cp_pipe
 
 
-def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, method='LineSource'):
+def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, J=2):
     """
     Evaluate thermal resistances and delta-circuit thermal resistances.
 
     This function evaluates the thermal resistances and delta-circuit thermal
-    resistances between pipes in a borehole. Thermal resistances are defined
-    by:
+    resistances between pipes in a borehole using the multipole method
+    [#Claesson2011]_. Thermal resistances are defined by:
 
     .. math:: \\mathbf{T_f} - T_b = \\mathbf{R} \\cdot \\mathbf{Q_{pipes}}
 
@@ -1375,7 +1375,7 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, method='LineSource'):
     pos : list
         List of positions (x,y) (in meters) of pipes around the center
         of the borehole.
-    r_out : float
+    r_out : float or array
         Outer radius of the pipes (in meters).
     r_b : float
         Borehole radius (in meters).
@@ -1383,11 +1383,13 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, method='LineSource'):
         Soil thermal conductivity (in W/m-K).
     k_g : float
         Grout thermal conductivity (in W/m-K).
-    Rfp : float
+    Rfp : float or array
         Fluid-to-outer-pipe-wall thermal resistance (in m-K/W).
-    method : str, defaults to 'LineSource'
-        Method used to evaluate the thermal resistances:
-            'LineSource' : Line source approximation, from [#Hellstrom1991b]_.
+    J : int, optional
+        Number of multipoles per pipe to evaluate the thermal resistances.
+        J=1 or J=2 usually gives sufficient accuracy. J=0 corresponds to the
+        line source approximation [#Hellstrom1991b]_.
+        Default is 2.
 
     Returns
     -------
@@ -1399,7 +1401,7 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, method='LineSource'):
     Examples
     --------
     >>> pos = [(-0.06, 0.), (0.06, 0.)]
-    >>> R, Rd = gt.heat_transfer.thermal_resistances(pos, 0.01, 0.075, 2., 1., 0.1)
+    >>> R, Rd = gt.pipes.thermal_resistances(pos, 0.01, 0.075, 2., 1., 0.1)
     R = [[ 0.36648149, -0.04855895],
          [-0.04855895,  0.36648149]]
     Rd = [[ 0.31792254, -2.71733044],
@@ -1410,24 +1412,34 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, method='LineSource'):
     .. [#Hellstrom1991b] Hellstrom, G. (1991). Ground heat storage. Thermal
        Analyses of Duct Storage Systems I: Theory. PhD Thesis. University of
        Lund, Department of Mathematical Physics. Lund, Sweden.
+    .. [#Claesson2011] Claesson, J., & Hellstrom, G. (2011).
+       Multipole method to calculate borehole thermal resistances in a borehole
+       heat exchanger. HVAC&R Research, 17(6), 895-911. 
 
     """
-    if method.lower() == 'linesource':
-        n = len(pos)
+    # Number of pipes
+    n_p = len(pos)
+    # If r_out and/or Rfp are supplied as float, build arrays of size n_p
+    if np.isscalar(r_out):
+        r_out = np.ones(n_p)*r_out
+    if np.isscalar(Rfp):
+        Rfp = np.ones(n_p)*Rfp
 
-        R = np.zeros((n, n))
+    R = np.zeros((n_p, n_p))
+    if J == 0:
+        # Line source approximation
         sigma = (k_g - k_s)/(k_g + k_s)
-        for i in range(n):
+        for i in range(n_p):
             xi = pos[i][0]
             yi = pos[i][1]
-            for j in range(n):
+            for j in range(n_p):
                 xj = pos[j][0]
                 yj = pos[j][1]
                 if i == j:
                     # Same-pipe thermal resistance
                     r = np.sqrt(xi**2 + yi**2)
-                    R[i, j] = Rfp + 1./(2.*pi*k_g) \
-                        * (np.log(r_b/r_out) - sigma*np.log(1. - r**2/r_b**2))
+                    R[i, j] = Rfp[i] + 1./(2.*pi*k_g) \
+                        * (np.log(r_b/r_out[i]) - sigma*np.log(1. - r**2/r_b**2))
                 else:
                     # Pipe to pipe thermal resistance
                     r = np.sqrt((xi-xj)**2 + (yi-yj)**2)
@@ -1437,12 +1449,21 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, method='LineSource'):
                                   r**2/r_b**2)
                     R[i, j] = -1./(2.*pi*k_g) \
                         * (np.log(r/r_b) + sigma*np.log(dij))
+    else:
+        # Resistances from multipole method are evaluated from the solution of
+        # n_p problems
+        for m in range(n_p):
+            Q_p = np.zeros(n_p)
+            Q_p[m] = 1.0
+            (T_f, T, it, eps_max) = multipole(pos, r_out, r_b, k_s, k_g,
+                                              Rfp, 0., Q_p, J)
+            R[:,m] = T_f
 
-        S = -np.linalg.inv(R)
-        for i in range(n):
-            S[i, i] = -(S[i, i] +
-                        sum([S[i, j] for j in range(n) if not i == j]))
-        Rd = 1.0/S
+    K = -np.linalg.inv(R)
+    for i in range(n_p):
+        K[i, i] = -(K[i, i] +
+                    sum([K[i, j] for j in range(n_p) if not i == j]))
+    Rd = 1.0/K
 
     return R, Rd
 
