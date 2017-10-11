@@ -536,6 +536,9 @@ class SingleUTube(_BasePipe):
         Grout thermal conductivity (in W/m-K).
     R_fp : float
         Fluid to outter pipe wall thermal resistance (m-K/W).
+    J : int, optional
+        Number of multipoles per pipe to evaluate the thermal resistances.
+        Default is 2.
     nPipes : int
         Number of U-Tubes, equals to 1.
     nInlets : int
@@ -550,7 +553,7 @@ class SingleUTube(_BasePipe):
        Lund, Department of Mathematical Physics. Lund, Sweden.
 
     """
-    def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_fp):
+    def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_fp, J=2):
         self.pos = pos
         self.r_in = r_in
         self.r_out = r_out
@@ -558,13 +561,14 @@ class SingleUTube(_BasePipe):
         self.k_s = k_s
         self.k_g = k_g
         self.R_fp = R_fp
+        self.J = J
         self.nPipes = 1
         self.nInlets = 1
         self.nOutlets = 1
 
         # Delta-circuit thermal resistances
         self._Rd = thermal_resistances(pos, r_out, borehole.r_b,
-                                       k_s, k_g, self.R_fp)[1]
+                                       k_s, k_g, self.R_fp, J=self.J)[1]
 
     def _continuity_condition_base(self, m_flow, cp, nSegments):
         """
@@ -837,6 +841,9 @@ class MultipleUTube(_BasePipe):
         Grout thermal conductivity (in W/m-K).
     R_fp : float
         Fluid to outter pipe wall thermal resistance (m-K/W).
+    J : int, optional
+        Number of multipoles per pipe to evaluate the thermal resistances.
+        Default is 2.
     nPipes : int
         Number of U-Tubes.
     config : str, defaults to 'parallel'
@@ -856,7 +863,7 @@ class MultipleUTube(_BasePipe):
 
     """
     def __init__(self, pos, r_in, r_out, borehole, k_s,
-                 k_g, R_fp, nPipes, config='parallel'):
+                 k_g, R_fp, nPipes, config='parallel', J=2):
         self.pos = pos
         self.r_in = r_in
         self.r_out = r_out
@@ -864,6 +871,7 @@ class MultipleUTube(_BasePipe):
         self.k_s = k_s
         self.k_g = k_g
         self.R_fp = R_fp
+        self.J = J
         self.nPipes = nPipes
         self.nInlets = 1
         self.nOutlets = 1
@@ -871,7 +879,7 @@ class MultipleUTube(_BasePipe):
 
         # Delta-circuit thermal resistances
         self._Rd = thermal_resistances(pos, r_out, borehole.r_b,
-                                       k_s, k_g, self.R_fp)[1]
+                                       k_s, k_g, self.R_fp, J=self.J)[1]
 
     def _continuity_condition_base(self, m_flow, cp, nSegments):
         """
@@ -1224,6 +1232,9 @@ class IndependentMultipleUTube(MultipleUTube):
         Grout thermal conductivity (in W/m-K).
     R_fp : float
         Fluid to outter pipe wall thermal resistance (m-K/W).
+    J : int, optional
+        Number of multipoles per pipe to evaluate the thermal resistances.
+        Default is 2.
     nPipes : int
         Number of U-Tubes.
     nInlets : int
@@ -1239,7 +1250,7 @@ class IndependentMultipleUTube(MultipleUTube):
 
     """
     def __init__(self, pos, r_in, r_out, borehole, k_s,
-                 k_g, R_fp, nPipes):
+                 k_g, R_fp, nPipes, J=2):
         self.pos = pos
         self.r_in = r_in
         self.r_out = r_out
@@ -1247,13 +1258,14 @@ class IndependentMultipleUTube(MultipleUTube):
         self.k_s = k_s
         self.k_g = k_g
         self.R_fp = R_fp
+        self.J = J
         self.nPipes = nPipes
         self.nInlets = nPipes
         self.nOutlets = nPipes
 
         # Delta-circuit thermal resistances
         self._Rd = thermal_resistances(pos, r_out, borehole.r_b,
-                                       k_s, k_g, self.R_fp)[1]
+                                       k_s, k_g, self.R_fp, J=self.J)[1]
 
     def _continuity_condition_base(self, m_flow, cp, nSegments):
         """
