@@ -1406,14 +1406,15 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, J=2):
     Returns
     -------
     R : array
-        Thermal resistances.
+        Thermal resistances (in m-K/W).
     Rd : array
-        Delta-circuit thermal resistances.
+        Delta-circuit thermal resistances (in m-K/W).
 
     Examples
     --------
     >>> pos = [(-0.06, 0.), (0.06, 0.)]
-    >>> R, Rd = gt.pipes.thermal_resistances(pos, 0.01, 0.075, 2., 1., 0.1)
+    >>> R, Rd = gt.pipes.thermal_resistances(pos, 0.01, 0.075, 2., 1., 0.1,
+                                             J=0)
     R = [[ 0.36648149, -0.04855895],
          [-0.04855895,  0.36648149]]
     Rd = [[ 0.31792254, -2.71733044],
@@ -1471,6 +1472,7 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, J=2):
                                               Rfp, 0., Q_p, J)
             R[:,m] = T_f
 
+    # Delta-circuit thermal resistances
     K = -np.linalg.inv(R)
     for i in range(n_p):
         K[i, i] = -(K[i, i] +
@@ -1628,14 +1630,14 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
     Multipole method to calculate borehole thermal resistances in a borehole
     heat exchanger.
 
-    Adapted from the work of Claesson and Hellstrom [#Claesson2011]_.
+    Adapted from the work of Claesson and Hellstrom [#Claesson2011b]_.
 
     Parameters
     ----------
     pos : list
         List of positions (x,y) (in meters) of pipes around the center
         of the borehole.
-    r_out : array
+    r_p : float or array
         Outer radius of the pipes (in meters).
     r_b : float
         Borehole radius (in meters).
@@ -1643,7 +1645,7 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
         Soil thermal conductivity (in W/m-K).
     k_g : float
         Grout thermal conductivity (in W/m-K).
-    Rfp : array
+    Rfp : float or array
         Fluid-to-outer-pipe-wall thermal resistance (in m-K/W).
     J : int
         Number of multipoles per pipe to evaluate the thermal resistances.
@@ -1662,7 +1664,7 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
     x_T : array, optional
         x-coordinates (in meters) to calculate temperatures.
         Default is np.empty(0).
-    y_T : array
+    y_T : array, optional
         y-coordinates (in meters) to calculate temperatures.
         Default is np.empty(0).
 
@@ -1679,7 +1681,7 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
 
     References
     ----------
-    .. [#Claesson2011] Claesson, J., & Hellstrom, G. (2011).
+    .. [#Claesson2011b] Claesson, J., & Hellstrom, G. (2011).
        Multipole method to calculate borehole thermal resistances in a borehole
        heat exchanger. HVAC&R Research, 17(6), 895-911. 
 
@@ -1687,6 +1689,11 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
     # Pipe coordinates in complex form
     n_p = len(pos)
     z_p = np.array([pos[i][0] + 1.j*pos[i][1] for i in range(n_p)])
+    # If r_out and/or Rfp are supplied as float, build arrays of size n_p
+    if np.isscalar(r_p):
+        r_p = np.ones(n_p)*r_p
+    if np.isscalar(Rfp):
+        Rfp = np.ones(n_p)*Rfp
 
     # -------------------------------------
     # Thermal resistance matrix R0 (EQ. 33)
@@ -1758,27 +1765,30 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
                 break
             # Order 0
             if np.abs(z_T) <= r_b:
+                # Coordinate inside borehole
                 W0 = np.log(r_b/(z_T - z_p[n])) \
                         + sigma*np.log(r_b**2/(r_b**2 - z_p[n]*np.conj(z_T)))
             else:
+                # Coordinate outside borehole
                 W0 = (1. + sigma)*np.log(r_b/(z_T - z_p[n])) \
                         + sigma*(1. + sigma)/(1. - sigma)*np.log(r_b/z_T)
             dT0 += Q_p[n]*pikg*W0
             # Multipoles
             for j in range(J):
                 if np.abs(z_T) <= r_b:
+                # Coordinate inside borehole
                     WJ = (r_p[n]/(z_T - z_p[n]))**(j+1) \
                             + sigma*((r_p[n]*np.conj(z_T))
                                      /(r_b**2 - z_p[n]*np.conj(z_T)))**(j+1)
                 else:
+                # Coordinate outside borehole
                     WJ = (1. + sigma)*(r_p[n]/(z_T - z_p[n]))**(j+1)
                 dTJ += P[n,j]*WJ
         else:
             T[i] += T_b + np.real(dT0 + dTJ)
-                
 
     return T_f, T, it, eps_max
-            
+
 
 def _F_mk(Q_p, P, n_p, J, r_b, r_p, z, pikg, sigma):
     """ 

@@ -41,7 +41,7 @@ def main():
     rp_out = 0.02*np.ones(n_p)
 
     # Pipe positions
-    # Single U-tube [(x_in, y_in), (x_out, y_out)]
+    # Single U-tube [(x_1, y_1), (x_2, y_2)]
     pos_pipes = [(0.03, 0.00), (-0.03, 0.02)]
 
     # Ground properties
@@ -101,7 +101,8 @@ def main():
     (T_f, T, it, eps_max) = gt.pipes.multipole(pos_pipes, rp_out, r_b, k_s,
                                                k_g, R_fp, T_b, Q, J,
                                                x_T=x, y_T=y)
-    
+
+    # Load validation data
     data = np.loadtxt(filePath, skiprows=1)
 
     # Plot temperatures
@@ -131,8 +132,9 @@ def main():
     # -------------------------------------------------------------------------
 
     # Grid points to evaluate temperatures
-    x = np.linspace(-0.1, 0.1, num=200)
-    y = np.linspace(-0.1, 0.1, num=200)
+    N_xy = 200
+    x = np.linspace(-0.1, 0.1, num=N_xy)
+    y = np.linspace(-0.1, 0.1, num=N_xy)
     X, Y = np.meshgrid(x, y)
 
     # Evaluate temperatures using multipole method
@@ -155,7 +157,8 @@ def main():
                           fill=False, linestyle='-', linewidth=4.)
         ax1.add_patch(pipe)
     # Temperature contours
-    CS = ax1.contour(X, Y, T.reshape((200, 200)), np.linspace(-0.2, 1.0, num=7))
+    CS = ax1.contour(X, Y, T.reshape((N_xy, N_xy)),
+                     np.linspace(-0.2, 1.0, num=7))
     plt.clabel(CS, inline=1, fontsize=10)
     # Axis labels
     ax1.set_xlabel(r'$x$')
