@@ -5,9 +5,9 @@ Evaluation of thermal resistances using the multipole method
 ************************************************************
 
 This example demonstrates the use of the
-:doc:`pipes.thermal_resistances <pipes.thermal_resistances>` function to
+:py:func:`.pipes.thermal_resistances` function to
 evaluate internal thermal resistances in a borehole. The example also covers the
-use of the :doc:`pipes.multipole <pipes.multipole>` function to evaluate the
+use of the :py:func:`.pipes.multipole` function to evaluate the
 2D temperature field in and around a borehole.
 
 The thermal resistances of a borehole with two pipes are evaluated using the
