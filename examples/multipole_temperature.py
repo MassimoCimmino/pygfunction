@@ -13,7 +13,6 @@
 from __future__ import division, print_function, absolute_import
 
 import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
 from matplotlib.ticker import AutoMinorLocator
 import numpy as np
 import os, sys
