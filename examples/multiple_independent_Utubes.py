@@ -75,7 +75,7 @@ def main():
     borehole = gt.boreholes.Borehole(H, D, r_b, 0., 0.)
     # Multiple independent U-tubes
     MultipleUTube = gt.pipes.IndependentMultipleUTube(
-            pos_pipes, rp_in, rp_out, borehole, k_s, k_g, R_fp, nPipes)
+            pos_pipes, rp_in, rp_out, borehole, k_s, k_g, R_fp, nPipes, J=0)
 
     # -------------------------------------------------------------------------
     # Evaluate the outlet fluid temperatures and fluid temperature profiles

@@ -16,3 +16,4 @@ Examples
    example_fluid_temperature
    example_equal_inlet_temperature
    example_multiple_independent_Utubes
+   example_multipole_temperature

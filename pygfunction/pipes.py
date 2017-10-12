@@ -2,6 +2,7 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 from scipy.constants import pi
+from scipy.special import binom
 
 
 class _BasePipe(object):
@@ -535,6 +536,9 @@ class SingleUTube(_BasePipe):
         Grout thermal conductivity (in W/m-K).
     R_fp : float
         Fluid to outter pipe wall thermal resistance (m-K/W).
+    J : int, optional
+        Number of multipoles per pipe to evaluate the thermal resistances.
+        Default is 2.
     nPipes : int
         Number of U-Tubes, equals to 1.
     nInlets : int
@@ -549,7 +553,7 @@ class SingleUTube(_BasePipe):
        Lund, Department of Mathematical Physics. Lund, Sweden.
 
     """
-    def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_fp):
+    def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_fp, J=2):
         self.pos = pos
         self.r_in = r_in
         self.r_out = r_out
@@ -557,13 +561,14 @@ class SingleUTube(_BasePipe):
         self.k_s = k_s
         self.k_g = k_g
         self.R_fp = R_fp
+        self.J = J
         self.nPipes = 1
         self.nInlets = 1
         self.nOutlets = 1
 
         # Delta-circuit thermal resistances
         self._Rd = thermal_resistances(pos, r_out, borehole.r_b,
-                                       k_s, k_g, self.R_fp)[1]
+                                       k_s, k_g, self.R_fp, J=self.J)[1]
 
     def _continuity_condition_base(self, m_flow, cp, nSegments):
         """
@@ -836,6 +841,9 @@ class MultipleUTube(_BasePipe):
         Grout thermal conductivity (in W/m-K).
     R_fp : float
         Fluid to outter pipe wall thermal resistance (m-K/W).
+    J : int, optional
+        Number of multipoles per pipe to evaluate the thermal resistances.
+        Default is 2.
     nPipes : int
         Number of U-Tubes.
     config : str, defaults to 'parallel'
@@ -855,7 +863,7 @@ class MultipleUTube(_BasePipe):
 
     """
     def __init__(self, pos, r_in, r_out, borehole, k_s,
-                 k_g, R_fp, nPipes, config='parallel'):
+                 k_g, R_fp, nPipes, config='parallel', J=2):
         self.pos = pos
         self.r_in = r_in
         self.r_out = r_out
@@ -863,6 +871,7 @@ class MultipleUTube(_BasePipe):
         self.k_s = k_s
         self.k_g = k_g
         self.R_fp = R_fp
+        self.J = J
         self.nPipes = nPipes
         self.nInlets = 1
         self.nOutlets = 1
@@ -870,7 +879,7 @@ class MultipleUTube(_BasePipe):
 
         # Delta-circuit thermal resistances
         self._Rd = thermal_resistances(pos, r_out, borehole.r_b,
-                                       k_s, k_g, self.R_fp)[1]
+                                       k_s, k_g, self.R_fp, J=self.J)[1]
 
     def _continuity_condition_base(self, m_flow, cp, nSegments):
         """
@@ -1223,6 +1232,9 @@ class IndependentMultipleUTube(MultipleUTube):
         Grout thermal conductivity (in W/m-K).
     R_fp : float
         Fluid to outter pipe wall thermal resistance (m-K/W).
+    J : int, optional
+        Number of multipoles per pipe to evaluate the thermal resistances.
+        Default is 2.
     nPipes : int
         Number of U-Tubes.
     nInlets : int
@@ -1238,7 +1250,7 @@ class IndependentMultipleUTube(MultipleUTube):
 
     """
     def __init__(self, pos, r_in, r_out, borehole, k_s,
-                 k_g, R_fp, nPipes):
+                 k_g, R_fp, nPipes, J=2):
         self.pos = pos
         self.r_in = r_in
         self.r_out = r_out
@@ -1246,13 +1258,14 @@ class IndependentMultipleUTube(MultipleUTube):
         self.k_s = k_s
         self.k_g = k_g
         self.R_fp = R_fp
+        self.J = J
         self.nPipes = nPipes
         self.nInlets = nPipes
         self.nOutlets = nPipes
 
         # Delta-circuit thermal resistances
         self._Rd = thermal_resistances(pos, r_out, borehole.r_b,
-                                       k_s, k_g, self.R_fp)[1]
+                                       k_s, k_g, self.R_fp, J=self.J)[1]
 
     def _continuity_condition_base(self, m_flow, cp, nSegments):
         """
@@ -1351,13 +1364,13 @@ class IndependentMultipleUTube(MultipleUTube):
         self._cp_pipe = cp_pipe
 
 
-def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, method='LineSource'):
+def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, J=2):
     """
     Evaluate thermal resistances and delta-circuit thermal resistances.
 
     This function evaluates the thermal resistances and delta-circuit thermal
-    resistances between pipes in a borehole. Thermal resistances are defined
-    by:
+    resistances between pipes in a borehole using the multipole method
+    [#Claesson2011]_. Thermal resistances are defined by:
 
     .. math:: \\mathbf{T_f} - T_b = \\mathbf{R} \\cdot \\mathbf{Q_{pipes}}
 
@@ -1374,7 +1387,7 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, method='LineSource'):
     pos : list
         List of positions (x,y) (in meters) of pipes around the center
         of the borehole.
-    r_out : float
+    r_out : float or array
         Outer radius of the pipes (in meters).
     r_b : float
         Borehole radius (in meters).
@@ -1382,23 +1395,26 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, method='LineSource'):
         Soil thermal conductivity (in W/m-K).
     k_g : float
         Grout thermal conductivity (in W/m-K).
-    Rfp : float
+    Rfp : float or array
         Fluid-to-outer-pipe-wall thermal resistance (in m-K/W).
-    method : str, defaults to 'LineSource'
-        Method used to evaluate the thermal resistances:
-            'LineSource' : Line source approximation, from [#Hellstrom1991b]_.
+    J : int, optional
+        Number of multipoles per pipe to evaluate the thermal resistances.
+        J=1 or J=2 usually gives sufficient accuracy. J=0 corresponds to the
+        line source approximation [#Hellstrom1991b]_.
+        Default is 2.
 
     Returns
     -------
     R : array
-        Thermal resistances.
+        Thermal resistances (in m-K/W).
     Rd : array
-        Delta-circuit thermal resistances.
+        Delta-circuit thermal resistances (in m-K/W).
 
     Examples
     --------
     >>> pos = [(-0.06, 0.), (0.06, 0.)]
-    >>> R, Rd = gt.heat_transfer.thermal_resistances(pos, 0.01, 0.075, 2., 1., 0.1)
+    >>> R, Rd = gt.pipes.thermal_resistances(pos, 0.01, 0.075, 2., 1., 0.1,
+                                             J=0)
     R = [[ 0.36648149, -0.04855895],
          [-0.04855895,  0.36648149]]
     Rd = [[ 0.31792254, -2.71733044],
@@ -1409,24 +1425,34 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, method='LineSource'):
     .. [#Hellstrom1991b] Hellstrom, G. (1991). Ground heat storage. Thermal
        Analyses of Duct Storage Systems I: Theory. PhD Thesis. University of
        Lund, Department of Mathematical Physics. Lund, Sweden.
+    .. [#Claesson2011] Claesson, J., & Hellstrom, G. (2011).
+       Multipole method to calculate borehole thermal resistances in a borehole
+       heat exchanger. HVAC&R Research, 17(6), 895-911. 
 
     """
-    if method.lower() == 'linesource':
-        n = len(pos)
+    # Number of pipes
+    n_p = len(pos)
+    # If r_out and/or Rfp are supplied as float, build arrays of size n_p
+    if np.isscalar(r_out):
+        r_out = np.ones(n_p)*r_out
+    if np.isscalar(Rfp):
+        Rfp = np.ones(n_p)*Rfp
 
-        R = np.zeros((n, n))
+    R = np.zeros((n_p, n_p))
+    if J == 0:
+        # Line source approximation
         sigma = (k_g - k_s)/(k_g + k_s)
-        for i in range(n):
+        for i in range(n_p):
             xi = pos[i][0]
             yi = pos[i][1]
-            for j in range(n):
+            for j in range(n_p):
                 xj = pos[j][0]
                 yj = pos[j][1]
                 if i == j:
                     # Same-pipe thermal resistance
                     r = np.sqrt(xi**2 + yi**2)
-                    R[i, j] = Rfp + 1./(2.*pi*k_g) \
-                        * (np.log(r_b/r_out) - sigma*np.log(1. - r**2/r_b**2))
+                    R[i, j] = Rfp[i] + 1./(2.*pi*k_g) \
+                        * (np.log(r_b/r_out[i]) - sigma*np.log(1. - r**2/r_b**2))
                 else:
                     # Pipe to pipe thermal resistance
                     r = np.sqrt((xi-xj)**2 + (yi-yj)**2)
@@ -1436,12 +1462,22 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, method='LineSource'):
                                   r**2/r_b**2)
                     R[i, j] = -1./(2.*pi*k_g) \
                         * (np.log(r/r_b) + sigma*np.log(dij))
+    else:
+        # Resistances from multipole method are evaluated from the solution of
+        # n_p problems
+        for m in range(n_p):
+            Q_p = np.zeros(n_p)
+            Q_p[m] = 1.0
+            (T_f, T, it, eps_max) = multipole(pos, r_out, r_b, k_s, k_g,
+                                              Rfp, 0., Q_p, J)
+            R[:,m] = T_f
 
-        S = -np.linalg.inv(R)
-        for i in range(n):
-            S[i, i] = -(S[i, i] +
-                        sum([S[i, j] for j in range(n) if not i == j]))
-        Rd = 1.0/S
+    # Delta-circuit thermal resistances
+    K = -np.linalg.inv(R)
+    for i in range(n_p):
+        K[i, i] = -(K[i, i] +
+                    sum([K[i, j] for j in range(n_p) if not i == j]))
+    Rd = 1.0/K
 
     return R, Rd
 
@@ -1585,3 +1621,204 @@ def conduction_thermal_resistance_circular_pipe(r_in, r_out, k):
     R_pipe = np.log(r_out/r_in)/(2*pi*k)
 
     return R_pipe
+
+
+def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
+              x_T=np.empty(0), y_T=np.empty(0),
+              eps=1e-5, it_max=100):
+    """
+    Multipole method to calculate borehole thermal resistances in a borehole
+    heat exchanger.
+
+    Adapted from the work of Claesson and Hellstrom [#Claesson2011b]_.
+
+    Parameters
+    ----------
+    pos : list
+        List of positions (x,y) (in meters) of pipes around the center
+        of the borehole.
+    r_p : float or array
+        Outer radius of the pipes (in meters).
+    r_b : float
+        Borehole radius (in meters).
+    k_s : float
+        Soil thermal conductivity (in W/m-K).
+    k_g : float
+        Grout thermal conductivity (in W/m-K).
+    Rfp : float or array
+        Fluid-to-outer-pipe-wall thermal resistance (in m-K/W).
+    J : int
+        Number of multipoles per pipe to evaluate the thermal resistances.
+        J=1 or J=2 usually gives sufficient accuracy. J=0 corresponds to the
+        line source approximation.
+    Q_p : array
+        Thermal energy flows (in W/m) from pipes.
+    T_b_av : float
+        Average borehole wall temperature (in degC).
+    eps : float, optional
+        Iteration relative accuracy.
+        Default is 1e-5.
+    it_max : int, optional
+        Maximum number of iterations.
+        Default is 100.
+    x_T : array, optional
+        x-coordinates (in meters) to calculate temperatures.
+        Default is np.empty(0).
+    y_T : array, optional
+        y-coordinates (in meters) to calculate temperatures.
+        Default is np.empty(0).
+
+    Returns
+    -------
+    T_f : array
+        Fluid temperatures (in degC) in the pipes.
+    T : array
+        Requested temperatures (in degC).
+    it : int
+        Total number of iterations
+    eps_max : float
+        Maximum error.
+
+    References
+    ----------
+    .. [#Claesson2011b] Claesson, J., & Hellstrom, G. (2011).
+       Multipole method to calculate borehole thermal resistances in a borehole
+       heat exchanger. HVAC&R Research, 17(6), 895-911. 
+
+    """
+    # Pipe coordinates in complex form
+    n_p = len(pos)
+    z_p = np.array([pos[i][0] + 1.j*pos[i][1] for i in range(n_p)])
+    # If r_out and/or Rfp are supplied as float, build arrays of size n_p
+    if np.isscalar(r_p):
+        r_p = np.ones(n_p)*r_p
+    if np.isscalar(Rfp):
+        Rfp = np.ones(n_p)*Rfp
+
+    # -------------------------------------
+    # Thermal resistance matrix R0 (EQ. 33)
+    # -------------------------------------
+    pikg = 1.0 / (2.0*pi*k_g)
+    sigma = (k_g - k_s)/(k_g + k_s)
+    beta_p = 2*pi*k_g*Rfp
+    R0 = np.zeros((n_p, n_p))
+    for i in range(n_p):
+        rbm = r_b**2/(r_b**2 - np.abs(z_p[i])**2)
+        R0[i, i] = pikg*(np.log(r_b/r_p[i]) + beta_p[i] + sigma*np.log(rbm))
+        for j in range(n_p):
+            if i != j:
+                dz = np.abs(z_p[i] - z_p[j])
+                rbm = r_b**2/np.abs(r_b**2 - z_p[j]*np.conj(z_p[i]))
+                R0[i, j] = pikg*(np.log(r_b/dz) + sigma*np.log(rbm))
+
+    # Initialize maximum error and iteration counter
+    eps_max = 1.0e99
+    it = 0
+    # -------------------
+    # Multipoles (EQ. 38)
+    # -------------------
+    if J > 0:
+        P = np.zeros((n_p, J), dtype=np.cfloat)
+        coeff = -np.array([[(1 - (k+1)*beta_p[m])/(1 + (k+1)*beta_p[m])
+                           for k in range(J)] for m in range(n_p)])
+        while eps_max > eps and it < it_max:
+            it += 1
+            eps_max = 0.
+            F = _F_mk(Q_p, P, n_p, J, r_b, r_p, z_p, pikg, sigma)
+            P_new = coeff*np.conj(F)
+            if it == 1:
+                diff0 = np.max(np.abs(P_new-P)) - np.min(np.abs(P_new-P))
+            diff = np.max(np.abs(P_new-P)) - np.min(np.abs(P_new-P))
+            eps_max = diff / diff0
+            P = P_new
+
+    # --------------------------
+    # Fluid temperatures(EQ. 32)
+    # --------------------------
+    T_f = T_b + R0.dot(Q_p)
+    if J > 0:
+        for m in range(n_p):
+            dTfm = 0. + 0.j
+            for n in range(n_p):
+                for j in range(J):
+                    # Second term
+                    if n != m:
+                        dTfm += P[n,j]*(r_p[n]/(z_p[m]-z_p[n]))**(j+1)
+                    # Third term
+                    dTfm += sigma*P[n,j]*(r_p[n]*np.conj(z_p[m]) \
+                                   /(r_b**2 - z_p[n]*np.conj(z_p[m])))**(j+1)
+            T_f[m] += np.real(dTfm)
+
+    # ------------------------------
+    # Requested temperatures(EQ. 28)
+    # ------------------------------
+    n_T = len(x_T)
+    T = np.zeros(n_T)
+    for i in range(n_T):
+        z_T = x_T[i] + 1.j*y_T[i]
+        dT0 = 0. + 0.j
+        dTJ = 0. + 0.j
+        for n in range(n_p):
+            if np.abs(z_T - z_p[n])/r_p[n] < 1.0:
+                # Coordinate inside pipe
+                T[i] = T_f[n]
+                break
+            # Order 0
+            if np.abs(z_T) <= r_b:
+                # Coordinate inside borehole
+                W0 = np.log(r_b/(z_T - z_p[n])) \
+                        + sigma*np.log(r_b**2/(r_b**2 - z_p[n]*np.conj(z_T)))
+            else:
+                # Coordinate outside borehole
+                W0 = (1. + sigma)*np.log(r_b/(z_T - z_p[n])) \
+                        + sigma*(1. + sigma)/(1. - sigma)*np.log(r_b/z_T)
+            dT0 += Q_p[n]*pikg*W0
+            # Multipoles
+            for j in range(J):
+                if np.abs(z_T) <= r_b:
+                # Coordinate inside borehole
+                    WJ = (r_p[n]/(z_T - z_p[n]))**(j+1) \
+                            + sigma*((r_p[n]*np.conj(z_T))
+                                     /(r_b**2 - z_p[n]*np.conj(z_T)))**(j+1)
+                else:
+                # Coordinate outside borehole
+                    WJ = (1. + sigma)*(r_p[n]/(z_T - z_p[n]))**(j+1)
+                dTJ += P[n,j]*WJ
+        else:
+            T[i] += T_b + np.real(dT0 + dTJ)
+
+    return T_f, T, it, eps_max
+
+
+def _F_mk(Q_p, P, n_p, J, r_b, r_p, z, pikg, sigma):
+    """ 
+    Complex matrix F_mk from Claesson and Hellstrom (2011), EQ. 34
+    """
+    F = np.zeros((n_p, J), dtype=np.cfloat)
+    for m in range(n_p):
+        for k in range(J):
+            fmk = 0. + 0.j
+            for n in range(n_p):
+                # First term
+                if m != n:
+                    fmk += Q_p[n]*pikg/(k+1)*(r_p[m]/(z[n] - z[m]))**(k+1)
+                # Second term
+                fmk += sigma*Q_p[n]*pikg/(k+1)*(r_p[m]*np.conj(z[n])/(
+                        r_b**2 - z[m]*np.conj(z[n])))**(k+1)
+                for j in range(J):
+                    # Third term
+                    if m != n:
+                        fmk += P[n,j]*binom(j+k+1, j) \
+                                *r_p[n]**(j+1)*(-r_p[m])**(k+1) \
+                                /(z[m] - z[n])**(j+k+2)
+                    # Fourth term
+                    j_pend = np.min((k, j)) + 1
+                    for jp in range(j_pend):
+                        fmk += sigma*np.conj(P[n,j])*binom(j+1, jp) \
+                                *binom(j+k-jp+1, j)*r_p[n]**(j+1) \
+                                *r_p[m]**(k+1)*z[m]**(j+1-jp) \
+                                *np.conj(z[n])**(k+1-jp) \
+                                /(r_b**2 - z[m]*np.conj(z[n]))**(k+j+2-jp)
+            F[m,k] = fmk
+
+    return F
