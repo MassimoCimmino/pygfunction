@@ -1773,7 +1773,8 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
                 else:
                     WJ = (1. + sigma)*(r_p[n]/(z_T - z_p[n]))**(j+1)
                 dTJ += P[n,j]*WJ
-        T[i] += T_b + np.real(dT0 + dTJ)
+        else:
+            T[i] += T_b + np.real(dT0 + dTJ)
                 
 
     return T_f, T, it, eps_max
