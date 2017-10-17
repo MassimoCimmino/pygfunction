@@ -194,7 +194,7 @@ class _BasePipe(object):
                                                                  nSegments)
         Qf = a_in.dot(Tin).flatten() + a_b.dot(Tb).flatten()
         # Return float if Tb was supplied as scalar
-        if np.isscalar(Tb) and not np.isscalar(Qf):
+        if np.isscalar(Tin) and not np.isscalar(Qf):
             Qf = np.asscalar(Qf)
         return Qf
 
