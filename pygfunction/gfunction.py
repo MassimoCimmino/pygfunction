@@ -215,7 +215,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
     # space vector of the borehole heat extraction rates and borehole wall
     # temperature (equal for all segments), [B] is a coefficient vector.
     # -------------------------------------------------------------------------
-    
+
     # Segment lengths
     Hb = np.array([b.H for b in boreSegments])
     # Vector of time steps
@@ -383,7 +383,7 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
     # temperatures and inlet fluid temperature (equal for all boreholes),
     # [B] is a coefficient vector.
     # -------------------------------------------------------------------------
-    
+
     # Segment lengths
     Hb = np.array([b.H for b in boreSegments])
     # Vector of time steps

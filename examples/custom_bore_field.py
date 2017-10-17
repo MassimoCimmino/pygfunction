@@ -12,7 +12,7 @@ import sys
 # Add path to pygfunction to Python path
 packagePath = os.path.normpath(
         os.path.join(os.path.normpath(os.path.dirname(__file__)),
-                    '..'))
+                     '..'))
 sys.path.append(packagePath)
 
 import pygfunction as gt
@@ -27,8 +27,6 @@ def main():
     D = 4.0             # Borehole buried depth (m)
     H = 150.0           # Borehole length (m)
     r_b = 0.075         # Borehole radius (m)
-    N_1 = 4             # Number of boreholes in the x-direction (columns)
-    N_2 = 3             # Number of boreholes in the y-direction (rows)
 
     # Borehole positions
     pos = [(0.0, 0.0),

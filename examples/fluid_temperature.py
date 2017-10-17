@@ -23,7 +23,7 @@ import sys
 # Add path to pygfunction to Python path
 packagePath = os.path.normpath(
         os.path.join(os.path.normpath(os.path.dirname(__file__)),
-                    '..'))
+                     '..'))
 sys.path.append(packagePath)
 
 import pygfunction as gt
@@ -96,7 +96,7 @@ def main():
     gFunc = gt.gfunction.uniform_temperature(boreField, time_req, alpha,
                                              nSegments=nSegments)
     # Initialize load aggregation scheme
-    LoadAgg.initialize(np.reshape(gFunc, (1,1,-1))/(2*pi*k_s))
+    LoadAgg.initialize(np.reshape(gFunc, (1, 1, -1))/(2*pi*k_s))
 
     # -------------------------------------------------------------------------
     # Initialize pipe models
@@ -241,10 +241,10 @@ def main():
                                                      m_flow,
                                                      cp_f)
     T_f_double_ser = DoubleUTube_ser.get_temperature(z,
-                                                      T_f_in_double_ser[it],
-                                                      T_b[it],
-                                                      m_flow,
-                                                      cp_f)
+                                                     T_f_in_double_ser[it],
+                                                     T_b[it],
+                                                     m_flow,
+                                                     cp_f)
 
     plt.rc('figure')
     fig = plt.figure()
@@ -305,14 +305,14 @@ def synthetic_load(x):
     E = 0.01
     F = 0.0
     G = 0.95
-    
+
     func = (168.0-C)/168.0
-    for i in [1,2,3]:
+    for i in [1, 2, 3]:
         func += 1.0/(i*pi)*(np.cos(C*pi*i/84.0)-1.0) \
                           *(np.sin(pi*i/84.0*(x-B)))
     func = func*A*np.sin(pi/12.0*(x-B)) \
            *np.sin(pi/4380.0*(x-B))
-    
+
     y = func + (-1.0)**np.floor(D/8760.0*(x-B))*abs(func) \
       + E*(-1.0)**np.floor(D/8760.0*(x-B))/np.sign(np.cos(D*pi/4380.0*(x-F))+G)
     return -y

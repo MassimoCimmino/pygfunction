@@ -538,7 +538,7 @@ class _BasePipe(object):
         self._stored_nSegments = [np.nan for i in range(nMethods)]
         self._m_flow_cp_model_variables = np.empty(self.nInlets)
         self._nSegments_model_variables = np.nan
-        
+
         return
 
     def _set_stored_coefficients(self, m_flow, cp, nSegments, coefficients,
@@ -558,7 +558,7 @@ class _BasePipe(object):
         stored_m_flow_cp = self._m_flow_cp_model_variables
         stored_nSegments = self._nSegments_model_variables
         if (np.allclose(m_flow*cp, stored_m_flow_cp, rtol=tol)
-            and nSegments == stored_nSegments):
+                and nSegments == stored_nSegments):
             check = True
         else:
             self._update_model_variables(m_flow, cp, nSegments)
@@ -572,7 +572,7 @@ class _BasePipe(object):
         stored_m_flow_cp = self._stored_m_flow_cp[method_id]
         stored_nSegments = self._stored_nSegments[method_id]
         if (np.allclose(m_flow*cp, stored_m_flow_cp, rtol=tol)
-            and nSegments == stored_nSegments):
+                and nSegments == stored_nSegments):
             check = True
         else:
             check = False
@@ -699,7 +699,8 @@ class SingleUTube(_BasePipe):
 
             .. math::
 
-                \\mathbf{a_{out}} T_{f,out} = \\mathbf{a_{in}} \\mathbf{T_{f,in}}
+                \\mathbf{a_{out}} T_{f,out} =
+                \\mathbf{a_{in}} \\mathbf{T_{f,in}}
                 + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
@@ -1060,7 +1061,7 @@ class MultipleUTube(_BasePipe):
             # Intermediate coefficient matrices:
             # [T_{f,out}] = d_u*[T_{f,u}](z=0)
             mcp = self._m_flow_pipe[-self.nPipes:]*self._cp_pipe[-self.nPipes:]
-            d_u = np.reshape(mcp/np.sum(mcp), (1,-1))
+            d_u = np.reshape(mcp/np.sum(mcp), (1, -1))
 
             # Final coefficient matrices for continuity at depth (z = H):
             # [a_out][T_{f,out}] = [a_in]*[T_{f,in}] + [a_b]*[T_b]
@@ -1577,7 +1578,7 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, J=2):
        Lund, Department of Mathematical Physics. Lund, Sweden.
     .. [#Claesson2011] Claesson, J., & Hellstrom, G. (2011).
        Multipole method to calculate borehole thermal resistances in a borehole
-       heat exchanger. HVAC&R Research, 17(6), 895-911. 
+       heat exchanger. HVAC&R Research, 17(6), 895-911.
 
     """
     # Number of pipes
@@ -1602,7 +1603,7 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, J=2):
                     # Same-pipe thermal resistance
                     r = np.sqrt(xi**2 + yi**2)
                     R[i, j] = Rfp[i] + 1./(2.*pi*k_g) \
-                        * (np.log(r_b/r_out[i]) - sigma*np.log(1. - r**2/r_b**2))
+                        *(np.log(r_b/r_out[i]) - sigma*np.log(1 - r**2/r_b**2))
                 else:
                     # Pipe to pipe thermal resistance
                     r = np.sqrt((xi-xj)**2 + (yi-yj)**2)
@@ -1611,7 +1612,7 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, J=2):
                     dij = np.sqrt((1. - ri**2/r_b**2)*(1.-rj**2/r_b**2) +
                                   r**2/r_b**2)
                     R[i, j] = -1./(2.*pi*k_g) \
-                        * (np.log(r/r_b) + sigma*np.log(dij))
+                        *(np.log(r/r_b) + sigma*np.log(dij))
     else:
         # Resistances from multipole method are evaluated from the solution of
         # n_p problems
@@ -1683,7 +1684,7 @@ def fluid_friction_factor_circular_pipe(m_flow, r_in, visc, den, epsilon,
             df = 1.0e99
             while abs(df/fDarcy) > tol:
                 one_over_sqrt_f = -2.0 * np.log10(E / 3.7
-                                                  + 2.51 / (Re * np.sqrt(fDarcy)))
+                                                  + 2.51/(Re*np.sqrt(fDarcy)))
                 fDarcy_new = 1.0 / one_over_sqrt_f**2
                 df = fDarcy_new - fDarcy
                 fDarcy = fDarcy_new
@@ -1833,7 +1834,7 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
     ----------
     .. [#Claesson2011b] Claesson, J., & Hellstrom, G. (2011).
        Multipole method to calculate borehole thermal resistances in a borehole
-       heat exchanger. HVAC&R Research, 17(6), 895-911. 
+       heat exchanger. HVAC&R Research, 17(6), 895-911.
 
     """
     # Pipe coordinates in complex form
@@ -1899,9 +1900,9 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
                                    /(r_b**2 - z_p[n]*np.conj(z_p[m])))**(j+1)
             T_f[m] += np.real(dTfm)
 
-    # ------------------------------
-    # Requested temperatures(EQ. 28)
-    # ------------------------------
+    # -------------------------------
+    # Requested temperatures (EQ. 28)
+    # -------------------------------
     n_T = len(x_T)
     T = np.zeros(n_T)
     for i in range(n_T):
@@ -1926,12 +1927,12 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
             # Multipoles
             for j in range(J):
                 if np.abs(z_T) <= r_b:
-                # Coordinate inside borehole
+                    # Coordinate inside borehole
                     WJ = (r_p[n]/(z_T - z_p[n]))**(j+1) \
                             + sigma*((r_p[n]*np.conj(z_T))
                                      /(r_b**2 - z_p[n]*np.conj(z_T)))**(j+1)
                 else:
-                # Coordinate outside borehole
+                    # Coordinate outside borehole
                     WJ = (1. + sigma)*(r_p[n]/(z_T - z_p[n]))**(j+1)
                 dTJ += P[n,j]*WJ
         else:
@@ -1941,7 +1942,7 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
 
 
 def _F_mk(Q_p, P, n_p, J, r_b, r_p, z, pikg, sigma):
-    """ 
+    """
     Complex matrix F_mk from Claesson and Hellstrom (2011), EQ. 34
     """
     F = np.zeros((n_p, J), dtype=np.cfloat)

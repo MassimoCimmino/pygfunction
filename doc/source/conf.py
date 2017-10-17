@@ -30,14 +30,12 @@
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 
+from recommonmark.parser import CommonMarkParser
 import sys, os
 packagePath = os.path.normpath(
-        os.path.join(os.path.normpath(os.path.dirname(__file__)),
-                    '..', '..'))
+        os.path.join(os.path.normpath(os.path.dirname(__file__)), '..', '..'))
 sys.path.append(packagePath)
 import pygfunction
-
-from recommonmark.parser import CommonMarkParser
 
 source_parsers = {
     '.md': CommonMarkParser,
@@ -45,9 +43,6 @@ source_parsers = {
 
 extensions = [
     'sphinx.ext.autodoc',
-#    'sphinx.ext.autosummary',
-#    'sphinx.ext.doctest',
-#    'sphinx.ext.todo',
     'sphinx.ext.mathjax',
     'numpydoc'
 ]
@@ -141,8 +136,6 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-#html_theme = 'alabaster'
-#html_theme = 'classic'
 html_theme = 'default'
 
 # Theme options are theme-specific and customize the look and feel of a theme

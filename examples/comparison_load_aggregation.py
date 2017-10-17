@@ -27,7 +27,7 @@ import time as tim
 # Add path to pygfunction to Python path
 packagePath = os.path.normpath(
         os.path.join(os.path.normpath(os.path.dirname(__file__)),
-                    '..'))
+                     '..'))
 sys.path.append(packagePath)
 
 import pygfunction as gt
@@ -92,7 +92,7 @@ def main():
         time_req = LoadAgg.get_times_for_simulation()
         gFunc_int = interp1d(time_gFunc, gFunc)(time_req)
         # Initialize load aggregation scheme
-        LoadAgg.initialize(np.reshape(gFunc_int, (1,1,-1))/(2*pi*k_s))
+        LoadAgg.initialize(np.reshape(gFunc_int, (1, 1, -1))/(2*pi*k_s))
 
         tic = tim.time()
         time = 0.
@@ -209,14 +209,15 @@ def synthetic_load(x):
     G = 0.95
 
     func = (168.0-C)/168.0
-    for i in [1,2,3]:
-        func += 1.0/(i*pi)*(np.cos(C*pi*i/84.0)-1.0) \
-                          *(np.sin(pi*i/84.0*(x-B)))
-    func = func*A*np.sin(pi/12.0*(x-B)) \
-           *np.sin(pi/4380.0*(x-B))
+    for i in [1, 2, 3]:
+        func += 1.0/(i*pi)*(np.cos(C*pi*i/84.0) - 1.0) \
+                          *(np.sin(pi*i/84.0*(x - B)))
+    func = func*A*np.sin(pi/12.0*(x - B)) \
+        *np.sin(pi/4380.0*(x - B))
 
-    y = func + (-1.0)**np.floor(D/8760.0*(x-B))*abs(func) \
-      + E*(-1.0)**np.floor(D/8760.0*(x-B))/np.sign(np.cos(D*pi/4380.0*(x-F))+G)
+    y = func + (-1.0)**np.floor(D/8760.0*(x - B))*abs(func) \
+        + E*(-1.0)**np.floor(D/8760.0*(x - B)) \
+        /np.sign(np.cos(D*pi/4380.0*(x - F)) + G)
     return -np.array([y])
 
 

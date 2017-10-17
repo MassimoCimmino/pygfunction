@@ -25,11 +25,11 @@ def finite_line_source(
 
 
             I_{real}(s) &= erfint((D_2-D_1+H_2)s) - erfint((D_2-D_1)s)
-            
+
             &+ erfint((D_2-D_1-H_1)s) - erfint((D_2-D_1+H_2-H_1)s)
 
             I_{imag}(s) &= erfint((D_2+D_1+H_2)s) - erfint((D_2+D_1)s)
-            
+
             &+ erfint((D_2+D_1+H_1)s) - erfint((D_2+D_1+H_2+H_1)s)
 
 
@@ -40,7 +40,7 @@ def finite_line_source(
         .. Note::
             The reciprocal thermal response factor
             :math:`h_{2\\rightarrow1}(t)` can be conveniently calculated by:
-                
+
                 .. math::
                     h_{2\\rightarrow1}(t) = \\frac{H_2}{H_1}
                     h_{1\\rightarrow2}(t)
@@ -116,7 +116,7 @@ def finite_line_source(
 
 
 def similarities(boreholes, splitRealAndImage=True, disTol=0.1, tol=1.0e-6,
-               processes=None):
+                 processes=None):
     """
     Find similarities in the FLS solution for groups of boreholes.
 
@@ -201,7 +201,7 @@ def similarities(boreholes, splitRealAndImage=True, disTol=0.1, tol=1.0e-6,
                        kind='real')
         # Evaluate similarities for each distance in parallel
         realSims = pool.map(func, pairs)
-    
+
         func = partial(_similarities_one_distance,
                        boreholes=boreholes,
                        kind='image')
@@ -387,6 +387,7 @@ def _similarities_one_distance(pairs, boreholes, kind, tol=1.0e-6):
         else:
             similarity = False
         return similarity
+
     # Condition for equivalence of the image part of the FLS solution
     def compare_image_segments(H1a, H1b, H2a, H2b,
                                D1a, D1b, D2a, D2b, tol):
@@ -397,6 +398,7 @@ def _similarities_one_distance(pairs, boreholes, kind, tol=1.0e-6):
         else:
             similarity = False
         return similarity
+
     # Condition for equivalence of the full FLS solution
     def compare_realandimage_segments(H1a, H1b, H2a, H2b,
                                       D1a, D1b, D2a, D2b,

@@ -2,7 +2,6 @@
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
-import scipy.interpolate as interp
 
 
 class _LoadAggregation(object):
@@ -109,13 +108,13 @@ class ClaessonJaved(_LoadAggregation):
             Current value of time (in seconds).
 
         """
-        for i in range(len(self._time)-2,-1,-1):
+        for i in range(len(self._time)-2, -1, -1):
             # If the current time is greater than the time of cell (i+1),
             # remove one unit from cell (i+1) and add one unit of cell (i)
             # into cell (i+1).
             if time > self._time[i+1]:
-                self.Q[:,i+1] = ((self._width[i+1]-1)*self.Q[:,i+1]
-                            + self.Q[:,i])/self._width[i+1]
+                self.Q[:,i+1] = ((self._width[i+1] - 1)*self.Q[:,i+1]
+                                 + self.Q[:,i])/self._width[i+1]
             # If the current time is greater than the time of cell (i) but less
             # than the time of cell (i+1), add one unit of cell (i) into cell
             # (i+1).
@@ -269,7 +268,7 @@ class MLAA(_LoadAggregation):
 
         """
         self.g_d = g_d
-    
+
     def next_time_step(self, time):
         """
         Shifts aggregated loads by one time step.
@@ -430,12 +429,12 @@ class MLAA(_LoadAggregation):
 
         """
         self.Nt = int(np.ceil(tmax/dt))  # Total number of time steps
-        self._nt = 0 # Current time step
-        self._n0 = 0 # Current number of non-aggregated time steps
-        self._n1 = 0 # Current number of time steps in first cell
-        self._n2 = 0 # Current number of time steps in second cell
-        self._n3 = 0 # Current number of time steps in third cell
-        self._n4 = 0 # Current number of time steps in fourth cell
+        self._nt = 0    # Current time step
+        self._n0 = 0    # Current number of non-aggregated time steps
+        self._n1 = 0    # Current number of time steps in first cell
+        self._n2 = 0    # Current number of time steps in second cell
+        self._n3 = 0    # Current number of time steps in third cell
+        self._n4 = 0    # Current number of time steps in fourth cell
         self.N0 = N0
         self.N1 = N1
         self.N2 = N2
@@ -493,7 +492,6 @@ class Liu(_LoadAggregation):
     """
     def __init__(self, dt, tmax, nSources=1,
                  N1=24, N2=5, N3=73, W1=12, W2=3, W3=40):
-        
         self.dt = dt                # Simulation time step
         self.tmax = tmax            # Maximum simulation time
         # Initialize load aggregation cells
@@ -547,7 +545,8 @@ class Liu(_LoadAggregation):
                 self.Q1[:,i] = self.Q1[:,i-1]
             # The value of the first small cell is equal to the average of the
             # N1 last non-aggregated loads
-            self.Q1[:,0] = np.mean(self.Q0[:,self._n0-self.N1:self._n0], axis=1)
+            self.Q1[:,0] = np.mean(self.Q0[:,self._n0-self.N1:self._n0],
+                                   axis=1)
             # Remove the N1 latest non-aggregated loads
             self._n0 += -self.N1
 
@@ -677,11 +676,11 @@ class Liu(_LoadAggregation):
 
         """
         self.Nt = int(np.ceil(tmax/dt))  # Total number of time steps
-        self._nt = 0 # Current time step
-        self._n0 = 0 # Current number of non-aggregated time steps
-        self._n1 = 0 # Current number of small cells
-        self._n2 = 0 # Current number of medium cells
-        self._n3 = 0 # Current number of large cells
+        self._nt = 0    # Current time step
+        self._n0 = 0    # Current number of non-aggregated time steps
+        self._n1 = 0    # Current number of small cells
+        self._n2 = 0    # Current number of medium cells
+        self._n3 = 0    # Current number of large cells
         self.N1 = N1
         self.N2 = N2
         self.N3 = N3
