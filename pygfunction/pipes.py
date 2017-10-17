@@ -251,20 +251,27 @@ class _BasePipe(object):
             Array of coefficients for borehole wall temperatures.
 
         """
-        # Update model variables
-        self._update_coefficients(m_flow, cp, nSegments)
+        # method_id for coefficients_inlet_temperature is 3
+        method_id = 3
+        # Check if stored coefficients are available
+        if self._check_coefficients(m_flow, cp, nSegments, method_id):
+            a_qf, a_b = self._get_stored_coefficients(method_id)
+        else:
+            # Coefficient matrices for fluid heat extraction rates:
+            # [Q_{f}] = [b_in]*[T_{f,in}] + [b_b]*[T_{b}]
+            b_in, b_b = self.coefficients_fluid_heat_extraction_rate(m_flow,
+                                                                     cp,
+                                                                     nSegments)
+            b_in_m1 = np.linalg.inv(b_in)
 
-        # Coefficient matrices for fluid heat extraction rates:
-        # [Q_{f}] = [b_in]*[T_{f,in}] + [b_b]*[T_{b}]
-        b_in, b_b = self.coefficients_fluid_heat_extraction_rate(m_flow,
-                                                                 cp,
-                                                                 nSegments)
-        b_in_m1 = np.linalg.inv(b_in)
+            # Matrices for fluid heat extraction rates:
+            # [T_{f,in}] = [a_qf]*[Q_{f}] + [a_b]*[T_{b}]
+            a_qf = b_in_m1
+            a_b = -b_in_m1.dot(b_b)
 
-        # Matrices for fluid heat extraction rates:
-        # [T_{f,in}] = [a_qf]*[Q_{f}] + [a_b]*[T_{b}]
-        a_qf = b_in_m1
-        a_b = -b_in_m1.dot(b_b)
+            # Store coefficients
+            self._set_stored_coefficients(m_flow, cp, nSegments, (a_qf, a_b),
+                                          method_id)
 
         return a_qf, a_b
 
@@ -296,18 +303,36 @@ class _BasePipe(object):
             Array of coefficients for borehole wall temperatures.
 
         """
-        # Update model variables
-        self._update_coefficients(m_flow, cp, nSegments)
+        # method_id for coefficients_outlet_temperature is 4
+        method_id = 4
+        # Check if stored coefficients are available
+        if self._check_coefficients(m_flow, cp, nSegments, method_id):
+            a_in, a_b = self._get_stored_coefficients(method_id)
+        else:
+            # Check if _continuity_condition_base need to be called
+            # method_id for _continuity_condition_base is 0
+            if self._check_coefficients(m_flow, cp, nSegments, 0):
+                b_in, b_out, b_b = self._get_stored_coefficients(0)
+            else:
+                # Coefficient matrices from continuity condition:
+                # [b_out]*[T_{f,out}] = [b_in]*[T_{f,in}] + [b_b]*[T_b]
+                b_in, b_out, b_b = self._continuity_condition_base(m_flow,
+                                                                   cp,
+                                                                   nSegments)
 
-        # Coefficient matrices from continuity condition:
-        # [b_out]*[T_{f,out}] = [b_in]*[T_{f,in}] + [b_b]*[T_b]
-        b_in, b_out, b_b = self._continuity_condition_base(m_flow, cp, nSegments)
+                # Store coefficients
+                self._set_stored_coefficients(m_flow, cp, nSegments,
+                                              (b_in, b_out, b_b), 0)
 
-        # Final coefficient matrices for outlet temperatures:
-        # [T_{f,out}] = [a_in]*[T_{f,in}] + [a_b]*[T_b]
-        b_out_m1 = np.linalg.inv(b_out)
-        a_in = b_out_m1.dot(b_in)
-        a_b = b_out_m1.dot(b_b)
+            # Final coefficient matrices for outlet temperatures:
+            # [T_{f,out}] = [a_in]*[T_{f,in}] + [a_b]*[T_b]
+            b_out_m1 = np.linalg.inv(b_out)
+            a_in = b_out_m1.dot(b_in)
+            a_b = b_out_m1.dot(b_b)
+
+            # Store coefficients
+            self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
+                                          method_id)
 
         return a_in, a_b
 
@@ -342,18 +367,28 @@ class _BasePipe(object):
             Array of coefficients for borehole wall temperatures.
 
         """
-        # Update model variables
-        self._update_coefficients(m_flow, cp, nSegments)
+        # method_id for coefficients_temperature is 5
+        method_id = 5
 
         # Coefficient matrices for outlet temperatures:
         # [T_{f,out}] = [b_in]*[T_{f,in}] + [b_b]*[T_b]
         b_in, b_b = self.coefficients_outlet_temperature(m_flow, cp, nSegments)
 
-        # Coefficient matrices for temperatures at depth (z = 0):
-        # [T_f](0) = [c_in]*[T_{f,in}] + [c_out]*[T_{f,out}] + [c_b]*[T_b]
-        c_in, c_out, c_b = self._continuity_condition_head(m_flow,
-                                                           cp,
-                                                           nSegments)
+        # Check if _continuity_condition_head need to be called
+        # method_id for _continuity_condition_head is 1
+        if self._check_coefficients(m_flow, cp, nSegments, 1):
+            c_in, c_out, c_b = self._get_stored_coefficients(1)
+        else:
+            # Coefficient matrices for temperatures at depth (z = 0):
+            # [T_f](0) = [c_in]*[T_{f,in}] + [c_out]*[T_{f,out}]
+            #                              + [c_b]*[T_b]
+            c_in, c_out, c_b = self._continuity_condition_head(m_flow,
+                                                               cp,
+                                                               nSegments)
+
+            # Store coefficients
+            self._set_stored_coefficients(m_flow, cp, nSegments,
+                                          (c_in, c_out, c_b), 1)
 
         # Coefficient matrices from general solution:
         # [T_f](z) = [d_f0]*[T_f](0) + [d_b]*[T_b]
@@ -395,33 +430,44 @@ class _BasePipe(object):
             Array of coefficients for borehole wall temperatures.
 
         """
-        nPipes = self.nPipes
-        # Update model variables
-        self._update_coefficients(m_flow, cp, nSegments)
-        m_flow_pipe = self._m_flow_pipe
-        cp_pipe = self._cp_pipe
-        mcp = np.hstack((-m_flow_pipe[0:nPipes],
-                         m_flow_pipe[-nPipes:]))*cp_pipe
+        # method_id for coefficients_borehole_heat_extraction_rate is 6
+        method_id = 6
 
-        # Initialize coefficient matrices
-        a_in = np.zeros((nSegments, self.nInlets))
-        a_b = np.zeros((nSegments, nSegments))
-        # Heat extraction rates are calculated from an energy balance on a
-        # borehole segment.
-        z1 = 0.
-        aTf1, bTf1 = self.coefficients_temperature(z1,
-                                                   m_flow,
-                                                   cp,
-                                                   nSegments)
-        for i in range(nSegments):
-            z2 = (i + 1) * self.b.H / nSegments
-            aTf2, bTf2 = self.coefficients_temperature(z2,
+        nPipes = self.nPipes
+        # Check if stored coefficients are available
+        if self._check_coefficients(m_flow, cp, nSegments, method_id):
+            a_in, a_b = self._get_stored_coefficients(method_id)
+        else:
+            # Update input variables
+            self._format_inputs(m_flow, cp, nSegments)
+            m_flow_pipe = self._m_flow_pipe
+            cp_pipe = self._cp_pipe
+            mcp = np.hstack((-m_flow_pipe[0:nPipes],
+                             m_flow_pipe[-nPipes:]))*cp_pipe
+
+            # Initialize coefficient matrices
+            a_in = np.zeros((nSegments, self.nInlets))
+            a_b = np.zeros((nSegments, nSegments))
+            # Heat extraction rates are calculated from an energy balance on a
+            # borehole segment.
+            z1 = 0.
+            aTf1, bTf1 = self.coefficients_temperature(z1,
                                                        m_flow,
                                                        cp,
                                                        nSegments)
-            a_in[i, :] = mcp.dot(aTf1 - aTf2)
-            a_b[i, :] = mcp.dot(bTf1 - bTf2)
-            aTf1, bTf1 = aTf2, bTf2
+            for i in range(nSegments):
+                z2 = (i + 1) * self.b.H / nSegments
+                aTf2, bTf2 = self.coefficients_temperature(z2,
+                                                           m_flow,
+                                                           cp,
+                                                           nSegments)
+                a_in[i, :] = mcp.dot(aTf1 - aTf2)
+                a_b[i, :] = mcp.dot(bTf1 - bTf2)
+                aTf1, bTf1 = aTf2, bTf2
+
+            # Store coefficients
+            self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
+                                          method_id)
 
         return a_in, a_b
 
@@ -453,25 +499,85 @@ class _BasePipe(object):
             Array of coefficients for borehole wall temperatures.
 
         """
-        # Update model variables
-        self._update_coefficients(m_flow, cp, nSegments)
+        # method_id for coefficients_fluid_heat_extraction_rate is 7
+        method_id = 7
+        # Check if stored coefficients are available
+        if self._check_coefficients(m_flow, cp, nSegments, method_id):
+            a_in, a_b = self._get_stored_coefficients(method_id)
+        else:
+            # Update input variables
+            self._format_inputs(m_flow, cp, nSegments)
 
-        # Coefficient matrices for outlet temperatures:
-        # [T_{f,out}] = [b_in]*[T_{f,in}] + [b_b]*[T_b]
-        b_in, b_b = self.coefficients_outlet_temperature(m_flow, cp, nSegments)
+            # Coefficient matrices for outlet temperatures:
+            # [T_{f,out}] = [b_in]*[T_{f,in}] + [b_b]*[T_b]
+            b_in, b_b = self.coefficients_outlet_temperature(m_flow, cp,
+                                                             nSegments)
 
-        # Intermediate matrices for fluid heat extraction rates:
-        # [Q_{f}] = [c_in]*[T_{f,in}] + [c_out]*[T_{f,out}]
-        MCP = self._m_flow_in * self._cp_in
-        c_in = -np.diag(MCP)
-        c_out = np.diag(MCP)
+            # Intermediate matrices for fluid heat extraction rates:
+            # [Q_{f}] = [c_in]*[T_{f,in}] + [c_out]*[T_{f,out}]
+            MCP = self._m_flow_in * self._cp_in
+            c_in = -np.diag(MCP)
+            c_out = np.diag(MCP)
 
-        # Matrices for fluid heat extraction rates:
-        # [Q_{f}] = [a_in]*[T_{f,in}] + [a_b]*[T_{b}]
-        a_in = c_in + c_out.dot(b_in)
-        a_b = c_out.dot(b_b)
+            # Matrices for fluid heat extraction rates:
+            # [Q_{f}] = [a_in]*[T_{f,in}] + [a_b]*[T_{b}]
+            a_in = c_in + c_out.dot(b_in)
+            a_b = c_out.dot(b_b)
+
+            # Store coefficients
+            self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
+                                          method_id)
 
         return a_in, a_b
+
+    def _initialize_stored_coefficients(self):
+        nMethods = 8    # Number of class methods
+        self._stored_coefficients = [() for i in range(nMethods)]
+        self._stored_m_flow_cp = [np.empty(self.nInlets)
+                                  for i in range(nMethods)]
+        self._stored_nSegments = [np.nan for i in range(nMethods)]
+        self._m_flow_cp_model_variables = np.empty(self.nInlets)
+        self._nSegments_model_variables = np.nan
+        
+        return
+
+    def _set_stored_coefficients(self, m_flow, cp, nSegments, coefficients,
+                                 method_id):
+        self._stored_coefficients[method_id] = coefficients
+        self._stored_m_flow_cp[method_id] = m_flow*cp
+        self._stored_nSegments[method_id] = nSegments
+
+        return
+
+    def _get_stored_coefficients(self, method_id):
+        coefficients = self._stored_coefficients[method_id]
+
+        return coefficients
+
+    def _check_model_variables(self, m_flow, cp, nSegments, tol=1e-6):
+        stored_m_flow_cp = self._m_flow_cp_model_variables
+        stored_nSegments = self._nSegments_model_variables
+        if (np.allclose(m_flow*cp, stored_m_flow_cp, rtol=tol)
+            and nSegments == stored_nSegments):
+            check = True
+        else:
+            self._update_model_variables(m_flow, cp, nSegments)
+            self._m_flow_cp_model_variables = m_flow*cp
+            self._nSegments_model_variables = nSegments
+            check = False
+
+        return check
+
+    def _check_coefficients(self, m_flow, cp, nSegments, method_id, tol=1e-6):
+        stored_m_flow_cp = self._stored_m_flow_cp[method_id]
+        stored_nSegments = self._stored_nSegments[method_id]
+        if (np.allclose(m_flow*cp, stored_m_flow_cp, rtol=tol)
+            and nSegments == stored_nSegments):
+            check = True
+        else:
+            check = False
+
+        return check
 
     def _continuity_condition_base(self, m_flow, cp, nSegments):
         """ Returns coefficients for the relation
@@ -501,14 +607,25 @@ class _BasePipe(object):
             'this method should return matrices for the relation: '
             '[T_f](z) = [a_f0]*[T_f](0) + [a_b]*[T_b]')
 
-    def _update_coefficients(self, m_flow, cp, nSegments):
+    def _update_model_variables(self, m_flow, cp, nSegments):
         """
         Evaluate common coefficients needed in other class methods.
         """
         raise NotImplementedError(
             '_update_coefficients class method not implemented, '
-            'this method should Evaluate common coefficients needed in other '
+            'this method should evaluate common coefficients needed in other '
             'class methods.')
+
+    def _format_inputs(self, m_flow, cp, nSegments):
+        """
+        Format arrays of mass flow rates and heat capacity.
+        """
+        raise NotImplementedError(
+            '_format_inputs class method not implemented, '
+            'this method should format 1d arrays for the inlet mass flow '
+            'rates (_m_flow_in), mass flow rates in each pipe (_m_flow_pipe), '
+            'heat capacity at each inlet (_cp_in) and heat capacity in each '
+            'pipe (_cp_pipe).')
 
 
 class SingleUTube(_BasePipe):
@@ -570,6 +687,9 @@ class SingleUTube(_BasePipe):
         self._Rd = thermal_resistances(pos, r_out, borehole.r_b,
                                        k_s, k_g, self.R_fp, J=self.J)[1]
 
+        # Initialize stored_coefficients
+        self._initialize_stored_coefficients()
+
     def _continuity_condition_base(self, m_flow, cp, nSegments):
         """
         Equation that satisfies equal fluid temperatures in both legs of
@@ -601,6 +721,9 @@ class SingleUTube(_BasePipe):
             Array of coefficients for borehole wall temperatures.
 
         """
+        # Check if model variables need to be updated
+        self._check_model_variables(m_flow, cp, nSegments)
+
         # Evaluate coefficient matrices from Hellstrom (1991):
         a_in = ((self._f1(self.b.H) + self._f2(self.b.H))
                 / (self._f3(self.b.H) - self._f2(self.b.H)))
@@ -651,6 +774,9 @@ class SingleUTube(_BasePipe):
             Array of coefficients for borehole wall temperature.
 
         """
+        # Check if model variables need to be updated
+        self._check_model_variables(m_flow, cp, nSegments)
+
         # There is only one pipe
         a_in = np.array([[1.0], [0.0]])
         a_out = np.array([[0.0], [1.0]])
@@ -686,6 +812,9 @@ class SingleUTube(_BasePipe):
             Array of coefficients for borehole wall temperatures.
 
         """
+        # Check if model variables need to be updated
+        self._check_model_variables(m_flow, cp, nSegments)
+
         a_f0 = np.array([[self._f1(z), self._f2(z)],
                         [-self._f2(z), self._f3(z)]])
 
@@ -701,7 +830,7 @@ class SingleUTube(_BasePipe):
 
         return a_f0, a_b
 
-    def _update_coefficients(self, m_flow, cp, nSegments):
+    def _update_model_variables(self, m_flow, cp, nSegments):
         """
         Evaluate dimensionless resistances for Hellstrom (1991) solution.
         """
@@ -881,6 +1010,9 @@ class MultipleUTube(_BasePipe):
         self._Rd = thermal_resistances(pos, r_out, borehole.r_b,
                                        k_s, k_g, self.R_fp, J=self.J)[1]
 
+        # Initialize stored_coefficients
+        self._initialize_stored_coefficients()
+
     def _continuity_condition_base(self, m_flow, cp, nSegments):
         """
         Equation that satisfies equal fluid temperatures in both legs of
@@ -912,6 +1044,9 @@ class MultipleUTube(_BasePipe):
             Array of coefficients for borehole wall temperatures.
 
         """
+        # Check if model variables need to be updated
+        self._check_model_variables(m_flow, cp, nSegments)
+
         # Coefficient matrices from continuity condition:
         # [b_u]*[T_{f,u}](z=0) = [b_d]*[T_{f,d}](z=0) + [b_b]*[T_b]
         b_d, b_u, b_b = self._continuity_condition(m_flow, cp, nSegments)
@@ -991,6 +1126,9 @@ class MultipleUTube(_BasePipe):
             Array of coefficients for borehole wall temperature.
 
         """
+        # Check if model variables need to be updated
+        self._check_model_variables(m_flow, cp, nSegments)
+
         if self.config == 'parallel':
             a_in = np.vstack((np.ones((self.nPipes, self.nInlets)),
                               np.zeros((self.nPipes, self.nInlets))))
@@ -1129,6 +1267,9 @@ class MultipleUTube(_BasePipe):
             Array of coefficients for borehole wall temperatures.
 
         """
+        # Check if model variables need to be updated
+        self._check_model_variables(m_flow, cp, nSegments)
+
         # Load coefficients
         A = self._A
         V = self._V
@@ -1156,7 +1297,7 @@ class MultipleUTube(_BasePipe):
 
         return a_f0, a_b
 
-    def _update_coefficients(self, m_flow, cp, nSegments):
+    def _update_model_variables(self, m_flow, cp, nSegments):
         """
         Evaluate eigenvalues and eigenvectors for the system of differential
         equations.
@@ -1267,6 +1408,9 @@ class IndependentMultipleUTube(MultipleUTube):
         self._Rd = thermal_resistances(pos, r_out, borehole.r_b,
                                        k_s, k_g, self.R_fp, J=self.J)[1]
 
+        # Initialize stored_coefficients
+        self._initialize_stored_coefficients()
+
     def _continuity_condition_base(self, m_flow, cp, nSegments):
         """
         Equation that satisfies equal fluid temperatures in both legs of
@@ -1298,6 +1442,9 @@ class IndependentMultipleUTube(MultipleUTube):
             Array of coefficients for borehole wall temperatures.
 
         """
+        # Check if model variables need to be updated
+        self._check_model_variables(m_flow, cp, nSegments)
+
         # Coefficient matrices from continuity condition:
         # [b_u]*[T_{f,u}](z=0) = [b_d]*[T_{f,d}](z=0) + [b_b]*[T_b]
         a_in, a_out, a_b = self._continuity_condition(m_flow, cp, nSegments)
@@ -1337,6 +1484,9 @@ class IndependentMultipleUTube(MultipleUTube):
             Array of coefficients for borehole wall temperature.
 
         """
+        # Check if model variables need to be updated
+        self._check_model_variables(m_flow, cp, nSegments)
+
         a_in = np.eye(2*self.nPipes, M=self.nPipes, k=0)
         a_out = np.eye(2*self.nPipes, M=self.nPipes, k=-self.nPipes)
         a_b = np.zeros((2*self.nPipes, nSegments))
