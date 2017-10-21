@@ -239,11 +239,14 @@ def U_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b):
     """
     borefield = []
 
-    for i in range(N_1):
-        borefield.append(Borehole(H, D, r_b, x=i*B_1, y=0.))
-    for j in range(1, N_2):
-        borefield.append(Borehole(H, D, r_b, x=0, y=j*B_2))
-        borefield.append(Borehole(H, D, r_b, x=(N_1-1)*B_1, y=j*B_2))
+    if N_1 > 2 and N_2 > 1:
+        for i in range(N_1):
+            borefield.append(Borehole(H, D, r_b, x=i*B_1, y=0.))
+        for j in range(1, N_2):
+            borefield.append(Borehole(H, D, r_b, x=0, y=j*B_2))
+            borefield.append(Borehole(H, D, r_b, x=(N_1-1)*B_1, y=j*B_2))
+    else:
+        borefield = rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b)
 
     return borefield
 
@@ -291,13 +294,17 @@ def box_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b):
     """
     borefield = []
 
-    for i in range(N_1):
-        borefield.append(Borehole(H, D, r_b, x=i*B_1, y=0.))
-    for j in range(1, N_2-1):
-        borefield.append(Borehole(H, D, r_b, x=0., y=j*B_2))
-        borefield.append(Borehole(H, D, r_b, x=(N_1-1)*B_1, y=j*B_2))
-    for i in range(N_1):
-        borefield.append(Borehole(H, D, r_b, x=i*B_1, y=(N_2-1)*B_2))
+
+    if N_1 > 2 and N_2 > 2:
+        for i in range(N_1):
+            borefield.append(Borehole(H, D, r_b, x=i*B_1, y=0.))
+        for j in range(1, N_2-1):
+            borefield.append(Borehole(H, D, r_b, x=0., y=j*B_2))
+            borefield.append(Borehole(H, D, r_b, x=(N_1-1)*B_1, y=j*B_2))
+        for i in range(N_1):
+            borefield.append(Borehole(H, D, r_b, x=i*B_1, y=(N_2-1)*B_2))
+    else:
+        borefield = rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b)
 
     return borefield
 
