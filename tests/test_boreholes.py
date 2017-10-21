@@ -18,10 +18,10 @@ class TestBorehole(unittest.TestCase):
         self.H = 150.
         self.D = 2.5
         self.r_b = 0.075
-        self.x = 2.
-        self.y = 4.
         self.tilt = pi/6.
         self.orientation = pi
+        self.x = 2.
+        self.y = 4.
         self.bore = boreholes.Borehole(self.H, self.D, self.r_b,
                                        self.x, self.y, tilt=self.tilt,
                                        orientation=self.orientation)
@@ -83,8 +83,6 @@ class TestBoreFields_RectangleField(unittest.TestCase):
         self.H = 150.
         self.D = 2.5
         self.r_b = 0.075
-        self.x = 2.
-        self.y = 4.
         self.B_1 = 5.
         self.B_2 = 6.
 
@@ -145,8 +143,6 @@ class TestBoreFields_LShapedField(unittest.TestCase):
         self.H = 150.
         self.D = 2.5
         self.r_b = 0.075
-        self.x = 2.
-        self.y = 4.
         self.B_1 = 5.
         self.B_2 = 6.
 
@@ -208,8 +204,6 @@ class TestBoreFields_UShapedField(unittest.TestCase):
         self.H = 150.
         self.D = 2.5
         self.r_b = 0.075
-        self.x = 2.
-        self.y = 4.
         self.B_1 = 5.
         self.B_2 = 6.
 
@@ -224,6 +218,18 @@ class TestBoreFields_UShapedField(unittest.TestCase):
         self.assertEqual(len(boreField), 1,
                          msg=('Incorrect number of boreholes in '
                               'U_shaped_field with N1=1 and N2=1.'))
+
+    def test_U_shaped_1_row(self):
+        """ Tests construction of L-shaped field with one borehole.
+        """
+        from pygfunction import boreholes
+        N_1 = 5
+        N_2 = 1
+        boreField = boreholes.U_shaped_field(N_1, N_2, self.B_1, self.B_2,
+                                             self.H, self.D, self.r_b)
+        self.assertEqual(len(boreField), N_1,
+                         msg=('Incorrect number of boreholes in '
+                              'U_shaped_field with N2=1.'))
 
     def test_U_shaped_1_column(self):
         """ Tests construction of U-shaped field with one borehole.
@@ -249,6 +255,98 @@ class TestBoreFields_UShapedField(unittest.TestCase):
         self.assertEqual(len(boreField), N_1+2*N_2-2,
                          msg=('Incorrect number of boreholes in '
                               'U_shaped_field.'))
+
+
+class TestBoreFields_BoxShapedField(unittest.TestCase):
+    """ Test cases for boreholes.box_shaped_field().
+    """
+
+    def setUp(self):
+        self.H = 150.
+        self.D = 2.5
+        self.r_b = 0.075
+        self.B_1 = 5.
+        self.B_2 = 6.
+
+    def test_box_shaped_1_borehole(self):
+        """ Tests construction of box-shaped field with one borehole.
+        """
+        from pygfunction import boreholes
+        N_1 = 1
+        N_2 = 1
+        boreField = boreholes.box_shaped_field(N_1, N_2, self.B_1, self.B_2,
+                                               self.H, self.D, self.r_b)
+        self.assertEqual(len(boreField), 1,
+                         msg=('Incorrect number of boreholes in '
+                              'box_shaped_field with N1=1 and N2=1.'))
+
+    def test_box_shaped_1_row(self):
+        """ Tests construction of L-shaped field with one borehole.
+        """
+        from pygfunction import boreholes
+        N_1 = 5
+        N_2 = 1
+        boreField = boreholes.box_shaped_field(N_1, N_2, self.B_1, self.B_2,
+                                             self.H, self.D, self.r_b)
+        self.assertEqual(len(boreField), N_1,
+                         msg=('Incorrect number of boreholes in '
+                              'box_shaped_field with N2=1.'))
+
+    def test_box_shaped_1_column(self):
+        """ Tests construction of box-shaped field with one borehole.
+        """
+        from pygfunction import boreholes
+        N_1 = 1
+        N_2 = 5
+        boreField = boreholes.box_shaped_field(N_1, N_2, self.B_1, self.B_2,
+                                               self.H, self.D, self.r_b)
+        self.assertEqual(len(boreField), N_2,
+                         msg=('Incorrect number of boreholes in '
+                              'box_shaped_field with N1=1.'))
+
+    def test_box_shaped(self):
+        """ Tests construction of box-shaped field with with multiple
+            rows/columns.
+        """
+        from pygfunction import boreholes
+        N_1 = 3
+        N_2 = 5
+        boreField = boreholes.box_shaped_field(N_1, N_2, self.B_1, self.B_2,
+                                             self.H, self.D, self.r_b)
+        self.assertEqual(len(boreField), 2*N_1+2*N_2-4,
+                         msg=('Incorrect number of boreholes in '
+                              'box_shaped_field.'))
+
+
+class TestBoreFields_CircleField(unittest.TestCase):
+    """ Test cases for boreholes.circle_field().
+    """
+
+    def setUp(self):
+        self.H = 150.
+        self.D = 2.5
+        self.r_b = 0.075
+        self.R = 5.
+
+    def test_circle_1_borehole(self):
+        """ Tests construction of circle field with one borehole.
+        """
+        from pygfunction import boreholes
+        N = 1
+        boreField = boreholes.circle_field(N, self.R, self.H, self.D, self.r_b)
+        self.assertEqual(len(boreField), 1,
+                         msg=('Incorrect number of boreholes in '
+                              'circle_field with N1=1 and N2=1.'))
+
+    def test_circle(self):
+        """ Tests construction of circle field with with multiple boreholes.
+        """
+        from pygfunction import boreholes
+        N = 8
+        boreField = boreholes.circle_field(N, self.R, self.H, self.D, self.r_b)
+        self.assertEqual(len(boreField), N,
+                         msg=('Incorrect number of boreholes in '
+                              'circle_field.'))
 
 
 if __name__ == '__main__' and __package__ is None:
