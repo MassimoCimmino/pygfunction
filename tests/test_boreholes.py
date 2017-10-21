@@ -186,6 +186,19 @@ class TestBoreFields_LShapedField(unittest.TestCase):
                          msg=('Incorrect number of boreholes in '
                               'L_shaped_field with N1=1.'))
 
+    def test_L_shaped(self):
+        """ Tests construction of L-shaped field with with multiple
+            rows/columns.
+        """
+        from pygfunction import boreholes
+        N_1 = 3
+        N_2 = 5
+        boreField = boreholes.L_shaped_field(N_1, N_2, self.B_1, self.B_2,
+                                             self.H, self.D, self.r_b)
+        self.assertEqual(len(boreField), N_1+N_2-1,
+                         msg=('Incorrect number of boreholes in '
+                              'L_shaped_field.'))
+
 
 if __name__ == '__main__' and __package__ is None:
     from os import sys, path
