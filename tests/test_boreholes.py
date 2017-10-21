@@ -200,6 +200,57 @@ class TestBoreFields_LShapedField(unittest.TestCase):
                               'L_shaped_field.'))
 
 
+class TestBoreFields_UShapedField(unittest.TestCase):
+    """ Test cases for boreholes.U_shaped_field().
+    """
+
+    def setUp(self):
+        self.H = 150.
+        self.D = 2.5
+        self.r_b = 0.075
+        self.x = 2.
+        self.y = 4.
+        self.B_1 = 5.
+        self.B_2 = 6.
+
+    def test_U_shaped_1_borehole(self):
+        """ Tests construction of L-shaped field with one borehole.
+        """
+        from pygfunction import boreholes
+        N_1 = 1
+        N_2 = 1
+        boreField = boreholes.U_shaped_field(N_1, N_2, self.B_1, self.B_2,
+                                             self.H, self.D, self.r_b)
+        self.assertEqual(len(boreField), 1,
+                         msg=('Incorrect number of boreholes in '
+                              'U_shaped_field with N1=1 and N2=1.'))
+
+    def test_U_shaped_1_column(self):
+        """ Tests construction of U-shaped field with one borehole.
+        """
+        from pygfunction import boreholes
+        N_1 = 1
+        N_2 = 5
+        boreField = boreholes.U_shaped_field(N_1, N_2, self.B_1, self.B_2,
+                                             self.H, self.D, self.r_b)
+        self.assertEqual(len(boreField), N_2,
+                         msg=('Incorrect number of boreholes in '
+                              'U_shaped_field with N1=1.'))
+
+    def test_U_shaped(self):
+        """ Tests construction of U-shaped field with with multiple
+            rows/columns.
+        """
+        from pygfunction import boreholes
+        N_1 = 3
+        N_2 = 5
+        boreField = boreholes.U_shaped_field(N_1, N_2, self.B_1, self.B_2,
+                                             self.H, self.D, self.r_b)
+        self.assertEqual(len(boreField), N_1+2*N_2-2,
+                         msg=('Incorrect number of boreholes in '
+                              'U_shaped_field.'))
+
+
 if __name__ == '__main__' and __package__ is None:
     from os import sys, path
     sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
