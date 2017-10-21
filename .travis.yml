@@ -6,6 +6,9 @@ python:
 notifications:
   email: false
 
+git:
+  depth: 3
+
 install:
   - pip install -r requirements.txt
 
