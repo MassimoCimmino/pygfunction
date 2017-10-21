@@ -10,6 +10,9 @@ class TestUnitTest(unittest.TestCase):
     def test_foo(self):
         self.assertTrue(True)
 
+    def test_foo2(self):
+        self.assertFalse(False)
+
 
 if __name__ == '__main__':
     unittest.main()
