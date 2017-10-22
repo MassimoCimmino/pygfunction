@@ -164,6 +164,96 @@ class TestUniformTemperature(unittest.TestCase):
         self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-10),
                         msg='Incorrect values of the g-function of three by '
                             'two field for uniform temperature (12 segments).')
+
+
+class TestThermalResponseFactors(unittest.TestCase):
+    """ Test cases for the evaluation of segment to segment thermal response
+        factors.
+    """
+
+    def setUp(self):
+        self.H = 150.           # Borehole length [m]
+        self.D = 4.             # Borehole buried depth [m]
+        self.r_b = 0.075        # Borehole radius [m]
+        self.B = 7.5            # Borehole spacing [m]
+        self.alpha = 1.0e-6     # Ground thermal diffusivity [m2/s]
+
+    def test_one_borehole_twelve_segments(self, rel_tol=1.0e-6):
+        """ Tests the value of the thermal response factor matrix for one
+            borehole with and without similarities.
+        """
+        from pygfunction.gfunction import thermal_response_factors
+        from pygfunction.gfunction import _borehole_segments
+        from pygfunction.boreholes import rectangle_field
+
+        N_1 = 1
+        N_2 = 1
+        boreField = rectangle_field(N_1, N_2, self.B, self.B,
+                                    self.H, self.D, self.r_b)
+        boreSegments = _borehole_segments(boreField, nSegments=4)
+        time = np.array([33554478])*3600.
+
+        # Calculation of thermal response factor matrix using similarities
+        h = thermal_response_factors(boreSegments, time, self.alpha,
+                                     use_similarities=True)
+        # Calculation of thermal response factor matrix without similarities
+        h_none = thermal_response_factors(boreSegments, time, self.alpha,
+                                          use_similarities=False)
+
+        self.assertTrue(np.allclose(h, h_none, rtol=rel_tol, atol=1e-10),
+                        msg='Incorrect values of the thermal response factors '
+                            'for one borehole (4 segments).')
+
+    def test_three_by_two_twelve_segments(self, rel_tol=1.0e-6):
+        """ Tests the value of the thermal response factor matrix for three by
+            two field with and without similarities.
+        """
+        from pygfunction.gfunction import thermal_response_factors
+        from pygfunction.gfunction import _borehole_segments
+        from pygfunction.boreholes import rectangle_field
+
+        N_1 = 3
+        N_2 = 2
+        boreField = rectangle_field(N_1, N_2, self.B, self.B,
+                                    self.H, self.D, self.r_b)
+        boreSegments = _borehole_segments(boreField, nSegments=4)
+        time = np.array([33554478])*3600.
+
+        # Calculation of thermal response factor matrix using similarities
+        h = thermal_response_factors(boreSegments, time, self.alpha,
+                                     use_similarities=True)
+        # Calculation of thermal response factor matrix without similarities
+        h_none = thermal_response_factors(boreSegments, time, self.alpha,
+                                          use_similarities=False)
+
+        self.assertTrue(np.allclose(h, h_none, rtol=rel_tol, atol=1e-10),
+                        msg='Incorrect values of the thermal response factors '
+                            'for three by two field (4 segments).')
+
+    def test_two_unequal_boreholes_twelve_segments(self, rel_tol=1.0e-6):
+        """ Tests the value of the thermal response factor matrix for two
+            boreholes of unequal lengths with and without similarities.
+        """
+        from pygfunction.gfunction import thermal_response_factors
+        from pygfunction.gfunction import _borehole_segments
+        from pygfunction.boreholes import Borehole
+
+        borehole1 = Borehole(self.H, self.D, self.r_b, 0., 0.)
+        borehole2 = Borehole(self.H*1.432, self.D, self.r_b, self.B, 0.)
+        boreField = [borehole1, borehole2]
+        boreSegments = _borehole_segments(boreField, nSegments=4)
+        time = np.array([33554478])*3600.
+
+        # Calculation of thermal response factor matrix using similarities
+        h = thermal_response_factors(boreSegments, time, self.alpha,
+                                     use_similarities=True)
+        # Calculation of thermal response factor matrix without similarities
+        h_none = thermal_response_factors(boreSegments, time, self.alpha,
+                                          use_similarities=False)
+
+        self.assertTrue(np.allclose(h, h_none, rtol=rel_tol, atol=1e-10),
+                        msg='Incorrect values of the thermal response factors '
+                            'two unequal boreholes (4 segments).')
         
         
 if __name__ == '__main__' and __package__ is None:
