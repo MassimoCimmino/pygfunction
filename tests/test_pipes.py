@@ -131,7 +131,7 @@ class TestBoreholeThermalResistances(unittest.TestCase):
         """
         from pygfunction.pipes import thermal_resistances
 
-        # Exact solution (Claesson and Hellstrom, 2011)
+        # Reference solution (Claesson and Hellstrom, 2011)
         R_ref = np.array([[25.486e-2, 01.538e-2],
                           [01.538e-2, 25.207e-2]])
         S_ref = np.array([[3.698, 0.240],
@@ -152,7 +152,7 @@ class TestBoreholeThermalResistances(unittest.TestCase):
         """
         from pygfunction.pipes import thermal_resistances
 
-        # Exact solution (Claesson and Hellstrom, 2011)
+        # Reference solution (Claesson and Hellstrom, 2011)
         R_ref = np.array([[25.569e-2, 01.562e-2],
                           [01.562e-2, 25.288e-2]])
         S_ref = np.array([[3.683, 0.243],
@@ -173,7 +173,7 @@ class TestBoreholeThermalResistances(unittest.TestCase):
         """
         from pygfunction.pipes import thermal_resistances
 
-        # Exact solution (Claesson and Hellstrom, 2011)
+        # Reference solution (Claesson and Hellstrom, 2011)
         R_ref = np.array([[25.590e-2, 01.561e-2],
                           [01.561e-2, 25.309e-2]])
         S_ref = np.array([[3.681, 0.242],
@@ -190,6 +190,14 @@ class TestBoreholeThermalResistances(unittest.TestCase):
                             'resistances.')
 
 
+class TestMultipole(unittest.TestCase):
+    """ Test cases for multipole function.
+    """
+
+    def setUp(self):
+        pass
+        
+        
 if __name__ == '__main__' and __package__ is None:
     from os import sys, path
     sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
