@@ -136,7 +136,7 @@ class TestBoreholeThermalResistances(unittest.TestCase):
                           [01.538e-2, 25.207e-2]])
         S_ref = np.array([[3.698, 0.240],
                           [0.240, 3.742]])
-        # Calculate using heat_transfer.fluid_friction_factor_circular_pipe()
+        # Calculate using pipes.fluid_friction_factor_circular_pipe()
         R, Rd = thermal_resistances(self.pos_2pipes, self.r_out, self.r_b,
                                     self.k_s, self.k_g, self.Rfp, J=0)
         S = 1/Rd
@@ -157,7 +157,7 @@ class TestBoreholeThermalResistances(unittest.TestCase):
                           [01.562e-2, 25.288e-2]])
         S_ref = np.array([[3.683, 0.243],
                           [0.243, 3.727]])
-        # Calculate using heat_transfer.fluid_friction_factor_circular_pipe()
+        # Calculate using pipes.fluid_friction_factor_circular_pipe()
         R, Rd = thermal_resistances(self.pos_2pipes, self.r_out, self.r_b,
                                     self.k_s, self.k_g, self.Rfp, J=1)
         S = 1/Rd
@@ -178,7 +178,7 @@ class TestBoreholeThermalResistances(unittest.TestCase):
                           [01.561e-2, 25.309e-2]])
         S_ref = np.array([[3.681, 0.242],
                           [0.242, 3.724]])
-        # Calculate using heat_transfer.fluid_friction_factor_circular_pipe()
+        # Calculate using pipes.fluid_friction_factor_circular_pipe()
         R, Rd = thermal_resistances(self.pos_2pipes, self.r_out, self.r_b,
                                     self.k_s, self.k_g, self.Rfp, J=2)
         S = 1/Rd
@@ -195,9 +195,36 @@ class TestMultipole(unittest.TestCase):
     """
 
     def setUp(self):
-        pass
-        
-        
+        # Pipe positions [m]
+        self.pos_4pipes = [(0.03, 0.03), (-0.03, 0.03),
+                           (-0.03, -0.03), (0.03, -0.03)]
+        self.r_out = 0.02       # Pipe outer radius [m]
+        self.r_b = 0.07         # Borehole radius [m]
+        self.k_s = 2.5          # Ground thermal conductivity [W/m.K]
+        self.k_g = 1.5          # Grout thermal conductivity [W/m.K]
+        self.T_b = 0.0          # Borehole wall temperature [degC]
+        # Pipe heat transfer rates [W/m]
+        self.Q_p = np.array([10., 9., 8., 7.])
+        self.J = 3              # Number of multipole per pipe
+        beta = 1.2
+        # Fluid to outer pipe wall thermal resistance [m.K/W]
+        self.Rfp = beta/(2*pi*self.k_g)
+
+    def test_third_order_fluid_temperatures_four_pipes(self):
+        """ Tests the value of the fluid temperatures.
+        """
+        from pygfunction.pipes import multipole
+
+        # Reference solution (Claesson, 2012)
+        reference = np.array([2.719532, 2.519227, 2.193383, 1.993078])
+        # Calculate using pipes.multipole()
+        Tf = multipole(self.pos_4pipes, self.r_out, self.r_b,
+                       self.k_s, self.k_g, self.Rfp,
+                       self.T_b, self.Q_p, self.J)[0]
+        self.assertTrue(np.allclose(Tf, reference, rtol=1e-4, atol=1e-10),
+                        msg='Incorrect value of fluid temperatures.')
+
+
 if __name__ == '__main__' and __package__ is None:
     from os import sys, path
     sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
