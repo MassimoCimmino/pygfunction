@@ -1,5 +1,7 @@
 # pygfunction: A g-function calculator for Python
 
+[![Build Status](https://travis-ci.org/MassimoCimmino/pygfunction.svg?branch=master)](https://travis-ci.org/MassimoCimmino/pygfunction)
+
 
 ## What is *pygfunction*?
 
