@@ -330,6 +330,227 @@ class TestSingleUTube(unittest.TestCase):
                         msg='Incorrect value of fluid heat extraction rate.')
 
 
+class TestMultipleUTube(unittest.TestCase):
+    """ Test cases for MultipleUTube class.
+    """
+
+    def setUp(self):
+        self.r_b = 0.075        # Borehole radius [m]
+        self.H = 100.0          # Borehole length [m]
+        self.r_out = 0.010      # Pipe outer radius [m]
+        self.D_s = 0.060        # Shank spacing [m]
+        self.k_s = 2.0          # Ground thermal conductivity [W/m.K]
+        self.k_g = 1.0          # Grout thermal conductivity [W/m.K]
+        self.cp = 4000          # Fluid specific heat capacity [J/kg.K]
+        # Fluid to outer pipe wall thermal resistance [m.K/W]
+        self.Rfp = 0.0
+
+    def test_outlet_fluid_temperature_parallel(self):
+        """ Tests the value of the outlet fluid temperature for a borehole with
+            multiple U-tubes in parallel.
+        """
+        from pygfunction.pipes import MultipleUTube
+        from pygfunction.boreholes import Borehole
+
+        # Reference solution (Cimmino, 2016)
+        nPipes = [2, 3, 4]      # Number of U-tubes
+        # Fluid mass flow rate [kg/s]
+        m_flow = np.array([0.2*n for n in nPipes])
+        T_b = 1.0               # Borehole wall temperature [degC]
+        Tf_in = 5.0             # Inlet fluid temperature [degC]
+        borehole = Borehole(self.H, 0., self.r_b, 0., 0.)
+
+        Tf_out_ref = np.array([2.0860, 2.2279, 2.4627])
+        # Calculate using pipes.MultipleUTube()
+        Tf_out = np.zeros_like(Tf_out_ref)
+        for i in range(len(nPipes)):
+            pos = self._pipePositions(nPipes[i])
+            UTube = MultipleUTube(pos, 0., self.r_out, borehole,
+                                  self.k_s, self.k_g, self.Rfp, nPipes[i], J=0)
+            # Obtain outlet fluid temperature
+            Tf_out[i] = UTube.get_outlet_temperature(Tf_in, T_b,
+                                                     m_flow[i], self.cp)
+        self.assertTrue(np.allclose(Tf_out, Tf_out_ref, rtol=1e-4, atol=1e-10),
+                        msg='Incorrect value of outlet fluid temperatures for '
+                            'U-tubes in parallel.')
+
+    def test_outlet_fluid_temperature_series(self):
+        """ Tests the value of the outlet fluid temperature for a borehole with
+            multiple U-tubes in series.
+        """
+        from pygfunction.pipes import MultipleUTube
+        from pygfunction.boreholes import Borehole
+
+        # Reference solution (Cimmino, 2016)
+        nPipes = [2, 3, 4]      # Number of U-tubes
+        # Fluid mass flow rate [kg/s]
+        m_flow = 0.3
+        T_b = 1.0               # Borehole wall temperature [degC]
+        Tf_in = 5.0             # Inlet fluid temperature [degC]
+        borehole = Borehole(self.H, 0., self.r_b, 0., 0.)
+
+        Tf_out_ref = np.array([1.6215, 1.2051, 1.1065])
+        # Calculate using pipes.MultipleUTube()
+        Tf_out = np.zeros_like(Tf_out_ref)
+        for i in range(len(nPipes)):
+            pos = self._pipePositions(nPipes[i])
+            UTube = MultipleUTube(pos, 0., self.r_out, borehole,
+                                  self.k_s, self.k_g, self.Rfp, nPipes[i],
+                                  config='series', J=0)
+            # Obtain outlet fluid temperature
+            Tf_out[i] = UTube.get_outlet_temperature(Tf_in, T_b,
+                                                     m_flow, self.cp)
+        self.assertTrue(np.allclose(Tf_out, Tf_out_ref, rtol=1e-4, atol=1e-10),
+                        msg='Incorrect value of outlet fluid temperatures for '
+                            'U-tubes in series.')
+
+    def test_inlet_fluid_temperature_parallel(self):
+        """ Tests the value of the inlet fluid temperature for a borehole with
+            multiple U-tubes in parallel.
+        """
+        from pygfunction.pipes import MultipleUTube
+        from pygfunction.boreholes import Borehole
+
+        # Reference solution (Cimmino, 2016)
+        nPipes = [2, 3, 4]      # Number of U-tubes
+        # Fluid mass flow rate [kg/s]
+        m_flow = np.array([0.2*n for n in nPipes])
+        T_b = 1.0               # Borehole wall temperature [degC]
+        # Outlet fluid temperature [degC]
+        Tf_out = np.array([2.0860, 2.2279, 2.4627])
+        # Inlet fluid temperature [degC]
+        Tf_in_ref = np.array([5.0, 5.0, 5.0])
+        # Total heat transfer rate [W]
+        Qf = m_flow*self.cp*(Tf_out - Tf_in_ref)
+        borehole = Borehole(self.H, 0., self.r_b, 0., 0.)
+
+        # Calculate using pipes.MultipleUTube()
+        Tf_in = np.zeros_like(Tf_in_ref)
+        for i in range(len(nPipes)):
+            pos = self._pipePositions(nPipes[i])
+            UTube = MultipleUTube(pos, 0., self.r_out, borehole,
+                                  self.k_s, self.k_g, self.Rfp, nPipes[i], J=0)
+            # Obtain outlet fluid temperature
+            Tf_in[i] = UTube.get_inlet_temperature(Qf[i], T_b,
+                                                   m_flow[i], self.cp)
+        self.assertTrue(np.allclose(Tf_in, Tf_in_ref, rtol=1e-4, atol=1e-10),
+                        msg='Incorrect value of inlet fluid temperatures for '
+                            'U-tubes in parallel.')
+
+    def test_inlet_fluid_temperature_series(self):
+        """ Tests the value of the inlet fluid temperature for a borehole with
+            multiple U-tubes in series.
+        """
+        from pygfunction.pipes import MultipleUTube
+        from pygfunction.boreholes import Borehole
+
+        # Reference solution (Cimmino, 2016)
+        nPipes = [2, 3, 4]      # Number of U-tubes
+        # Fluid mass flow rate [kg/s]
+        m_flow = 0.3
+        T_b = 1.0               # Borehole wall temperature [degC]
+        # Outlet fluid temperature [degC]
+        Tf_out = np.array([1.6215, 1.2051, 1.1065])
+        # Inlet fluid temperature [degC]
+        Tf_in_ref = np.array([5.0, 5.0, 5.0])
+        # Total heat transfer rate [W]
+        Qf = m_flow*self.cp*(Tf_out - Tf_in_ref)
+        borehole = Borehole(self.H, 0., self.r_b, 0., 0.)
+
+        # Calculate using pipes.MultipleUTube()
+        Tf_in = np.zeros_like(Tf_in_ref)
+        for i in range(len(nPipes)):
+            pos = self._pipePositions(nPipes[i])
+            UTube = MultipleUTube(pos, 0., self.r_out, borehole,
+                                  self.k_s, self.k_g, self.Rfp, nPipes[i],
+                                  config='series', J=0)
+            # Obtain outlet fluid temperature
+            Tf_in[i] = UTube.get_inlet_temperature(Qf[i], T_b,
+                                                   m_flow, self.cp)
+        self.assertTrue(np.allclose(Tf_in, Tf_in_ref, rtol=1e-4, atol=1e-10),
+                        msg='Incorrect value of inlet fluid temperatures for '
+                            'U-tubes in series.')
+
+    def test_fluid_heat_transfer_rate_parallel(self):
+        """ Tests the value of the fluid heat transfer rate for a borehole with
+            multiple U-tubes in parallel.
+        """
+        from pygfunction.pipes import MultipleUTube
+        from pygfunction.boreholes import Borehole
+
+        # Reference solution (Cimmino, 2016)
+        nPipes = [2, 3, 4]      # Number of U-tubes
+        # Fluid mass flow rate [kg/s]
+        m_flow = np.array([0.2*n for n in nPipes])
+        T_b = 1.0               # Borehole wall temperature [degC]
+        # Outlet fluid temperature [degC]
+        Tf_out = np.array([2.0860, 2.2279, 2.4627])
+        # Inlet fluid temperature [degC]
+        Tf_in = np.array([5.0, 5.0, 5.0])
+        # Total heat transfer rate [W]
+        Qf_ref = m_flow*self.cp*(Tf_out - Tf_in)
+        borehole = Borehole(self.H, 0., self.r_b, 0., 0.)
+
+        # Calculate using pipes.MultipleUTube()
+        Qf = np.zeros_like(Qf_ref)
+        for i in range(len(nPipes)):
+            pos = self._pipePositions(nPipes[i])
+            UTube = MultipleUTube(pos, 0., self.r_out, borehole,
+                                  self.k_s, self.k_g, self.Rfp, nPipes[i], J=0)
+            # Obtain outlet fluid temperature
+            Qf[i] = UTube.get_fluid_heat_extraction_rate(Tf_in[i], T_b,
+                                                         m_flow[i], self.cp)
+        self.assertTrue(np.allclose(Qf, Qf_ref, rtol=1e-4, atol=1e-10),
+                        msg='Incorrect value of fluid heat extraction rate '
+                            'for U-tubes in parallel.')
+
+    def test_fluid_heat_transfer_rate_series(self):
+        """ Tests the value of the fluid heat transfer rate for a borehole with
+            multiple U-tubes in series.
+        """
+        from pygfunction.pipes import MultipleUTube
+        from pygfunction.boreholes import Borehole
+
+        # Reference solution (Cimmino, 2016)
+        nPipes = [2, 3, 4]      # Number of U-tubes
+        # Fluid mass flow rate [kg/s]
+        m_flow = 0.3
+        T_b = 1.0               # Borehole wall temperature [degC]
+        # Outlet fluid temperature [degC]
+        Tf_out = np.array([1.6215, 1.2051, 1.1065])
+        # Inlet fluid temperature [degC]
+        Tf_in = np.array([5.0, 5.0, 5.0])
+        # Total heat transfer rate [W]
+        Qf_ref = m_flow*self.cp*(Tf_out - Tf_in)
+        borehole = Borehole(self.H, 0., self.r_b, 0., 0.)
+
+        # Calculate using pipes.MultipleUTube()
+        Qf = np.zeros_like(Qf_ref)
+        for i in range(len(nPipes)):
+            pos = self._pipePositions(nPipes[i])
+            UTube = MultipleUTube(pos, 0., self.r_out, borehole,
+                                  self.k_s, self.k_g, self.Rfp, nPipes[i],
+                                  config='series', J=0)
+            # Obtain outlet fluid temperature
+            Qf[i] = UTube.get_fluid_heat_extraction_rate(Tf_in[i], T_b,
+                                                         m_flow, self.cp)
+        self.assertTrue(np.allclose(Qf, Qf_ref, rtol=1e-4, atol=1e-10),
+                        msg='Incorrect value of fluid heat extraction rate '
+                            'for U-tubes in series.')
+
+    def _pipePositions(self, nPipes):
+        """ Positions pipes in an axisymetric configuration.
+        """
+        dt = pi / float(nPipes)
+        pos = [(0., 0.) for i in range(2*nPipes)]
+        for i in range(nPipes):
+            pos[i] = (self.D_s*np.cos(2.0*i*dt+pi),
+                      self.D_s*np.sin(2.0*i*dt+pi))
+            pos[i+nPipes] = (self.D_s*np.cos(2.0*i*dt+pi+dt),
+                             self.D_s*np.sin(2.0*i*dt+pi+dt))
+        return pos
+
+
 if __name__ == '__main__' and __package__ is None:
     from os import sys, path
     sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
