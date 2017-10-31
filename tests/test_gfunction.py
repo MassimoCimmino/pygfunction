@@ -150,9 +150,8 @@ class TestUniformTemperature(unittest.TestCase):
         from pygfunction.boreholes import rectangle_field
 
         # Results of Cimmino and Bernier (2014)
-        time = np.array([1070, 33554478])*3600.
-        g_ref = np.array([3.66148345464598,
-                          15.1697321426028])
+        time = 33554478*3600.
+        g_ref = 15.1697321426028
 
         # Calculation of the g-function at the same time values
         N_1 = 3
@@ -199,7 +198,7 @@ class TestEqualInletTemperature(unittest.TestCase):
         # Number of line source segments per borehole
         nSegments = 24
         # Very large time values to approximate steady-state
-        time = np.array([1.0e19, 1.0e20])
+        time = 1.0e20
         # Borehole thermal resistances [m.K/W]
         Rb = np.array([0.1, 0.3])
         # Borehole short-circuit resistance [m.K/W]
@@ -228,7 +227,7 @@ class TestEqualInletTemperature(unittest.TestCase):
                 UTube._update_model_variables(self.m_flow, self.cp, nSegments)
             g[i] = equal_inlet_temperature(boreField, UTubes, self.m_flow,
                                            self.cp, time, self.alpha,
-                                           nSegments=nSegments)[-1]
+                                           nSegments=nSegments)
 
         self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-10),
                         msg='Incorrect values of the g-function of one '
@@ -253,13 +252,12 @@ class TestEqualInletTemperature(unittest.TestCase):
         # Number of line source segments per borehole
         nSegments = 24
         # Very large time values to approximate steady-state
-        time = np.array([1.0e19, 1.0e20])
+        time = 1.0e20
         # Borehole thermal resistances [m.K/W]
-        Rb = np.array([0.1, 1.0])
+        Rb = 1.0
         # Borehole short-circuit resistance [m.K/W]
         Ra = 0.25
-        g_ref = np.array([26.3083064038505,
-                          28.0185515095651])
+        g_ref = 28.0185515095651
 
         # Calculation of the g-function at the same time values
         N_1 = 4
@@ -267,22 +265,21 @@ class TestEqualInletTemperature(unittest.TestCase):
         boreField = rectangle_field(N_1, N_2, self.B, self.B,
                                     self.H, self.D, self.r_b)
         g = np.zeros_like(g_ref)
-        for i in range(len(Rb)):
-            UTubes = [SingleUTube(
-                    pos, r_in, r_out, borehole, self.k_s, k_g, 0., J=0)
-                      for borehole in boreField]
-            # Overwrite borehole resistances
-            Rd_00 = 2*Rb[i]
-            Rd_01 = 2*Ra*Rd_00/(2*Rd_00 - Ra)
-            for UTube in UTubes:
-                UTube._Rd[0,0] = Rd_00
-                UTube._Rd[1,1] = Rd_00
-                UTube._Rd[0,1] = Rd_01
-                UTube._Rd[1,0] = Rd_01
-                UTube._update_model_variables(self.m_flow, self.cp, nSegments)
-            g[i] = equal_inlet_temperature(boreField, UTubes, self.m_flow,
-                                           self.cp, time, self.alpha,
-                                           nSegments=nSegments)[-1]
+        UTubes = [SingleUTube(
+                pos, r_in, r_out, borehole, self.k_s, k_g, 0., J=0)
+                  for borehole in boreField]
+        # Overwrite borehole resistances
+        Rd_00 = 2*Rb
+        Rd_01 = 2*Ra*Rd_00/(2*Rd_00 - Ra)
+        for UTube in UTubes:
+            UTube._Rd[0,0] = Rd_00
+            UTube._Rd[1,1] = Rd_00
+            UTube._Rd[0,1] = Rd_01
+            UTube._Rd[1,0] = Rd_01
+            UTube._update_model_variables(self.m_flow, self.cp, nSegments)
+        g = equal_inlet_temperature(boreField, UTubes, self.m_flow,
+                                       self.cp, time, self.alpha,
+                                       nSegments=nSegments)
 
         self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-10),
                         msg='Incorrect values of the g-function of four by '
@@ -302,7 +299,7 @@ class TestThermalResponseFactors(unittest.TestCase):
         self.B = 7.5            # Borehole spacing [m]
         self.alpha = 1.0e-6     # Ground thermal diffusivity [m2/s]
 
-    def test_one_borehole_twelve_segments(self, rel_tol=1.0e-6):
+    def test_one_borehole_four_segments(self, rel_tol=1.0e-6):
         """ Tests the value of the thermal response factor matrix for one
             borehole with and without similarities.
         """
@@ -328,7 +325,7 @@ class TestThermalResponseFactors(unittest.TestCase):
                         msg='Incorrect values of the thermal response factors '
                             'for one borehole (4 segments).')
 
-    def test_three_by_two_twelve_segments(self, rel_tol=1.0e-6):
+    def test_three_by_two_four_segments(self, rel_tol=1.0e-6):
         """ Tests the value of the thermal response factor matrix for three by
             two field with and without similarities.
         """
@@ -354,7 +351,7 @@ class TestThermalResponseFactors(unittest.TestCase):
                         msg='Incorrect values of the thermal response factors '
                             'for three by two field (4 segments).')
 
-    def test_two_unequal_boreholes_twelve_segments(self, rel_tol=1.0e-6):
+    def test_two_unequal_boreholes_four_segments(self, rel_tol=1.0e-6):
         """ Tests the value of the thermal response factor matrix for two
             boreholes of unequal lengths with and without similarities.
         """
