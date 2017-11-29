@@ -40,11 +40,13 @@ the enhancement yourself, provide a step-by-step plan for the implementation.
 3. **Explain how the enhancement benefits _pygfunction_.**
 4. **Create (checkout) a new branch from the master.** The branch name should
 follow the naming convention: `issue#_shortDescription`. For example:
-issue1_unitTests.
-5. Before submitting a
+issue1_loadAggregation.
+5. Implement unit tests for new features. If necessary, update already
+implement tests to cover the new features.
+6. Before submitting a
 [pull request](https://github.com/MassimoCimmino/pygfunction/pulls), **merge
 the master to your branch.**
-6. Once the branch is merged, **delete the branch and close the issue.**
+7. Once the branch is merged, **delete the branch and close the issue.**
 
 
 ## Styleguide

@@ -220,10 +220,15 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
     Hb = np.array([b.H for b in boreSegments])
     # Vector of time steps
     dt = np.hstack((t[0], t[1:] - t[:-1]))
-    # Spline object for thermal response factors
-    h_dt = interp1d(t, h_ij, kind=method, axis=2)
-    # Thermal response factors evaluated at t=dt
-    h_dt = h_dt(dt)
+    if not np.isscalar(time) and len(time) > 1:
+        # Spline object for thermal response factors
+        h_dt = interp1d(np.hstack((0., t)),
+                        np.dstack((np.zeros((nSources,nSources)), h_ij)),
+                        kind=method, axis=2)
+        # Thermal response factors evaluated at t=dt
+        h_dt = h_dt(dt)
+    else:
+        h_dt = h_ij
     # Thermal response factor increments
     dh_ij = np.concatenate((h_ij[:,:,0:1], h_ij[:,:,1:]-h_ij[:,:,:-1]), axis=2)
 
@@ -388,10 +393,15 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
     Hb = np.array([b.H for b in boreSegments])
     # Vector of time steps
     dt = np.hstack((t[0], t[1:] - t[:-1]))
-    # Spline object for thermal response factors
-    h_dt = interp1d(t, h_ij, kind=method, axis=2)
-    # Thermal response factors evaluated at t=dt
-    h_dt = h_dt(dt)
+    if not np.isscalar(time) and len(time) > 1:
+        # Spline object for thermal response factors
+        h_dt = interp1d(np.hstack((0., t)),
+                        np.dstack((np.zeros((nSources,nSources)), h_ij)),
+                        kind=method, axis=2)
+        # Thermal response factors evaluated at t=dt
+        h_dt = h_dt(dt)
+    else:
+        h_dt = h_ij
     # Thermal response factor increments
     dh_ij = np.concatenate((h_ij[:,:,0:1], h_ij[:,:,1:]-h_ij[:,:,:-1]), axis=2)
 
@@ -847,13 +857,14 @@ def load_history_reconstruction(time, Q):
     # Time step sizes
     dt = np.hstack((time[0], time[1:]-time[:-1]))
     # Time vector
-    t = np.hstack((0., time))
+    t = np.hstack((0., time, time[-1] + time[0]))
     # Inverted time step sizes
     dt_reconstructed = dt[::-1]
     # Reconstructed time vector
     t_reconstructed = np.hstack((0., np.cumsum(dt_reconstructed)))
     # Accumulated heat extracted
     f = np.hstack((np.zeros((nSources, 1)), np.cumsum(Q*dt, axis=1)))
+    f = np.hstack((f, f[:,-1:]))
     # Create interpolation object for accumulated heat extracted
     sf = interp1d(t, f, kind='linear', axis=1)
     # Reconstructed load history

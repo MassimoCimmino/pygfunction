@@ -1678,19 +1678,15 @@ def fluid_friction_factor_circular_pipe(m_flow, r_in, visc, den, epsilon,
         # Darcy friction factor for laminar flow
         fDarcy = 64.0 / Re
     else:
-        if Re * E > 65:
-            # Colebrook-White equation for rough pipes
-            fDarcy = 0.02
-            df = 1.0e99
-            while abs(df/fDarcy) > tol:
-                one_over_sqrt_f = -2.0 * np.log10(E / 3.7
-                                                  + 2.51/(Re*np.sqrt(fDarcy)))
-                fDarcy_new = 1.0 / one_over_sqrt_f**2
-                df = fDarcy_new - fDarcy
-                fDarcy = fDarcy_new
-        else:
-            # Blasius equation for smooth pipes
-            fDarcy = 0.3164 * Re**(-0.25)
+        # Colebrook-White equation for rough pipes
+        fDarcy = 0.02
+        df = 1.0e99
+        while abs(df/fDarcy) > tol:
+            one_over_sqrt_f = -2.0 * np.log10(E / 3.7
+                                              + 2.51/(Re*np.sqrt(fDarcy)))
+            fDarcy_new = 1.0 / one_over_sqrt_f**2
+            df = fDarcy_new - fDarcy
+            fDarcy = fDarcy_new
 
     return fDarcy
 
