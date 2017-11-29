@@ -60,27 +60,8 @@ def main():
     LW = 1.5    # Line width
 
     for field in [rectangularField, boxField, UField, LField, circleField]:
-        i = 0   # Initialize borehole index
-        # Initialize figure
-        plt.rc('figure', figsize=(90.0/25.4, 90.0*4.0/4.0/25.4))
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        bbox_props = dict(boxstyle="circle,pad=0.3", fc="white", ec="b", lw=LW)
 
-        for borehole in field:
-            i += 1  # Increment borehole index
-            (x, y) = borehole.position()    # Extract borehole position
-            # Add current borehole to the figure
-            ax.plot(x, y, 'k.')
-            ax.text(x, y, i, ha="center", va="center", size=9, bbox=bbox_props)
-
-        # Configure figure axes
-        ax.set_xlabel('x (m)')
-        ax.set_ylabel('y (m)')
-        plt.axis('equal')
-        ax.xaxis.set_minor_locator(AutoMinorLocator())
-        ax.yaxis.set_minor_locator(AutoMinorLocator())
-        plt.tight_layout()
+        gt.boreholes.visualize_field(field)
 
     return
 
