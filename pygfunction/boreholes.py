@@ -355,3 +355,46 @@ def circle_field(N, R, H, D, r_b):
                                   y=R*np.sin(2*pi*i/N)))
 
     return borefield
+
+
+def field_from_file(filename):
+    """
+    Build a list of boreholes given coordinates and dimensions provided in a
+    text file.
+
+    Parameters
+    ----------
+    filename : str
+        Absolute path to text file.
+
+    Returns
+    -------
+    boreField : list of Borehole objects
+        List of boreholes in the bore field.
+
+    The text file should be formatted as follows:
+
+    .. code-block:: none
+
+       # x   y     H     D     r_b
+       0.    0.    100.  2.5   0.075
+       5.    0.    100.  2.5   0.075
+       0.    5.    100.  2.5   0.075
+       0.    10.   100.  2.5   0.075
+       0.    20.   100.  2.5   0.075
+       
+
+    """
+    # Load data from file
+    data = np.loadtxt(filename)
+    # Build the bore field
+    borefield = []
+    for line in data:
+        x = line[0]
+        y = line[1]
+        H = line[2]
+        D = line[3]
+        r_b = line[4]
+        borefield.append(Borehole(H, D, r_b, x=x, y=y))
+
+    return borefield
