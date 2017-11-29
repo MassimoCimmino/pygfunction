@@ -373,7 +373,9 @@ def field_from_file(filename):
         List of boreholes in the bore field.
 
     The text file should be formatted as follows:
-    .. highlight:: 
+
+    .. code-block:: none
+
        # x   y     H     D     r_b
        0.    0.    100.  2.5   0.075
        5.    0.    100.  2.5   0.075
