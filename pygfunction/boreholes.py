@@ -382,7 +382,6 @@ def field_from_file(filename):
        0.    5.    100.  2.5   0.075
        0.    10.   100.  2.5   0.075
        0.    20.   100.  2.5   0.075
-       
 
     """
     # Load data from file
@@ -396,5 +395,84 @@ def field_from_file(filename):
         D = line[3]
         r_b = line[4]
         borefield.append(Borehole(H, D, r_b, x=x, y=y))
+
+    return borefield
+
+
+def visualize_field(borefield):
+    """
+    Plot the top view and 3D view of borehole positions.
+
+    Parameters
+    ----------
+    borefield : list
+        List of boreholes in the bore field.
+
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import AutoMinorLocator
+    from mpl_toolkits.mplot3d import Axes3D
+    # -------------------------------------------------------------------------
+    # Initialize figure
+    # -------------------------------------------------------------------------
+    LW = 1.5    # Line width
+    bbox_props = dict(boxstyle="circle,pad=0.3", fc="white", ec="b", lw=LW)
+
+    plt.rc('figure', figsize=(160.0/25.4, 80.0*4.0/4.0/25.4))
+    fig = plt.figure()
+
+    # -------------------------------------------------------------------------
+    # Top view
+    # -------------------------------------------------------------------------
+    i = 0   # Initialize borehole index
+    ax0 = fig.add_subplot(121)
+
+    for borehole in borefield:
+        i += 1  # Increment borehole index
+        (x, y) = borehole.position()    # Extract borehole position
+        # Add current borehole to the figure
+        ax0.plot(x, y, 'k.')
+        ax0.text(x, y, i, ha="center", va="center", size=9, bbox=bbox_props)
+
+    # Configure figure axes
+    ax0.set_xlabel('x (m)')
+    ax0.set_ylabel('y (m)')
+    ax0.set_title('Top view')
+    plt.axis('equal')
+    ax0.xaxis.set_minor_locator(AutoMinorLocator())
+    ax0.yaxis.set_minor_locator(AutoMinorLocator())
+
+    # -------------------------------------------------------------------------
+    # 3D view
+    # -------------------------------------------------------------------------
+    i = 0   # Initialize borehole index
+    ax1 = fig.add_subplot(122, projection='3d')
+
+    for borehole in borefield:
+        i += 1  # Increment borehole index
+        # Position of head of borehole
+        (x, y) = borehole.position()
+        # Position of bottom of borehole
+        x_H = x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)
+        y_H = y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)
+        z_H = borehole.D + borehole.H*np.cos(borehole.tilt)
+        # Add current borehole to the figure
+        ax1.plot(np.atleast_1d(x), np.atleast_1d(y), np.atleast_1d(borehole.D),
+                 'ko')
+        ax1.plot(np.array([x, x_H]),
+                 np.array([y, y_H]),
+                 -np.array([borehole.D, z_H]), 'k-')
+
+    # Configure figure axes
+    ax1.set_xlabel('x (m)')
+    ax1.set_ylabel('y (m)')
+    ax1.set_zlabel('z (m)')
+    ax1.set_title('3D view')
+    plt.axis('equal')
+    ax1.xaxis.set_minor_locator(AutoMinorLocator())
+    ax1.yaxis.set_minor_locator(AutoMinorLocator())
+    ax1.zaxis.set_minor_locator(AutoMinorLocator())
+
+    plt.tight_layout()
 
     return borefield
