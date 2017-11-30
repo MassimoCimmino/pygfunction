@@ -12,14 +12,6 @@ import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 from matplotlib.ticker import AutoMinorLocator
 import numpy as np
-import os
-import sys
-
-# Add path to pygfunction to Python path
-packagePath = os.path.normpath(
-        os.path.join(os.path.normpath(os.path.dirname(__file__)),
-                     '..'))
-sys.path.append(packagePath)
 
 import pygfunction as gt
 
