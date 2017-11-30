@@ -70,8 +70,8 @@ def main():
 
     # The field contains only one borehole
     boreField = [gt.boreholes.Borehole(H, D, r_b, x=0., y=0.)]
-    # Get time values needed for g-function evaluation
-    time_gFunc = ClaessonJaved.get_times_for_simulation()
+    # Evaluate the g-function on a geometrically expanding time grid
+    time_gFunc = gt.utilities.time_geometric(dt, tmax, 50)
     # Calculate g-function
     print('Calculation of the g-function ...')
     gFunc = gt.gfunction.uniform_temperature(boreField, time_gFunc, alpha,
@@ -88,9 +88,13 @@ def main():
         print('Simulation using {} ...'.format(loadAgg_labels[n]))
         # Select aggregation scheme
         LoadAgg = LoadAggSchemes[n]
-        # Interpolate g-function at require times
+        # Interpolate g-function at required times
         time_req = LoadAgg.get_times_for_simulation()
-        gFunc_int = interp1d(time_gFunc, gFunc)(time_req)
+        gFunc_int = interp1d(np.hstack([0., time_gFunc]),
+                             np.hstack([0., gFunc]),
+                             kind='cubic',
+                             bounds_error=False,
+                             fill_value=(0., gFunc[-1]))(time_req)
         # Initialize load aggregation scheme
         LoadAgg.initialize(np.reshape(gFunc_int, (1, 1, -1))/(2*pi*k_s))
 
