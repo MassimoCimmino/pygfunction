@@ -6,8 +6,8 @@ Setting up pygfunction
 
 *pygfunction* uses Python 2.7, along with the following packages:
 	- matplotlib (>= 1.5.3)
-	- numpy (>= 1.11.1)
-	- scipy (>= 0.18.1)
+	- numpy (>= 1.11.3)
+	- scipy (>= 1.0.0)
 
 *pygfunction*'s- documentation is built using:
 	- sphinx (>= 1.5.1)
