@@ -12,3 +12,4 @@ Modules
    heat_transfer
    load_aggregation
    pipes
+   utilities
