@@ -96,7 +96,7 @@ def main():
     gFunc = gt.gfunction.uniform_temperature(boreField, time_req, alpha,
                                              nSegments=nSegments)
     # Initialize load aggregation scheme
-    LoadAgg.initialize(np.reshape(gFunc, (1, 1, -1))/(2*pi*k_s))
+    LoadAgg.initialize(gFunc/(2*pi*k_s))
 
     # -------------------------------------------------------------------------
     # Initialize pipe models
