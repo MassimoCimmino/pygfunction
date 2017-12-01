@@ -92,8 +92,11 @@ class ClaessonJaved(_LoadAggregation):
             number of time values at which the thermal response factors are
             required. The time values are returned by
             :func:`~load_aggregation.ClaessonJaved.get_times_for_simulation`.
+            If nSources=1, g_d can be 1 dimensional.
 
         """
+        if self.nSources==1:
+            g_d = g_d.reshape(1, 1, -1)
         # Build matrix of thermal response factor increments
         self.dg = np.zeros_like(g_d)
         self.dg[:,:,0] = g_d[:,:,0]
@@ -258,8 +261,11 @@ class MLAA(_LoadAggregation):
             number of time values at which the thermal response factors are
             required. The time values are returned by
             :func:`~load_aggregation.ClaessonJaved.get_times_for_simulation`.
+            If nSources=1, g_d can be 1 dimensional.
 
         """
+        if self.nSources==1:
+            g_d = g_d.reshape(1, 1, -1)
         self.g_d = g_d
 
     def next_time_step(self, time):
@@ -487,6 +493,7 @@ class Liu(_LoadAggregation):
                  N1=24, N2=5, N3=73, W1=12, W2=3, W3=40):
         self.dt = dt                # Simulation time step
         self.tmax = tmax            # Maximum simulation time
+        self.nSources = nSources    # Number of heat sources
         # Initialize load aggregation cells
         self._build_cells(dt, tmax, nSources, N1, N2, N3, W1, W2, W3)
 
@@ -506,8 +513,11 @@ class Liu(_LoadAggregation):
             number of time values at which the thermal response factors are
             required. The time values are returned by
             :func:`~load_aggregation.ClaessonJaved.get_times_for_simulation`.
+            If nSources=1, g_d can be 1 dimensional.
 
         """
+        if self.nSources==1:
+            g_d = g_d.reshape(1, 1, -1)
         self.g_d = g_d
 
     def next_time_step(self, time):

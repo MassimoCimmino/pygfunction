@@ -88,7 +88,7 @@ def main():
                              bounds_error=False,
                              fill_value=(0., gFunc[-1]))(time_req)
         # Initialize load aggregation scheme
-        LoadAgg.initialize(np.reshape(gFunc_int, (1, 1, -1))/(2*pi*k_s))
+        LoadAgg.initialize(gFunc_int/(2*pi*k_s))
 
         tic = tim.time()
         time = 0.
