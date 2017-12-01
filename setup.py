@@ -15,6 +15,7 @@ setup(
     install_requires=['matplotlib>=1.5.3',
 	                  'numpy>=1.11.3',
 					  'scipy>=1.0.0'],
+    test_suite='tests',
 
     # metadata for upload to PyPI
     author="Massimo Cimmino",
