@@ -10,11 +10,11 @@ setup(
     name="pygfunction",
     version="1.0.0",
     packages=['pygfunction',
-			  'pygfunction/examples'],
-	include_package_data=True,
+              'pygfunction/examples'],
+    include_package_data=True,
     install_requires=['matplotlib>=1.5.3',
-	                  'numpy>=1.11.3',
-					  'scipy>=1.0.0'],
+                      'numpy>=1.11.3',
+                      'scipy>=1.0.0'],
     test_suite='tests',
 
     # metadata for upload to PyPI
@@ -34,7 +34,7 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.6",
-		"Topic :: Scientific/Engineering",
-		"Topic :: Utilities",
+        "Topic :: Scientific/Engineering",
+        "Topic :: Utilities",
     ],
 )
