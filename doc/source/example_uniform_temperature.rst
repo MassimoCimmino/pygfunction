@@ -14,9 +14,9 @@ The following script generates the *g*-functions of rectangular fields of
 *g*-functions presented by Cimmino and Bernier [1]_.
 
 The script is located in: 
-`./examples/uniform_temperature.py`
+`pygfunction/examples/uniform_temperature.py`
 
-.. literalinclude:: ../../examples/uniform_temperature.py
+.. literalinclude:: ../../pygfunction/examples/uniform_temperature.py
    :language: python
    :linenos:
 

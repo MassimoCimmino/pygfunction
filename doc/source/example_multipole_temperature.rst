@@ -18,9 +18,9 @@ borehole with 2 pipes are then calculated. Results are verified against the
 results of Claesson and Hellstrom [1]_.
 
 The script is located in: 
-`./examples/multipole_temperature.py`
+`pygfunction/examples/multipole_temperature.py`
 
-.. literalinclude:: ../../examples/multipole_temperature.py
+.. literalinclude:: ../../pygfunction/examples/multipole_temperature.py
    :language: python
    :linenos:
 

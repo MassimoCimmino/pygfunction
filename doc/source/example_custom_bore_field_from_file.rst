@@ -12,8 +12,8 @@ The following script generates a bore field with 32 boreholes. The field is
 then plotted on a figure.
 
 The script is located in: 
-`./examples/custom_bore_field_from_file.py`
+`./pygfunction/examples/custom_bore_field_from_file.py`
 
-.. literalinclude:: ../../examples/custom_bore_field_from_file.py
+.. literalinclude:: ../../pygfunction/examples/custom_bore_field_from_file.py
    :language: python
    :linenos:
