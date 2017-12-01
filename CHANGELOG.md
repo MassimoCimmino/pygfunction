@@ -2,6 +2,8 @@
 
 ## Current version
 
+## Version 1.0.0 (2017-12-01)
+
 ### New features
 
 * [Issue 4](https://github.com/MassimoCimmino/pygfunction/issues/4) - Unit testing and integration with [Travis CI](https://travis-ci.org/MassimoCimmino/pygfunction/).
