@@ -487,6 +487,7 @@ class Liu(_LoadAggregation):
                  N1=24, N2=5, N3=73, W1=12, W2=3, W3=40):
         self.dt = dt                # Simulation time step
         self.tmax = tmax            # Maximum simulation time
+        self.nSources = nSources    # Number of heat sources
         # Initialize load aggregation cells
         self._build_cells(dt, tmax, nSources, N1, N2, N3, W1, W2, W3)
 
