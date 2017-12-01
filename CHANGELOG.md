@@ -8,6 +8,7 @@
 * [Issue 16](https://github.com/MassimoCimmino/pygfunction/issues/16) - Added capability to import bore field from external text files.
 * [Issue 18](https://github.com/MassimoCimmino/pygfunction/issues/18) - Added capability to visualize bore fields.
 * [Issue 20](https://github.com/MassimoCimmino/pygfunction/issues/20) - Added utilities module.
+* [Issue 5](https://github.com/MassimoCimmino/pygfunction/issues/5) - Added setup.py installation script using setuptools. *pygfunction* will now be available on [pypi](https://pypi.python.org/pypi/pygfunction).
 
 ### Bug fixes
 

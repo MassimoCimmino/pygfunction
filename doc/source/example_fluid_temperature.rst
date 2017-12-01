@@ -17,9 +17,9 @@ compared: (1) a single U-tube, using the model of Eskilson and Claesson
 a double U-tube in series, using the model of Cimmino [4]_.
 
 The script is located in: 
-`./examples/fluid_temperature.py`
+`pygfunction/examples/fluid_temperature.py`
 
-.. literalinclude:: ../../examples/fluid_temperature.py
+.. literalinclude:: ../../pygfunction/examples/fluid_temperature.py
    :language: python
    :linenos:
 

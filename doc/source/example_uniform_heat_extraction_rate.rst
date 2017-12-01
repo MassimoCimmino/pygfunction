@@ -13,9 +13,9 @@ The following script generates the *g*-functions of rectangular fields of
 *g*-functions presented by Cimmino and Bernier [1]_.
 
 The script is located in: 
-`./examples/uniform_heat_extraction_rate.py`
+`pygfunction/examples/uniform_heat_extraction_rate.py`
 
-.. literalinclude:: ../../examples/uniform_heat_extraction_rate.py
+.. literalinclude:: ../../pygfunction/examples/uniform_heat_extraction_rate.py
    :language: python
    :linenos:
 
