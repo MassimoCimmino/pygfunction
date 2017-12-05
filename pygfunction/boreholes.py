@@ -408,6 +408,11 @@ def visualize_field(borefield):
     borefield : list
         List of boreholes in the bore field.
 
+    Returns
+    -------
+    fig : figure
+        Figure object (matplotlib).
+
     """
     import matplotlib.pyplot as plt
     from matplotlib.ticker import AutoMinorLocator
@@ -473,6 +478,6 @@ def visualize_field(borefield):
     ax1.yaxis.set_minor_locator(AutoMinorLocator())
     ax1.zaxis.set_minor_locator(AutoMinorLocator())
 
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0.0, 0.95, 1.0])
 
-    return borefield
+    return fig
