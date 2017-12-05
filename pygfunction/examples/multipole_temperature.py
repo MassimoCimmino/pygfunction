@@ -99,7 +99,7 @@ def main():
     data = np.loadtxt(filePath, skiprows=1)
 
     # Plot temperatures
-    plt.rc('figure')
+    plt.rc('figure', figsize=(80.0/25.4, 80.0/25.4))
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
     ax1.plot(x, T, 'b-', lw=1.5, label='pygfunction')
@@ -107,7 +107,7 @@ def main():
              label='Claesson and Hellstrom (2011)')
     ax1.legend(loc='upper left')
     # Axis labels
-    ax1.set_xlabel(r'$x$')
+    ax1.set_xlabel(r'x (m)')
     ax1.set_ylabel(r'$T(x,0)$')
     # Axis limits
     ax1.set_xlim([-0.1, 0.1])
@@ -137,7 +137,7 @@ def main():
                                                y_T=Y.flatten())
 
     # Plot temperatures
-    plt.rc('figure')
+    plt.rc('figure', figsize=(80.0/25.4, 80.0/25.4))
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
     # Borehole wall outline
@@ -154,11 +154,16 @@ def main():
                      np.linspace(-0.2, 1.0, num=7))
     plt.clabel(CS, inline=1, fontsize=10)
     # Axis labels
-    ax1.set_xlabel(r'$x$')
-    ax1.set_ylabel(r'$y$')
+    ax1.set_xlabel('x (m)')
+    ax1.set_ylabel('y (m)')
     # Axis limits
     plt.axis([-0.1, 0.1, -0.1, 0.1])
     plt.gca().set_aspect('equal', adjustable='box')
+    # Show minor ticks
+    ax1.xaxis.set_minor_locator(AutoMinorLocator())
+    ax1.yaxis.set_minor_locator(AutoMinorLocator())
+    # Adjust to plot window
+    plt.tight_layout()
 
     return
 
