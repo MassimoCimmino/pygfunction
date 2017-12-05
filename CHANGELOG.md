@@ -2,6 +2,14 @@
 
 ## Current version
 
+### New features
+
+* [Commit 2bd12bd](https://github.com/MassimoCimmino/pygfunction/commit/2bd12bd254928889431366c2ddd38539e246ef05) - Implemented `UTube.visualize_pipes()` class method.
+
+### Bug fixes
+
+* [Commit 2523f67](https://github.com/MassimoCimmino/pygfunction/commit/2523f67e7a932538c1135bba52e0d4035f866e3e) - `boreholes.visualize_field()` now returns the figure object.
+
 ## Version 1.0.0 (2017-12-01)
 
 ### New features
