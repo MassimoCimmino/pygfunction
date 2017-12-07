@@ -3,6 +3,8 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 
+from . import utilities
+
 
 class _LoadAggregation(object):
     """
@@ -59,15 +61,15 @@ class ClaessonJaved(_LoadAggregation):
     cells_per_level : int, optional
         Number of load aggregation cells per level of aggregation. Cell widths
         double every cells_per_level cells.
-        Default is 6.
+        Default is 5.
 
     References
     ----------
-    .. [#ClaessonJaved2012] Claesson, J., & Javed, S. (2011). A
+    .. [#ClaessonJaved2012] Claesson, J., & Javed, S. (2012). A
        load-aggregation method to calculate extraction temperatures of
        borehole heat exchangers. ASHRAE Transactions, 118 (1): 530–539.
     """
-    def __init__(self, dt, tmax, nSources=1, cells_per_level=6, **kwargs):
+    def __init__(self, dt, tmax, nSources=1, cells_per_level=5, **kwargs):
         self.dt = dt                # Simulation time step
         self.tmax = tmax            # Maximum simulation time
         self.nSources = nSources    # Number of heat sources
@@ -90,8 +92,11 @@ class ClaessonJaved(_LoadAggregation):
             number of time values at which the thermal response factors are
             required. The time values are returned by
             :func:`~load_aggregation.ClaessonJaved.get_times_for_simulation`.
+            If nSources=1, g_d can be 1 dimensional.
 
         """
+        if self.nSources==1:
+            g_d = g_d.reshape(1, 1, -1)
         # Build matrix of thermal response factor increments
         self.dg = np.zeros_like(g_d)
         self.dg[:,:,0] = g_d[:,:,0]
@@ -191,21 +196,12 @@ class ClaessonJaved(_LoadAggregation):
             widths double every cells_per_level cells.
 
         """
-        time = 0.0
-        i = 0
-        # Calculate time of load aggregation cells
-        self._time = []
-        self._width = []
-        while time < tmax:
-            i += 1
-            v = np.ceil(i / cells_per_level)
-            width = 2.0**(v-1)
-            time += width*float(dt)
-            self._time.append(time)
-            self._width.append(width)
+        self._time = utilities.time_ClaessonJaved(
+                dt, tmax, cells_per_level=cells_per_level)
+        self._width = np.hstack((1,
+                                 (self._time[1:] - self._time[:-1])/dt))
         # Initialize aggregated loads
         self.Q = np.zeros((nSources, len(self._time)))
-        self._time = np.array(self._time)
 
 
 class MLAA(_LoadAggregation):
@@ -265,8 +261,11 @@ class MLAA(_LoadAggregation):
             number of time values at which the thermal response factors are
             required. The time values are returned by
             :func:`~load_aggregation.ClaessonJaved.get_times_for_simulation`.
+            If nSources=1, g_d can be 1 dimensional.
 
         """
+        if self.nSources==1:
+            g_d = g_d.reshape(1, 1, -1)
         self.g_d = g_d
 
     def next_time_step(self, time):
@@ -494,6 +493,7 @@ class Liu(_LoadAggregation):
                  N1=24, N2=5, N3=73, W1=12, W2=3, W3=40):
         self.dt = dt                # Simulation time step
         self.tmax = tmax            # Maximum simulation time
+        self.nSources = nSources    # Number of heat sources
         # Initialize load aggregation cells
         self._build_cells(dt, tmax, nSources, N1, N2, N3, W1, W2, W3)
 
@@ -513,8 +513,11 @@ class Liu(_LoadAggregation):
             number of time values at which the thermal response factors are
             required. The time values are returned by
             :func:`~load_aggregation.ClaessonJaved.get_times_for_simulation`.
+            If nSources=1, g_d can be 1 dimensional.
 
         """
+        if self.nSources==1:
+            g_d = g_d.reshape(1, 1, -1)
         self.g_d = g_d
 
     def next_time_step(self, time):

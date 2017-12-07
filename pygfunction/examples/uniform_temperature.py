@@ -12,14 +12,6 @@ import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 from matplotlib.ticker import AutoMinorLocator
 import numpy as np
-import os
-import sys
-
-# Add path to pygfunction to Python path
-packagePath = os.path.normpath(
-        os.path.join(os.path.normpath(os.path.dirname(__file__)),
-                     '..'))
-sys.path.append(packagePath)
 
 import pygfunction as gt
 
@@ -44,25 +36,12 @@ def main():
     # Number of segments per borehole
     nSegments = 12
 
-    # Time vector
-    # The inital time step is 100 hours (360000 seconds) and doubles every 6
-    # time steps. The maximum time is 3000 years (9.4608 x 10^10 seconds).
-    dt = 100*3600.                      # Time step
+    # Geometrically expanding time vector.
+    dt = 100*3600.                  # Time step
     tmax = 3000. * 8760. * 3600.    # Maximum time
+    Nt = 50                         # Number of time steps
     ts = H**2/(9.*alpha)            # Bore field characteristic time
-    cells_per_level = 6
-    time = []
-    _width = []
-    i = 0
-    t_end = 0.
-    while t_end < tmax:
-        i += 1
-        v = np.ceil(i / cells_per_level)
-        width = 2.0**(v-1)
-        t_end += width*float(dt)
-        time.append(t_end)
-        _width.append(width)
-    time = np.array(time)
+    time = gt.utilities.time_geometric(dt, tmax, Nt)
 
     # -------------------------------------------------------------------------
     # Borehole fields

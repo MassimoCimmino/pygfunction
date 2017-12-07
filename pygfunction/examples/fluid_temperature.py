@@ -16,15 +16,7 @@ from __future__ import division, print_function, absolute_import
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 import numpy as np
-import os
 from scipy.constants import pi
-import sys
-
-# Add path to pygfunction to Python path
-packagePath = os.path.normpath(
-        os.path.join(os.path.normpath(os.path.dirname(__file__)),
-                     '..'))
-sys.path.append(packagePath)
 
 import pygfunction as gt
 
@@ -96,7 +88,7 @@ def main():
     gFunc = gt.gfunction.uniform_temperature(boreField, time_req, alpha,
                                              nSegments=nSegments)
     # Initialize load aggregation scheme
-    LoadAgg.initialize(np.reshape(gFunc, (1, 1, -1))/(2*pi*k_s))
+    LoadAgg.initialize(gFunc/(2*pi*k_s))
 
     # -------------------------------------------------------------------------
     # Initialize pipe models

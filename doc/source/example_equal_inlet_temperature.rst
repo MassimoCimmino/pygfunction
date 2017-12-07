@@ -17,9 +17,9 @@ conditions of uniform heat extraction rate and of uniform borehole wall
 temperature.
 
 The script is located in: 
-`./examples/equal_inlet_temperature.py`
+`pygfunction/examples/equal_inlet_temperature.py`
 
-.. literalinclude:: ../../examples/equal_inlet_temperature.py
+.. literalinclude:: ../../pygfunction/examples/equal_inlet_temperature.py
    :language: python
    :linenos:
 
