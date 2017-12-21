@@ -9,6 +9,7 @@
 ### Bug fixes
 
 * [Commit 2523f67](https://github.com/MassimoCimmino/pygfunction/commit/2523f67e7a932538c1135bba52e0d4035f866e3e) - `boreholes.visualize_field()` now returns the figure object.
+* [Issue 25](https://github.com/MassimoCimmino/pygfunction/issues/25) - Fixed documentation of ./examples/uniform_temperature.py.
 
 ## Version 1.0.0 (2017-12-01)
 
