@@ -8,6 +8,7 @@ from scipy.constants import pi
 import time as tim
 
 from .boreholes import Borehole
+from .heat_transfer import thermal_response_factors
 
 
 def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
