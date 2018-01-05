@@ -561,6 +561,10 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
     # Initialize segment heat extraction rates
     Q = np.zeros((nSources, nt))
 
+    # If m_flow is supplied as float, apply m_flow to all boreholes
+    if np.isscalar(m_flow):
+        m_flow = np.tile(m_flow, nBoreholes)
+
     # Verify that borehole connectivity is valid
     _verify_bore_connectivity(bore_connectivity, nBoreholes)
 
@@ -612,7 +616,6 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
         j1 = i*nSegments
         j2 = (i + 1)*nSegments
         # Coefficients for current borehole
-
         a_in, a_b = UTubes[i].coefficients_borehole_heat_extraction_rate(
                 m_flow[i], cp, nSegments)
         # [a_b] is the coefficient matrix for [T_{b,i}]
@@ -621,19 +624,18 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
         A_eq2[j1:j2, n1:n2] = a_b / (-2.0*pi*UTubes[i].k_s*Hi)
 
         # Assemble matrix coefficient for [T_{f,in}] and all [T_b]
-        path = _path_from_inlet(bore_connectivity, i)
+        path = _path_to_inlet(bore_connectivity, i)
         b_in = a_in
-        if len(path) > 0:
-            for j in path[::-1]:
-                # Coefficients for borehole j
-                c_in, c_b = UTubes[j].coefficients_outlet_temperature(
-                        m_flow[j], cp, nSegments)
-                # Assign the coefficient matrix for [T_{b,j}]
-                n2 = (j + 1)*nSegments + nSources
-                n1 = j*nSegments + nSources
-                A_eq2[j1:j2, n1:n2] = b_in.dot(c_b)/(-2.0*pi*UTubes[i].k_s*Hi)
-                # Keep on building coefficient for [T_{f,in}]
-                b_in = b_in.dot(c_in)
+        for j in path[1:]:
+            # Coefficients for borehole j
+            c_in, c_b = UTubes[j].coefficients_outlet_temperature(
+                    m_flow[j], cp, nSegments)
+            # Assign the coefficient matrix for [T_{b,j}]
+            n2 = (j + 1)*nSegments + nSources
+            n1 = j*nSegments + nSources
+            A_eq2[j1:j2, n1:n2] = b_in.dot(c_b)/(-2.0*pi*UTubes[i].k_s*Hi)
+            # Keep on building coefficient for [T_{f,in}]
+            b_in = b_in.dot(c_in)
         A_eq2[j1:j2, -1:] = b_in / (-2.0*pi*UTubes[i].k_s*Hi)
 
     # Energy conservation: sum([Qb*Hb]) = sum([Hb])
@@ -663,6 +665,7 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
         # The gFunction is equal to the average borehole wall temperature
         Tb = X[nSources:2*nSources]
         gFunction[p] = Tb.dot(Hb) / np.sum(Hb)
+
     toc2 = tim.time()
 
     if disp:
@@ -783,9 +786,9 @@ def _temporal_superposition(dh_ij, Q):
     return Tb_0
 
 
-def _path_from_inlet(bore_connectivity, bore_index):
+def _path_to_inlet(bore_connectivity, bore_index):
     """
-    Verifies that borehole connectivity is valid.
+    Returns the path from a borehole to the bore field inlet.
 
     This function raises an error if the supplied borehole connectivity is
     invalid.
@@ -801,19 +804,18 @@ def _path_from_inlet(bore_connectivity, bore_index):
     Returns
     -------
     path : list
-        List of boreholes leading to the borehole. An empty list is return if
-        the borehole is connected to the bore field inlet
-        (bore_connectivity[bore_index] == -1).
+        List of boreholes leading to the bore field inlet, starting from
+        borehole bore_index
 
     """
     # Initialize path
-    path = []
+    path = [bore_index]
     # Index of borehole feeding into borehole (bore_index)
     index_in = bore_connectivity[bore_index]
     # Stop when bore field inlet is reached (index_in == -1)
     while not index_in == -1:
-        # Add index of upstream borehole to front of path
-        path.insert(0, index_in)
+        # Add index of upstream borehole to path
+        path.append(index_in)
         # Get index of next upstream borehole
         index_in = bore_connectivity[index_in]
 
