@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-""" Example of calculation of g-functions using uniform heat extraction rates.
+""" Example of calculation of g-functions using uniform and equal borehole
+    wall temperatures.
 
     The g-functions of fields of 3x2, 6x4 and 10x10 boreholes are calculated
-    for boundary condition of uniform heat extraction rate along the boreholes,
-    equal for all boreholes.
+    for boundary condition of uniform borehole wall temperature along the
+    boreholes, equal for all boreholes.
 
 """
 from __future__ import division, print_function, absolute_import
@@ -12,14 +13,6 @@ import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 from matplotlib.ticker import AutoMinorLocator
 import numpy as np
-import os
-import sys
-
-# Add path to pygfunction to Python path
-packagePath = os.path.normpath(
-        os.path.join(os.path.normpath(os.path.dirname(__file__)),
-                     '..'))
-sys.path.append(packagePath)
 
 import pygfunction as gt
 
@@ -39,27 +32,17 @@ def main():
     alpha = 1.0e-6      # Ground thermal diffusivity (m2/s)
 
     # Path to validation data
-    filePath = './data/CiBe14_uniform_heat_extraction_rate.txt'
+    filePath = './data/CiBe14_uniform_temperature.txt'
 
-    # Time vector
-    # The inital time step is 100 hours (360000 seconds) and doubles every 6
-    # time steps. The maximum time is 3000 years (9.4608 x 10^10 seconds).
+    # Number of segments per borehole
+    nSegments = 12
+
+    # Geometrically expanding time vector.
     dt = 100*3600.                  # Time step
     tmax = 3000. * 8760. * 3600.    # Maximum time
+    Nt = 50                         # Number of time steps
     ts = H**2/(9.*alpha)            # Bore field characteristic time
-    cells_per_level = 6
-    time = []
-    _width = []
-    i = 0
-    t_end = 0.
-    while t_end < tmax:
-        i += 1
-        v = np.ceil(i / cells_per_level)
-        width = 2.0**(v-1)
-        t_end += width*float(dt)
-        time.append(t_end)
-        _width.append(width)
-    time = np.array(time)
+    time = gt.utilities.time_geometric(dt, tmax, Nt)
 
     # -------------------------------------------------------------------------
     # Borehole fields
@@ -92,7 +75,7 @@ def main():
     ax1.set_ylabel(r'$g(t/t_s)$')
     # Axis limits
     ax1.set_xlim([-10.0, 5.0])
-    ax1.set_ylim([0., 100.])
+    ax1.set_ylim([0., 70.])
     # Show minor ticks
     ax1.xaxis.set_minor_locator(AutoMinorLocator())
     ax1.yaxis.set_minor_locator(AutoMinorLocator())
@@ -104,8 +87,9 @@ def main():
     # -------------------------------------------------------------------------
     for field in [boreField1, boreField2, boreField3]:
         # Calculate g-function
-        gfunc = gt.gfunction.uniform_heat_extraction(field, time, alpha,
-                                                     disp=True)
+        gfunc = gt.gfunction.uniform_temperature(field, time, alpha,
+                                                 nSegments=nSegments,
+                                                 disp=True)
         # Draw g-function
         ax1.plot(np.log(time/ts), gfunc, 'k-', lw=1.5)
     calculated = mlines.Line2D([], [],

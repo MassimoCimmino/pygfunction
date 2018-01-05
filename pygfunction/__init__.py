@@ -5,3 +5,4 @@ from . import gfunction
 from . import heat_transfer
 from . import load_aggregation
 from . import pipes
+from . import utilities

@@ -13,8 +13,8 @@ bore fields in a 4 x 3 configuration as well as a circular field of 8
 boreholes. Each field is then plotted on a separate figure.
 
 The script is located in: 
-`./examples/regular_bore_field.py`
+`pygfunction/examples/regular_bore_field.py`
 
-.. literalinclude:: ../../examples/regular_bore_field.py
+.. literalinclude:: ../../pygfunction/examples/regular_bore_field.py
    :language: python
    :linenos:

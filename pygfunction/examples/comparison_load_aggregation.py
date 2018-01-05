@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
-""" Example of simulation of a geothermal system.
+""" Comparison of the accuracy and computational speed of different load
+    aggregation algorithms.
 
     The g-function of a single borehole is calculated for boundary condition of
     uniform borehole wall temperature along the borehole. Then, the borehole
     wall temperature variations resulting from a time-varying load profile
-    are simulated using the aggregation method of Claesson and Javed (2012).
+    are simulated using the aggregation methods of Bernier et al. (2004),
+    Liu (2005), and Claesson and Javed (2012). Results are compared to the
+    exact solution obtained by convolution in the Fourier domain.
+
+    Default parameters are used for each of the aggregation schemes.
 
 """
 from __future__ import division, print_function, absolute_import
@@ -12,17 +17,10 @@ from __future__ import division, print_function, absolute_import
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 import numpy as np
-import os
 from scipy.constants import pi
 from scipy.interpolate import interp1d
 from scipy.signal import fftconvolve
-import sys
-
-# Add path to pygfunction to Python path
-packagePath = os.path.normpath(
-        os.path.join(os.path.normpath(os.path.dirname(__file__)),
-                     '..'))
-sys.path.append(packagePath)
+import time as tim
 
 import pygfunction as gt
 
@@ -50,8 +48,13 @@ def main():
     tmax = 20.*8760. * 3600.    # Maximum time (s)
     Nt = int(np.ceil(tmax/dt))  # Number of time steps
 
-    # Load aggregation scheme
-    LoadAgg = gt.load_aggregation.ClaessonJaved(dt, tmax)
+    # Load aggregation schemes
+    ClaessonJaved = gt.load_aggregation.ClaessonJaved(dt, tmax)
+    MLAA = gt.load_aggregation.MLAA(dt, tmax)
+    Liu = gt.load_aggregation.Liu(dt, tmax)
+    LoadAggSchemes = [ClaessonJaved, MLAA, Liu]
+    loadAgg_labels = ['Claesson and Javed', 'MLAA', 'Liu']
+    loadAgg_lines = ['b-', 'k--', 'r-.']
 
     # -------------------------------------------------------------------------
     # Calculate g-function
@@ -59,37 +62,54 @@ def main():
 
     # The field contains only one borehole
     boreField = [gt.boreholes.Borehole(H, D, r_b, x=0., y=0.)]
-    # Get time values needed for g-function evaluation
-    time_req = LoadAgg.get_times_for_simulation()
+    # Evaluate the g-function on a geometrically expanding time grid
+    time_gFunc = gt.utilities.time_geometric(dt, tmax, 50)
     # Calculate g-function
-    gFunc = gt.gfunction.uniform_temperature(boreField, time_req, alpha,
+    print('Calculation of the g-function ...')
+    gFunc = gt.gfunction.uniform_temperature(boreField, time_gFunc, alpha,
                                              nSegments=nSegments)
-    # Initialize load aggregation scheme
-    LoadAgg.initialize(np.reshape(gFunc, (1, 1, -1))/(2*pi*k_s))
 
     # -------------------------------------------------------------------------
     # Simulation
     # -------------------------------------------------------------------------
-
-    time = 0.
-    i = -1
-    T_b = np.zeros(Nt)
+    nLoadAgg = len(LoadAggSchemes)
+    T_b = np.zeros((nLoadAgg, Nt))
     Q = np.zeros(Nt)
-    while time < tmax:
-        # Increment time step by (1)
-        time += dt
-        i += 1
-        LoadAgg.next_time_step(time)
+    t_calc = np.zeros(nLoadAgg)
+    for n in range(nLoadAgg):
+        print('Simulation using {} ...'.format(loadAgg_labels[n]))
+        # Select aggregation scheme
+        LoadAgg = LoadAggSchemes[n]
+        # Interpolate g-function at required times
+        time_req = LoadAgg.get_times_for_simulation()
+        gFunc_int = interp1d(np.hstack([0., time_gFunc]),
+                             np.hstack([0., gFunc]),
+                             kind='cubic',
+                             bounds_error=False,
+                             fill_value=(0., gFunc[-1]))(time_req)
+        # Initialize load aggregation scheme
+        LoadAgg.initialize(gFunc_int/(2*pi*k_s))
 
-        # Evaluate heat extraction rate
-        Q[i] = synthetic_load(time/3600.)
+        tic = tim.time()
+        time = 0.
+        i = -1
+        while time < tmax:
+            # Increment time step by (1)
+            time += dt
+            i += 1
+            LoadAgg.next_time_step(time)
 
-        # Apply current load
-        LoadAgg.set_current_load(Q[i]/H)
+            # Evaluate heat extraction rate
+            Q[i] = synthetic_load(time/3600.)
 
-        # Evaluate borehole wall temeprature
-        deltaT_b = LoadAgg.temporal_superposition()
-        T_b[i] = T_g - deltaT_b
+            # Apply current load
+            LoadAgg.set_current_load(Q[i]/H)
+
+            # Evaluate borehole wall temeprature
+            deltaT_b = LoadAgg.temporal_superposition()
+            T_b[n,i] = T_g - deltaT_b
+        toc = tim.time()
+        t_calc[n] = toc - tic
 
     # -------------------------------------------------------------------------
     # Calculate exact solution from convolution in the Fourier domain
@@ -100,7 +120,7 @@ def main():
     dQ[0] = Q[0]
     # Interpolated g-function
     time = np.array([(j+1)*dt for j in range(Nt)])
-    g = interp1d(time_req, gFunc)(time)
+    g = interp1d(time_gFunc, gFunc)(time)
     for i in range(1, Nt):
         dQ[i] = Q[i] - Q[i-1]
 
@@ -125,14 +145,19 @@ def main():
     # Axis labels
     ax2.set_xlabel(r'$t$ (hours)')
     ax2.set_ylabel(r'$T_b$ (degC)')
-    ax2.plot(hours, T_b, 'b-', lw=1.5)
-    ax2.plot(hours, T_b_exact, 'k.', lw=1.5)
+    for n in range(nLoadAgg):
+        ax2.plot(hours, T_b[n,:],
+                 loadAgg_lines[n], lw=1.5, label=loadAgg_labels[n])
+    ax2.plot(hours, T_b_exact, 'k.', lw=1.5, label='exact')
+    ax2.legend()
 
     ax3 = fig.add_subplot(313)
     # Axis labels
     ax3.set_xlabel(r'$t$ (hours)')
     ax3.set_ylabel(r'Error (degC)')
-    ax3.plot(hours, T_b - T_b_exact, 'b-', lw=1.5)
+    for n in range(nLoadAgg):
+        ax3.plot(hours, T_b[n,:] - T_b_exact,
+                 loadAgg_lines[n], lw=1.5, label=loadAgg_labels[n])
     # Show minor ticks
     ax1.xaxis.set_minor_locator(AutoMinorLocator())
     ax1.yaxis.set_minor_locator(AutoMinorLocator())
@@ -142,6 +167,25 @@ def main():
     ax3.yaxis.set_minor_locator(AutoMinorLocator())
     # Adjust to plot window
     plt.tight_layout()
+
+    # -------------------------------------------------------------------------
+    # Print performance metrics
+    # -------------------------------------------------------------------------
+
+    # Maximum errors in evaluation of borehole wall temperatures
+    maxError = np.array([np.max(np.abs(T_b[n,:]-T_b_exact))
+                         for n in range(nLoadAgg)])
+    # Print results
+    print('Simulation results')
+    horizontalLine = '-'*66
+    for n in range(nLoadAgg):
+        print(horizontalLine)
+        print(loadAgg_labels[n])
+        print()
+        print('Maximum absolute error : {} degC'.format(maxError[n]))
+        print('Calculation time : {} seconds'.format(t_calc[n]))
+        print()
+    print(horizontalLine)
 
     return
 
@@ -161,14 +205,15 @@ def synthetic_load(x):
     G = 0.95
 
     func = (168.0-C)/168.0
-    for i in [1,2,3]:
-        func += 1.0/(i*pi)*(np.cos(C*pi*i/84.0)-1.0) \
-                          *(np.sin(pi*i/84.0*(x-B)))
-    func = func*A*np.sin(pi/12.0*(x-B)) \
-           *np.sin(pi/4380.0*(x-B))
+    for i in [1, 2, 3]:
+        func += 1.0/(i*pi)*(np.cos(C*pi*i/84.0) - 1.0) \
+                          *(np.sin(pi*i/84.0*(x - B)))
+    func = func*A*np.sin(pi/12.0*(x - B)) \
+        *np.sin(pi/4380.0*(x - B))
 
-    y = func + (-1.0)**np.floor(D/8760.0*(x-B))*abs(func) \
-      + E*(-1.0)**np.floor(D/8760.0*(x-B))/np.sign(np.cos(D*pi/4380.0*(x-F))+G)
+    y = func + (-1.0)**np.floor(D/8760.0*(x - B))*abs(func) \
+        + E*(-1.0)**np.floor(D/8760.0*(x - B)) \
+        /np.sign(np.cos(D*pi/4380.0*(x - F)) + G)
     return -np.array([y])
 
 

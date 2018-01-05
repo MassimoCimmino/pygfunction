@@ -24,7 +24,7 @@ class _BasePipe(object):
 
     """
     def __init__(self, borehole):
-        self.borehole = borehole
+        self.b = borehole
         self.nPipes = 1
         self.nInlets = 1
         self.nOutlets = 1
@@ -529,6 +529,69 @@ class _BasePipe(object):
                                           method_id)
 
         return a_in, a_b
+
+    def visualize_pipes(self):
+        """
+        Plot the cross-section view of the borehole.
+
+        Returns
+        -------
+        fig : figure
+            Figure object (matplotlib).
+    
+        """
+        import matplotlib.pyplot as plt
+        from matplotlib.ticker import AutoMinorLocator
+
+        # Initialize figure
+        LW = 1.5    # Line width
+        FS = 12.    # Font size
+
+        plt.rc('figure', figsize=(80.0/25.4, 80.0/25.4))
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+
+        # Borehole wall outline
+        borewall = plt.Circle((0., 0.), radius=self.b.r_b,
+                              fill=False, linestyle='--', linewidth=LW)
+        ax.add_patch(borewall)
+
+        # Pipes
+        for i in range(self.nPipes):
+            # Coordinates of pipes
+            (x_in, y_in) = self.pos[i]
+            (x_out, y_out) = self.pos[i + self.nPipes]
+
+            # Pipe outline (inlet)
+            pipe_in_in = plt.Circle((x_in, y_in), radius=self.r_in,
+                                    fill=False, linestyle='-', linewidth=LW)
+            pipe_in_out = plt.Circle((x_in, y_in), radius=self.r_out,
+                                     fill=False, linestyle='-', linewidth=LW)
+            ax.text(x_in, y_in, i + 1,
+                    ha="center", va="center", size=FS)
+
+            # Pipe outline (outlet)
+            pipe_out_in = plt.Circle((x_out, y_out), radius=self.r_in,
+                                     fill=False, linestyle='-', linewidth=LW)
+            pipe_out_out = plt.Circle((x_out, y_out), radius=self.r_out,
+                                      fill=False, linestyle='-', linewidth=LW)
+            ax.text(x_out, y_out, i + self.nPipes + 1,
+                    ha="center", va="center", size=FS)
+
+            ax.add_patch(pipe_in_in)
+            ax.add_patch(pipe_in_out)
+            ax.add_patch(pipe_out_in)
+            ax.add_patch(pipe_out_out)
+
+        # Configure figure axes
+        ax.set_xlabel('x (m)')
+        ax.set_ylabel('y (m)')
+        plt.axis('equal')
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+        plt.tight_layout()
+    
+        return fig
 
     def _initialize_stored_coefficients(self):
         nMethods = 8    # Number of class methods

@@ -18,9 +18,9 @@ The following script validates the load aggregation schemes with the exact
 solution obtained from convolution in the Fourier domain (see ref. [4]_).
 
 The script is located in: 
-`./examples/comparison_load_aggregation.py`
+`pygfunction/examples/comparison_load_aggregation.py`
 
-.. literalinclude:: ../../examples/comparison_load_aggregation.py
+.. literalinclude:: ../../pygfunction/examples/comparison_load_aggregation.py
    :language: python
    :linenos:
 
