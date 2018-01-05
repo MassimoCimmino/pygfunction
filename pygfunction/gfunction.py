@@ -466,10 +466,6 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
     return gFunction
 
 
-    return gFunction, Tb, Q[:,p], X[-1]
-
-        gFunction = np.asscalar(gFunction)
-    if np.isscalar(time):
 def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
                             time, alpha, method='linear', nSegments=12,
                             use_similarities=True, disTol=0.1, tol=1.0e-6,
@@ -547,9 +543,9 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
     .. [#Cimmino2015] Cimmino, M. (2015). The effects of borehole thermal
        fields. International Journal of Heat and Mass Transfer, 91, 1119-1127.
 
-        print(60*'-')
-    if disp:
     """
+    if disp:
+        print(60*'-')
         print('Calculating g-function for mixed inlet fluid temperatures')
         print(60*'-')
     # Initialize chrono
@@ -588,15 +584,20 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
     # temperatures and inlet fluid temperature (into the bore field),
     # [B] is a coefficient vector.
     # -------------------------------------------------------------------------
-    # Segment lengths
 
+    # Segment lengths
     Hb = np.array([b.H for b in boreSegments])
-    dt = np.hstack((t[0], t[1:] - t[:-1]))
     # Vector of time steps
-    # Spline object for thermal response factors
-    # Thermal response factors evaluated at t=dt
-    h_dt = h_dt(dt)
-    h_dt = interp1d(t, h_ij, kind=method, axis=2)
+    dt = np.hstack((t[0], t[1:] - t[:-1]))
+    if not np.isscalar(time) and len(time) > 1:
+        # Spline object for thermal response factors
+        h_dt = interp1d(np.hstack((0., t)),
+                        np.dstack((np.zeros((nSources,nSources)), h_ij)),
+                        kind=method, axis=2)
+        # Thermal response factors evaluated at t=dt
+        h_dt = h_dt(dt)
+    else:
+        h_dt = h_ij
     # Thermal response factor increments
     dh_ij = np.concatenate((h_ij[:,:,0:1], h_ij[:,:,1:]-h_ij[:,:,:-1]), axis=2)
 
@@ -671,6 +672,10 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
         print(60*'-')
 
     # Return float if time is a scalar
+    if np.isscalar(time):
+        gFunction = np.asscalar(gFunction)
+
+    return gFunction, Tb, Q[:,p], X[-1]
 
 
 def load_history_reconstruction(time, Q):
