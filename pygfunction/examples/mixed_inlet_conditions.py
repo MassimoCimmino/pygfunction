@@ -51,7 +51,7 @@ def main():
     k_p = 0.4           # Pipe thermal conductivity (W/m.K)
 
     # Fluid properties
-    m_flow = 0.25*np.ones_like(H_boreholes)       # Total fluid mass flow rate per borehole (kg/s)
+    m_flow = 0.25       # Total fluid mass flow rate per borehole (kg/s)
     cp_f = 3977.        # Fluid specific isobaric heat capacity (J/kg.K)
     den_f = 1015.       # Fluid density (kg/m3)
     visc_f = 0.00203    # Fluid dynamic viscosity (kg/m.s)
@@ -89,7 +89,7 @@ def main():
                                                                rp_out,
                                                                k_p)
     # Fluid to inner pipe wall thermal resistance (Single U-tube)
-    h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(m_flow[0],
+    h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(m_flow,
                                                                       rp_in,
                                                                       visc_f,
                                                                       den_f,
@@ -110,10 +110,10 @@ def main():
     # -------------------------------------------------------------------------
 
     # Calculate the g-function for uniform temperature
-#    gfunc_Tb = \
-#            gt.gfunction.uniform_temperature(
-#            boreField, time, alpha,
-#            nSegments=nSegments, disp=True)
+    gfunc_Tb = \
+            gt.gfunction.uniform_temperature(
+            boreField, time, alpha,
+            nSegments=nSegments, disp=True)
 
     # Calculate the g-function for mixed inlet fluid conditions
     gfunc_equal_Tf_mixed, Tb, Q, Tf_in = \
@@ -129,8 +129,8 @@ def main():
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
     # g-functions
-#    ax1.plot(np.log(time/ts), gfunc_Tb,
-#             'k-', lw=1.5, label='Uniform temperature')
+    ax1.plot(np.log(time/ts), gfunc_Tb,
+             'k-', lw=1.5, label='Uniform temperature')
     ax1.plot(np.log(time/ts), gfunc_equal_Tf_mixed,
              'r-.', lw=1.5, label='Mixed inlet temperature')
     ax1.legend()
@@ -163,19 +163,22 @@ def main():
 
         # Fluid temperatures
         Qf_bore = -np.sum(Q_bore*H_bore/nSegments)*2*pi*k_s
-        Tf_in_bore = UTube.get_inlet_temperature(Qf_bore, Tb_bore, m_flow[i], cp_f)
-        Tf_out_bore = UTube.get_outlet_temperature(Tf_in_bore, Tb_bore, m_flow[i], cp_f)
+        Tf_in_bore = UTube.get_inlet_temperature(Qf_bore, Tb_bore, m_flow, cp_f)
+        Tf_out_bore = UTube.get_outlet_temperature(Tf_in_bore, Tb_bore, m_flow, cp_f)
         z_bore = np.linspace(0., H_bore, num=50)
-        Tf_bore = UTube.get_temperature(z_bore, Tf_in_bore, Tb_bore, m_flow[i], cp_f)
-        ax1.plot(Tf_bore, z_bore, 'b-', lw=1.5)
+        Tf_bore = UTube.get_temperature(z_bore, Tf_in_bore, Tb_bore, m_flow, cp_f)
+        ax1.plot(Tf_bore, D + z_bore, 'b-', lw=1.5)
 
         # Borehole wall temperatures
         z_bore = np.array([(j + 0.5)*H_bore/nSegments for j in range(nSegments)])
-        ax1.plot(Tb_bore, z_bore, 'k--', lw=1.5)
+        ax1.plot(Tb_bore, D + z_bore, 'k--', lw=1.5)
 
+    # Axis labels
+    ax1.set_xlabel('Temperature [-]')
+    ax1.set_ylabel('Depth [m]')
     # Axis limits
     ax1.set_xlim([6.0, 18.0])
-    ax1.set_ylim([150., 0.])
+    ax1.set_ylim([160., 0.])
     # Show minor ticks
     ax1.xaxis.set_minor_locator(AutoMinorLocator())
     ax1.yaxis.set_minor_locator(AutoMinorLocator())
