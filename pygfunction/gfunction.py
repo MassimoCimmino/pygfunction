@@ -8,8 +8,7 @@ from scipy.constants import pi
 import time as tim
 
 from .boreholes import Borehole
-from .heat_transfer import finite_line_source as FLS
-from .heat_transfer import similarities
+from .heat_transfer import thermal_response_factors
 
 
 def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
@@ -475,8 +474,8 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
     Evaluate the g-function with equal inlet fluid temperatures.
 
     This function superimposes the finite line source (FLS) solution to
-    estimate the g-function of a geothermal bore field. Each borehole is
     modeled as a series of finite line source segments, as proposed in
+    estimate the g-function of a geothermal bore field. Each borehole is
     [#Cimmino2015]_.
 
     Parameters
@@ -484,16 +483,16 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
     boreholes : list of Borehole objects
         List of boreholes included in the bore field.
     UTubes : list of pipe objects
-        Model for pipes inside each borehole.
     bore_connectivity : list
         Index of fluid inlet into each borehole. -1 corresponds to a borehole
+        Model for pipes inside each borehole.
         connected to the bore field inlet.
     m_flow : array
         Fluid mass flow rate in each borehole (in kg/s).
     cp : fluid specific isobaric heat capacity (in J/kg.K)
         Model with fluid properties.
-    time : float or array
         Values of time (in seconds) for which the g-function is evaluated.
+    time : float or array
     alpha : float
         Soil thermal diffusivity (in m2/s).
     nSegments : int, optional
@@ -503,24 +502,24 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
         Interpolation method used for segment-to-segment thermal response
         factors. See documentation for scipy.interpolate.interp1d.
         Default is 'linear'.
-    use_similarities : bool, optional
-        True if similarities are used to limit the number of FLS evaluations.
         Default is True.
+        True if similarities are used to limit the number of FLS evaluations.
+    use_similarities : bool, optional
     disTol : float, optional
         Absolute tolerance (in meters) on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
         difference between the two distances (abs(d1-d2)) is below tolerance.
         Default is 0.1.
-    tol : float, optional
         Relative tolerance on length and depth. Two lenths H1, H2
+    tol : float, optional
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
         Default is 1.0e-6.
     processes : int, optional
         Number of processors to use in calculations. If the value is set to
         None, a number of processors equal to cpu_count() is used.
         Default is None.
-    disp : bool, optional
         Set to true to print progression messages.
+    disp : bool, optional
         Default is False.
 
     Returns
@@ -535,13 +534,13 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
     >>> alpha = 1.0e-6
     >>> time = np.array([1.0*10**i for i in range(4, 12)])
     >>> gt.gfunction.uniform_temperature([b1, b2], time, alpha)
-    array([ 0.75978079,  1.84859851,  2.98852756,  4.33406497,  6.27830732,
         8.05746656,  8.93697282,  9.04925079])
+    array([ 0.75978079,  1.84859851,  2.98852756,  4.33406497,  6.27830732,
 
     References
     ----------
-    .. [#Cimmino2015] Cimmino, M. (2015). The effects of borehole thermal
        resistances and fluid flow rate on the g-functions of geothermal bore
+    .. [#Cimmino2015] Cimmino, M. (2015). The effects of borehole thermal
        fields. International Journal of Heat and Mass Transfer, 91, 1119-1127.
 
     """
@@ -562,6 +561,10 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
     # Initialize segment heat extraction rates
     Q = np.zeros((nSources, nt))
 
+    # If m_flow is supplied as float, apply m_flow to all boreholes
+    if np.isscalar(m_flow):
+        m_flow = np.tile(m_flow, nBoreholes)
+
     # Verify that borehole connectivity is valid
     _verify_bore_connectivity(bore_connectivity, nBoreholes)
 
@@ -579,8 +582,8 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
     if disp:
         print('Building and solving system of equations ...')
     # -------------------------------------------------------------------------
-    # Build a system of equation [A]*[X] = [B] for the evaluation of the
     # g-function. [A] is a coefficient matrix, [X] = [Qb,Tb,Tf_in] is a state
+    # Build a system of equation [A]*[X] = [B] for the evaluation of the
     # space vector of the borehole heat extraction rates, borehole wall
     # temperatures and inlet fluid temperature (into the bore field),
     # [B] is a coefficient vector.
@@ -590,10 +593,15 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
     Hb = np.array([b.H for b in boreSegments])
     # Vector of time steps
     dt = np.hstack((t[0], t[1:] - t[:-1]))
-    # Spline object for thermal response factors
-    h_dt = interp1d(t, h_ij, kind=method, axis=2)
-    # Thermal response factors evaluated at t=dt
-    h_dt = h_dt(dt)
+    if not np.isscalar(time) and len(time) > 1:
+        # Spline object for thermal response factors
+        h_dt = interp1d(np.hstack((0., t)),
+                        np.dstack((np.zeros((nSources,nSources)), h_ij)),
+                        kind=method, axis=2)
+        # Thermal response factors evaluated at t=dt
+        h_dt = h_dt(dt)
+    else:
+        h_dt = h_ij
     # Thermal response factor increments
     dh_ij = np.concatenate((h_ij[:,:,0:1], h_ij[:,:,1:]-h_ij[:,:,:-1]), axis=2)
 
@@ -607,7 +615,6 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
         # Rows of equation matrix
         j1 = i*nSegments
         j2 = (i + 1)*nSegments
-
         # Coefficients for current borehole
         a_in, a_b = UTubes[i].coefficients_borehole_heat_extraction_rate(
                 m_flow[i], cp, nSegments)
@@ -617,19 +624,18 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
         A_eq2[j1:j2, n1:n2] = a_b / (-2.0*pi*UTubes[i].k_s*Hi)
 
         # Assemble matrix coefficient for [T_{f,in}] and all [T_b]
-        path = _path_from_inlet(bore_connectivity, i)
+        path = _path_to_inlet(bore_connectivity, i)
         b_in = a_in
-        if len(path) > 0:
-            for j in path[::-1]:
-                # Coefficients for borehole j
-                c_in, c_b = UTubes[j].coefficients_outlet_temperature(
-                        m_flow[j], cp, nSegments)
-                # Assign the coefficient matrix for [T_{b,j}]
-                n1 = j*nSegments + nSources
-                n2 = (j + 1)*nSegments + nSources
-                A_eq2[j1:j2, n1:n2] = b_in.dot(c_b)/(-2.0*pi*UTubes[i].k_s*Hi)
-                # Keep on building coefficient for [T_{f,in}]
-                b_in = b_in.dot(c_in)
+        for j in path[1:]:
+            # Coefficients for borehole j
+            c_in, c_b = UTubes[j].coefficients_outlet_temperature(
+                    m_flow[j], cp, nSegments)
+            # Assign the coefficient matrix for [T_{b,j}]
+            n2 = (j + 1)*nSegments + nSources
+            n1 = j*nSegments + nSources
+            A_eq2[j1:j2, n1:n2] = b_in.dot(c_b)/(-2.0*pi*UTubes[i].k_s*Hi)
+            # Keep on building coefficient for [T_{f,in}]
+            b_in = b_in.dot(c_in)
         A_eq2[j1:j2, -1:] = b_in / (-2.0*pi*UTubes[i].k_s*Hi)
 
     # Energy conservation: sum([Qb*Hb]) = sum([Hb])
@@ -650,8 +656,8 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
                            np.zeros((nSources, 1))))
         B_eq1 = -Tb_0
         # Assemble equations
-        A = np.vstack((A_eq1, A_eq2, A_eq3))
         B = np.hstack((B_eq1, B_eq2, B_eq3))
+        A = np.vstack((A_eq1, A_eq2, A_eq3))
         # Solve the system of equations
         X = np.linalg.solve(A, B)
         # Store calculated heat extraction rates
@@ -661,6 +667,7 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
         gFunction[p] = Tb.dot(Hb) / np.sum(Hb)
 
     toc2 = tim.time()
+
     if disp:
         print('{} sec'.format(toc2 - toc1))
         print('Total time for g-function evaluation: {} sec'.format(
@@ -672,164 +679,6 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
         gFunction = np.asscalar(gFunction)
 
     return gFunction, Tb, Q[:,p], X[-1]
-
-
-def thermal_response_factors(
-        boreSegments, time, alpha, use_similarities=True,
-        splitRealAndImage=True, disTol=0.1, tol=1.0e-6, processes=None,
-        disp=False):
-    """
-    Evaluate segment-to-segment thermal response factors.
-
-    This function goes through the list of borehole segments and evaluates
-    the segments-to-segment response factors for all times in time.
-
-    Parameters
-    ----------
-    boreSegments : list of Borehole objects
-        List of borehole segments.
-    time : float or array
-        Values of time (in seconds) for which the g-function is evaluated.
-    alpha : float
-        Soil thermal diffusivity (in m2/s).
-    use_similarities : bool, optional
-        True if similarities are used to limit the number of FLS evaluations.
-        Default is True.
-    splitRealAndImage : bool, optional
-        Set to True if similarities are evaluated separately for real and image
-        sources. Set to False if similarities are evaluated for the sum of the
-        real and image sources.
-        Default is True.
-    disTol : float, optional
-        Absolute tolerance (in meters) on radial distance. Two distances
-        (d1, d2) between two pairs of boreholes are considered equal if the
-        difference between the two distances (abs(d1-d2)) is below tolerance.
-        Default is 0.1.
-    tol : float, optional
-        Relative tolerance on length and depth. Two lenths H1, H2
-        (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
-        Default is 1.0e-6.
-    processes : int, optional
-        Number of processors to use in calculations. If the value is set to
-        None, a number of processors equal to cpu_count() is used.
-        Default is None.
-    disp : bool, optional
-        Set to true to print progression messages.
-        Default is False.
-
-    Returns
-    -------
-    h_ij : array
-        Segment-to-segment thermal response factors.
-
-    """
-    # Total number of line sources
-    nSources = len(boreSegments)
-    # Number of time values
-    nt = len(np.atleast_1d(time))
-    # Prepare pool of workers for parallel computation
-    pool = Pool(processes=processes)
-    # Initialize chrono
-    tic = tim.time()
-
-    # Initialize segment-to-segment response factors
-    h_ij = np.zeros((nSources, nSources, nt))
-    # Calculation is based on the choice of use_similarities
-    if use_similarities:
-        # Calculations with similarities
-        if disp:
-            print('Identifying similarities ...')
-        (nSimPos, simPos, disSimPos, HSimPos, DSimPos,
-         nSimNeg, simNeg, disSimNeg, HSimNeg, DSimNeg) = \
-            similarities(boreSegments,
-                         splitRealAndImage=splitRealAndImage,
-                         disTol=disTol,
-                         tol=tol,
-                         processes=processes)
-
-        toc1 = tim.time()
-        if disp:
-            print('{} sec'.format(toc1 - tic))
-            print('Calculating segment to segment response factors ...')
-
-        # Initialize FLS solution for the real source
-        hPos = np.zeros(nt)
-        # Initialize FLS solution for the image source
-        hNeg = np.zeros(nt)
-
-        # Similarities for real sources
-        for s in range(nSimPos):
-            n1 = simPos[s][0][0]
-            n2 = simPos[s][0][1]
-            b1 = boreSegments[n1]
-            b2 = boreSegments[n2]
-            if splitRealAndImage:
-                # FLS solution for real source only
-                func = partial(FLS, alpha=alpha, borehole1=b1, borehole2=b2,
-                               reaSource=True, imgSource=False)
-            else:
-                # FLS solution for combined real and image sources
-                func = partial(FLS, alpha=alpha, borehole1=b1, borehole2=b2,
-                               reaSource=True, imgSource=True)
-            # Evaluate the FLS solution at all times in parallel
-            hPos = np.array(pool.map(func, np.atleast_1d(time)))
-            # Assign thermal response factors to similar segment pairs
-            for (i, j) in simPos[s]:
-                h_ij[j, i, :] = hPos
-                h_ij[i, j, :] = b2.H/b1.H * hPos
-
-        # Similarities for image sources (only if splitRealAndImage=True)
-        if splitRealAndImage:
-            for s in range(nSimNeg):
-                n1 = simNeg[s][0][0]
-                n2 = simNeg[s][0][1]
-                b1 = boreSegments[n1]
-                b2 = boreSegments[n2]
-                # FLS solution for image source only
-                func = partial(FLS, alpha=alpha, borehole1=b1, borehole2=b2,
-                               reaSource=False, imgSource=True)
-                # Evaluate the FLS solution at all times in parallel
-                hNeg = np.array(pool.map(func, time))
-                # Assign thermal response factors to similar segment pairs
-                for (i, j) in simNeg[s]:
-                    h_ij[j, i, :] = h_ij[j, i, :] + hNeg
-                    h_ij[i, j, :] = b2.H/b1.H * h_ij[j, i, :]
-
-    else:
-        # Calculations without similarities
-        if disp:
-            print('Calculating segment to segment response factors ...')
-        for i in range(nSources):
-            # Segment to same-segment thermal response factor
-            # FLS solution for combined real and image sources
-            b2 = boreSegments[i]
-            func = partial(FLS, alpha=alpha, borehole1=b2, borehole2=b2)
-            # Evaluate the FLS solution at all times in parallel
-            h = np.array(pool.map(func, time))
-            h_ij[i, i, :] = h
-
-            # Segment to other segments thermal response factor
-            for j in range(i+1, nSources):
-                b1 = boreSegments[j]
-                # Evaluate the FLS solution at all times in parallel
-                func = partial(FLS, alpha=alpha, borehole1=b1, borehole2=b2)
-                h = np.array(pool.map(func, time))
-                h_ij[i, j, :] = h
-                h_ij[j, i, :] = b2.H / b1.H * h_ij[i, j, :]
-
-    toc2 = tim.time()
-    if disp:
-        print('{} sec'.format(toc2 - tic))
-
-    # Close pool of workers
-    pool.close()
-    pool.join()
-
-    # Return 2d array if time is a scalar
-    if np.isscalar(time):
-        h_ij = h_ij[:,:,0]
-
-    return h_ij
 
 
 def load_history_reconstruction(time, Q):
@@ -937,9 +786,9 @@ def _temporal_superposition(dh_ij, Q):
     return Tb_0
 
 
-def _path_from_inlet(bore_connectivity, bore_index):
+def _path_to_inlet(bore_connectivity, bore_index):
     """
-    Verifies that borehole connectivity is valid.
+    Returns the path from a borehole to the bore field inlet.
 
     This function raises an error if the supplied borehole connectivity is
     invalid.
@@ -955,19 +804,18 @@ def _path_from_inlet(bore_connectivity, bore_index):
     Returns
     -------
     path : list
-        List of boreholes leading to the borehole. An empty list is return if
-        the borehole is connected to the bore field inlet
-        (bore_connectivity[bore_index] == -1).
+        List of boreholes leading to the bore field inlet, starting from
+        borehole bore_index
 
     """
     # Initialize path
-    path = []
+    path = [bore_index]
     # Index of borehole feeding into borehole (bore_index)
     index_in = bore_connectivity[bore_index]
     # Stop when bore field inlet is reached (index_in == -1)
     while not index_in == -1:
-        # Add index of upstream borehole to front of path
-        path.insert(0, index_in)
+        # Add index of upstream borehole to path
+        path.append(index_in)
         # Get index of next upstream borehole
         index_in = bore_connectivity[index_in]
 

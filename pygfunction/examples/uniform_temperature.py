@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-""" Example of calculation of g-functions using uniform heat extraction rates.
+""" Example of calculation of g-functions using uniform and equal borehole
+    wall temperatures.
 
     The g-functions of fields of 3x2, 6x4 and 10x10 boreholes are calculated
     for boundary condition of uniform borehole wall temperature along the
