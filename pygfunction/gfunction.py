@@ -565,6 +565,8 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
     # If m_flow is supplied as float, apply m_flow to all boreholes
     if np.isscalar(m_flow):
         m_flow = np.tile(m_flow, nBoreholes)
+    m_flow_tot = sum([m_flow[i] for i in range(nBoreholes)
+                      if bore_connectivity[i] == -1])
 
     # Verify that borehole connectivity is valid
     _verify_bore_connectivity(bore_connectivity, nBoreholes)
@@ -664,8 +666,16 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
         # Store calculated heat extraction rates
         Q[:,p] = X[0:nSources]
         # The gFunction is equal to the average borehole wall temperature
+        # TODO : Find Tf_out and evaluate Tb based on Rfield
+        Tf_in = X[-1]
+        Tf_out = Tf_in - 2*pi*UTubes[0].k_s*np.sum(Hb)/(m_flow_tot*cp)
+        Tf = 0.5*(Tf_in + Tf_out)
+        Rfield = field_thermal_resistance(
+                UTubes, bore_connectivity, m_flow, cp)
+        Tb_eff = Tf - 2*pi*UTubes[0].k_s*Rfield
         Tb = X[nSources:2*nSources]
-        gFunction[p] = Tb.dot(Hb) / np.sum(Hb)
+        Tb_mean = Tb.dot(Hb) / np.sum(Hb)
+        gFunction[p] = Tb_eff
 
     toc2 = tim.time()
 
