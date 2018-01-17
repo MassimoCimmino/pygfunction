@@ -1698,6 +1698,49 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, J=2):
     return R, Rd
 
 
+def borehole_thermal_resistance(pipe, m_flow, cp):
+    """
+    Evaluate the effective borehole thermal resistance.
+    """
+    # TODO : Documentation
+    a_out = np.asscalar(
+            pipe.coefficients_outlet_temperature(m_flow, cp, nSegments=1)[0])
+    a_Q = np.asscalar(pipe.coefficients_borehole_heat_extraction_rate(
+            m_flow, cp, nSegments=1)[0])
+    H = pipe.b.H
+    Rb = -0.5*H*(1. + a_out)/a_Q
+    return Rb
+
+
+def field_thermal_resistance(pipes, bore_connectivity, m_flow, cp):
+    """
+    Evaluate the effective bore field thermal resistance.
+    """
+    # TODO : Documentation
+    nBoreholes = len(pipes)
+    # If m_flow is supplied as float, apply m_flow to all boreholes
+    if np.isscalar(m_flow):
+        m_flow = np.tile(m_flow, nBoreholes)
+    m_flow_tot = sum([m_flow[i] for i in range(nBoreholes)
+                      if bore_connectivity[i] == -1])
+    H_tot = sum([pipes[i].b.H for i in range(nBoreholes)])
+    # Verify that borehole connectivity is valid
+    _verify_bore_connectivity(bore_connectivity, nBoreholes)
+    A_Q = np.array([np.asscalar(
+            pipes[i].coefficients_borehole_heat_extraction_rate(
+                    m_flow[i], cp, nSegments=1)[0])
+            for i in range(len(pipes))])
+    for i in range(len(pipes)):
+        path = _path_to_inlet(bore_connectivity, i)
+        for j in path[1:]:
+            a_out = np.asscalar(pipes[j].coefficients_outlet_temperature(
+                    m_flow[j], cp, nSegments=1)[0])
+            A_Q[i] = A_Q[i]*a_out
+    A_out = 1. + np.sum(A_Q)/(m_flow_tot*cp)
+    Rfield = -0.5*H_tot*(1. + A_out)/np.sum(A_Q)
+    return Rfield
+
+
 def fluid_friction_factor_circular_pipe(m_flow, r_in, visc, den, epsilon,
                                         tol=1.0e-6):
     """

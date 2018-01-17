@@ -9,6 +9,7 @@ import time as tim
 
 from .boreholes import Borehole, _path_to_inlet, _verify_bore_connectivity
 from .heat_transfer import thermal_response_factors
+from .pipes import field_thermal_resistance
 
 
 def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
