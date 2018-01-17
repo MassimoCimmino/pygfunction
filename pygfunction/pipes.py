@@ -4,6 +4,8 @@ import numpy as np
 from scipy.constants import pi
 from scipy.special import binom
 
+from .boreholes import _path_to_inlet, _verify_bore_connectivity
+
 
 class _BasePipe(object):
     """
