@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-""" Example of calculation of g-functions using equal inlet temperatures.
+""" Example of calculation of g-functions using mixed inlet temperatures.
 
-    The g-functions of a field of 6x4 boreholes are calculated for boundary
-    conditions of (a) uniform heat extraction rate, equal for all boreholes,
-    (b) uniform borehole wall temperature along the boreholes, equal for all
-    boreholes, and (c) equal inlet fluid temperature into all boreholes.
+    The g-functions of a field of 5 boreholes of different lengths connected
+    in series are calculated for 2 boundary conditions: (a) uniform borehole
+    wall temperature, and (b) series connections between boreholes. The
+    g-function for case (b) is based on the effective borehole wall
+    temperature, rather than the average borehole wall temperature.
 
 """
 from __future__ import division, print_function, absolute_import
@@ -31,9 +32,9 @@ def main():
     B = 7.5             # Borehole spacing (m)
 
     # Pipe dimensions
-    rp_out = 0.0211     # Pipe outer radius (m)
-    rp_in = 0.0147      # Pipe inner radius (m)
-    D_s = 0.052         # Shank spacing (m)
+    rp_out = 0.02       # Pipe outer radius (m)
+    rp_in = 0.015       # Pipe inner radius (m)
+    D_s = 0.05          # Shank spacing (m)
     epsilon = 1.0e-6    # Pipe roughness (m)
 
     # Pipe positions
@@ -52,13 +53,13 @@ def main():
 
     # Fluid properties
     m_flow = 0.25       # Total fluid mass flow rate per borehole (kg/s)
-    cp_f = 3977.        # Fluid specific isobaric heat capacity (J/kg.K)
+    cp_f = 4000.        # Fluid specific isobaric heat capacity (J/kg.K)
     den_f = 1015.       # Fluid density (kg/m3)
-    visc_f = 0.00203    # Fluid dynamic viscosity (kg/m.s)
-    k_f = 0.492         # Fluid thermal conductivity (W/m.K)
+    visc_f = 0.002      # Fluid dynamic viscosity (kg/m.s)
+    k_f = 0.5           # Fluid thermal conductivity (W/m.K)
 
     # Number of segments per borehole
-    nSegments = 12
+    nSegments = 24
 
     # Geometrically expanding time vector.
     dt = 100*3600.                  # Time step
@@ -78,6 +79,8 @@ def main():
         x = i*B
         borehole = gt.boreholes.Borehole(H, D, r_b, x, 0.)
         boreField.append(borehole)
+        # Boreholes are connected in series: The index of the upstream
+        # borehole is that of the previous borehole
         bore_connectivity.append(i - 1)
 
     # -------------------------------------------------------------------------
@@ -136,7 +139,7 @@ def main():
     ax1.legend()
     # Axis labels
     ax1.set_xlabel(r'$ln(t/t_s)$')
-    ax1.set_ylabel(r'$g(t/t_s)$')
+    ax1.set_ylabel(r'g-function')
     # Axis limits
     ax1.set_xlim([-10.0, 5.0])
     ax1.set_ylim([0., 12.])
