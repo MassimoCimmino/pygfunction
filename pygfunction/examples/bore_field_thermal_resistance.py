@@ -120,7 +120,7 @@ def main():
     ax1.plot(m_flow_boreholes, R[4,:], 'b-.', lw=1.5, label='5 boreholes')
     ax1.legend()
     # Axis labels
-    ax1.set_xlabel(r'$\dot{m}_{flow}$ [kg/s]')
+    ax1.set_xlabel(r'$\dot{m}$ [kg/s]')
     ax1.set_ylabel(r'$R^*_{field}$ [m.K/W]')
     # Axis limits
     ax1.set_xlim([0., 1.])
