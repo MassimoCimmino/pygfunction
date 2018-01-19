@@ -1798,9 +1798,12 @@ def convective_heat_transfer_coefficient_circular_pipe(m_flow, r_in, visc, den,
     # Darcy friction factor
     fDarcy = fluid_friction_factor_circular_pipe(m_flow, r_in, visc, den,
                                                  epsilon)
-    # Nusselt number from Gnielinski
-    Nu = 0.125*fDarcy * (Re - 1.0e3) * Pr / \
-        (1.0 + 12.7 * np.sqrt(0.125*fDarcy) * (Pr**(2.0/3.0) - 1.0))
+    if Re > 2300.:
+        # Nusselt number from Gnielinski
+        Nu = 0.125*fDarcy * (Re - 1.0e3) * Pr / \
+            (1.0 + 12.7 * np.sqrt(0.125*fDarcy) * (Pr**(2.0/3.0) - 1.0))
+    else:
+        Nu = 3.66
     h_fluid = k * Nu / D
 
     return h_fluid
