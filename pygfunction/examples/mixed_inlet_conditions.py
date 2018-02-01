@@ -59,7 +59,7 @@ def main():
     k_f = 0.5           # Fluid thermal conductivity (W/m.K)
 
     # Number of segments per borehole
-    nSegments = 24
+    nSegments = 12
 
     # Geometrically expanding time vector.
     dt = 100*3600.                  # Time step
@@ -143,45 +143,6 @@ def main():
     # Axis limits
     ax1.set_xlim([-10.0, 5.0])
     ax1.set_ylim([0., 12.])
-    # Show minor ticks
-    ax1.xaxis.set_minor_locator(AutoMinorLocator())
-    ax1.yaxis.set_minor_locator(AutoMinorLocator())
-    # Adjust to plot window
-    plt.tight_layout()
-
-    # -------------------------------------------------------------------------
-    # Plot temperatures
-    # -------------------------------------------------------------------------
-
-    plt.rc('figure')
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111)
-
-    for i in range(len(boreField)):
-        borehole = boreField[i]
-        H_bore = borehole.H
-        UTube = UTubes[i]
-        Tb_bore = Tb[i*nSegments:(i+1)*nSegments]
-        Q_bore = Q[i*nSegments:(i+1)*nSegments]
-
-        # Fluid temperatures
-        Qf_bore = -np.sum(Q_bore*H_bore/nSegments)*2*pi*k_s
-        Tf_in_bore = UTube.get_inlet_temperature(Qf_bore, Tb_bore, m_flow, cp_f)
-        Tf_out_bore = UTube.get_outlet_temperature(Tf_in_bore, Tb_bore, m_flow, cp_f)
-        z_bore = np.linspace(0., H_bore, num=50)
-        Tf_bore = UTube.get_temperature(z_bore, Tf_in_bore, Tb_bore, m_flow, cp_f)
-        ax1.plot(Tf_bore, D + z_bore, 'b-', lw=1.5)
-
-        # Borehole wall temperatures
-        z_bore = np.array([(j + 0.5)*H_bore/nSegments for j in range(nSegments)])
-        ax1.plot(Tb_bore, D + z_bore, 'k--', lw=1.5)
-
-    # Axis labels
-    ax1.set_xlabel('Temperature [-]')
-    ax1.set_ylabel('Depth [m]')
-    # Axis limits
-    ax1.set_xlim([6.0, 18.0])
-    ax1.set_ylim([160., 0.])
     # Show minor ticks
     ax1.xaxis.set_minor_locator(AutoMinorLocator())
     ax1.yaxis.set_minor_locator(AutoMinorLocator())
