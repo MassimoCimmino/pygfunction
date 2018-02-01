@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
-""" Example of calculation of g-functions using mixed inlet temperatures.
+""" Example of calculation of effective bore field thermal resistance.
 
-    The g-functions of a field of 5 boreholes of different lengths connected
-    in series are calculated for 2 boundary conditions: (a) uniform borehole
-    wall temperature, and (b) series connections between boreholes. The
-    g-function for case (b) is based on the effective borehole wall
-    temperature, rather than the average borehole wall temperature.
+    The effective bore field thermal resistance of fields of up to 5 boreholes
+    of equal lengths connected in series is calculated for various fluid flow
+    rates.
 
 """
 from __future__ import division, print_function, absolute_import
@@ -23,10 +21,12 @@ def main():
     # Simulation parameters
     # -------------------------------------------------------------------------
 
+    # Number of boreholes
+    nBoreholes = 5
     # Borehole dimensions
     D = 4.0             # Borehole buried depth (m)
     # Borehole length (m)
-    H_boreholes = np.array([75.0, 100.0, 125.0, 150.0, 75.0])
+    H = 150.
     r_b = 0.075         # Borehole radius (m)
     B = 7.5             # Borehole spacing (m)
 
@@ -50,8 +50,8 @@ def main():
     k_p = 0.4           # Pipe thermal conductivity (W/m.K)
 
     # Fluid properties
-    # Total fluid mass flow rate per borehole (kg/s)
-    m_flow_boreholes = 10**np.arange(-2, 0.001, 0.1)
+    # Total fluid mass flow rate per borehole (kg/s), from 0.01 kg/s to 1 kg/s
+    m_flow_boreholes = 10**np.arange(-2, 0.001, 0.05)
     cp_f = 4000.        # Fluid specific isobaric heat capacity (J/kg.K)
     den_f = 1015.       # Fluid density (kg/m3)
     visc_f = 0.002      # Fluid dynamic viscosity (kg/m.s)
@@ -63,8 +63,7 @@ def main():
 
     boreField = []
     bore_connectivity = []
-    for i in range(len(H_boreholes)):
-        H = H_boreholes[i]
+    for i in range(nBoreholes):
         x = i*B
         borehole = gt.boreholes.Borehole(H, D, r_b, x, 0.)
         boreField.append(borehole)
@@ -73,23 +72,19 @@ def main():
         bore_connectivity.append(i - 1)
 
     # -------------------------------------------------------------------------
-    # Initialize pipe model
-    # -------------------------------------------------------------------------
-
-    # -------------------------------------------------------------------------
     # Evaluate the effective bore field thermal resistance
     # -------------------------------------------------------------------------
 
-    R = np.zeros((len(H_boreholes), len(m_flow_boreholes)))
-    for i in range(len(H_boreholes)):
+    # Initialize result array
+    R = np.zeros((nBoreholes, len(m_flow_boreholes)))
+    for i in range(nBoreholes):
         for j in range(len(m_flow_boreholes)):
             nBoreholes = i + 1
             m_flow = m_flow_boreholes[j]
 
             # Pipe thermal resistance
-            R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(rp_in,
-                                                                       rp_out,
-                                                                       k_p)
+            R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(
+                    rp_in, rp_out, k_p)
             # Fluid to inner pipe wall thermal resistance (Single U-tube)
             h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
                     m_flow, rp_in, visc_f, den_f, k_f, cp_f, epsilon)
@@ -102,9 +97,11 @@ def main():
                                                    borehole, k_s, k_g, R_f + R_p)
                 UTubes.append(SingleUTube)
 
+            # Effective bore field thermal resistance
             R_field = gt.pipes.field_thermal_resistance(
                     UTubes[:nBoreholes], bore_connectivity[:nBoreholes],
                     m_flow, cp_f)
+            # Add to result array
             R[i,j] = R_field
 
     # -------------------------------------------------------------------------
