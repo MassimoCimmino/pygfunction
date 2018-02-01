@@ -6,6 +6,7 @@
 
 * [Commit 2bd12bd](https://github.com/MassimoCimmino/pygfunction/commit/2bd12bd254928889431366c2ddd38539e246ef05) - Implemented `UTube.visualize_pipes()` class method.
 * [Issue 30](https://github.com/MassimoCimmino/pygfunction/issues/30) - Laminar regime is now considered for calculation of convection heat transfer coefficient.
+* [Issue 32](https://github.com/MassimoCimmino/pygfunction/issues/32) - g-Functions for bore fields with mixed series and parallel connections between boreholes.
 
 ### Bug fixes
 
