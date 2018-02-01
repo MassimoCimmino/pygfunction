@@ -292,8 +292,8 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
         Model for pipes inside each borehole.
     m_flow : float or array
         Fluid mass flow rate per borehole (in kg/s).
-    cp : fluid specific isobaric heat capacity (in J/kg.K)
-        Model with fluid properties.
+    cp : float
+        Fluid specific isobaric heat capacity (in J/kg.K).
     time : float or array
         Values of time (in seconds) for which the g-function is evaluated.
     alpha : float
@@ -489,10 +489,10 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
     bore_connectivity : list
         Index of fluid inlet into each borehole. -1 corresponds to a borehole
         connected to the bore field inlet.
-    m_flow : array
+    m_flow : float or array
         Fluid mass flow rate in each borehole (in kg/s).
     cp : float
-        Fluid specific isobaric heat capacity (in J/kg.K)
+        Fluid specific isobaric heat capacity (in J/kg.K).
     time : float or array
         Values of time (in seconds) for which the g-function is evaluated.
     alpha : float
