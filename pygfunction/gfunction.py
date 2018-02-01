@@ -472,28 +472,29 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
                             use_similarities=True, disTol=0.1, tol=1.0e-6,
                             processes=None, disp=False):
     """
-    Evaluate the g-function with equal inlet fluid temperatures.
+    Evaluate the g-function with mixed inlet fluid temperatures.
 
     This function superimposes the finite line source (FLS) solution to
-    modeled as a series of finite line source segments, as proposed in
     estimate the g-function of a geothermal bore field. Each borehole is
-    [#Cimmino2015]_.
+    modeled as a series of finite line source segments, as proposed in
+    [#Cimmino2018]_. The piping configurations between boreholes can be any
+    combination of series and parallel connections.
 
     Parameters
     ----------
     boreholes : list of Borehole objects
         List of boreholes included in the bore field.
     UTubes : list of pipe objects
+        Model for pipes inside each borehole.
     bore_connectivity : list
         Index of fluid inlet into each borehole. -1 corresponds to a borehole
-        Model for pipes inside each borehole.
         connected to the bore field inlet.
     m_flow : array
         Fluid mass flow rate in each borehole (in kg/s).
-    cp : fluid specific isobaric heat capacity (in J/kg.K)
-        Model with fluid properties.
-        Values of time (in seconds) for which the g-function is evaluated.
+    cp : float
+        Fluid specific isobaric heat capacity (in J/kg.K)
     time : float or array
+        Values of time (in seconds) for which the g-function is evaluated.
     alpha : float
         Soil thermal diffusivity (in m2/s).
     nSegments : int, optional
@@ -503,24 +504,24 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
         Interpolation method used for segment-to-segment thermal response
         factors. See documentation for scipy.interpolate.interp1d.
         Default is 'linear'.
-        Default is True.
-        True if similarities are used to limit the number of FLS evaluations.
     use_similarities : bool, optional
+        True if similarities are used to limit the number of FLS evaluations.
+        Default is True.
     disTol : float, optional
         Absolute tolerance (in meters) on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
         difference between the two distances (abs(d1-d2)) is below tolerance.
         Default is 0.1.
-        Relative tolerance on length and depth. Two lenths H1, H2
     tol : float, optional
+        Relative tolerance on length and depth. Two lenths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
         Default is 1.0e-6.
     processes : int, optional
         Number of processors to use in calculations. If the value is set to
         None, a number of processors equal to cpu_count() is used.
         Default is None.
-        Set to true to print progression messages.
     disp : bool, optional
+        Set to true to print progression messages.
         Default is False.
 
     Returns
@@ -532,17 +533,28 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
     --------
     >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
     >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
-    >>> alpha = 1.0e-6
+    >>> Utube1 = gt.pipes.SingleUTube(pos=[(-0.05, 0), (0, -0.05)],
+                                      r_in=0.015, r_out=0.02,
+                                      borehole=b1,k_s=2, k_g=1, R_fp=0.1)
+    >>> Utube2 = gt.pipes.SingleUTube(pos=[(-0.05, 0), (0, -0.05)],
+                                      r_in=0.015, r_out=0.02,
+                                      borehole=b1,k_s=2, k_g=1, R_fp=0.1)
+    >>> bore_connectivity = [-1, 0]
     >>> time = np.array([1.0*10**i for i in range(4, 12)])
-    >>> gt.gfunction.uniform_temperature([b1, b2], time, alpha)
-        8.05746656,  8.93697282,  9.04925079])
-    array([ 0.75978079,  1.84859851,  2.98852756,  4.33406497,  6.27830732,
+    >>> m_flow = 0.25
+    >>> cp = 4000.
+    >>> alpha = 1.0e-6
+    >>> gt.gfunction.mixed_inlet_temperature([b1, b2], [Utube1, Utube2],
+                                             bore_connectivity,
+                                             m_flow, cp, time, alpha)
+    array([ 0.63783569,  1.63305912,  2.72193357,  4.04093857,  5.98242643,
+         7.77218495,  8.66198231,  8.77569636])
 
     References
     ----------
-       resistances and fluid flow rate on the g-functions of geothermal bore
-    .. [#Cimmino2015] Cimmino, M. (2015). The effects of borehole thermal
-       fields. International Journal of Heat and Mass Transfer, 91, 1119-1127.
+    .. [#Cimmino2015] Cimmino, M. (2018). g-Functions for bore fields with
+       mixed parallel and series connections considering the axial fluid
+       temperature variations. IGSHPA Research Track, Stockholm. In review.
 
     """
     if disp:
@@ -666,15 +678,13 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
         # Store calculated heat extraction rates
         Q[:,p] = X[0:nSources]
         # The gFunction is equal to the average borehole wall temperature
-        # TODO : Find Tf_out and evaluate Tb based on Rfield
         Tf_in = X[-1]
         Tf_out = Tf_in - 2*pi*UTubes[0].k_s*np.sum(Hb)/(m_flow_tot*cp)
         Tf = 0.5*(Tf_in + Tf_out)
         Rfield = field_thermal_resistance(
                 UTubes, bore_connectivity, m_flow, cp)
-        Tb_eff = Tf - 2*pi*UTubes[0].k_s*Rfield
         Tb = X[nSources:2*nSources]
-        Tb_mean = Tb.dot(Hb) / np.sum(Hb)
+        Tb_eff = Tf - 2*pi*UTubes[0].k_s*Rfield
         gFunction[p] = Tb_eff
 
     toc2 = tim.time()
