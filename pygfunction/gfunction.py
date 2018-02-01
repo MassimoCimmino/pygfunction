@@ -552,7 +552,7 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
 
     References
     ----------
-    .. [#Cimmino2015] Cimmino, M. (2018). g-Functions for bore fields with
+    .. [#Cimmino2018] Cimmino, M. (2018). g-Functions for bore fields with
        mixed parallel and series connections considering the axial fluid
        temperature variations. IGSHPA Research Track, Stockholm. In review.
 
