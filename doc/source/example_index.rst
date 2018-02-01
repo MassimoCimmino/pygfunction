@@ -19,3 +19,4 @@ Examples
    example_multiple_independent_Utubes
    example_multipole_temperature
    example_bore_field_thermal_resistance
+   example_mixed_inlet_conditions
