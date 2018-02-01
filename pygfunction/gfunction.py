@@ -7,8 +7,9 @@ from scipy.interpolate import interp1d as interp1d
 from scipy.constants import pi
 import time as tim
 
-from .boreholes import Borehole
+from .boreholes import Borehole, _path_to_inlet, _verify_bore_connectivity
 from .heat_transfer import thermal_response_factors
+from .pipes import field_thermal_resistance
 
 
 def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
@@ -453,6 +454,240 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
         gFunction[p] = Tb.dot(Hb) / np.sum(Hb)
 
     toc2 = tim.time()
+    if disp:
+        print('{} sec'.format(toc2 - toc1))
+        print('Total time for g-function evaluation: {} sec'.format(
+                toc2 - tic))
+        print(60*'-')
+
+    # Return float if time is a scalar
+    if np.isscalar(time):
+        gFunction = np.asscalar(gFunction)
+
+    return gFunction
+
+
+def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
+                            time, alpha, method='linear', nSegments=12,
+                            use_similarities=True, disTol=0.1, tol=1.0e-6,
+                            processes=None, disp=False):
+    """
+    Evaluate the g-function with mixed inlet fluid temperatures.
+
+    This function superimposes the finite line source (FLS) solution to
+    estimate the g-function of a geothermal bore field. Each borehole is
+    modeled as a series of finite line source segments, as proposed in
+    [#Cimmino2018]_. The piping configurations between boreholes can be any
+    combination of series and parallel connections.
+
+    Parameters
+    ----------
+    boreholes : list of Borehole objects
+        List of boreholes included in the bore field.
+    UTubes : list of pipe objects
+        Model for pipes inside each borehole.
+    bore_connectivity : list
+        Index of fluid inlet into each borehole. -1 corresponds to a borehole
+        connected to the bore field inlet.
+    m_flow : array
+        Fluid mass flow rate in each borehole (in kg/s).
+    cp : float
+        Fluid specific isobaric heat capacity (in J/kg.K)
+    time : float or array
+        Values of time (in seconds) for which the g-function is evaluated.
+    alpha : float
+        Soil thermal diffusivity (in m2/s).
+    nSegments : int, optional
+        Number of line segments used per borehole.
+        Default is 12.
+    method : string, optional
+        Interpolation method used for segment-to-segment thermal response
+        factors. See documentation for scipy.interpolate.interp1d.
+        Default is 'linear'.
+    use_similarities : bool, optional
+        True if similarities are used to limit the number of FLS evaluations.
+        Default is True.
+    disTol : float, optional
+        Absolute tolerance (in meters) on radial distance. Two distances
+        (d1, d2) between two pairs of boreholes are considered equal if the
+        difference between the two distances (abs(d1-d2)) is below tolerance.
+        Default is 0.1.
+    tol : float, optional
+        Relative tolerance on length and depth. Two lenths H1, H2
+        (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
+        Default is 1.0e-6.
+    processes : int, optional
+        Number of processors to use in calculations. If the value is set to
+        None, a number of processors equal to cpu_count() is used.
+        Default is None.
+    disp : bool, optional
+        Set to true to print progression messages.
+        Default is False.
+
+    Returns
+    -------
+    gFunction : float or array
+        Values of the g-function
+
+    Examples
+    --------
+    >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
+    >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
+    >>> Utube1 = gt.pipes.SingleUTube(pos=[(-0.05, 0), (0, -0.05)],
+                                      r_in=0.015, r_out=0.02,
+                                      borehole=b1,k_s=2, k_g=1, R_fp=0.1)
+    >>> Utube2 = gt.pipes.SingleUTube(pos=[(-0.05, 0), (0, -0.05)],
+                                      r_in=0.015, r_out=0.02,
+                                      borehole=b1,k_s=2, k_g=1, R_fp=0.1)
+    >>> bore_connectivity = [-1, 0]
+    >>> time = np.array([1.0*10**i for i in range(4, 12)])
+    >>> m_flow = 0.25
+    >>> cp = 4000.
+    >>> alpha = 1.0e-6
+    >>> gt.gfunction.mixed_inlet_temperature([b1, b2], [Utube1, Utube2],
+                                             bore_connectivity,
+                                             m_flow, cp, time, alpha)
+    array([ 0.63783569,  1.63305912,  2.72193357,  4.04093857,  5.98242643,
+         7.77218495,  8.66198231,  8.77569636])
+
+    References
+    ----------
+    .. [#Cimmino2018] Cimmino, M. (2018). g-Functions for bore fields with
+       mixed parallel and series connections considering the axial fluid
+       temperature variations. IGSHPA Research Track, Stockholm. In review.
+
+    """
+    if disp:
+        print(60*'-')
+        print('Calculating g-function for mixed inlet fluid temperatures')
+        print(60*'-')
+    # Initialize chrono
+    tic = tim.time()
+    # Number of boreholes
+    nBoreholes = len(boreholes)
+    # Total number of line sources
+    nSources = nSegments*nBoreholes
+    # Number of time values
+    nt = len(np.atleast_1d(time))
+    # Initialize g-function
+    gFunction = np.zeros_like(np.atleast_1d(time))
+    # Initialize segment heat extraction rates
+    Q = np.zeros((nSources, nt))
+
+    # If m_flow is supplied as float, apply m_flow to all boreholes
+    if np.isscalar(m_flow):
+        m_flow = np.tile(m_flow, nBoreholes)
+    m_flow_tot = sum([m_flow[i] for i in range(nBoreholes)
+                      if bore_connectivity[i] == -1])
+
+    # Verify that borehole connectivity is valid
+    _verify_bore_connectivity(bore_connectivity, nBoreholes)
+
+    # Split boreholes into segments
+    boreSegments = _borehole_segments(boreholes, nSegments)
+    # Vector of time values
+    t = np.atleast_1d(time).flatten()
+    # Calculate segment to segment thermal response factors
+    h_ij = thermal_response_factors(
+        boreSegments, t, alpha, use_similarities=use_similarities,
+        splitRealAndImage=True, disTol=disTol, tol=tol, processes=processes,
+        disp=disp)
+    toc1 = tim.time()
+
+    if disp:
+        print('Building and solving system of equations ...')
+    # -------------------------------------------------------------------------
+    # g-function. [A] is a coefficient matrix, [X] = [Qb,Tb,Tf_in] is a state
+    # Build a system of equation [A]*[X] = [B] for the evaluation of the
+    # space vector of the borehole heat extraction rates, borehole wall
+    # temperatures and inlet fluid temperature (into the bore field),
+    # [B] is a coefficient vector.
+    # -------------------------------------------------------------------------
+
+    # Segment lengths
+    Hb = np.array([b.H for b in boreSegments])
+    # Vector of time steps
+    dt = np.hstack((t[0], t[1:] - t[:-1]))
+    if not np.isscalar(time) and len(time) > 1:
+        # Spline object for thermal response factors
+        h_dt = interp1d(np.hstack((0., t)),
+                        np.dstack((np.zeros((nSources,nSources)), h_ij)),
+                        kind=method, axis=2)
+        # Thermal response factors evaluated at t=dt
+        h_dt = h_dt(dt)
+    else:
+        h_dt = h_ij
+    # Thermal response factor increments
+    dh_ij = np.concatenate((h_ij[:,:,0:1], h_ij[:,:,1:]-h_ij[:,:,:-1]), axis=2)
+
+    # Energy balance on borehole segments:
+    # [Q_{b,i}] = [a_in]*[T_{f,in}] + [a_{b,i}]*[T_{b,i}]
+    A_eq2 = np.hstack((-np.eye(nSources), np.zeros((nSources, nSources + 1))))
+    B_eq2 = np.zeros(nSources)
+    for i in range(nBoreholes):
+        # Segment length
+        Hi = boreholes[i].H / nSegments
+        # Rows of equation matrix
+        j1 = i*nSegments
+        j2 = (i + 1)*nSegments
+        # Coefficients for current borehole
+        a_in, a_b = UTubes[i].coefficients_borehole_heat_extraction_rate(
+                m_flow[i], cp, nSegments)
+        # [a_b] is the coefficient matrix for [T_{b,i}]
+        n1 = i*nSegments + nSources
+        n2 = (i + 1)*nSegments + nSources
+        A_eq2[j1:j2, n1:n2] = a_b / (-2.0*pi*UTubes[i].k_s*Hi)
+
+        # Assemble matrix coefficient for [T_{f,in}] and all [T_b]
+        path = _path_to_inlet(bore_connectivity, i)
+        b_in = a_in
+        for j in path[1:]:
+            # Coefficients for borehole j
+            c_in, c_b = UTubes[j].coefficients_outlet_temperature(
+                    m_flow[j], cp, nSegments)
+            # Assign the coefficient matrix for [T_{b,j}]
+            n2 = (j + 1)*nSegments + nSources
+            n1 = j*nSegments + nSources
+            A_eq2[j1:j2, n1:n2] = b_in.dot(c_b)/(-2.0*pi*UTubes[i].k_s*Hi)
+            # Keep on building coefficient for [T_{f,in}]
+            b_in = b_in.dot(c_in)
+        A_eq2[j1:j2, -1:] = b_in / (-2.0*pi*UTubes[i].k_s*Hi)
+
+    # Energy conservation: sum([Qb*Hb]) = sum([Hb])
+    A_eq3 = np.hstack((Hb, np.zeros(nSources + 1)))
+    B_eq3 = np.atleast_1d(np.sum(Hb))
+
+    # Build and solve the system of equations at all times
+    for p in range(nt):
+        # Current thermal response factor matrix
+        h_ij_dt = h_dt[:,:,p]
+        # Reconstructed load history
+        Q_reconstructed = load_history_reconstruction(t[0:p+1], Q[:,0:p+1])
+        # Borehole wall temperature for zero heat extraction at current step
+        Tb_0 = _temporal_superposition(dh_ij, Q_reconstructed)
+        # Spatial superposition: [Tb] = [Tb0] + [h_ij_dt]*[Qb]
+        A_eq1 = np.hstack((h_ij_dt,
+                           -np.eye(nSources),
+                           np.zeros((nSources, 1))))
+        B_eq1 = -Tb_0
+        # Assemble equations
+        B = np.hstack((B_eq1, B_eq2, B_eq3))
+        A = np.vstack((A_eq1, A_eq2, A_eq3))
+        # Solve the system of equations
+        X = np.linalg.solve(A, B)
+        # Store calculated heat extraction rates
+        Q[:,p] = X[0:nSources]
+        # The gFunction is equal to the average borehole wall temperature
+        Tf_in = X[-1]
+        Tf_out = Tf_in - 2*pi*UTubes[0].k_s*np.sum(Hb)/(m_flow_tot*cp)
+        Tf = 0.5*(Tf_in + Tf_out)
+        Rfield = field_thermal_resistance(
+                UTubes, bore_connectivity, m_flow, cp)
+        Tb_eff = Tf - 2*pi*UTubes[0].k_s*Rfield
+        gFunction[p] = Tb_eff
+
+    toc2 = tim.time()
+
     if disp:
         print('{} sec'.format(toc2 - toc1))
         print('Total time for g-function evaluation: {} sec'.format(

@@ -4,6 +4,8 @@ import numpy as np
 from scipy.constants import pi
 from scipy.special import binom
 
+from .boreholes import _path_to_inlet, _verify_bore_connectivity
+
 
 class _BasePipe(object):
     """
@@ -1694,6 +1696,105 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, J=2):
     Rd = 1.0/K
 
     return R, Rd
+
+
+def borehole_thermal_resistance(pipe, m_flow, cp):
+    """
+    Evaluate the effective borehole thermal resistance.
+
+    Parameters
+    ----------
+    pipe : pipe object
+        Model for pipes inside the borehole.
+    m_flow : float
+        Fluid mass flow rate (in kg/s).
+    cp : float
+        Fluid specific isobaric heat capacity (in J/kg.K)
+
+    Returns
+    -------
+    Rb : float
+        Effective borehole thermal resistance (m.K/W).
+
+    """
+    # Coefficient for T_{f,out} = a_out*T_{f,in} + [b_out]*[T_b]
+    a_out = np.asscalar(
+            pipe.coefficients_outlet_temperature(m_flow, cp, nSegments=1)[0])
+    # Coefficient for Q_b = [a_Q]*T{f,in} + [b_Q]*[T_b]
+    a_Q = np.asscalar(pipe.coefficients_borehole_heat_extraction_rate(
+            m_flow, cp, nSegments=1)[0])
+    # Borehole length
+    H = pipe.b.H
+    # Effective borehole thermal resistance
+    Rb = -0.5*H*(1. + a_out)/a_Q
+
+    return Rb
+
+
+def field_thermal_resistance(pipes, bore_connectivity, m_flow, cp):
+    """
+    Evaluate the effective bore field thermal resistance.
+
+    As proposed in [#Cimmino2018]_.
+
+    Parameters
+    ----------
+    pipes : list of pipe objects
+        Models for pipes inside each borehole.
+    bore_connectivity : list
+        Index of fluid inlet into each borehole. -1 corresponds to a borehole
+        connected to the bore field inlet.
+    m_flow : float or array
+        Fluid mass flow rate in each borehole (in kg/s).
+    cp : float
+        Fluid specific isobaric heat capacity (in J/kg.K)
+
+    Returns
+    -------
+    Rfield : float
+        Effective bore field thermal resistance (m.K/W).
+
+    References
+    ----------
+    .. [#Cimmino2018] Cimmino, M. (2018). g-Functions for bore fields with
+       mixed parallel and series connections considering the axial fluid
+       temperature variations. IGSHPA Research Track, Stockholm. In review.
+
+    """
+    # Number of boreholes
+    nBoreholes = len(pipes)
+    # If m_flow is supplied as float, apply m_flow to all boreholes
+    if np.isscalar(m_flow):
+        m_flow = np.tile(m_flow, nBoreholes)
+    # Total mass flow rate in the bore field
+    m_flow_tot = sum([m_flow[i] for i in range(nBoreholes)
+                      if bore_connectivity[i] == -1])
+
+    # Total borehole length
+    H_tot = sum([pipes[i].b.H for i in range(nBoreholes)])
+
+    # Verify that borehole connectivity is valid
+    _verify_bore_connectivity(bore_connectivity, nBoreholes)
+
+
+    # Coefficients for T_{f,out} = A_out*T_{f,in} + [B_out]*[T_b], and
+    # Q_b = [A_Q]*T{f,in} + [B_Q]*[T_b]
+    A_Q = np.array([np.asscalar(
+            pipes[i].coefficients_borehole_heat_extraction_rate(
+                    m_flow[i], cp, nSegments=1)[0])
+            for i in range(len(pipes))])
+    for i in range(len(pipes)):
+        path = _path_to_inlet(bore_connectivity, i)
+        for j in path[1:]:
+            a_out = np.asscalar(pipes[j].coefficients_outlet_temperature(
+                    m_flow[j], cp, nSegments=1)[0])
+            A_Q[i] = A_Q[i]*a_out
+    A_out = 1. + np.sum(A_Q)/(m_flow_tot*cp)
+
+    # Effective bore field thermal resistance
+    Rfield = -0.5*H_tot*(1. + A_out)/np.sum(A_Q)
+
+    return Rfield
 
 
 def fluid_friction_factor_circular_pipe(m_flow, r_in, visc, den, epsilon,
