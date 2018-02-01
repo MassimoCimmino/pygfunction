@@ -683,7 +683,6 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
         Tf = 0.5*(Tf_in + Tf_out)
         Rfield = field_thermal_resistance(
                 UTubes, bore_connectivity, m_flow, cp)
-        Tb = X[nSources:2*nSources]
         Tb_eff = Tf - 2*pi*UTubes[0].k_s*Rfield
         gFunction[p] = Tb_eff
 
@@ -699,7 +698,7 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
     if np.isscalar(time):
         gFunction = np.asscalar(gFunction)
 
-    return gFunction, Tb, Q[:,p], X[-1]
+    return gFunction
 
 
 def load_history_reconstruction(time, Q):

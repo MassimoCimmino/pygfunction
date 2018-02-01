@@ -119,7 +119,7 @@ def main():
             nSegments=nSegments, disp=True)
 
     # Calculate the g-function for mixed inlet fluid conditions
-    gfunc_equal_Tf_mixed, Tb, Q, Tf_in = \
+    gfunc_equal_Tf_mixed = \
             gt.gfunction.mixed_inlet_temperature(
             boreField, UTubes, bore_connectivity, m_flow, cp_f, time, alpha,
             nSegments=nSegments, disp=True)
