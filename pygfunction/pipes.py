@@ -2126,7 +2126,7 @@ def _F_mk(Q_p, P, n_p, J, r_b, r_p, z, pikg, sigma):
                                 *r_p[n]**(j+1)*(-r_p[m])**(k+1) \
                                 /(z[m] - z[n])**(j+k+2)
                     # Fourth term
-                    j_pend = np.min((k, j)) + 1
+                    j_pend = np.min((k, j)) + 2
                     for jp in range(j_pend):
                         fmk += sigma*np.conj(P[n,j])*binom(j+1, jp) \
                                 *binom(j+k-jp+1, j)*r_p[n]**(j+1) \
