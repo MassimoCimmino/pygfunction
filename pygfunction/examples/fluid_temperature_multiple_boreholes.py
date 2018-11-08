@@ -199,10 +199,10 @@ def main():
     ax3.set_xlabel(r'Temperature (degC)')
     ax3.set_ylabel(r'Depth from borehole head (m)')
     # Plot temperatures
-    ax3.plot(T_f, z, 'b-', lw=1.5, label='Fluid')
-    ax3.plot(np.array([T_b[it], T_b[it]]), np.array([0., H]), 'k--', lw=1.5,
-             label='Borehole wall')
-    ax3.legend()
+    pltFlu = ax3.plot(T_f, z, 'b-', lw=1.5, label='Fluid')
+    pltWal = ax3.plot(np.array([T_b[it], T_b[it]]), np.array([0., H]),
+                      'k--', lw=1.5, label='Borehole wall')
+    ax3.legend(handles=[pltFlu[0]]+pltWal)
 
     # Show minor ticks
     ax3.xaxis.set_minor_locator(AutoMinorLocator())
