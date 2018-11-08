@@ -39,8 +39,44 @@ class Network(object):
         self.iOutlets = iOutlets
         # Indices of circuit of each borehole in network
         self.iCircuit = iCircuit
-#
-    def coefficients_borehole_outlet_temperature(self, m_flow, cp, nSegments):
+
+    def coefficients_inlet_temperature(self, m_flow, cp, nSegments):
+        """
+        Build coefficient matrices to evaluate intlet fluid temperature.
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                \\mathbf{T_{f,borehole,in}} = \\mathbf{a_{q,f}} \\mathbf{Q_{f}}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
+
+        Parameters
+        ----------
+        m_flow : float or array
+            Total mass flow rate into the network or inlet mass flow rates
+            into each circuit of the network (in kg/s). If a float is supplied,
+            the total mass flow rate is split equally into all circuits.
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+            Must be the same for all circuits (a signle float can be supplied).
+        nSegments : int or list
+            Number of borehole segments for each borehole. If an int is
+            supplied, all boreholes are considered to have the same number of
+            segments.
+
+        Returns
+        -------
+        a_qf : array
+            Array of coefficients for inlet fluid temperature.
+        a_b : array
+            Array of coefficients for borehole wall temperatures.
+
+        """
+
+        return a_qf, a_b
+
+    def coefficients_outlet_temperature(self, m_flow, cp, nSegments):
         """
         Build coefficient matrices to evaluate outlet fluid temperature.
 
@@ -49,6 +85,189 @@ class Network(object):
             .. math::
 
                 \\mathbf{T_{f,borehole,out}} =
+                \\mathbf{a_{in}} \\mathbf{T_{f,network,in}}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
+
+        Parameters
+        ----------
+        m_flow : float or array
+            Total mass flow rate into the network or inlet mass flow rates
+            into each circuit of the network (in kg/s). If a float is supplied,
+            the total mass flow rate is split equally into all circuits.
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+            Must be the same for all circuits (a signle float can be supplied).
+        nSegments : int or list
+            Number of borehole segments for each borehole. If an int is
+            supplied, all boreholes are considered to have the same number of
+            segments.
+
+        Returns
+        -------
+        a_in : array
+            Array of coefficients for inlet fluid temperature.
+        a_b : array
+            Array of coefficients for borehole wall temperatures.
+
+        """
+
+        return a_in, a_b
+
+    def coefficients_network_inlet_temperature(self, m_flow, cp, nSegments):
+        """
+        Build coefficient matrices to evaluate intlet fluid temperature.
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                \\mathbf{T_{f,network,in}} = \\mathbf{a_{q,f}} \\mathbf{Q_{f}}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
+
+        Parameters
+        ----------
+        m_flow : float or array
+            Total mass flow rate into the network or inlet mass flow rates
+            into each circuit of the network (in kg/s). If a float is supplied,
+            the total mass flow rate is split equally into all circuits.
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+            Must be the same for all circuits (a signle float can be supplied).
+        nSegments : int or list
+            Number of borehole segments for each borehole. If an int is
+            supplied, all boreholes are considered to have the same number of
+            segments.
+
+        Returns
+        -------
+        a_qf : array
+            Array of coefficients for inlet fluid temperature.
+        a_b : array
+            Array of coefficients for borehole wall temperatures.
+
+        """
+
+        return a_qf, a_b
+#
+    def coefficients_network_outlet_temperature(self, m_flow, cp, nSegments):
+        """
+        Build coefficient matrices to evaluate outlet fluid temperature.
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                \\mathbf{T_{f,network,out}} =
+                \\mathbf{a_{in}} \\mathbf{T_{f,network,in}}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
+
+        Parameters
+        ----------
+        m_flow : float or array
+            Total mass flow rate into the network or inlet mass flow rates
+            into each circuit of the network (in kg/s). If a float is supplied,
+            the total mass flow rate is split equally into all circuits.
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+            Must be the same for all circuits (a signle float can be supplied).
+        nSegments : int or list
+            Number of borehole segments for each borehole. If an int is
+            supplied, all boreholes are considered to have the same number of
+            segments.
+
+        Returns
+        -------
+        a_in : array
+            Array of coefficients for inlet fluid temperature.
+        a_b : array
+            Array of coefficients for borehole wall temperatures.
+
+        """
+
+        return a_in, a_b
+
+    def coefficients_borehole_heat_extraction_rate(self,
+                                                   m_flow, cp, nSegments):
+        """
+        Build coefficient matrices to evaluate heat extraction rates.
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                \\mathbf{Q_b} = \\mathbf{a_{in}} \\mathbf{T_{f,network,in}}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
+
+        Parameters
+        ----------
+        m_flow : float or array
+            Total mass flow rate into the network or inlet mass flow rates
+            into each circuit of the network (in kg/s). If a float is supplied,
+            the total mass flow rate is split equally into all circuits.
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+            Must be the same for all circuits (a signle float can be supplied).
+        nSegments : int or list
+            Number of borehole segments for each borehole. If an int is
+            supplied, all boreholes are considered to have the same number of
+            segments.
+
+        Returns
+        -------
+        a_in : array
+            Array of coefficients for inlet fluid temperature.
+        a_b : array
+            Array of coefficients for borehole wall temperatures.
+
+        """
+
+        return a_in, a_b
+
+    def coefficients_fluid_heat_extraction_rate(self, m_flow, cp, nSegments):
+        """
+        Build coefficient matrices to evaluate heat extraction rates.
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                \\mathbf{Q_f} = \\mathbf{a_{in}} \\mathbf{T_{f,network,in}}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
+
+        Parameters
+        ----------
+        m_flow : float or array
+            Total mass flow rate into the network or inlet mass flow rates
+            into each circuit of the network (in kg/s). If a float is supplied,
+            the total mass flow rate is split equally into all circuits.
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+            Must be the same for all circuits (a signle float can be supplied).
+        nSegments : int or list
+            Number of borehole segments for each borehole. If an int is
+            supplied, all boreholes are considered to have the same number of
+            segments.
+
+        Returns
+        -------
+        a_in : array
+            Array of coefficients for inlet fluid temperature.
+        a_b : array
+            Array of coefficients for borehole wall temperatures.
+
+        """
+
+        return a_in, a_b
+
+    def coefficients_network_heat_extraction_rate(self, m_flow, cp, nSegments):
+        """
+        Build coefficient matrices to evaluate heat extraction rates.
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                \\mathbf{Q_network} =
                 \\mathbf{a_{in}} \\mathbf{T_{f,network,in}}
                 + \\mathbf{a_{b}} \\mathbf{T_b}
 
