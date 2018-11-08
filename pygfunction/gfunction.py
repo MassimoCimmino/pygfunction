@@ -7,8 +7,9 @@ from scipy.interpolate import interp1d as interp1d
 from scipy.constants import pi
 import time as tim
 
-from .boreholes import Borehole, _path_to_inlet, _verify_bore_connectivity
+from .boreholes import Borehole
 from .heat_transfer import thermal_response_factors
+from .networks import _path_to_inlet, _verify_bore_connectivity
 from .pipes import field_thermal_resistance
 
 
