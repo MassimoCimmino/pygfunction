@@ -73,6 +73,8 @@ class Network(object):
             Array of coefficients for borehole wall temperatures.
 
         """
+        # method_id for coefficients_inlet_temperature is 0
+        method_id = 0
 
         return a_qf, a_b
 
@@ -110,6 +112,8 @@ class Network(object):
             Array of coefficients for borehole wall temperatures.
 
         """
+        # method_id for coefficients_outlet_temperature is 1
+        method_id = 1
 
         return a_in, a_b
 
@@ -146,6 +150,8 @@ class Network(object):
             Array of coefficients for borehole wall temperatures.
 
         """
+        # method_id for coefficients_network_inlet_temperature is 2
+        method_id = 2
 
         return a_qf, a_b
 #
@@ -183,6 +189,8 @@ class Network(object):
             Array of coefficients for borehole wall temperatures.
 
         """
+        # method_id for coefficients_network_outlet_temperature is 3
+        method_id = 3
 
         return a_in, a_b
 
@@ -220,6 +228,8 @@ class Network(object):
             Array of coefficients for borehole wall temperatures.
 
         """
+        # method_id for coefficients_borehole_heat_extraction_rate is 4
+        method_id = 4
 
         return a_in, a_b
 
@@ -256,6 +266,8 @@ class Network(object):
             Array of coefficients for borehole wall temperatures.
 
         """
+        # method_id for coefficients_fluid_heat_extraction_rate is 5
+        method_id = 5
 
         return a_in, a_b
 
@@ -293,11 +305,13 @@ class Network(object):
             Array of coefficients for borehole wall temperatures.
 
         """
+        # method_id for coefficients_network_heat_extraction_rate is 6
+        method_id = 6
 
         return a_in, a_b
 
     def _initialize_stored_coefficients(self):
-        nMethods = 8    # Number of class methods
+        nMethods = 7    # Number of class methods
         self._stored_coefficients = [() for i in range(nMethods)]
         self._stored_m_flow_cp = [np.empty(self.nInlets)
                                   for i in range(nMethods)]
