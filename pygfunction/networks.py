@@ -40,6 +40,47 @@ class Network(object):
         # Indices of circuit of each borehole in network
         self.iCircuit = iCircuit
 
+        # Initialize stored_coefficients
+        self._initialize_stored_coefficients()
+
+    def get_outlet_temperature(self, Tin, Tb, m_flow, cp, nSegments):
+        """
+        Returns the outlet fluid temperatures of the borehole.
+
+        Parameters
+        ----------
+        Tin : float or array
+            Inlet fluid temperatures into network (in Celsius).
+        Tb : float or array
+            Borehole wall temperatures (in Celsius).
+        m_flow : float or array
+            Total mass flow rate into the network or inlet mass flow rates
+            into each circuit of the network (in kg/s). If a float is supplied,
+            the total mass flow rate is split equally into all circuits.
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+            Must be the same for all circuits (a signle float can be supplied).
+        nSegments : int or list
+            Number of borehole segments for each borehole. If an int is
+            supplied, all boreholes are considered to have the same number of
+            segments.
+
+        Returns
+        -------
+        Tout : array
+            Outlet fluid temperatures (in Celsius) from each outlet pipe.
+
+        """
+        # Build coefficient matrices
+        a_in, a_b = self.coefficients_outlet_temperature(m_flow,
+                                                         cp,
+                                                         nSegments)
+        # Evaluate outlet temperatures
+        if np.isscalar(Tb):
+            Tb = np.tile(Tb, sum(self.nSegments))
+        Tout = a_in.dot(Tin).flatten() + a_b.dot(Tb).flatten()
+        return Tout
+
     def coefficients_inlet_temperature(self, m_flow, cp, nSegments):
         """
         Build coefficient matrices to evaluate intlet fluid temperature.
@@ -114,6 +155,49 @@ class Network(object):
         """
         # method_id for coefficients_outlet_temperature is 1
         method_id = 1
+        # Check if stored coefficients are available
+        if self._check_coefficients(m_flow, cp, nSegments, method_id):
+            a_in, a_b = self._get_stored_coefficients(method_id)
+        else:
+            # Update input variables
+            self._format_inputs(m_flow, cp, nSegments)
+            # Coefficient matrices from pipe model:
+            # [T_{f,out,i}] = [b_{in,i}]*[T_{f,in,i}] + [b_{b,i}]*[T_{b,i}]
+            B_in = [self.p[i].coefficients_outlet_temperature(
+                        self._m_flow_borehole[i],
+                        self._cp_borehole[i],
+                        self.nSegments[i])[0]
+                    for i in range(self.nBoreholes)]
+            B_b = [self.p[i].coefficients_outlet_temperature(
+                        self._m_flow_borehole[i],
+                        self._cp_borehole[i],
+                        self.nSegments[i])[1]
+                    for i in range(self.nBoreholes)]
+
+            A_in = [np.zeros((1, 1)) for i in range(self.nBoreholes)]
+            A_b = [[np.zeros((1, self.nSegments[j])) for j in range(self.nBoreholes)] for i in range(self.nBoreholes)]
+            for iOutlet in self.iOutlets:
+                outlet_to_inlet = _path_to_inlet(self.c, iOutlet)
+                inlet_to_outlet = outlet_to_inlet[::-1]
+                iInlet = inlet_to_outlet[0]
+                c_in = B_in[iInlet]
+                A_in[iInlet] = c_in
+                c_b = B_b[iInlet]
+                A_b[iInlet][iInlet] = c_b
+                for i in inlet_to_outlet[1:]:
+                    c_in = B_in[i]
+
+                    iPrevious = self.c[i]
+                    A_in[i] = c_in.dot(A_in[iPrevious])
+                    A_b[i][i] = B_b[i]
+
+                    path_to_inlet = _path_to_inlet(self.c, i)
+                    for j in path_to_inlet[1:]:
+                        c_b = B_b[j]
+                        A_b[i][j] = c_in.dot(A_b[iPrevious][j])
+
+            a_in = np.vstack(A_in)
+            a_b = np.block(A_b)
 
         return a_in, a_b
 
