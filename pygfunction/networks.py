@@ -81,6 +81,43 @@ class Network(object):
         Tout = a_in.dot(Tin).flatten() + a_b.dot(Tb).flatten()
         return Tout
 
+    def get_borehole_heat_extraction_rate(self, Tin, Tb, m_flow, cp, nSegments):
+        """
+        Returns the heat extraction rates of the borehole.
+
+        Parameters
+        ----------
+        Tin : float or array
+            Inlet fluid temperatures into network (in Celsius).
+        Tb : float or array
+            Borehole wall temperatures (in Celsius).
+        m_flow : float or array
+            Total mass flow rate into the network or inlet mass flow rates
+            into each circuit of the network (in kg/s). If a float is supplied,
+            the total mass flow rate is split equally into all circuits.
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+            Must be the same for all circuits (a signle float can be supplied).
+        nSegments : int or list
+            Number of borehole segments for each borehole. If an int is
+            supplied, all boreholes are considered to have the same number of
+            segments.
+
+        Returns
+        -------
+        Qb : float or array
+            Heat extraction rates along each borehole segment (in Watts).
+
+        """
+        a_in, a_b = self.coefficients_borehole_heat_extraction_rate(m_flow,
+                                                                    cp,
+                                                                    nSegments)
+        if np.isscalar(Tb):
+            Tb = np.tile(Tb, sum(self.nSegments))
+        Qb = a_in.dot(Tin).flatten() + a_b.dot(Tb).flatten()
+
+        return Qb
+
     def coefficients_inlet_temperature(self, m_flow, cp, nSegments):
         """
         Build coefficient matrices to evaluate intlet fluid temperature.
@@ -314,6 +351,61 @@ class Network(object):
         """
         # method_id for coefficients_borehole_heat_extraction_rate is 4
         method_id = 4
+        # Check if stored coefficients are available
+        if self._check_coefficients(m_flow, cp, nSegments, method_id):
+            a_in, a_b = self._get_stored_coefficients(method_id)
+        else:
+            # Update input variables
+            self._format_inputs(m_flow, cp, nSegments)
+            # Coefficient matrices from pipe model:
+            # [T_{f,out,i}] = [b_{in,i}]*[T_{f,in,i}] + [b_{b,i}]*[T_{b,i}]
+            B_in = [self.p[i].coefficients_outlet_temperature(
+                        self._m_flow_borehole[i],
+                        self._cp_borehole[i],
+                        self.nSegments[i])[0]
+                    for i in range(self.nBoreholes)]
+            B_b = [self.p[i].coefficients_outlet_temperature(
+                        self._m_flow_borehole[i],
+                        self._cp_borehole[i],
+                        self.nSegments[i])[1]
+                    for i in range(self.nBoreholes)]
+            # Coefficient matrices from pipe model:
+            # [Q_{b,i}] = [c_{in,i}]*[T_{f,in,i}] + [c_{b,i}]*[T_{b,i}]
+            C_in = [self.p[i].coefficients_borehole_heat_extraction_rate(
+                        self._m_flow_borehole[i],
+                        self._cp_borehole[i],
+                        self.nSegments[i])[0]
+                    for i in range(self.nBoreholes)]
+            C_b = [self.p[i].coefficients_borehole_heat_extraction_rate(
+                        self._m_flow_borehole[i],
+                        self._cp_borehole[i],
+                        self.nSegments[i])[1]
+                    for i in range(self.nBoreholes)]
+
+            A_in = [np.zeros((self.nSegments[i], 1)) for i in range(self.nBoreholes)]
+            A_b = [[np.zeros((self.nSegments[i], self.nSegments[j])) for j in range(self.nBoreholes)] for i in range(self.nBoreholes)]
+
+            for iOutlet in self.iOutlets:
+                outlet_to_inlet = _path_to_inlet(self.c, iOutlet)
+                inlet_to_outlet = outlet_to_inlet[::-1]
+                iInlet = inlet_to_outlet[0]
+                A_in[iInlet] = C_in[iInlet]
+                A_b[iInlet][iInlet] = C_b[iInlet]
+                b_in_previous = B_in[iInlet]
+                for i in inlet_to_outlet[1:]:
+                    c_in = C_in[i]
+                    A_in[i] = c_in.dot(b_in_previous)
+                    b_in_previous = B_in[i].dot(b_in_previous)
+
+                    A_b[i][i] = C_b[i]
+
+                    path_to_inlet = _path_to_inlet(self.c, i)
+                    d_in_previous = np.ones((1,1))
+                    for j in path_to_inlet[1:]:
+                        A_b[i][j] = np.linalg.multi_dot([c_in, d_in_previous, B_b[j]])
+                        d_in_previous = B_in[j].dot(d_in_previous)
+            a_in = np.vstack(A_in)
+            a_b = np.block(A_b)
 
         return a_in, a_b
 
