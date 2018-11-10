@@ -466,11 +466,12 @@ class Network(object):
         # Format number of segments for each borehole
         nSeg = np.atleast_1d(nSegments)
         if len(nSeg) == 1:
-            nSeg = [nSegments for i in range(self.nBoreholes)]
+            self.nSegments = [nSegments for i in range(self.nBoreholes)]
         elif not len(nSeg) == self.nBoreholes:
             raise ValueError(
                 'Incorrect length of number of segments list.')
-        self.nSegments = nSeg
+        else:
+            self.nSegments = nSegments
 
 
 def _find_inlets_outlets(bore_connectivity, nBoreholes):
