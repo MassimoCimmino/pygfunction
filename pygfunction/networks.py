@@ -7,14 +7,14 @@ class Network(object):
     """
     Network class.
 
-    #TODO.
+    # TODO : Description of class
 
     Attributes
     ----------
+    # TODO : Description of attributes
     boreholes : list of Borehole objects
         List of boreholes included in the bore field.
     pipes : list of pipe objects
-        #TODO.
     bore_connectivity : list
         Index of fluid inlet into each borehole. -1 corresponds to a borehole
         connected to the bore field inlet.
