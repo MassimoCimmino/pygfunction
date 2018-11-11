@@ -507,8 +507,8 @@ class Network(object):
 
         """
 
-        A_in = [np.zeros((self.nSegments[i], 1)) for i in range(self.nBoreholes)]
-        A_b = [[np.zeros((self.nSegments[i], self.nSegments[j])) for j in range(self.nBoreholes)] for i in range(self.nBoreholes)]
+        A_in = [np.zeros((np.shape(coefficients_output_variable[i][0])[0], 1)) for i in range(self.nBoreholes)]
+        A_b = [[np.zeros((np.shape(coefficients_output_variable[i][1])[0], self.nSegments[j])) for j in range(self.nBoreholes)] for i in range(self.nBoreholes)]
 
         for iOutlet in self.iOutlets:
             outlet_to_inlet = _path_to_inlet(self.c, iOutlet)
