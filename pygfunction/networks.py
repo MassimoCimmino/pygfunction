@@ -486,6 +486,58 @@ class Network(object):
 
         return a_in, a_b
 
+    def _network_coefficients_from_pipe_coefficients(self,
+            coefficients_outlet_temperature,
+            coefficients_output_variable):
+        """
+        # TODO: Description of class method
+
+        Parameters
+        ----------
+        # TODO: Description of parameters
+        coefficients_outlet_temperature : list of tuples of arrays
+        coefficients_output_variable : list of tuples of arrays
+
+        Returns
+        -------
+        a_in : array
+            Array of coefficients for inlet fluid temperature.
+        a_b : array
+            Array of coefficients for borehole wall temperatures.
+
+        """
+
+        A_in = [np.zeros((self.nSegments[i], 1)) for i in range(self.nBoreholes)]
+        A_b = [[np.zeros((self.nSegments[i], self.nSegments[j])) for j in range(self.nBoreholes)] for i in range(self.nBoreholes)]
+
+        for iOutlet in self.iOutlets:
+            outlet_to_inlet = _path_to_inlet(self.c, iOutlet)
+            inlet_to_outlet = outlet_to_inlet[::-1]
+            iInlet = inlet_to_outlet[0]
+            A_in[iInlet] = coefficients_output_variable[iInlet][0]
+            A_b[iInlet][iInlet] = coefficients_output_variable[iInlet][1]
+            b_in_previous = coefficients_outlet_temperature[iInlet][0]
+            for i in inlet_to_outlet[1:]:
+                b_in_current = coefficients_outlet_temperature[i][0]
+                c_in = coefficients_output_variable[i][0]
+                A_in[i] = c_in.dot(b_in_previous)
+                b_in_previous = b_in_current.dot(b_in_previous)
+
+                A_b[i][i] = coefficients_output_variable[i][1]
+
+                path_to_inlet = _path_to_inlet(self.c, i)
+                d_in_previous = np.ones((1,1))
+                for j in path_to_inlet[1:]:
+                    b_in_current = coefficients_outlet_temperature[j][0]
+                    b_b_current = coefficients_outlet_temperature[j][1]
+                    A_b[i][j] = np.linalg.multi_dot([c_in, d_in_previous, b_b_current])
+                    d_in_previous = b_in_current.dot(d_in_previous)
+        a_in = np.vstack(A_in)
+        a_b = np.block(A_b)
+
+        return a_in, a_b
+        
+
     def _initialize_stored_coefficients(self):
         nMethods = 7    # Number of class methods
         self._stored_coefficients = [() for i in range(nMethods)]
