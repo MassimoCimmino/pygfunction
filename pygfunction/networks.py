@@ -43,6 +43,43 @@ class Network(object):
         # Initialize stored_coefficients
         self._initialize_stored_coefficients()
 
+    def get_inlet_temperature(self, Tin, Tb, m_flow, cp, nSegments):
+        """
+        Returns the outlet fluid temperatures of the borehole.
+
+        Parameters
+        ----------
+        Tin : float or array
+            Inlet fluid temperatures into network (in Celsius).
+        Tb : float or array
+            Borehole wall temperatures (in Celsius).
+        m_flow : float or array
+            Total mass flow rate into the network or inlet mass flow rates
+            into each circuit of the network (in kg/s). If a float is supplied,
+            the total mass flow rate is split equally into all circuits.
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+            Must be the same for all circuits (a signle float can be supplied).
+        nSegments : int or list
+            Number of borehole segments for each borehole. If an int is
+            supplied, all boreholes are considered to have the same number of
+            segments.
+
+        Returns
+        -------
+        Tin : array
+            Inlet fluid temperatures (in Celsius) from each inlet pipe.
+
+        """
+        # Build coefficient matrices
+        a_in, a_b = self.coefficients_inlet_temperature(
+                m_flow, cp, nSegments)
+        # Evaluate outlet temperatures
+        if np.isscalar(Tb):
+            Tb = np.tile(Tb, sum(self.nSegments))
+        Tin_borehole = a_in.dot(Tin).flatten() + a_b.dot(Tb).flatten()
+        return Tin_borehole
+
     def get_outlet_temperature(self, Tin, Tb, m_flow, cp, nSegments):
         """
         Returns the outlet fluid temperatures of the borehole.
@@ -293,7 +330,7 @@ class Network(object):
 
         Returns
         -------
-        a_qf : array
+        a_in : array
             Array of coefficients for inlet fluid temperature.
         a_b : array
             Array of coefficients for borehole wall temperatures.
@@ -301,8 +338,22 @@ class Network(object):
         """
         # method_id for coefficients_inlet_temperature is 0
         method_id = 0
+        # Check if stored coefficients are available
+        if self._check_coefficients(m_flow, cp, nSegments, method_id):
+            a_in, a_b = self._get_stored_coefficients(method_id)
+        else:
+            # Update input variables
+            self._format_inputs(m_flow, cp, nSegments)
+            B = [self.p[i].coefficients_outlet_temperature(
+                    self._m_flow_borehole[i],
+                    self._cp_borehole[i],
+                    self.nSegments[i])
+                 for i in range(self.nBoreholes)]
+            C = [(np.eye(1), np.zeros((1, self.nSegments[i])))
+                 for i in range(self.nBoreholes)]
+            a_in, a_b = self._network_coefficients_from_pipe_coefficients(B, C)
 
-        return a_qf, a_b
+        return a_in, a_b
 
     def coefficients_outlet_temperature(self, m_flow, cp, nSegments):
         """
