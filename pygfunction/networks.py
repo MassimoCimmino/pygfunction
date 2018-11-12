@@ -188,7 +188,7 @@ class Network(object):
             Tb = np.tile(Tb, sum(self.nSegments))
         Tout = a_in.dot(Tin).flatten() + a_b.dot(Tb).flatten()
         if np.isscalar(Tin):
-            Tb = np.asscalar(Tout)
+            Tout = np.asscalar(Tout)
         return Tout
 
     def get_network_heat_extraction_rate(self, Tin, Tb, m_flow, cp, nSegments):
@@ -561,8 +561,8 @@ class Network(object):
             # extraction rates from all boreholes
             b_in, b_b = self.coefficients_fluid_heat_extraction_rate(
                     m_flow, cp, nSegments)
-            a_in = np.sum(b_in, axis=0)
-            a_b = np.sum(b_b, axis=0)
+            a_in = np.reshape(np.sum(b_in, axis=0), (1,-1))
+            a_b = np.reshape(np.sum(b_b, axis=0), (1,-1))
 
         return a_in, a_b
 
