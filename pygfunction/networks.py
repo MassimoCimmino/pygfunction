@@ -152,6 +152,42 @@ class Network(object):
 
         return Qf
 
+    def get_network_heat_extraction_rate(self, Tin, Tb, m_flow, cp, nSegments):
+        """
+        Returns the total heat extraction rates of the network.
+
+        Parameters
+        ----------
+        Tin : float or array
+            Inlet fluid temperatures into network (in Celsius).
+        Tb : float or array
+            Borehole wall temperatures (in Celsius).
+        m_flow : float or array
+            Total mass flow rate into the network or inlet mass flow rates
+            into each circuit of the network (in kg/s). If a float is supplied,
+            the total mass flow rate is split equally into all circuits.
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+            Must be the same for all circuits (a signle float can be supplied).
+        nSegments : int or list
+            Number of borehole segments for each borehole. If an int is
+            supplied, all boreholes are considered to have the same number of
+            segments.
+
+        Returns
+        -------
+        Qt : float or array
+            Heat extraction rate of the network (in Watts).
+
+        """
+        a_in, a_b = self.coefficients_network_heat_extraction_rate(
+                m_flow, cp, nSegments)
+        if np.isscalar(Tb):
+            Tb = np.tile(Tb, sum(self.nSegments))
+        Qt = a_in.dot(Tin).flatten() + a_b.dot(Tb).flatten()
+
+        return Qt
+
     def coefficients_inlet_temperature(self, m_flow, cp, nSegments):
         """
         Build coefficient matrices to evaluate intlet fluid temperature.
@@ -468,6 +504,16 @@ class Network(object):
         """
         # method_id for coefficients_network_heat_extraction_rate is 6
         method_id = 6
+        # Check if stored coefficients are available
+        if self._check_coefficients(m_flow, cp, nSegments, method_id):
+            a_in, a_b = self._get_stored_coefficients(method_id)
+        else:
+            # The total network heat extraction rate is the some of heat
+            # extraction rates from all boreholes
+            b_in, b_b = self.coefficients_fluid_heat_extraction_rate(
+                    m_flow, cp, nSegments)
+            a_in = np.sum(b_in, axis=0)
+            a_b = np.sum(b_b, axis=0)
 
         return a_in, a_b
 
