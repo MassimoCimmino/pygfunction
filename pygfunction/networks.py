@@ -796,6 +796,59 @@ class Network(object):
             self.nSegments = nSegments
 
 
+def network_thermal_resistance(network, m_flow, cp):
+    """
+    Evaluate the effective bore field thermal resistance.
+
+    As proposed in [#Cimmino2018]_.
+
+    Parameters
+    ----------
+    # TODO
+    pipes : list of pipe objects
+        Models for pipes inside each borehole.
+    bore_connectivity : list
+        Index of fluid inlet into each borehole. -1 corresponds to a borehole
+        connected to the bore field inlet.
+    m_flow : float or array
+        Total fluid mass flow rate in network (in kg/s).
+    cp : float
+        Fluid specific isobaric heat capacity (in J/kg.K)
+
+    Returns
+    -------
+    Rfield : float
+        Effective bore field thermal resistance (m.K/W).
+
+    References
+    ----------
+    .. [#Cimmino2018] Cimmino, M. (2018). g-Functions for bore fields with
+       mixed parallel and series connections considering the axial fluid
+       temperature variations. IGSHPA Research Track, Stockholm. In review.
+
+    """
+    # Number of boreholes
+    nBoreholes = len(network.b)
+
+    # Total borehole length
+    H_tot = sum([network.b[i].H for i in range(nBoreholes)])
+
+
+    # Coefficients for T_{f,out} = A_out*T_{f,in} + [B_out]*[T_b], and
+    # Q_b = [A_Q]*T{f,in} + [B_Q]*[T_b]
+    A_out, B_out = network.coefficients_network_outlet_temperature(
+            m_flow, cp, 1)
+    A_Q, B_Q = network.coefficients_network_heat_extraction_rate(
+            m_flow, cp, 1)
+
+    # Effective bore field thermal resistance
+    Rfield = -0.5*H_tot*(1. + A_out)/A_Q
+    if not np.isscalar(Rfield):
+        np.asscalar(Rfield)
+
+    return Rfield
+
+
 def _find_inlets_outlets(bore_connectivity, nBoreholes):
     """
     Finds the numbers of boreholes connected to the inlet and outlet of the

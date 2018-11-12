@@ -9,8 +9,7 @@ import time as tim
 
 from .boreholes import Borehole
 from .heat_transfer import thermal_response_factors
-from .networks import _path_to_inlet, _verify_bore_connectivity
-from .pipes import field_thermal_resistance
+from .networks import _path_to_inlet, _verify_bore_connectivity, network_thermal_resistance
 
 
 def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
@@ -647,8 +646,7 @@ def mixed_inlet_temperature(network, m_flow, cp,
         Tf_in = X[-1]
         Tf_out = Tf_in - 2*pi*k_s*np.sum(Hb)/(m_flow*cp)
         Tf = 0.5*(Tf_in + Tf_out)
-        Rfield = field_thermal_resistance(
-                network.p, network.c, network._m_flow_borehole, cp)
+        Rfield = network_thermal_resistance(network, m_flow, cp)
         Tb_eff = Tf - 2*pi*k_s*Rfield
         gFunction[p] = Tb_eff
 
