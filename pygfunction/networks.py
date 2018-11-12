@@ -152,6 +152,45 @@ class Network(object):
 
         return Qf
 
+    def get_network_inlet_temperature(self, Qt, Tb, m_flow, cp, nSegments):
+        """
+        Returns the inlet fluid temperatures of the network.
+
+        Parameters
+        ----------
+        Qt : float or array
+            Total heat extraction rate from the network (in Watts).
+        Tb : float or array
+            Borehole wall temperatures (in Celsius).
+        m_flow : float or array
+            Total mass flow rate into the network or inlet mass flow rates
+            into each circuit of the network (in kg/s). If a float is supplied,
+            the total mass flow rate is split equally into all circuits.
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+            Must be the same for all circuits (a signle float can be supplied).
+        nSegments : int or list
+            Number of borehole segments for each borehole. If an int is
+            supplied, all boreholes are considered to have the same number of
+            segments.
+
+        Returns
+        -------
+        Tin : array
+            Inlet fluid temperatures (in Celsius) into the network.
+
+        """
+        # Build coefficient matrices
+        a_in, a_b = self.coefficients_network_inlet_temperature(
+                m_flow, cp, nSegments)
+        # Evaluate outlet temperatures
+        if np.isscalar(Tb):
+            Tb = np.tile(Tb, sum(self.nSegments))
+        Tin = a_in.dot(Qt).flatten() + a_b.dot(Tb).flatten()
+        if np.isscalar(Qt):
+            Tin = np.asscalar(Tin)
+        return Tin
+
     def get_network_outlet_temperature(self, Tin, Tb, m_flow, cp, nSegments):
         """
         Returns the outlet fluid temperatures of the network.
@@ -354,6 +393,15 @@ class Network(object):
         """
         # method_id for coefficients_network_inlet_temperature is 2
         method_id = 2
+        # Check if stored coefficients are available
+        if self._check_coefficients(m_flow, cp, nSegments, method_id):
+            a_qf, a_b = self._get_stored_coefficients(method_id)
+        else:
+            b_in, b_b = self.coefficients_network_heat_extraction_rate(
+                    m_flow, cp, nSegments)
+            b_in_inv = np.linalg.inv(b_in)
+            a_qf = b_in_inv
+            a_b = -b_in_inv.dot(b_b)
 
         return a_qf, a_b
 #
