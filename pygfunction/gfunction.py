@@ -468,7 +468,7 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
     return gFunction
 
 
-def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
+def mixed_inlet_temperature(network, m_flow, cp,
                             time, alpha, method='linear', nSegments=12,
                             use_similarities=True, disTol=0.1, tol=1.0e-6,
                             processes=None, disp=False):
@@ -483,15 +483,11 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
 
     Parameters
     ----------
-    boreholes : list of Borehole objects
+    network : Network objects
         List of boreholes included in the bore field.
-    UTubes : list of pipe objects
-        Model for pipes inside each borehole.
-    bore_connectivity : list
-        Index of fluid inlet into each borehole. -1 corresponds to a borehole
-        connected to the bore field inlet.
+    # TODO
     m_flow : float or array
-        Fluid mass flow rate in each borehole (in kg/s).
+        Total fluid mass flow rate in network (in kg/s).
     cp : float
         Fluid specific isobaric heat capacity (in J/kg.K).
     time : float or array
@@ -532,6 +528,7 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
 
     Examples
     --------
+    # TODO
     >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
     >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
     >>> Utube1 = gt.pipes.SingleUTube(pos=[(-0.05, 0), (0, -0.05)],
@@ -553,6 +550,7 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
 
     References
     ----------
+    # TODO
     .. [#Cimmino2018] Cimmino, M. (2018). g-Functions for bore fields with
        mixed parallel and series connections considering the axial fluid
        temperature variations. IGSHPA Research Track, Stockholm. In review.
@@ -565,7 +563,7 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
     # Initialize chrono
     tic = tim.time()
     # Number of boreholes
-    nBoreholes = len(boreholes)
+    nBoreholes = network.nBoreholes
     # Total number of line sources
     nSources = nSegments*nBoreholes
     # Number of time values
@@ -575,17 +573,10 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
     # Initialize segment heat extraction rates
     Q = np.zeros((nSources, nt))
 
-    # If m_flow is supplied as float, apply m_flow to all boreholes
-    if np.isscalar(m_flow):
-        m_flow = np.tile(m_flow, nBoreholes)
-    m_flow_tot = sum([m_flow[i] for i in range(nBoreholes)
-                      if bore_connectivity[i] == -1])
-
-    # Verify that borehole connectivity is valid
-    _verify_bore_connectivity(bore_connectivity, nBoreholes)
-
+    # Ground thermal conductivity
+    k_s = network.p[0].k_s
     # Split boreholes into segments
-    boreSegments = _borehole_segments(boreholes, nSegments)
+    boreSegments = _borehole_segments(network.b, nSegments)
     # Vector of time values
     t = np.atleast_1d(time).flatten()
     # Calculate segment to segment thermal response factors
@@ -606,7 +597,7 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
     # -------------------------------------------------------------------------
 
     # Segment lengths
-    Hb = np.array([b.H for b in boreSegments])
+    Hb = np.array([[b.H for b in boreSegments]])
     # Vector of time steps
     dt = np.hstack((t[0], t[1:] - t[:-1]))
     if not np.isscalar(time) and len(time) > 1:
@@ -623,39 +614,13 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
 
     # Energy balance on borehole segments:
     # [Q_{b,i}] = [a_in]*[T_{f,in}] + [a_{b,i}]*[T_{b,i}]
-    A_eq2 = np.hstack((-np.eye(nSources), np.zeros((nSources, nSources + 1))))
+    a_in, a_b = network.coefficients_borehole_heat_extraction_rate(
+            m_flow, cp, nSegments)
+    A_eq2 = np.hstack((np.eye(nSources), a_b/(2.0*pi*k_s*Hb.T), a_in/(2.0*pi*k_s*Hb.T)))
     B_eq2 = np.zeros(nSources)
-    for i in range(nBoreholes):
-        # Segment length
-        Hi = boreholes[i].H / nSegments
-        # Rows of equation matrix
-        j1 = i*nSegments
-        j2 = (i + 1)*nSegments
-        # Coefficients for current borehole
-        a_in, a_b = UTubes[i].coefficients_borehole_heat_extraction_rate(
-                m_flow[i], cp, nSegments)
-        # [a_b] is the coefficient matrix for [T_{b,i}]
-        n1 = i*nSegments + nSources
-        n2 = (i + 1)*nSegments + nSources
-        A_eq2[j1:j2, n1:n2] = a_b / (-2.0*pi*UTubes[i].k_s*Hi)
-
-        # Assemble matrix coefficient for [T_{f,in}] and all [T_b]
-        path = _path_to_inlet(bore_connectivity, i)
-        b_in = a_in
-        for j in path[1:]:
-            # Coefficients for borehole j
-            c_in, c_b = UTubes[j].coefficients_outlet_temperature(
-                    m_flow[j], cp, nSegments)
-            # Assign the coefficient matrix for [T_{b,j}]
-            n2 = (j + 1)*nSegments + nSources
-            n1 = j*nSegments + nSources
-            A_eq2[j1:j2, n1:n2] = b_in.dot(c_b)/(-2.0*pi*UTubes[i].k_s*Hi)
-            # Keep on building coefficient for [T_{f,in}]
-            b_in = b_in.dot(c_in)
-        A_eq2[j1:j2, -1:] = b_in / (-2.0*pi*UTubes[i].k_s*Hi)
 
     # Energy conservation: sum([Qb*Hb]) = sum([Hb])
-    A_eq3 = np.hstack((Hb, np.zeros(nSources + 1)))
+    A_eq3 = np.hstack((Hb, np.zeros((1, nSources + 1))))
     B_eq3 = np.atleast_1d(np.sum(Hb))
 
     # Build and solve the system of equations at all times
@@ -680,11 +645,11 @@ def mixed_inlet_temperature(boreholes, UTubes, bore_connectivity, m_flow, cp,
         Q[:,p] = X[0:nSources]
         # The gFunction is equal to the average borehole wall temperature
         Tf_in = X[-1]
-        Tf_out = Tf_in - 2*pi*UTubes[0].k_s*np.sum(Hb)/(m_flow_tot*cp)
+        Tf_out = Tf_in - 2*pi*k_s*np.sum(Hb)/(m_flow*cp)
         Tf = 0.5*(Tf_in + Tf_out)
         Rfield = field_thermal_resistance(
-                UTubes, bore_connectivity, m_flow, cp)
-        Tb_eff = Tf - 2*pi*UTubes[0].k_s*Rfield
+                network.p, network.c, network._m_flow_borehole, cp)
+        Tb_eff = Tf - 2*pi*k_s*Rfield
         gFunction[p] = Tb_eff
 
     toc2 = tim.time()
