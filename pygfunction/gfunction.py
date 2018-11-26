@@ -549,10 +549,10 @@ def mixed_inlet_temperature(network, m_flow, cp,
 
     References
     ----------
-    # TODO
     .. [#Cimmino2018] Cimmino, M. (2018). g-Functions for bore fields with
        mixed parallel and series connections considering the axial fluid
-       temperature variations. IGSHPA Research Track, Stockholm. In review.
+       temperature variations. Proceedings of the IGSHPA Sweden Research Track
+       2018. Stockholm, Sweden. pp. 262-270.
 
     """
     if disp:
