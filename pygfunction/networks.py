@@ -57,14 +57,15 @@ class Network(object):
 
     def get_inlet_temperature(self, Tin, Tb, m_flow, cp, nSegments):
         """
-        Returns the outlet fluid temperatures of the borehole.
+        Returns the inlet fluid temperatures of all boreholes.
 
         Parameters
         ----------
         Tin : float or array
             Inlet fluid temperatures into network (in Celsius).
         Tb : float or array
-            Borehole wall temperatures (in Celsius).
+            Borehole wall temperatures (in Celsius). If a float is supplied,
+            the same temperature is applied to all segments of all boreholes.
         m_flow : float or array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
@@ -80,7 +81,7 @@ class Network(object):
         Returns
         -------
         Tin : array
-            Inlet fluid temperatures (in Celsius) from each inlet pipe.
+            Inlet fluid temperature (in Celsius) into each borehole.
 
         """
         # Build coefficient matrices
@@ -94,14 +95,15 @@ class Network(object):
 
     def get_outlet_temperature(self, Tin, Tb, m_flow, cp, nSegments):
         """
-        Returns the outlet fluid temperatures of the borehole.
+        Returns the outlet fluid temperatures of all boreholes.
 
         Parameters
         ----------
         Tin : float or array
             Inlet fluid temperatures into network (in Celsius).
         Tb : float or array
-            Borehole wall temperatures (in Celsius).
+            Borehole wall temperatures (in Celsius). If a float is supplied,
+            the same temperature is applied to all segments of all boreholes.
         m_flow : float or array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
@@ -117,7 +119,7 @@ class Network(object):
         Returns
         -------
         Tout : array
-            Outlet fluid temperatures (in Celsius) from each outlet pipe.
+            Outlet fluid temperatures (in Celsius) from each borehole.
 
         """
         # Build coefficient matrices
@@ -131,14 +133,15 @@ class Network(object):
 
     def get_borehole_heat_extraction_rate(self, Tin, Tb, m_flow, cp, nSegments):
         """
-        Returns the heat extraction rates of the borehole.
+        Returns the heat extraction rates of all boreholes.
 
         Parameters
         ----------
         Tin : float or array
             Inlet fluid temperatures into network (in Celsius).
         Tb : float or array
-            Borehole wall temperatures (in Celsius).
+            Borehole wall temperatures (in Celsius). If a float is supplied,
+            the same temperature is applied to all segments of all boreholes.
         m_flow : float or array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
@@ -167,14 +170,15 @@ class Network(object):
 
     def get_fluid_heat_extraction_rate(self, Tin, Tb, m_flow, cp, nSegments):
         """
-        Returns the total heat extraction rates of the boreholes.
+        Returns the total heat extraction rates of all boreholes.
 
         Parameters
         ----------
         Tin : float or array
             Inlet fluid temperatures into network (in Celsius).
         Tb : float or array
-            Borehole wall temperatures (in Celsius).
+            Borehole wall temperatures (in Celsius). If a float is supplied,
+            the same temperature is applied to all segments of all boreholes.
         m_flow : float or array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
@@ -190,7 +194,7 @@ class Network(object):
         Returns
         -------
         Qf : float or array
-            Heat extraction rates along each borehole segment (in Watts).
+            Total heat extraction rates from each borehole (in Watts).
 
         """
         a_in, a_b = self.coefficients_fluid_heat_extraction_rate(
@@ -203,14 +207,15 @@ class Network(object):
 
     def get_network_inlet_temperature(self, Qt, Tb, m_flow, cp, nSegments):
         """
-        Returns the inlet fluid temperatures of the network.
+        Returns the inlet fluid temperature of the network.
 
         Parameters
         ----------
         Qt : float or array
             Total heat extraction rate from the network (in Watts).
         Tb : float or array
-            Borehole wall temperatures (in Celsius).
+            Borehole wall temperatures (in Celsius). If a float is supplied,
+            the same temperature is applied to all segments of all boreholes.
         m_flow : float or array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
@@ -225,8 +230,8 @@ class Network(object):
 
         Returns
         -------
-        Tin : array
-            Inlet fluid temperatures (in Celsius) into the network.
+        Tin : float or array
+            Inlet fluid temperature (in Celsius) into the network.
 
         """
         # Build coefficient matrices
@@ -242,14 +247,15 @@ class Network(object):
 
     def get_network_outlet_temperature(self, Tin, Tb, m_flow, cp, nSegments):
         """
-        Returns the outlet fluid temperatures of the network.
+        Returns the outlet fluid temperature of the network.
 
         Parameters
         ----------
         Tin : float or array
             Inlet fluid temperatures into network (in Celsius).
         Tb : float or array
-            Borehole wall temperatures (in Celsius).
+            Borehole wall temperatures (in Celsius). If a float is supplied,
+            the same temperature is applied to all segments of all boreholes.
         m_flow : float or array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
@@ -264,8 +270,8 @@ class Network(object):
 
         Returns
         -------
-        Tout : array
-            Outlet fluid temperatures (in Celsius) from the network.
+        Tout : float or array
+            Outlet fluid temperature (in Celsius) from the network.
 
         """
         # Build coefficient matrices
@@ -281,14 +287,15 @@ class Network(object):
 
     def get_network_heat_extraction_rate(self, Tin, Tb, m_flow, cp, nSegments):
         """
-        Returns the total heat extraction rates of the network.
+        Returns the total heat extraction rate of the network.
 
         Parameters
         ----------
         Tin : float or array
             Inlet fluid temperatures into network (in Celsius).
         Tb : float or array
-            Borehole wall temperatures (in Celsius).
+            Borehole wall temperatures (in Celsius). If a float is supplied,
+            the same temperature is applied to all segments of all boreholes.
         m_flow : float or array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
