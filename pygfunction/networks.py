@@ -699,13 +699,28 @@ class Network(object):
             coefficients_outlet_temperature,
             coefficients_output_variable):
         """
-        # TODO: Description of class method
+        Build network coefficient matrices from list of pipe coefficients
+        for the outlet temperatures and for the desired variable.
+
+        This class method builds the coefficient matrices (a_in, a_b) of the
+        system:
+
+            [Desired_variable(network)] = [a_in]*T_{in,network} + [a_b]*[T_b]
+
+        from the coefficients (b_in, b_b) and (c_in, c_b) of the systems:
+
+            T_{out,borehole} = [b_in]*T_{in,borehole} + [b_b]*[T_b]
+
+            [Desired_variable(borehole)] = [c_in]*T_{in,borehole} + [c_b]*[T_b]
 
         Parameters
         ----------
-        # TODO: Description of parameters
         coefficients_outlet_temperature : list of tuples of arrays
+            List of tuples of coefficients (a_in, a_b) for outlet temperature
+            of the boreholes from the pipe objects.
         coefficients_output_variable : list of tuples of arrays
+            List of tuples of coefficients (a_in, a_b) for the desired variable
+            from the pipe objects.
 
         Returns
         -------
@@ -715,17 +730,28 @@ class Network(object):
             Array of coefficients for borehole wall temperatures.
 
         """
-
+        # Initialize lists of coefficients (A_in, A_b) for the desired
+        # variable
         A_in = [np.zeros((np.shape(coefficients_output_variable[i][0])[0], 1)) for i in range(self.nBoreholes)]
         A_b = [[np.zeros((np.shape(coefficients_output_variable[i][1])[0], self.nSegments[j])) for j in range(self.nBoreholes)] for i in range(self.nBoreholes)]
 
+        # Solve each circuit independently
         for iOutlet in self.iOutlets:
+            # Identify path from inlet to outlet of current circuit
             outlet_to_inlet = _path_to_inlet(self.c, iOutlet)
             inlet_to_outlet = outlet_to_inlet[::-1]
             iInlet = inlet_to_outlet[0]
+            # For boreholes connected to the network inlet, the coefficient
+            # sub-matrices of (a_in, a_b) are equal to (c_in, c_c)
             A_in[iInlet] = coefficients_output_variable[iInlet][0]
             A_b[iInlet][iInlet] = coefficients_output_variable[iInlet][1]
             b_in_previous = coefficients_outlet_temperature[iInlet][0]
+
+            # Progress towards outlet:
+            # The value of the desired variable for any given borehole is
+            # dependent on the inlet fluid temperature of the network and the
+            # borehole wall temperatures of all boreholes in the path from the
+            # given borehole to the inlet.
             for i in inlet_to_outlet[1:]:
                 b_in_current = coefficients_outlet_temperature[i][0]
                 c_in = coefficients_output_variable[i][0]
