@@ -324,13 +324,15 @@ class Network(object):
 
     def coefficients_inlet_temperature(self, m_flow, cp, nSegments):
         """
-        Build coefficient matrices to evaluate intlet fluid temperature.
+        Build coefficient matrices to evaluate intlet fluid temperatures of all
+        boreholes.
 
         Returns coefficients for the relation:
 
             .. math::
 
-                \\mathbf{T_{f,borehole,in}} = \\mathbf{a_{q,f}} \\mathbf{Q_{f}}
+                \\mathbf{T_{f,borehole,in}} =
+                \\mathbf{a_{in}} T_{f,network,in}
                 + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
@@ -376,14 +378,15 @@ class Network(object):
 
     def coefficients_outlet_temperature(self, m_flow, cp, nSegments):
         """
-        Build coefficient matrices to evaluate outlet fluid temperature.
+        Build coefficient matrices to evaluate outlet fluid temperatures of all
+        boreholes.
 
         Returns coefficients for the relation:
 
             .. math::
 
                 \\mathbf{T_{f,borehole,out}} =
-                \\mathbf{a_{in}} \\mathbf{T_{f,network,in}}
+                \\mathbf{a_{in}} T_{f,network,in}
                 + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
@@ -430,13 +433,15 @@ class Network(object):
 
     def coefficients_network_inlet_temperature(self, m_flow, cp, nSegments):
         """
-        Build coefficient matrices to evaluate intlet fluid temperature.
+        Build coefficient matrices to evaluate intlet fluid temperature of the
+        network.
 
         Returns coefficients for the relation:
 
             .. math::
 
-                \\mathbf{T_{f,network,in}} = \\mathbf{a_{q,f}} \\mathbf{Q_{f}}
+                \\mathbf{T_{f,network,in}} =
+                \\mathbf{a_{q,f}} Q_{f}
                 + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
@@ -456,7 +461,7 @@ class Network(object):
         Returns
         -------
         a_qf : array
-            Array of coefficients for inlet fluid temperature.
+            Array of coefficients for total heat extraction rate.
         a_b : array
             Array of coefficients for borehole wall temperatures.
 
@@ -477,14 +482,15 @@ class Network(object):
 
     def coefficients_network_outlet_temperature(self, m_flow, cp, nSegments):
         """
-        Build coefficient matrices to evaluate outlet fluid temperature.
+        Build coefficient matrices to evaluate outlet fluid temperature of the
+        network.
 
         Returns coefficients for the relation:
 
             .. math::
 
                 \\mathbf{T_{f,network,out}} =
-                \\mathbf{a_{in}} \\mathbf{T_{f,network,in}}
+                \\mathbf{a_{in}} T_{f,network,in}
                 + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
@@ -527,13 +533,15 @@ class Network(object):
     def coefficients_borehole_heat_extraction_rate(self,
                                                    m_flow, cp, nSegments):
         """
-        Build coefficient matrices to evaluate heat extraction rates.
+        Build coefficient matrices to evaluate heat extraction rates of all
+        boreholes segments.
 
         Returns coefficients for the relation:
 
             .. math::
 
-                \\mathbf{Q_b} = \\mathbf{a_{in}} \\mathbf{T_{f,network,in}}
+                \\mathbf{Q_b} =
+                \\mathbf{a_{in}} T_{f,network,in}
                 + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
@@ -582,13 +590,15 @@ class Network(object):
 
     def coefficients_fluid_heat_extraction_rate(self, m_flow, cp, nSegments):
         """
-        Build coefficient matrices to evaluate heat extraction rates.
+        Build coefficient matrices to evaluate heat extraction rates of all
+        boreholes.
 
         Returns coefficients for the relation:
 
             .. math::
 
-                \\mathbf{Q_f} = \\mathbf{a_{in}} \\mathbf{T_{f,network,in}}
+                \\mathbf{Q_f} =
+                \\mathbf{a_{in}} T_{f,network,in}
                 + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
@@ -637,14 +647,15 @@ class Network(object):
 
     def coefficients_network_heat_extraction_rate(self, m_flow, cp, nSegments):
         """
-        Build coefficient matrices to evaluate heat extraction rates.
+        Build coefficient matrices to evaluate total heat extraction rate of
+        the network.
 
         Returns coefficients for the relation:
 
             .. math::
 
                 \\mathbf{Q_network} =
-                \\mathbf{a_{in}} \\mathbf{T_{f,network,in}}
+                \\mathbf{a_{in}} T_{f,network,in}
                 + \\mathbf{a_{b}} \\mathbf{T_b}
 
         Parameters
