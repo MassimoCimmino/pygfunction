@@ -72,7 +72,7 @@ class Network(object):
             the total mass flow rate is split equally into all circuits.
         cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a signle float can be supplied).
+            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -110,7 +110,7 @@ class Network(object):
             the total mass flow rate is split equally into all circuits.
         cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a signle float can be supplied).
+            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -148,7 +148,7 @@ class Network(object):
             the total mass flow rate is split equally into all circuits.
         cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a signle float can be supplied).
+            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -185,7 +185,7 @@ class Network(object):
             the total mass flow rate is split equally into all circuits.
         cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a signle float can be supplied).
+            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -222,7 +222,7 @@ class Network(object):
             the total mass flow rate is split equally into all circuits.
         cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a signle float can be supplied).
+            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -262,7 +262,7 @@ class Network(object):
             the total mass flow rate is split equally into all circuits.
         cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a signle float can be supplied).
+            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -302,7 +302,7 @@ class Network(object):
             the total mass flow rate is split equally into all circuits.
         cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a signle float can be supplied).
+            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -343,7 +343,7 @@ class Network(object):
             the total mass flow rate is split equally into all circuits.
         cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a signle float can be supplied).
+            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -397,7 +397,7 @@ class Network(object):
             the total mass flow rate is split equally into all circuits.
         cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a signle float can be supplied).
+            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -452,7 +452,7 @@ class Network(object):
             the total mass flow rate is split equally into all circuits.
         cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a signle float can be supplied).
+            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -501,7 +501,7 @@ class Network(object):
             the total mass flow rate is split equally into all circuits.
         cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a signle float can be supplied).
+            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -552,7 +552,7 @@ class Network(object):
             the total mass flow rate is split equally into all circuits.
         cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a signle float can be supplied).
+            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -609,7 +609,7 @@ class Network(object):
             the total mass flow rate is split equally into all circuits.
         cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a signle float can be supplied).
+            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -666,7 +666,7 @@ class Network(object):
             the total mass flow rate is split equally into all circuits.
         cp : float or array
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a signle float can be supplied).
+            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -860,16 +860,15 @@ def network_thermal_resistance(network, m_flow, cp):
 
     Parameters
     ----------
-    # TODO
-    pipes : list of pipe objects
-        Models for pipes inside each borehole.
-    bore_connectivity : list
-        Index of fluid inlet into each borehole. -1 corresponds to a borehole
-        connected to the bore field inlet.
+    network : network object
+        Model of the network.
     m_flow : float or array
-        Total fluid mass flow rate in network (in kg/s).
-    cp : float
-        Fluid specific isobaric heat capacity (in J/kg.K)
+        Total mass flow rate into the network or inlet mass flow rates
+        into each circuit of the network (in kg/s). If a float is supplied,
+        the total mass flow rate is split equally into all circuits.
+    cp : float or array
+        Fluid specific isobaric heat capacity (in J/kg.degC).
+        Must be the same for all circuits (a single float can be supplied).
 
     Returns
     -------
