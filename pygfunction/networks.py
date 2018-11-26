@@ -5,19 +5,31 @@ import numpy as np
 
 class Network(object):
     """
-    Network class.
+    Class for networks of boreholes with series, parallel, and mixed
+    connections between the boreholes.
 
-    # TODO : Description of class
+    Contains information regarding the physical dimensions and thermal
+    characteristics of the pipes and the grout material in each boreholes, the
+    topology of the connections between boreholes, as well as methods to
+    evaluate fluid temperatures and heat extraction rates based on the work of
+    Cimmino [#Cimmino2018]_.
 
     Attributes
     ----------
-    # TODO : Description of attributes
     boreholes : list of Borehole objects
         List of boreholes included in the bore field.
     pipes : list of pipe objects
+        List of pipes included in the bore field.
     bore_connectivity : list
         Index of fluid inlet into each borehole. -1 corresponds to a borehole
         connected to the bore field inlet.
+
+    References
+    ----------
+    .. [#Cimmino2018] Cimmino, M. (2018). g-Functions for bore fields with
+       mixed parallel and series connections considering the axial fluid
+       temperature variations. Proceedings of the IGSHPA Sweden Research Track
+       2018. Stockholm, Sweden. pp. 262-270.
 
     """
     def __init__(self, boreholes, pipes, bore_connectivity):
@@ -455,7 +467,7 @@ class Network(object):
             a_b = -b_in_inv.dot(b_b)
 
         return a_qf, a_b
-#
+
     def coefficients_network_outlet_temperature(self, m_flow, cp, nSegments):
         """
         Build coefficient matrices to evaluate outlet fluid temperature.
@@ -824,7 +836,8 @@ def network_thermal_resistance(network, m_flow, cp):
     ----------
     .. [#Cimmino2018] Cimmino, M. (2018). g-Functions for bore fields with
        mixed parallel and series connections considering the axial fluid
-       temperature variations. IGSHPA Research Track, Stockholm. In review.
+       temperature variations. Proceedings of the IGSHPA Sweden Research Track
+       2018. Stockholm, Sweden. pp. 262-270.
 
     """
     # Number of boreholes
