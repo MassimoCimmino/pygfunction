@@ -484,11 +484,13 @@ def mixed_inlet_temperature(network, m_flow, cp,
     ----------
     network : Network objects
         List of boreholes included in the bore field.
-    # TODO
     m_flow : float or array
-        Total fluid mass flow rate in network (in kg/s).
-    cp : float
-        Fluid specific isobaric heat capacity (in J/kg.K).
+        Total mass flow rate into the network or inlet mass flow rates
+        into each circuit of the network (in kg/s). If a float is supplied,
+        the total mass flow rate is split equally into all circuits.
+    cp : float or array
+        Fluid specific isobaric heat capacity (in J/kg.degC).
+        Must be the same for all circuits (a single float can be supplied).
     time : float or array
         Values of time (in seconds) for which the g-function is evaluated.
     alpha : float
@@ -527,7 +529,6 @@ def mixed_inlet_temperature(network, m_flow, cp,
 
     Examples
     --------
-    # TODO
     >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
     >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
     >>> Utube1 = gt.pipes.SingleUTube(pos=[(-0.05, 0), (0, -0.05)],
@@ -537,15 +538,14 @@ def mixed_inlet_temperature(network, m_flow, cp,
                                       r_in=0.015, r_out=0.02,
                                       borehole=b1,k_s=2, k_g=1, R_fp=0.1)
     >>> bore_connectivity = [-1, 0]
+    >>> network = gt.networks.Network([b1, b2], [Utube1, Utube2], bore_connectivity)
     >>> time = np.array([1.0*10**i for i in range(4, 12)])
     >>> m_flow = 0.25
     >>> cp = 4000.
     >>> alpha = 1.0e-6
-    >>> gt.gfunction.mixed_inlet_temperature([b1, b2], [Utube1, Utube2],
-                                             bore_connectivity,
-                                             m_flow, cp, time, alpha)
-    array([ 0.63783569,  1.63305912,  2.72193357,  4.04093857,  5.98242643,
-         7.77218495,  8.66198231,  8.77569636])
+    >>> gt.gfunction.mixed_inlet_temperature(network, m_flow, cp, time, alpha)
+    array([0.63782415, 1.63304116, 2.72191316, 4.04091713, 5.98240458,
+       7.77216202, 8.66195828, 8.77567215])
 
     References
     ----------
@@ -588,8 +588,8 @@ def mixed_inlet_temperature(network, m_flow, cp,
     if disp:
         print('Building and solving system of equations ...')
     # -------------------------------------------------------------------------
-    # g-function. [A] is a coefficient matrix, [X] = [Qb,Tb,Tf_in] is a state
     # Build a system of equation [A]*[X] = [B] for the evaluation of the
+    # g-function. [A] is a coefficient matrix, [X] = [Qb,Tb,Tf_in] is a state
     # space vector of the borehole heat extraction rates, borehole wall
     # temperatures and inlet fluid temperature (into the bore field),
     # [B] is a coefficient vector.
