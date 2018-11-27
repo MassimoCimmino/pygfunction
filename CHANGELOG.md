@@ -4,6 +4,8 @@
 
 ### New features
 
+* [Issue 40](https://github.com/MassimoCimmino/pygfunction/issues/40) - Added Newtork class for simulations involving networks of boreholes.
+
 ## Version 1.1.0 (2018-03-09)
 
 ### New features
