@@ -5,7 +5,7 @@ Simulation of fluid temperatures in a field of multiple boreholes
 *****************************************************************
 
 This example demonstrates the use of the
-:doc:`pipes <pipes>` module to predict the fluid temperature variations
+:doc:`networks <networks>` module to predict the fluid temperature variations
 in a bore field with known heat extraction rates.
 
 The g-function of a bore field is first calculated using the equal inlet fluid

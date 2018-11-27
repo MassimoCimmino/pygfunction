@@ -878,13 +878,6 @@ def network_thermal_resistance(network, m_flow, cp):
     Rfield : float
         Effective bore field thermal resistance (m.K/W).
 
-    References
-    ----------
-    .. [#Cimmino2018] Cimmino, M. (2018). g-Functions for bore fields with
-       mixed parallel and series connections considering the axial fluid
-       temperature variations. Proceedings of the IGSHPA Sweden Research Track
-       2018. Stockholm, Sweden. pp. 262-270.
-
     """
     # Number of boreholes
     nBoreholes = len(network.b)
