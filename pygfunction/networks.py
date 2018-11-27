@@ -22,7 +22,8 @@ class Network(object):
         List of pipes included in the bore field.
     bore_connectivity : list
         Index of fluid inlet into each borehole. -1 corresponds to a borehole
-        connected to the bore field inlet.
+        connected to the bore field inlet. If this parameter is not provided,
+        parallel connections between boreholes is used.
 
     References
     ----------
@@ -32,10 +33,12 @@ class Network(object):
        2018. Stockholm, Sweden. pp. 262-270.
 
     """
-    def __init__(self, boreholes, pipes, bore_connectivity):
+    def __init__(self, boreholes, pipes, bore_connectivity='None'):
         self.b = boreholes
         self.nBoreholes = len(boreholes)
         self.p = pipes
+        if bore_connectivity == 'None':
+            bore_connectivity = [-1]*self.nBoreholes
         self.c = bore_connectivity
 
         # Verify that borehole connectivity is valid
