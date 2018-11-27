@@ -2,7 +2,7 @@
 """ Example of simulation of a geothermal system with multiple boreholes.
 
     The g-function of a bore field is calculated for boundary condition of
-    equal inlet fluid temperature into the boreholes. Then, the borehole
+    mixed inlet fluid temperature into the boreholes. Then, the borehole
     wall temperature variations resulting from a time-varying load profile
     are simulated using the aggregation method of Claesson and Javed (2012).
     Predicted outlet fluid temperatures of double U-tube borehole are
@@ -57,11 +57,11 @@ def main():
     k_p = 0.4           # Pipe thermal conductivity (W/m.K)
 
     # Fluid properties
-    m_flow = 0.25       # Total fluid mass flow rate, per borehole (kg/s)
-    cp_f = 3977.        # Fluid specific isobaric heat capacity (J/kg.K)
-    den_f = 1015.       # Fluid density (kg/m3)
-    visc_f = 0.00203    # Fluid dynamic viscosity (kg/m.s)
-    k_f = 0.492         # Fluid thermal conductivity (W/m.K)
+    m_flow = 0.25*N_1*N_2       # Total fluid mass flow rate (kg/s)
+    cp_f = 3977.                # Fluid specific heat capacity (J/kg.K)
+    den_f = 1015.               # Fluid density (kg/m3)
+    visc_f = 0.00203            # Fluid dynamic viscosity (kg/m.s)
+    k_f = 0.492                 # Fluid thermal conductivity (W/m.K)
 
     # Number of segments per borehole
     nSegments = 12
@@ -98,6 +98,8 @@ def main():
             pos, rp_in, rp_out, borehole, k_s, k_g, R_f + R_p,
             nPipes=2, config='parallel')
         UTubes.append(UTube)
+    # Build a network object from the list of UTubes
+    network = gt.networks.Network(boreField, UTubes)
 
     # -------------------------------------------------------------------------
     # Calculate g-function
@@ -106,8 +108,8 @@ def main():
     # Get time values needed for g-function evaluation
     time_req = LoadAgg.get_times_for_simulation()
     # Calculate g-function
-    gFunc = gt.gfunction.equal_inlet_temperature(
-            boreField, UTubes, m_flow, cp_f, time_req, alpha,
+    gFunc = gt.gfunction.mixed_inlet_temperature(
+            network, m_flow, cp_f, time_req, alpha,
             nSegments=nSegments, disp=True)
     # Initialize load aggregation scheme
     LoadAgg.initialize(gFunc/(2*pi*k_s))
@@ -140,12 +142,12 @@ def main():
         T_b[i] = T_g - deltaT_b
 
         # Evaluate inlet fluid temperature (all boreholes are the same)
-        T_f_in[i] = UTubes[0].get_inlet_temperature(
-                Q_b, T_b[i], m_flow, cp_f)
+        T_f_in[i] = network.get_network_inlet_temperature(
+                Q_tot[i], T_b[i], m_flow, cp_f, nSegments=1)
 
         # Evaluate outlet fluid temperature
-        T_f_out[i] = UTubes[0].get_outlet_temperature(
-                T_f_in[i],  T_b[i], m_flow, cp_f)
+        T_f_out[i] = network.get_network_outlet_temperature(
+                T_f_in[i],  T_b[i], m_flow, cp_f, nSegments=1)
 
     # -------------------------------------------------------------------------
     # Plot hourly heat extraction rates and temperatures
