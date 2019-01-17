@@ -57,7 +57,8 @@ def main():
     k_p = 0.4           # Pipe thermal conductivity (W/m.K)
 
     # Fluid properties
-    m_flow = 0.25*N_1*N_2       # Total fluid mass flow rate (kg/s)
+    m_flow_borehole = 0.25      # Total fluid mass flow rate per borehole (kg/s)
+    m_flow = m_flow_borehole*N_1*N_2    # Total fluid mass flow rate (kg/s)
     cp_f = 3977.                # Fluid specific heat capacity (J/kg.K)
     den_f = 1015.               # Fluid density (kg/m3)
     visc_f = 0.00203            # Fluid dynamic viscosity (kg/m.s)
@@ -88,7 +89,7 @@ def main():
 
     # Fluid to inner pipe wall thermal resistance (Double U-tube in parallel)
     h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
-            m_flow/2, rp_in, visc_f, den_f, k_f, cp_f, epsilon)
+            m_flow_borehole/2, rp_in, visc_f, den_f, k_f, cp_f, epsilon)
     R_f = 1.0/(h_f*2*pi*rp_in)
 
     # Double U-tube (parallel), same for all boreholes in the bore field
