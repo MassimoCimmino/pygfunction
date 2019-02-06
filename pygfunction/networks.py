@@ -896,7 +896,7 @@ def network_thermal_resistance(network, m_flow, cp):
     # Effective bore field thermal resistance
     Rfield = -0.5*H_tot*(1. + A_out)/A_Q
     if not np.isscalar(Rfield):
-        np.asscalar(Rfield)
+        Rfield = np.asscalar(Rfield)
 
     return Rfield
 
