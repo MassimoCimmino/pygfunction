@@ -540,7 +540,7 @@ class _BasePipe(object):
         -------
         fig : figure
             Figure object (matplotlib).
-    
+
         """
         import matplotlib.pyplot as plt
         from matplotlib.ticker import AutoMinorLocator
@@ -592,7 +592,7 @@ class _BasePipe(object):
         ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         plt.tight_layout()
-    
+
         return fig
 
     def _initialize_stored_coefficients(self):
@@ -1294,7 +1294,7 @@ class MultipleUTube(_BasePipe):
             a_out = np.zeros((2*self.nPipes, self.nOutlets))
             a_b = np.linalg.multi_dot([e_d, c_u, d_u_m1, d_b]) \
                 + np.linalg.multi_dot([e_u, d_u_m1, d_b])
-	else:
+        else:
             raise NotImplementedError("Configuration '{}' not implemented.".format(self.config))
 
         return a_in, a_out, a_b
