@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """ Test suite for pipes module.
 """
-from __future__ import division, print_function, absolute_import
+from __future__ import absolute_import, division, print_function
 
 import unittest
 

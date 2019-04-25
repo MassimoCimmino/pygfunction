@@ -1,15 +1,14 @@
-from __future__ import division, print_function, absolute_import
+from __future__ import absolute_import, division, print_function
 
-from functools import partial
-import numpy as np
-from multiprocessing import Pool
-from scipy.interpolate import interp1d as interp1d
-from scipy.constants import pi
 import time as tim
+
+import numpy as np
+from scipy.constants import pi
+from scipy.interpolate import interp1d as interp1d
 
 from .boreholes import Borehole
 from .heat_transfer import thermal_response_factors
-from .networks import _path_to_inlet, _verify_bore_connectivity, network_thermal_resistance
+from .networks import network_thermal_resistance
 
 
 def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,

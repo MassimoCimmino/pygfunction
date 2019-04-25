@@ -1,10 +1,8 @@
-from __future__ import division, print_function, absolute_import
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 from scipy.constants import pi
 from scipy.special import binom
-
-from .networks import _path_to_inlet, _verify_bore_connectivity
 
 
 class _BasePipe(object):

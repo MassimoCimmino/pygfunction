@@ -1,11 +1,12 @@
-from __future__ import division, print_function, absolute_import
+from __future__ import absolute_import, division, print_function
 
+import time as tim
 from functools import partial
 from multiprocessing import Pool
+
 import numpy as np
 from scipy.integrate import quad
 from scipy.special import erf
-import time as tim
 
 
 def finite_line_source(

@@ -7,11 +7,11 @@
     are simulated using the aggregation method of Claesson and Javed (2012).
 
 """
-from __future__ import division, print_function, absolute_import
+from __future__ import absolute_import, division, print_function
 
 import matplotlib.pyplot as plt
-from matplotlib.ticker import AutoMinorLocator
 import numpy as np
+from matplotlib.ticker import AutoMinorLocator
 from scipy.constants import pi
 from scipy.interpolate import interp1d
 from scipy.signal import fftconvolve

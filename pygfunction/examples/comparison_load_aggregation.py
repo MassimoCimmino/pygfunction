@@ -12,15 +12,16 @@
     Default parameters are used for each of the aggregation schemes.
 
 """
-from __future__ import division, print_function, absolute_import
+from __future__ import absolute_import, division, print_function
+
+import time as tim
 
 import matplotlib.pyplot as plt
-from matplotlib.ticker import AutoMinorLocator
 import numpy as np
+from matplotlib.ticker import AutoMinorLocator
 from scipy.constants import pi
 from scipy.interpolate import interp1d
 from scipy.signal import fftconvolve
-import time as tim
 
 import pygfunction as gt
 
