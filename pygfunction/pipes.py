@@ -370,7 +370,7 @@ class _BasePipe(object):
 
         """
         # method_id for coefficients_temperature is 5
-        method_id = 5
+        # method_id = 5  Unused: check
 
         # Coefficient matrices for outlet temperatures:
         # [T_{f,out}] = [b_in]*[T_{f,in}] + [b_b]*[T_b]
@@ -604,15 +604,12 @@ class _BasePipe(object):
         self._m_flow_cp_model_variables = np.empty(self.nInlets)
         self._nSegments_model_variables = np.nan
 
-        return
 
     def _set_stored_coefficients(self, m_flow, cp, nSegments, coefficients,
                                  method_id):
         self._stored_coefficients[method_id] = coefficients
         self._stored_m_flow_cp[method_id] = m_flow*cp
         self._stored_nSegments[method_id] = nSegments
-
-        return
 
     def _get_stored_coefficients(self, method_id):
         coefficients = self._stored_coefficients[method_id]
@@ -709,7 +706,7 @@ class SingleUTube(_BasePipe):
     r_in : float
         Inner radius (in meters) of the U-Tube pipes.
     r_out : float
-        Outter radius (in meters) of the U-Tube pipes.
+        Outer radius (in meters) of the U-Tube pipes.
     borehole : Borehole object
         Borehole class object of the borehole containing the U-Tube.
     k_s : float
@@ -717,7 +714,7 @@ class SingleUTube(_BasePipe):
     k_g : float
         Grout thermal conductivity (in W/m-K).
     R_fp : float
-        Fluid to outter pipe wall thermal resistance (m-K/W).
+        Fluid to outer pipe wall thermal resistance (m-K/W).
     J : int, optional
         Number of multipoles per pipe to evaluate the thermal resistances.
         Default is 2.
@@ -863,6 +860,8 @@ class SingleUTube(_BasePipe):
 
         Parameters
         ----------
+        z : float or array
+            Depth (in meters) to evaluate the fluid temperature coefficients.
         m_flow : float or array
             Inlet mass flow rate (in kg/s).
         cp : float or array
@@ -899,7 +898,17 @@ class SingleUTube(_BasePipe):
     def _update_model_variables(self, m_flow, cp, nSegments):
         """
         Evaluate dimensionless resistances for Hellstrom (1991) solution.
+
+        Parameters
+        ----------
+        m_flow : float or array
+            Inlet mass flow rate (in kg/s).
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+        nSegments : int
+            Number of borehole segments.
         """
+
         # Format mass flow rate and heat capacity inputs
         self._format_inputs(m_flow, cp, nSegments)
         m_flow_in = self._m_flow_in
@@ -919,7 +928,17 @@ class SingleUTube(_BasePipe):
     def _format_inputs(self, m_flow, cp, nSegments):
         """
         Format mass flow rate and heat capacity inputs.
+
+        Parameters
+        ----------
+        m_flow : float or array
+            Inlet mass flow rate (in kg/s).
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+        nSegments : int
+            Number of borehole segments.
         """
+
         # Format mass flow rate inputs
         if np.isscalar(m_flow):
             # Mass flow rate in each fluid circuit
@@ -947,7 +966,13 @@ class SingleUTube(_BasePipe):
     def _f1(self, z):
         """
         Calculate function f1 from Hellstrom (1991)
+
+        Parameters
+        ----------
+        z : float
+            Depth (in meters) to evaluate the fluid temperature coefficients.
         """
+
         f1 = np.exp(self._beta*z)*(np.cosh(self._gamma*z)
                                    - self._delta*np.sinh(self._gamma*z))
         return f1
@@ -955,7 +980,13 @@ class SingleUTube(_BasePipe):
     def _f2(self, z):
         """
         Calculate function f2 from Hellstrom (1991)
+
+        Parameters
+        ----------
+        z : float
+            Depth (in meters) to evaluate the fluid temperature coefficients.
         """
+
         f2 = np.exp(self._beta*z)*self._beta12/self._gamma \
             * np.sinh(self._gamma*z)
         return f2
@@ -963,7 +994,13 @@ class SingleUTube(_BasePipe):
     def _f3(self, z):
         """
         Calculate function f3 from Hellstrom (1991)
+
+        Parameters
+        ----------
+        z : float
+            Depth (in meters) to evaluate the fluid temperature coefficients.
         """
+
         f3 = np.exp(self._beta*z)*(np.cosh(self._gamma*z)
                                    + self._delta*np.sinh(self._gamma*z))
         return f3
@@ -971,7 +1008,13 @@ class SingleUTube(_BasePipe):
     def _f4(self, z):
         """
         Calculate function f4 from Hellstrom (1991)
+
+        Parameters
+        ----------
+        z : float
+            Depth (in meters) to evaluate the fluid temperature coefficients.
         """
+
         A = self._delta*self._beta1 + self._beta2*self._beta12/self._gamma
         f4 = np.exp(self._beta*z) \
             * (self._beta1*np.cosh(self._gamma*z) - A*np.sinh(self._gamma*z))
@@ -980,7 +1023,13 @@ class SingleUTube(_BasePipe):
     def _f5(self, z):
         """
         Calculate function f5 from Hellstrom (1991)
+
+        Parameters
+        ----------
+        z : float
+            Depth (in meters) to evaluate the fluid temperature coefficients.
         """
+
         B = self._delta*self._beta2 + self._beta1*self._beta12/self._gamma
         f5 = np.exp(self._beta*z) \
             * (self._beta2*np.cosh(self._gamma*z) + B*np.sinh(self._gamma*z))
@@ -989,7 +1038,13 @@ class SingleUTube(_BasePipe):
     def _F4(self, z):
         """
         Calculate integral of function f4 from Hellstrom (1991)
+
+        Parameters
+        ----------
+        z : float
+            Depth (in meters) to evaluate the fluid temperature coefficients.
         """
+
         A = self._delta*self._beta1 + self._beta2*self._beta12/self._gamma
         C = self._beta1*self._beta + A*self._gamma
         S = - (self._beta1*self._gamma + self._beta*A)
@@ -1001,7 +1056,13 @@ class SingleUTube(_BasePipe):
     def _F5(self, z):
         """
         Calculate integral of function f5 from Hellstrom (1991)
+
+        Parameters
+        ----------
+        z : float
+            Depth (in meters) to evaluate the fluid temperature coefficients.
         """
+
         B = self._delta*self._beta2 + self._beta1*self._beta12/self._gamma
         C = self._beta2*self._beta - B*self._gamma
         S = - (self._beta2*self._gamma - self._beta*B)
@@ -1027,7 +1088,7 @@ class MultipleUTube(_BasePipe):
     r_in : float
         Inner radius (in meters) of the U-Tube pipes.
     r_out : float
-        Outter radius (in meters) of the U-Tube pipes.
+        Outer radius (in meters) of the U-Tube pipes.
     borehole : Borehole object
         Borehole class object of the borehole containing the U-Tube.
     k_s : float
@@ -1035,7 +1096,7 @@ class MultipleUTube(_BasePipe):
     k_g : float
         Grout thermal conductivity (in W/m-K).
     R_fp : float
-        Fluid to outter pipe wall thermal resistance (m-K/W).
+        Fluid to outer pipe wall thermal resistance (m-K/W).
     J : int, optional
         Number of multipoles per pipe to evaluate the thermal resistances.
         Default is 2.
@@ -1156,6 +1217,8 @@ class MultipleUTube(_BasePipe):
             a_in = np.linalg.multi_dot([e_u, d_u_m1, d_in])
             a_out = np.array([[1.0]])
             a_b = np.linalg.multi_dot([e_u, d_u_m1, d_b])
+        else:
+            raise NotImplementedError("Configuration '{}' not implemented.".format(self.config))
 
         return a_in, a_out, a_b
 
@@ -1231,6 +1294,8 @@ class MultipleUTube(_BasePipe):
             a_out = np.zeros((2*self.nPipes, self.nOutlets))
             a_b = np.linalg.multi_dot([e_d, c_u, d_u_m1, d_b]) \
                 + np.linalg.multi_dot([e_u, d_u_m1, d_b])
+	else:
+            raise NotImplementedError("Configuration '{}' not implemented.".format(self.config))
 
         return a_in, a_out, a_b
 
@@ -1318,6 +1383,8 @@ class MultipleUTube(_BasePipe):
 
         Parameters
         ----------
+        z : float or array
+            Depth (in meters) to evaluate the fluid temperature coefficients.
         m_flow : float or array
             Inlet mass flow rate (in kg/s).
         cp : float or array
@@ -1367,7 +1434,17 @@ class MultipleUTube(_BasePipe):
         """
         Evaluate eigenvalues and eigenvectors for the system of differential
         equations.
+
+        Parameters
+        ----------
+        m_flow : float or array
+            Inlet mass flow rate (in kg/s).
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+        nSegments : int
+            Number of borehole segments.
         """
+
         nPipes = self.nPipes
         # Format mass flow rate and heat capacity inputs
         self._format_inputs(m_flow, cp, nSegments)
@@ -1392,7 +1469,17 @@ class MultipleUTube(_BasePipe):
     def _format_inputs(self, m_flow, cp, nSegments):
         """
         Format mass flow rate and heat capacity inputs.
+
+        Parameters
+        ----------
+        m_flow : float or array
+            Inlet mass flow rate (in kg/s).
+        cp : float or array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+        nSegments : int
+            Number of borehole segments.
         """
+
         nPipes = self.nPipes
         # Format mass flow rate inputs
         # Mass flow rate in pipes
@@ -1430,7 +1517,7 @@ class IndependentMultipleUTube(MultipleUTube):
     r_in : float
         Inner radius (in meters) of the U-Tube pipes.
     r_out : float
-        Outter radius (in meters) of the U-Tube pipes.
+        Outer radius (in meters) of the U-Tube pipes.
     borehole : Borehole object
         Borehole class object of the borehole containing the U-Tube.
     k_s : float
@@ -1438,7 +1525,7 @@ class IndependentMultipleUTube(MultipleUTube):
     k_g : float
         Grout thermal conductivity (in W/m-K).
     R_fp : float
-        Fluid to outter pipe wall thermal resistance (m-K/W).
+        Fluid to outer pipe wall thermal resistance (m-K/W).
     J : int, optional
         Number of multipoles per pipe to evaluate the thermal resistances.
         Default is 2.
@@ -1901,7 +1988,7 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
         line source approximation.
     Q_p : array
         Thermal energy flows (in W/m) from pipes.
-    T_b_av : float
+    T_b : float
         Average borehole wall temperature (in degC).
     eps : float, optional
         Iteration relative accuracy.
@@ -1979,6 +2066,8 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
             diff = np.max(np.abs(P_new-P)) - np.min(np.abs(P_new-P))
             eps_max = diff / diff0
             P = P_new
+    # else:
+    #     What here? It's complaining that "P" may be uninitialized
 
     # --------------------------
     # Fluid temperatures(EQ. 32)
@@ -2041,6 +2130,9 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
 def _F_mk(Q_p, P, n_p, J, r_b, r_p, z, pikg, sigma):
     """
     Complex matrix F_mk from Claesson and Hellstrom (2011), EQ. 34
+
+    Doc string here
+
     """
     F = np.zeros((n_p, J), dtype=np.cfloat)
     for m in range(n_p):

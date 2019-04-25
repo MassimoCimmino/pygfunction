@@ -410,7 +410,7 @@ def similarities(boreholes, splitRealAndImage=True, disTol=0.1, tol=1.0e-6,
             imageSim = imageSims[i]
             nSim = imageSim[0]
             nSimNeg += nSim
-            disSimNeg += [disPairs[i] for j in range(nSim)]
+            disSimNeg += [disPairs[i] for _ in range(nSim)]
             simNeg += imageSim[1]
             HSimNeg += imageSim[2]
             DSimNeg += imageSim[3]
@@ -427,7 +427,7 @@ def _similarities_group_by_distance(boreholes, disTol=0.1):
     ----------
     boreholes : list of Borehole objects
         List of boreholes in the bore field.
-    distol : float, defaults to 0.1
+    disTol : float, defaults to 0.1
         Absolute tolerance (in meters) on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
         difference between the two distances (abs(d1-d2)) is below tolerance.
@@ -586,6 +586,8 @@ def _similarities_one_distance(pairs, boreholes, kind, tol=1.0e-6):
     elif kind.lower() == 'realandimage':
         # Check full real+image FLS
         compare_segments = compare_realandimage_segments
+    else:
+        raise NotImplementedError("Error: '{}' not implemented.".format(kind.lower()))
 
     # Initialize symmetries
     nSim = 1

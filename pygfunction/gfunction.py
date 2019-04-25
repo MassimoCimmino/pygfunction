@@ -732,7 +732,7 @@ def _borehole_segments(boreholes, nSegments):
         for i in range(nSegments):
             # Divide borehole into segments of equal length
             H = b.H / nSegments
-            # Burried depth of the i-th segment
+            # Buried depth of the i-th segment
             D = b.D + i * b.H / nSegments
             # Add to list of segments
             boreSegments.append(Borehole(H, D, b.r_b, b.x, b.y))
@@ -748,7 +748,7 @@ def _temporal_superposition(dh_ij, Q):
     dh_ij : array
         Values of the segment-to-segment thermal response factor increments at
         the given time step.
-    Q_reconstructed : array
+    Q : array
         Heat extraction rates of all segments at all times.
 
     Returns

@@ -149,7 +149,7 @@ class ClaessonJaved(_LoadAggregation):
 
         Parameters
         ----------
-        Q_l : array
+        Q : array
             Current value of heat extraction rates per unit borehole length
             (in watts per meter).
 
@@ -296,7 +296,7 @@ class MLAA(_LoadAggregation):
             self._n1 = self.N1
             # Averaged loads in first cell
             start = self._nt - (self._n0 + self._n1)
-            end = self._nt - (self._n0)
+            end = self._nt - self._n0
             self.Q1 = np.mean(self.Q[:, start:end], axis=1)
         else:
             self._n1 = 0
@@ -352,7 +352,7 @@ class MLAA(_LoadAggregation):
 
         Parameters
         ----------
-        Q_l : array
+        Q : array
             Current value of heat extraction rates per unit borehole length
             (in watts per meter).
 
@@ -600,7 +600,7 @@ class Liu(_LoadAggregation):
 
         Parameters
         ----------
-        Q_l : array
+        Q : array
             Current value of heat extraction rates per unit borehole length
             (in watts per meter).
 
