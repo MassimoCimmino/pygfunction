@@ -195,11 +195,6 @@ def thermal_response_factors(
             print('{} sec'.format(toc1 - tic))
             print('Calculating segment to segment response factors ...')
 
-        # Initialize FLS solution for the real source
-        hPos = np.zeros(nt)
-        # Initialize FLS solution for the image source
-        hNeg = np.zeros(nt)
-
         # Similarities for real sources
         for s in range(nSimPos):
             n1 = simPos[s][0][0]
@@ -296,12 +291,14 @@ def similarities(boreholes, splitRealAndImage=True, disTol=0.1, tol=1.0e-6,
         Set to True if similarities are evaluated separately for real and image
         sources. Set to False if similarities are evaluated for the sum of the
         real and image sources.
-    distol : float, defaults to 0.1
+    disTol : float, defaults to 0.1
         Absolute tolerance (in meters) on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
         difference between the two distances (abs(d1-d2)) is below tolerance.
+
+    # tol is not used
     tol : float, defaults to 1.0e-6
-        Relative tolerance on length and depth. Two lenths H1, H2
+        Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol
 
     Returns
@@ -395,7 +392,7 @@ def similarities(boreholes, splitRealAndImage=True, disTol=0.1, tol=1.0e-6,
         realSim = realSims[i]
         nSim = realSim[0]
         nSimPos += nSim
-        disSimPos += [disPairs[i] for j in range(nSim)]
+        disSimPos += [disPairs[i] for _ in range(nSim)]
         simPos += realSim[1]
         HSimPos += realSim[2]
         DSimPos += realSim[3]

@@ -37,7 +37,7 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
         difference between the two distances (abs(d1-d2)) is below tolerance.
         Default is 0.1.
     tol : float, optional
-        Relative tolerance on length and depth. Two lenths H1, H2
+        Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
         Default is 1.0e-6.
     processes : int, optional
@@ -145,7 +145,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
         difference between the two distances (abs(d1-d2)) is below tolerance.
         Default is 0.1.
     tol : float, optional
-        Relative tolerance on length and depth. Two lenths H1, H2
+        Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
         Default is 1.0e-6.
     processes : int, optional
@@ -313,7 +313,7 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
         difference between the two distances (abs(d1-d2)) is below tolerance.
         Default is 0.1.
     tol : float, optional
-        Relative tolerance on length and depth. Two lenths H1, H2
+        Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
         Default is 1.0e-6.
     processes : int, optional
@@ -510,7 +510,7 @@ def mixed_inlet_temperature(network, m_flow, cp,
         difference between the two distances (abs(d1-d2)) is below tolerance.
         Default is 0.1.
     tol : float, optional
-        Relative tolerance on length and depth. Two lenths H1, H2
+        Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
         Default is 1.0e-6.
     processes : int, optional
