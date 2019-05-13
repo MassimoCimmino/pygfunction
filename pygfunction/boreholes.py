@@ -1,4 +1,4 @@
-from __future__ import division, print_function, absolute_import
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 from scipy.constants import pi
@@ -13,7 +13,7 @@ class Borehole(object):
     H : float
         Borehole length (in meters).
     D : float
-        Borehole burried depth (in meters).
+        Borehole buried depth (in meters).
     r_b : float
         Borehole radius (in meters).
     x : float
@@ -118,7 +118,7 @@ def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b):
     H : float
         Borehole length (in meters).
     D : float
-        Borehole burried depth (in meters).
+        Borehole buried depth (in meters).
     r_b : float
         Borehole radius (in meters).
 
@@ -166,7 +166,7 @@ def L_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b):
     H : float
         Borehole length (in meters).
     D : float
-        Borehole burried depth (in meters).
+        Borehole buried depth (in meters).
     r_b : float
         Borehole radius (in meters).
 
@@ -215,7 +215,7 @@ def U_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b):
     H : float
         Borehole length (in meters).
     D : float
-        Borehole burried depth (in meters).
+        Borehole buried depth (in meters).
     r_b : float
         Borehole radius (in meters).
 
@@ -268,7 +268,7 @@ def box_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b):
     H : float
         Borehole length (in meters).
     D : float
-        Borehole burried depth (in meters).
+        Borehole buried depth (in meters).
     r_b : float
         Borehole radius (in meters).
 
@@ -322,7 +322,7 @@ def circle_field(N, R, H, D, r_b):
     H : float
         Borehole length (in meters).
     D : float
-        Borehole burried depth (in meters).
+        Borehole buried depth (in meters).
     r_b : float
         Borehole radius (in meters).
 
@@ -416,7 +416,6 @@ def visualize_field(borefield):
     """
     import matplotlib.pyplot as plt
     from matplotlib.ticker import AutoMinorLocator
-    from mpl_toolkits.mplot3d import Axes3D
     # -------------------------------------------------------------------------
     # Initialize figure
     # -------------------------------------------------------------------------

@@ -1,15 +1,14 @@
-from __future__ import division, print_function, absolute_import
+from __future__ import absolute_import, division, print_function
 
-from functools import partial
-import numpy as np
-from multiprocessing import Pool
-from scipy.interpolate import interp1d as interp1d
-from scipy.constants import pi
 import time as tim
+
+import numpy as np
+from scipy.constants import pi
+from scipy.interpolate import interp1d as interp1d
 
 from .boreholes import Borehole
 from .heat_transfer import thermal_response_factors
-from .networks import _path_to_inlet, _verify_bore_connectivity, network_thermal_resistance
+from .networks import network_thermal_resistance
 
 
 def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
@@ -38,7 +37,7 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
         difference between the two distances (abs(d1-d2)) is below tolerance.
         Default is 0.1.
     tol : float, optional
-        Relative tolerance on length and depth. Two lenths H1, H2
+        Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
         Default is 1.0e-6.
     processes : int, optional
@@ -146,7 +145,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
         difference between the two distances (abs(d1-d2)) is below tolerance.
         Default is 0.1.
     tol : float, optional
-        Relative tolerance on length and depth. Two lenths H1, H2
+        Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
         Default is 1.0e-6.
     processes : int, optional
@@ -314,7 +313,7 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
         difference between the two distances (abs(d1-d2)) is below tolerance.
         Default is 0.1.
     tol : float, optional
-        Relative tolerance on length and depth. Two lenths H1, H2
+        Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
         Default is 1.0e-6.
     processes : int, optional
@@ -511,7 +510,7 @@ def mixed_inlet_temperature(network, m_flow, cp,
         difference between the two distances (abs(d1-d2)) is below tolerance.
         Default is 0.1.
     tol : float, optional
-        Relative tolerance on length and depth. Two lenths H1, H2
+        Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
         Default is 1.0e-6.
     processes : int, optional
@@ -732,7 +731,7 @@ def _borehole_segments(boreholes, nSegments):
         for i in range(nSegments):
             # Divide borehole into segments of equal length
             H = b.H / nSegments
-            # Burried depth of the i-th segment
+            # Buried depth of the i-th segment
             D = b.D + i * b.H / nSegments
             # Add to list of segments
             boreSegments.append(Borehole(H, D, b.r_b, b.x, b.y))
@@ -748,7 +747,7 @@ def _temporal_superposition(dh_ij, Q):
     dh_ij : array
         Values of the segment-to-segment thermal response factor increments at
         the given time step.
-    Q_reconstructed : array
+    Q : array
         Heat extraction rates of all segments at all times.
 
     Returns

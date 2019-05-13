@@ -7,11 +7,11 @@
     boreholes, and (c) equal inlet fluid temperature into all boreholes.
 
 """
-from __future__ import division, print_function, absolute_import
+from __future__ import absolute_import, division, print_function
 
 import matplotlib.pyplot as plt
-from matplotlib.ticker import AutoMinorLocator
 import numpy as np
+from matplotlib.ticker import AutoMinorLocator
 from scipy import pi
 
 import pygfunction as gt

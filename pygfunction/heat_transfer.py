@@ -1,11 +1,12 @@
-from __future__ import division, print_function, absolute_import
+from __future__ import absolute_import, division, print_function
 
+import time as tim
 from functools import partial
 from multiprocessing import Pool
+
 import numpy as np
 from scipy.integrate import quad
 from scipy.special import erf
-import time as tim
 
 
 def finite_line_source(
@@ -194,11 +195,6 @@ def thermal_response_factors(
             print('{} sec'.format(toc1 - tic))
             print('Calculating segment to segment response factors ...')
 
-        # Initialize FLS solution for the real source
-        hPos = np.zeros(nt)
-        # Initialize FLS solution for the image source
-        hNeg = np.zeros(nt)
-
         # Similarities for real sources
         for s in range(nSimPos):
             n1 = simPos[s][0][0]
@@ -295,12 +291,14 @@ def similarities(boreholes, splitRealAndImage=True, disTol=0.1, tol=1.0e-6,
         Set to True if similarities are evaluated separately for real and image
         sources. Set to False if similarities are evaluated for the sum of the
         real and image sources.
-    distol : float, defaults to 0.1
+    disTol : float, defaults to 0.1
         Absolute tolerance (in meters) on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
         difference between the two distances (abs(d1-d2)) is below tolerance.
+
+    # tol is not used
     tol : float, defaults to 1.0e-6
-        Relative tolerance on length and depth. Two lenths H1, H2
+        Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol
 
     Returns
@@ -394,7 +392,7 @@ def similarities(boreholes, splitRealAndImage=True, disTol=0.1, tol=1.0e-6,
         realSim = realSims[i]
         nSim = realSim[0]
         nSimPos += nSim
-        disSimPos += [disPairs[i] for j in range(nSim)]
+        disSimPos += [disPairs[i] for _ in range(nSim)]
         simPos += realSim[1]
         HSimPos += realSim[2]
         DSimPos += realSim[3]
@@ -410,7 +408,7 @@ def similarities(boreholes, splitRealAndImage=True, disTol=0.1, tol=1.0e-6,
             imageSim = imageSims[i]
             nSim = imageSim[0]
             nSimNeg += nSim
-            disSimNeg += [disPairs[i] for j in range(nSim)]
+            disSimNeg += [disPairs[i] for _ in range(nSim)]
             simNeg += imageSim[1]
             HSimNeg += imageSim[2]
             DSimNeg += imageSim[3]
@@ -427,7 +425,7 @@ def _similarities_group_by_distance(boreholes, disTol=0.1):
     ----------
     boreholes : list of Borehole objects
         List of boreholes in the bore field.
-    distol : float, defaults to 0.1
+    disTol : float, defaults to 0.1
         Absolute tolerance (in meters) on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
         difference between the two distances (abs(d1-d2)) is below tolerance.
@@ -586,6 +584,8 @@ def _similarities_one_distance(pairs, boreholes, kind, tol=1.0e-6):
     elif kind.lower() == 'realandimage':
         # Check full real+image FLS
         compare_segments = compare_realandimage_segments
+    else:
+        raise NotImplementedError("Error: '{}' not implemented.".format(kind.lower()))
 
     # Initialize symmetries
     nSim = 1
