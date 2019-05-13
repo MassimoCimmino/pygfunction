@@ -21,6 +21,7 @@ The script is located in:
    :linenos:
 
 .. rubric:: References
-.. [1] Cimmino, M. (2018). g-Functions for bore fields with mixed parallel and
-   series connections considering the axial fluid temperature variations.
-   IGSHPA Research Track, Stockholm. In review.
+.. [1] Cimmino, M. (2018). g-Functions for bore fields with
+   mixed parallel and series connections considering the axial fluid
+   temperature variations. Proceedings of the IGSHPA Sweden Research Track
+   2018. Stockholm, Sweden. pp. 262-270.
