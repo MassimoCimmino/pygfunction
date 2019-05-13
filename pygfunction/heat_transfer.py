@@ -295,8 +295,6 @@ def similarities(boreholes, splitRealAndImage=True, disTol=0.1, tol=1.0e-6,
         Absolute tolerance (in meters) on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
         difference between the two distances (abs(d1-d2)) is below tolerance.
-
-    # tol is not used
     tol : float, defaults to 1.0e-6
         Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol
@@ -360,13 +358,15 @@ def similarities(boreholes, splitRealAndImage=True, disTol=0.1, tol=1.0e-6,
     if splitRealAndImage:
         func = partial(_similarities_one_distance,
                        boreholes=boreholes,
-                       kind='real')
+                       kind='real',
+                       tol=tol)
         # Evaluate similarities for each distance in parallel
         realSims = pool.map(func, pairs)
 
         func = partial(_similarities_one_distance,
                        boreholes=boreholes,
-                       kind='image')
+                       kind='image',
+                       tol=tol)
         # Evaluate similarities for each distance in parallel
         imageSims = pool.map(func, pairs)
 
@@ -374,7 +374,8 @@ def similarities(boreholes, splitRealAndImage=True, disTol=0.1, tol=1.0e-6,
     else:
         func = partial(_similarities_one_distance,
                        boreholes=boreholes,
-                       kind='realandimage')
+                       kind='realandimage',
+                       tol=tol)
         # Evaluate symmetries for each distance in parallel
         realSims = pool.map(func, pairs)
 

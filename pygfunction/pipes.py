@@ -368,7 +368,7 @@ class _BasePipe(object):
 
         """
         # method_id for coefficients_temperature is 5
-        # method_id = 5  Unused: check
+        method_id = 5
 
         # Coefficient matrices for outlet temperatures:
         # [T_{f,out}] = [b_in]*[T_{f,in}] + [b_b]*[T_b]
@@ -2064,8 +2064,8 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
             diff = np.max(np.abs(P_new-P)) - np.min(np.abs(P_new-P))
             eps_max = diff / diff0
             P = P_new
-    # else:
-    #     What here? It's complaining that "P" may be uninitialized
+    else:
+        P = np.zeros((n_p, 0))
 
     # --------------------------
     # Fluid temperatures(EQ. 32)
@@ -2127,9 +2127,36 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
 
 def _F_mk(Q_p, P, n_p, J, r_b, r_p, z, pikg, sigma):
     """
-    Complex matrix F_mk from Claesson and Hellstrom (2011), EQ. 34
+    Complex matrix F_mk from Claesson and Hellstrom (2011), EQ. 34.
 
-    Doc string here
+    Parameters
+    ----------
+    Q_p : array
+        Thermal energy flows (in W/m) from pipes.
+    P : array
+        Multipoles.
+    n_p : int
+        Total numper of pipes.
+    J : int
+        Number of multipoles per pipe to evaluate the thermal resistances.
+        J=1 or J=2 usually gives sufficient accuracy. J=0 corresponds to the
+        line source approximation.
+    r_b : float
+        Borehole radius (in meters).
+    r_p : float or array
+        Outer radius of the pipes (in meters).
+    z : array
+        Array of pipe coordinates in complex notation (x + 1.j*y). 
+    pikg : float
+        Inverse of 2*pi times the grout thermal conductivity, 1.0/(2.0*pi*k_g).
+    sigma : array
+        Dimensionless parameter for the ground and grout thermal
+        conductivities, (k_g - k_s)/(k_g + k_s).
+
+    Returns
+    -------
+    F : array
+        Matrix F_mk from Claesson and Hellstrom (2011), EQ. 34.
 
     """
     F = np.zeros((n_p, J), dtype=np.cfloat)

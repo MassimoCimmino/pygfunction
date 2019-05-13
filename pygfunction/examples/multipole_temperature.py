@@ -71,12 +71,10 @@ def main():
                                            R_fp, J=3)
     print(50*'-')
     print('Thermal resistance:\t100*R11\t100*R12\t100*R22')
-    print('Claesson and Hellstrom:\t{}\t{}\t{}'.format(100*R_Claesson[0],
-                                                       100*R_Claesson[1],
-                                                       100*R_Claesson[2]))
-    print('Present:\t\t{:.3f}\t{:.3f}\t{:.3f}'.format(100*R[0,0],
-                                                      100*R[0,1],
-                                                      100*R[1,1]))
+    print('Claesson and Hellstrom:\t{:.3f}\t{:.3f}\t{:.3f}'.format(
+            100*R_Claesson[0], 100*R_Claesson[1], 100*R_Claesson[2]))
+    print('Present:\t\t{:.3f}\t{:.3f}\t{:.3f}'.format(
+            100*R[0,0], 100*R[0,1], 100*R[1,1]))
     print(50*'-')
 
     # Heat flows
