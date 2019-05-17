@@ -8,11 +8,11 @@
     temperature, rather than the average borehole wall temperature.
 
 """
-from __future__ import division, print_function, absolute_import
+from __future__ import absolute_import, division, print_function
 
 import matplotlib.pyplot as plt
-from matplotlib.ticker import AutoMinorLocator
 import numpy as np
+from matplotlib.ticker import AutoMinorLocator
 from scipy import pi
 
 import pygfunction as gt
@@ -52,7 +52,7 @@ def main():
     k_p = 0.4           # Pipe thermal conductivity (W/m.K)
 
     # Fluid properties
-    m_flow = 0.25       # Total fluid mass flow rate per borehole (kg/s)
+    m_flow = 0.25       # Total fluid mass flow rate in network (kg/s)
     cp_f = 4000.        # Fluid specific isobaric heat capacity (J/kg.K)
     den_f = 1015.       # Fluid density (kg/m3)
     visc_f = 0.002      # Fluid dynamic viscosity (kg/m.s)
@@ -107,6 +107,7 @@ def main():
         SingleUTube = gt.pipes.SingleUTube(pos_pipes, rp_in, rp_out,
                                            borehole, k_s, k_g, R_f + R_p)
         UTubes.append(SingleUTube)
+    network = gt.networks.Network(boreField, UTubes, bore_connectivity)
 
     # -------------------------------------------------------------------------
     # Evaluate the g-functions for the borefield
@@ -121,7 +122,7 @@ def main():
     # Calculate the g-function for mixed inlet fluid conditions
     gfunc_equal_Tf_mixed = \
             gt.gfunction.mixed_inlet_temperature(
-            boreField, UTubes, bore_connectivity, m_flow, cp_f, time, alpha,
+            network, m_flow, cp_f, time, alpha,
             nSegments=nSegments, disp=True)
 
     # -------------------------------------------------------------------------

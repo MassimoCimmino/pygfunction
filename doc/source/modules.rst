@@ -11,5 +11,6 @@ Modules
    gfunction
    heat_transfer
    load_aggregation
+   networks
    pipes
    utilities

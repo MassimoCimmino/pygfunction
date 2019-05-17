@@ -5,8 +5,9 @@ Calculation of g-functions with mixed parallel and series connections
 *********************************************************************
 
 This example demonstrates the use of the :doc:`g-function <gfunction>` module
-and the :doc:`pipes <pipes>` module to calculate *g*-functions considering the
-piping connections between the boreholes, based on the method of Cimmino [1]_.
+and the :doc:`networks <networks>` module to calculate *g*-functions considering
+the piping connections between the boreholes, based on the method of Cimmino
+[1]_.
 For boreholes connected in series, it is considered the outlet fluid temperature
 of the upstream borehole is equal to the inlet fluid temperature of the
 downstream borehole. The total rate of heat extraction in the bore field is
@@ -26,6 +27,7 @@ The script is located in:
    :linenos:
 
 .. rubric:: References
-.. [1] Cimmino, M. (2018). g-Functions for bore fields with mixed parallel and
-   series connections considering the axial fluid temperature variations.
-   IGSHPA Research Track, Stockholm. In review.
+.. [1] Cimmino, M. (2018). g-Functions for bore fields with
+   mixed parallel and series connections considering the axial fluid
+   temperature variations. Proceedings of the IGSHPA Sweden Research Track
+   2018. Stockholm, Sweden. pp. 262-270.
