@@ -5,8 +5,79 @@ from functools import partial
 from multiprocessing import Pool
 
 import numpy as np
+from scipy.constants import pi
 from scipy.integrate import quad
-from scipy.special import erf
+from scipy.special import j0, j1, y0, y1, erf, exp1
+
+
+def cylindrical_heat_source(
+        time, alpha, r, borehole):
+    """
+    Evaluate the Cylindrical Heat Source (CHS) solution.
+
+    This function uses a numerical quadrature to evaluate the CHS solution, as
+    proposed by Carslaw and Jaeger [#CarslawJaeger1946]_. The CHS solution
+    is given by:
+
+        .. math::
+            G(r,t) =
+            \\frac{1}{\pi^2}
+            \\int_{0}^{\\infty}
+            \\frac{1}{s^2}
+            \\frac{e^{-Fo s^2} - 1}{J_1^2(s) + Y_1^2(s)}
+            [J_0(ps)Y_1(s) - J_1(s)Y_0(ps)]ds
+
+    Parameters
+    ----------
+    time : float
+        Value of time (in seconds) for which the FLS solution is evaluated.
+    alpha : float
+        Soil thermal diffusivity (in m2/s).
+    r : float
+        Radial distance from the borehole axis (in m).
+    borehole : Borehole object
+        Borehole object of the borehole extracting heat.
+
+    Returns
+    -------
+    G : float
+        Value of the CHS solution. The temperature at a distance r from
+        borehole is:
+
+        .. math:: \\Delta T(r,t) = T_g - \\frac{Q}{k_s H} G(r,t)
+
+    Examples
+    --------
+    >>> b = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
+    >>> G = gt.heat_transfer.finite_line_source(4*168*3600., 1.0e-6, 0.1, b)
+    G = 0.0110473635393
+
+    References
+    ----------
+    .. [#CarslawJaeger1946] Carslaw, H.S., & Jaeger, J.C. (1946). The Laplace
+       transformation: Problems on the cylinder and sphere, in: OU Press (Ed.),
+       Conduction of heat in solids, Oxford University, Oxford, pp. 327-352.
+
+    """
+    def _CHS(u, Fo, p):
+        # Function to integrate
+        CHS_integrand = \
+            ( 1./(u**2*pi**2)*(np.exp(-u**2*Fo) - 1.0)
+            / (j1(u)**2 + y1(u)**2) * (j0(p*u)*y1(u) - j1(u)*y0(p*2)) )
+        return CHS_integrand
+
+    # Fourier number
+    Fo = alpha*time/borehole.r_b**2
+    # Normalized distance from borehole axis
+    p = r/borehole.r_b
+    # Lower bound of integration
+    a = 0.
+    # Upper bound of integration
+    b = np.inf
+    # Evaluate integral using Gauss-Kronrod
+    h, err = quad(
+        _CHS, a, b, args=(Fo, p))
+    return h
 
 
 def finite_line_source(
