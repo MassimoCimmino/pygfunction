@@ -49,8 +49,8 @@ def cylindrical_heat_source(
     Examples
     --------
     >>> b = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
-    >>> G = gt.heat_transfer.finite_line_source(4*168*3600., 1.0e-6, 0.1, b)
-    G = 0.0110473635393
+    >>> G = gt.heat_transfer.cylindrical_heat_source(4*168*3600., 1.0e-6, 0.1, b)
+    G = 
 
     References
     ----------
@@ -75,9 +75,51 @@ def cylindrical_heat_source(
     # Upper bound of integration
     b = np.inf
     # Evaluate integral using Gauss-Kronrod
-    h, err = quad(
+    G, err = quad(
         _CHS, a, b, args=(Fo, p))
-    return h
+    return G
+
+
+def infinite_line_source(
+        time, alpha, r, borehole):
+    """
+    Evaluate the Infinit Line Source (ILS) solution.
+
+    This function uses the exponential integral to evaluate the ILS solution.
+    The ILS solution is given by:
+
+        .. math::
+            I(r,t) = E_1(\\frac{r^2}{4 \\alpha t})
+
+    Parameters
+    ----------
+    time : float
+        Value of time (in seconds) for which the FLS solution is evaluated.
+    alpha : float
+        Soil thermal diffusivity (in m2/s).
+    r : float
+        Radial distance from the borehole axis (in m).
+    borehole : Borehole object
+        Borehole object of the borehole extracting heat.
+
+    Returns
+    -------
+    I : float
+        Value of the ILS solution. The temperature at a distance r from
+        borehole is:
+
+        .. math:: \\Delta T(r,t) = T_g - \\frac{Q}{4 \\pi k_s H} I(r,t)
+
+    Examples
+    --------
+    >>> b = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
+    >>> G = gt.heat_transfer.infinite_line_source(4*168*3600., 1.0e-6, 0.1, b)
+    I = 
+
+    """
+    I = exp1(r**2/(4*alpha*time))
+
+    return I
 
 
 def finite_line_source(
