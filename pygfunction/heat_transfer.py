@@ -64,6 +64,7 @@ def cylindrical_heat_source(
         CHS_integrand = \
             ( 1./(u**2*pi**2)*(np.exp(-u**2*Fo) - 1.0)
             / (j1(u)**2 + y1(u)**2) * (j0(p*u)*y1(u) - j1(u)*y0(p*2)) )
+            / (j1(u)**2 + y1(u)**2) * (j0(p*u)*y1(u) - j1(u)*y0(p*u)) )
         return CHS_integrand
 
     # Fourier number
