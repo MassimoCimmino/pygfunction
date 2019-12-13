@@ -12,6 +12,7 @@ from scipy.special import j0, j1, y0, y1, erf, exp1
 
 def cylindrical_heat_source(
         time, alpha, r, borehole):
+        time, alpha, r, r_b):
     """
     Evaluate the Cylindrical Heat Source (CHS) solution.
 
@@ -37,6 +38,8 @@ def cylindrical_heat_source(
         Radial distance from the borehole axis (in m).
     borehole : Borehole object
         Borehole object of the borehole extracting heat.
+    r_b : float
+        Borehole radius (in m).
 
     Returns
     -------
@@ -50,6 +53,7 @@ def cylindrical_heat_source(
     --------
     >>> b = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
     >>> G = gt.heat_transfer.cylindrical_heat_source(4*168*3600., 1.0e-6, 0.1, b)
+    >>> G = gt.heat_transfer.cylindrical_heat_source(4*168*3600., 1.0e-6, 0.1, 0.075)
     G = 
 
     References
@@ -69,8 +73,10 @@ def cylindrical_heat_source(
 
     # Fourier number
     Fo = alpha*time/borehole.r_b**2
+    Fo = alpha*time/r_b**2
     # Normalized distance from borehole axis
     p = r/borehole.r_b
+    p = r/r_b
     # Lower bound of integration
     a = 0.
     # Upper bound of integration
@@ -83,6 +89,7 @@ def cylindrical_heat_source(
 
 def infinite_line_source(
         time, alpha, r, borehole):
+        time, alpha, r):
     """
     Evaluate the Infinit Line Source (ILS) solution.
 
