@@ -388,6 +388,64 @@ def thermal_response_factors(
     return h_ij
 
 
+def borehole_radiuses(boreholes, tol=1.0e-6):
+    """
+    Find all unique borehole radiuses in the borehole field.
+
+    Parameters
+    ----------
+    boreholes : list of Borehole objects
+        List of boreholes for which similarity pairs are identified.
+    tol : float, defaults to 1.0e-6
+        Relative tolerance on the borehole radius. Two radiuses r1, r2
+        are considered equal if abs(r1 - r2)/r2 < tol
+
+    Returns
+    -------
+    borRad : list of float
+        List of unique borehole radiuses in the list of boreholes
+    indRad : list of int
+        Radius index of each of the boreholes.
+    nRad : int
+        Unmber of unique borehole radiuses.
+        
+
+    Examples
+    --------
+    >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
+    >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.05, x=5., y=0.)
+    >>> b3 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=10., y=0.)
+    >>> gt.heat_transfer.borehole_radiuses([b1, b2, b3])
+    [0.075, 0.05]
+    [0, 1, 0]
+    2
+
+    """
+    # Initialize lists
+    nb = len(boreholes)
+    borRad = [boreholes[0].r_b]
+    indRad = [0]*nb
+    nRad=1
+
+    for i in range(1, nb):
+        b1 = boreholes[i]
+        # The relative tolerance is used for the borehole radius
+        radTol = 1.0e-6 * b1.r_b
+        # Verify if the current radius should be included in the
+        # list of radiuses
+        for k in range(nRad):
+            if abs(borRad[k] - b1.r_b) < radTol:
+                indRad[i] = k
+                break
+
+            else:
+                # Add radius to list if no match was found
+                borRad.append(b1.r_b)
+                indRad[i] = nRad
+                nRad += 1
+    return borRad, indRad, nRad
+
+
 def similarities(boreholes, splitRealAndImage=True, disTol=0.1, tol=1.0e-6,
                  processes=None):
     """
