@@ -11,7 +11,6 @@ from scipy.special import j0, j1, y0, y1, erf, exp1
 
 
 def cylindrical_heat_source(
-        time, alpha, r, borehole):
         time, alpha, r, r_b):
     """
     Evaluate the Cylindrical Heat Source (CHS) solution.
@@ -36,8 +35,6 @@ def cylindrical_heat_source(
         Soil thermal diffusivity (in m2/s).
     r : float
         Radial distance from the borehole axis (in m).
-    borehole : Borehole object
-        Borehole object of the borehole extracting heat.
     r_b : float
         Borehole radius (in m).
 
@@ -51,8 +48,6 @@ def cylindrical_heat_source(
 
     Examples
     --------
-    >>> b = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
-    >>> G = gt.heat_transfer.cylindrical_heat_source(4*168*3600., 1.0e-6, 0.1, b)
     >>> G = gt.heat_transfer.cylindrical_heat_source(4*168*3600., 1.0e-6, 0.1, 0.075)
     G = 
 
@@ -67,15 +62,12 @@ def cylindrical_heat_source(
         # Function to integrate
         CHS_integrand = \
             ( 1./(u**2*pi**2)*(np.exp(-u**2*Fo) - 1.0)
-            / (j1(u)**2 + y1(u)**2) * (j0(p*u)*y1(u) - j1(u)*y0(p*2)) )
             / (j1(u)**2 + y1(u)**2) * (j0(p*u)*y1(u) - j1(u)*y0(p*u)) )
         return CHS_integrand
 
     # Fourier number
-    Fo = alpha*time/borehole.r_b**2
     Fo = alpha*time/r_b**2
     # Normalized distance from borehole axis
-    p = r/borehole.r_b
     p = r/r_b
     # Lower bound of integration
     a = 0.
@@ -88,7 +80,6 @@ def cylindrical_heat_source(
 
 
 def infinite_line_source(
-        time, alpha, r, borehole):
         time, alpha, r):
     """
     Evaluate the Infinit Line Source (ILS) solution.
@@ -240,8 +231,8 @@ def finite_line_source(
 
 def thermal_response_factors(
         boreSegments, time, alpha, use_similarities=True,
-        splitRealAndImage=True, disTol=0.1, tol=1.0e-6, processes=None,
-        disp=False):
+        splitRealAndImage=True, disTol=0.1, tol=1.0e-6,
+        use_cylindricalHeatSource=True, processes=None, disp=False):
     """
     Evaluate segment-to-segment thermal response factors.
 
@@ -273,6 +264,10 @@ def thermal_response_factors(
         Relative tolerance on length and depth. Two lenths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
         Default is 1.0e-6.
+    use_cylindricalHeatSource : bool, optional
+        Set to True if the Cylindrical Heat Source (CHS) is used to evaluate
+        the short-time response of the boreholes.
+        Default is True.
     processes : int, optional
         Number of processors to use in calculations. If the value is set to
         None, a number of processors equal to cpu_count() is used.
@@ -380,6 +375,28 @@ def thermal_response_factors(
                 h = np.array(pool.map(func, time))
                 h_ij[i, j, :] = h
                 h_ij[j, i, :] = b2.H / b1.H * h_ij[i, j, :]
+    # Calculate short-term correction if needed
+    if use_cylindricalHeatSource:
+        if disp:
+            print('Calculating short-term correction ...')
+        # Initialize short-term correction
+        (borRad, indRad, nRad) = borehole_radiuses(boreSegments, tol=tol)
+        dh_ii = np.zeros((nRad, nt))
+        for i in range(nRad):
+            # CHS solution
+            func_CHS = partial(
+                    cylindrical_heat_source,
+                    alpha=alpha, r=borRad[i], r_b=borRad[i])
+            # Evaluate the CHS solution at all times in parallel
+            dh_ii[i, :] += 2*pi*np.array(pool.map(func_CHS, np.atleast_1d(time)))
+            # ILS solution
+            func_ILS = partial(
+                    infinite_line_source,
+                    alpha=alpha, r=borRad[i])
+            # Evaluate the ILS solution at all times in parallel
+            dh_ii[i, :] += -0.5*np.array(pool.map(func_ILS, np.atleast_1d(time)))
+        for i in range(nSources):
+            h_ij[i, i, :] += dh_ii[indRad[i], :]
 
     toc2 = tim.time()
     if disp:
