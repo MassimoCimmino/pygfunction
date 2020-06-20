@@ -8,7 +8,7 @@ def read(fname):
 
 setup(
     name="pygfunction",
-    version="1.1.0",
+    version="1.1.1",
     packages=['pygfunction',
               'pygfunction/examples'],
     include_package_data=True,

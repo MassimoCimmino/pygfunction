@@ -4,6 +4,10 @@
 
 ### New features
 
+## Version 1.1.1 (2020-06-20)
+
+### New features
+
 * [Issue 40](https://github.com/MassimoCimmino/pygfunction/issues/40) - Added Network class for simulations involving networks of boreholes.
 
 ### Bug fixes
