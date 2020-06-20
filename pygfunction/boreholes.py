@@ -372,16 +372,16 @@ def field_from_file(filename):
     boreField : list of Borehole objects
         List of boreholes in the bore field.
 
-    The text file should be formatted as follows:
+    Notes
+    -----
+    The text file should be formatted as follows::
 
-    .. code-block:: none
-
-       # x   y     H     D     r_b
-       0.    0.    100.  2.5   0.075
-       5.    0.    100.  2.5   0.075
-       0.    5.    100.  2.5   0.075
-       0.    10.   100.  2.5   0.075
-       0.    20.   100.  2.5   0.075
+        # x   y     H     D     r_b
+        0.    0.    100.  2.5   0.075
+        5.    0.    100.  2.5   0.075
+        0.    5.    100.  2.5   0.075
+        0.    10.   100.  2.5   0.075
+        0.    20.   100.  2.5   0.075
 
     """
     # Load data from file
