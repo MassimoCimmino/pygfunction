@@ -6,6 +6,10 @@
 
 * [Issue 40](https://github.com/MassimoCimmino/pygfunction/issues/40) - Added Network class for simulations involving networks of boreholes.
 
+### Bug fixes
+
+* [Commit a4f6591] (https://github.com/MassimoCimmino/pygfunction/commit/a4f6591384295c9918cb13b60f07c0afa500e700) - Fixed import of Axes3D necessary in `borehole.visualize_field()`.
+
 ## Version 1.1.0 (2018-03-09)
 
 ### New features
