@@ -164,10 +164,10 @@ class Borehole(object):
         rp_out_points_list = []
         rp_in_points_list = []
         for i in range(len(pos_pipes)):
-            pipe_diff_x, pipe_diff_y = pos_pipes[i]
-            pipe_origin = (bh_origin[0] + pipe_diff_x, bh_origin[1] + pipe_diff_y)
-            rp_out_points_list.append(draw_circle(pipe_origin, rp_out))
-            rp_in_points_list.append(draw_circle(pipe_origin, rp_in))
+            pipe_diff_x, pipe_diff_y = pos_pipes[i]  # loop through the different pipe locations
+            pipe_origin = (bh_origin[0] + pipe_diff_x, bh_origin[1] + pipe_diff_y)  # offset the origin of the pipes
+            rp_out_points_list.append(draw_circle(pipe_origin, rp_out))  # save all rp_out points to a list
+            rp_in_points_list.append(draw_circle(pipe_origin, rp_in))    # save all rp_in points to a list
 
         if show_plot is False:
             plt.switch_backend('agg')  # make compatible for non display CPU's (ie. Linux cluster)
