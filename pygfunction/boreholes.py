@@ -136,12 +136,15 @@ class Borehole(object):
         """
 
         def plot_list_tuples(list_of_tuples: list, ax_inst: object, color: str = 'C2'):
+            # the outer pipe and inner pipe points are stored in the same format, but are going to be plotted with
+            # different colors, this function plots that data and allows a color option for the plot
             for j in range(len(list_of_tuples)):
-                x_points, y_points = list_of_tuples[j]
-                ax_inst.plot(x_points, y_points, c=color)
+                x_points, y_points = list_of_tuples[j]  # separate out x and y points into individual tuples
+                ax_inst.plot(x_points, y_points, c=color)  # plot the points with a given color
             return
 
         def draw_circle(origin: tuple, radius: float) -> list:
+            # this function creates a list of points in a circle given the center (origin) and the radius of the circle
             x_origin = origin[0]
             y_origin = origin[1]
 
