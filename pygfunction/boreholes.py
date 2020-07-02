@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 from scipy.constants import pi
 from math import sin, cos
+import matplotlib.pyplot as plt
 
 
 class Borehole(object):
@@ -101,14 +102,35 @@ class Borehole(object):
         pos = (self.x, self.y)
         return pos
 
-    def draw_borehole(self):
+    def draw_borehole(self, pos_pipes: list, rp_in: float, rp_out: float, show_plot: bool = False,
+                      plot_name: str = 'Plot', save_plot: bool = False):
         """
+        Draw the borehole from a top view
+        Parameters
+        ----------
+        pos_pipes : list
+            A list of the pipe positions
+        rp_in : float
+            The outer pipe radius
+        rp_out : float
+            The inner pipe radius
+        show_plot : bool
+            Whether or not to display the plot in a window with plt.show(), will need a GUI enabled backend
+        plot_name : str
+            If the plot is going to be saved, a plot name can be described
+        save_plot : bool
+            whether or not to save the plot
 
         Returns
         -------
-        None
 
         """
+
+        def plot_list_tuples(list_of_tuples: list, ax: object, color: str = 'C2'):
+            for i in range(len(list_of_tuples)):
+                xpts, ypts = list_of_tuples[i]
+                ax.plot(xpts, ypts, c=color)
+            return ax
 
         def draw_circle(origin: tuple, radius: float) -> list:
             x_origin = origin[0]
@@ -130,16 +152,33 @@ class Borehole(object):
         bh_origin = (self.x, self.y)
         radius = self.r_b
         bh_x_points, bh_y_points = draw_circle(bh_origin, radius)
-        # get right outer pipe points
 
-        # get right inner pipe points
+        rp_out_points_list = []
+        rp_in_points_list = []
+        for i in range(len(pos_pipes)):
+            pipe_origin = pos_pipes[i]
+            rp_out_points_list.append(draw_circle(pipe_origin, rp_out))
+            rp_in_points_list.append(draw_circle(pipe_origin, rp_in))
 
-        # get left outer pipe points
+        if show_plot is False:
+            plt.switch_backend('agg')  # make compatible for non display CPU's (ie. Linux cluster)
 
-        # get left inner pipe points
+        fig, ax = plt.subplots()
+        ax.plot(bh_x_points, bh_y_points, c='C1')
 
-        a = 1
+        plot_list_tuples(rp_out_points_list, ax, color='C2')  # plot the outer pipe circle
+        plot_list_tuples(rp_in_points_list, ax, color='C3')   # plot the inner pipe circle
 
+        plt.gca().set_aspect('equal', adjustable='box')  # make the circle look round
+
+        if save_plot is True:
+            fig.savefig(plot_name + '.pdf')
+
+        if show_plot is True:
+            fig.show()
+
+        plt.close(fig)  # close out the figure, make nullptr
+        return
 
 
 def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b):
