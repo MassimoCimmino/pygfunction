@@ -117,9 +117,9 @@ class Borehole(object):
         show_plot : bool
             Whether or not to display the plot in a window with plt.show(), will need a GUI enabled backend
         save_plot : bool
-            whether or not to save the plot
+            Whether or not to save the plot, saves plot as pdf
         plot_name : str
-            If the plot is going to be saved, a plot name can be described
+            If the plot is going to be saved, a plot name can be described, can be a plot path
 
         Returns
         -------
@@ -173,10 +173,10 @@ class Borehole(object):
             plt.switch_backend('agg')  # make compatible for non display CPU's (ie. Linux cluster)
 
         fig, ax = plt.subplots()
-        ax.plot(bh_x_points, bh_y_points, c='C1')
+        ax.plot(bh_x_points, bh_y_points, c='C0')
 
-        plot_list_tuples(rp_out_points_list, ax, color='C2')  # plot the outer pipe circle
-        plot_list_tuples(rp_in_points_list, ax, color='C3')   # plot the inner pipe circle
+        plot_list_tuples(rp_out_points_list, ax, color='C1')  # plot the outer pipe circle
+        plot_list_tuples(rp_in_points_list, ax, color='C2')   # plot the inner pipe circle
 
         plt.gca().set_aspect('equal', adjustable='box')  # make the circle look round
 
