@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 from scipy.constants import pi
+from math import sin, cos
 
 
 class Borehole(object):
@@ -99,6 +100,46 @@ class Borehole(object):
         """
         pos = (self.x, self.y)
         return pos
+
+    def draw_borehole(self):
+        """
+
+        Returns
+        -------
+        None
+
+        """
+
+        def draw_circle(origin: tuple, radius: float) -> list:
+            x_origin = origin[0]
+            y_origin = origin[1]
+
+            angles = [i for i in range(361)]  # 0 to 360 needs to range(361)
+
+            def degrees_to_radians(theta: float) -> float:
+                # Take in an angle theta in Degrees and return the angle in radians
+                return theta * pi / 180
+
+            points = [(x_origin + radius * cos(degrees_to_radians(angles[i])),
+                       y_origin + radius * sin(degrees_to_radians(angles[i])))
+                      for i in range(len(angles))]
+
+            return list(zip(*points))  # return [(xpts), (ypts)]
+
+        # get outer borehole radius points
+        bh_origin = (self.x, self.y)
+        radius = self.r_b
+        bh_x_points, bh_y_points = draw_circle(bh_origin, radius)
+        # get right outer pipe points
+
+        # get right inner pipe points
+
+        # get left outer pipe points
+
+        # get left inner pipe points
+
+        a = 1
+
 
 
 def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b):
