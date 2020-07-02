@@ -103,7 +103,7 @@ class Borehole(object):
         return pos
 
     def draw_borehole(self, pos_pipes: list, rp_in: float, rp_out: float, show_plot: bool = False,
-                      plot_name: str = 'Plot', save_plot: bool = False):
+                      save_plot: bool = False, plot_name: str = 'Plot', ):
         """
         Draw the borehole from a top view
         Parameters
@@ -116,47 +116,56 @@ class Borehole(object):
             The inner pipe radius
         show_plot : bool
             Whether or not to display the plot in a window with plt.show(), will need a GUI enabled backend
-        plot_name : str
-            If the plot is going to be saved, a plot name can be described
         save_plot : bool
             whether or not to save the plot
+        plot_name : str
+            If the plot is going to be saved, a plot name can be described
 
         Returns
         -------
+        None
 
+        Examples
+        --------
+        >>> b1 = gt.boreholes.Borehole(H=150.0, D=4.0, r_b=0.075, x=0., y=0.)
+        >>> rp_out = 0.0211
+        >>> rp_in = 0.0147
+        >>> D_s = 0.052
+        >>> pos_pipes = [(-D_s, 0.), (D_s, 0.)]
+        >>> b1.draw_borehole(pos_pipes, rp_in, rp_out, show_plot=True, save_plot=True)
         """
 
-        def plot_list_tuples(list_of_tuples: list, ax: object, color: str = 'C2'):
-            for i in range(len(list_of_tuples)):
-                xpts, ypts = list_of_tuples[i]
-                ax.plot(xpts, ypts, c=color)
-            return ax
+        def plot_list_tuples(list_of_tuples: list, ax_inst: object, color: str = 'C2'):
+            for j in range(len(list_of_tuples)):
+                x_points, y_points = list_of_tuples[j]
+                ax_inst.plot(x_points, y_points, c=color)
+            return
 
         def draw_circle(origin: tuple, radius: float) -> list:
             x_origin = origin[0]
             y_origin = origin[1]
 
-            angles = [i for i in range(361)]  # 0 to 360 needs to range(361)
+            angles = [k for k in range(361)]  # 0 to 360 needs to range(361)
 
             def degrees_to_radians(theta: float) -> float:
                 # Take in an angle theta in Degrees and return the angle in radians
                 return theta * pi / 180
 
-            points = [(x_origin + radius * cos(degrees_to_radians(angles[i])),
-                       y_origin + radius * sin(degrees_to_radians(angles[i])))
-                      for i in range(len(angles))]
+            points = [(x_origin + radius * cos(degrees_to_radians(angles[k])),
+                       y_origin + radius * sin(degrees_to_radians(angles[k])))
+                      for k in range(len(angles))]
 
-            return list(zip(*points))  # return [(xpts), (ypts)]
+            return list(zip(*points))  # return [(x_points), (y_points)]
 
-        # get outer borehole radius points
-        bh_origin = (self.x, self.y)
+        bh_origin = (self.x, self.y)  # get outer borehole radius points
         radius = self.r_b
         bh_x_points, bh_y_points = draw_circle(bh_origin, radius)
 
         rp_out_points_list = []
         rp_in_points_list = []
         for i in range(len(pos_pipes)):
-            pipe_origin = pos_pipes[i]
+            pipe_diff_x, pipe_diff_y = pos_pipes[i]
+            pipe_origin = (bh_origin[0] + pipe_diff_x, bh_origin[1] + pipe_diff_y)
             rp_out_points_list.append(draw_circle(pipe_origin, rp_out))
             rp_in_points_list.append(draw_circle(pipe_origin, rp_in))
 
