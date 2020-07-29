@@ -264,13 +264,13 @@ def thermal_response_factors(
                 h_ij[i, j, :] = h
                 h_ij[j, i, :] = b2.H / b1.H * h_ij[i, j, :]
 
-    toc2 = tim.time()
-    if disp:
-        print('{} sec'.format(toc2 - tic))
-
     # Close pool of workers
     pool.close()
     pool.join()
+
+    toc2 = tim.time()
+    if disp:
+        print('{} sec'.format(toc2 - tic))
 
     # Return 2d array if time is a scalar
     if np.isscalar(time):
