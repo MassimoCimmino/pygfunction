@@ -200,8 +200,9 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
     # Vector of time values
     t = np.atleast_1d(time).flatten()
     # Calculate segment to segment thermal response factors
+    h_ij = np.array() # initialize the cube for pass by ref
     h_ij = thermal_response_factors(
-        boreSegments, t, alpha, use_similarities=use_similarities,
+        boreSegments, t, alpha, h_ij=h_ij, use_similarities=use_similarities,
         splitRealAndImage=True, disTol=disTol, tol=tol, processes=processes,
         disp=disp)
     toc1 = tim.time()

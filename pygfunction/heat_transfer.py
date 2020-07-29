@@ -118,7 +118,7 @@ def finite_line_source(
 
 
 def thermal_response_factors(
-        boreSegments, time, alpha, use_similarities=True,
+        boreSegments, time, alpha, h_ij=None, use_similarities=True,
         splitRealAndImage=True, disTol=0.1, tol=1.0e-6, processes=None,
         disp=False):
     """
@@ -174,9 +174,13 @@ def thermal_response_factors(
     pool = Pool(processes=processes)
     # Initialize chrono
     tic = tim.time()
-
-    # Initialize segment-to-segment response factors
-    h_ij = np.zeros((nSources, nSources, nt))
+    h_ij_passbyref = False
+    if h_ij == None:
+        # Initialize segment-to-segment response factors
+        h_ij = np.zeros((nSources, nSources, nt))
+    else:
+        h_ij_passbyref = True
+        h_ij.resize((nSources, nSources, nt))
     # Calculation is based on the choice of use_similarities
     if use_similarities:
         # Calculations with similarities
@@ -272,7 +276,10 @@ def thermal_response_factors(
     if np.isscalar(time):
         h_ij = h_ij[:,:,0]
 
-    return h_ij
+    if h_ij_passbyref is True:
+        return
+    else:
+        return h_ij
 
 
 def similarities(boreholes, splitRealAndImage=True, disTol=0.1, tol=1.0e-6,
