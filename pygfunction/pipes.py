@@ -544,7 +544,7 @@ class _BasePipe(object):
         from matplotlib.ticker import AutoMinorLocator
 
         # Initialize figure
-        LW = 1.5    # Line width
+        LW = .5    # Line width
         FS = 12.    # Font size
 
         plt.rc('figure', figsize=(80.0/25.4, 80.0/25.4))
