@@ -230,29 +230,19 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
         h_dt = h_ij
     # Thermal response factor increments
     dh_ij = np.concatenate((h_ij[:,:,0:1], h_ij[:,:,1:]-h_ij[:,:,:-1]), axis=2)
-    del h_ij
 
     # Energy conservation: sum([Qb*Hb]) = sum([Hb])
     A_eq2 = np.hstack((Hb, 0.))
     B_eq2 = np.atleast_1d(np.sum(Hb))
 
-    temporal_time = 0
-    LU_time = 0
-
     # Build and solve the system of equations at all times
     for p in range(nt):
-        if p == 1:
-            a = 1
         # Current thermal response factor matrix
         h_ij_dt = h_dt[:,:,p]
         # Reconstructed load history
         Q_reconstructed = load_history_reconstruction(t[0:p+1], Q[:,0:p+1])
         # Borehole wall temperature for zero heat extraction at current step
-        tic_1 = tim.time()
         Tb_0 = _temporal_superposition(dh_ij, Q_reconstructed)
-        toc_1 = tim.time()
-        temporal_time += toc_1 - tic_1
-        tic_1 = tim.time()
         # Spatial superposition: [Tb] = [Tb0] + [h_ij_dt]*[Qb]
         A_eq1 = np.hstack((h_ij_dt, -np.ones((nSources, 1))))
         B_eq1 = -Tb_0
@@ -261,17 +251,11 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
         B = np.hstack((B_eq1, B_eq2))
         # Solve the system of equations
         X = np.linalg.solve(A, B)
-        toc_1 = tim.time()
-        LU_time += toc_1 - tic_1
         # Store calculated heat extraction rates
         Q[:,p] = X[0:nSources]
         # The borehole wall temperatures are equal for all segments
         Tb = X[-1]
         gFunction[p] = Tb
-
-    print('t \t t/p \t name')
-    print('{} \t {} \t temporal time'.format(temporal_time, temporal_time/nt))
-    print('{} \t {} \t LU time'.format(LU_time, LU_time / nt))
 
     toc2 = tim.time()
     if disp:
