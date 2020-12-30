@@ -4,6 +4,103 @@ import numpy as np
 from scipy.constants import pi
 
 
+class Borehole(object):
+    """
+    Contains information regarding the dimensions and position of a borehole.
+
+    Attributes
+    ----------
+    H : float
+        Borehole length (in meters).
+    D : float
+        Borehole buried depth (in meters).
+    r_b : float
+        Borehole radius (in meters).
+    x : float
+        Position (in meters) of the head of the borehole along the x-axis.
+    y : float
+        Position (in meters) of the head of the borehole along the y-axis.
+    tilt : float
+        Angle (in radians) from vertical of the axis of the borehole.
+    orientation : float
+        Direction (in radians) of the tilt of the borehole.
+
+    """
+    def __init__(self, H, D, r_b, x, y, tilt=0., orientation=0.):
+        self.H = float(H)      # Borehole length
+        self.D = float(D)      # Borehole buried depth
+        self.r_b = float(r_b)  # Borehole radius
+        self.x = float(x)      # Borehole x coordinate position
+        self.y = float(y)      # Borehole y coordinate position
+        self.tilt = float(tilt)
+        self.orientation = float(orientation)
+
+    def __repr__(self):
+        s = ('Borehole(H={self.H}, D={self.D}, r_b={self.r_b}, x={self.x},'
+             ' y={self.y}, tilt={self.tilt},'
+             ' orientation={self.orientation})').format(self=self)
+        return s
+
+    def distance(self, target):
+        """
+        Evaluate the distance between the current borehole and a target
+        borehole.
+
+        Parameters
+        ----------
+        target : Borehole object
+            Target borehole for which the distance is evaluated.
+
+        Returns
+        -------
+        dis : float
+            Distance (in meters) between current borehole and target borehole.
+
+        .. Note::
+           The smallest distance returned is equal to the borehole radius.
+           This means that the distance between a borehole and itself is
+           equal to r_b.
+
+        Examples
+        --------
+        >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
+        >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
+        >>> b1.distance(b2)
+        5.0
+
+        """
+        dis = max(self.r_b,
+                  np.sqrt((self.x - target.x)**2 + (self.y - target.y)**2))
+        return dis
+
+    def position(self):
+        """
+        Returns the position of the borehole.
+
+        Returns
+        -------
+        pos : tuple
+            Position (x, y) (in meters) of the borehole.
+
+        Raises
+        ------
+        SomeError
+
+        See Also
+        --------
+        OtherModules
+
+        Examples
+        --------
+        >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
+        >>> b1.position()
+        (5.0, 0.0)
+
+        """
+        pos = (self.x, self.y)
+        return pos
+
+
 def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b):
     """
     Build a list of boreholes in a rectangular bore field configuration.
