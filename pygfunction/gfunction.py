@@ -11,6 +11,11 @@ from .heat_transfer import thermal_response_factors
 from .networks import network_thermal_resistance
 
 
+class gFunction:
+    def __init__(self, **kwargs):
+        a = 1
+
+
 def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
                             disTol=0.1, tol=1.0e-6, processes=None,
                             disp=False):
