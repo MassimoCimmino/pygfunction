@@ -14,8 +14,13 @@ def main():
     r_b = 0.0875  # Borehole radius (m)
 
     # Pipe dimensions
-    rp_out = 0.0133  # Pipe outer radius (m)
-    rp_in = 0.0108  # Pipe inner radius (m)
+    pipe_style = 'SDR-11'  # SDR-11 pipe style
+    nominal_size = 0.75  # 3/4 inch nominal pipe size
+    borehole_design = gt.borehole_design.BoreholeDesign(pipe_style=pipe_style, nominal_size=nominal_size)
+
+    rp_out = borehole_design.Dpo / 2   # Pipe outer radius (m)
+    rp_in = borehole_design.Dpi / 2    # Pipe inner radius (m)
+    # TODO: A, B, C
     D_s = 0.029445  # Shank spacing (m)
 
     # Single U-tube [(x_in, y_in), (x_out, y_out)]
