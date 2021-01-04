@@ -2,8 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 from scipy.constants import pi
-from math import sin, cos
-import matplotlib.pyplot as plt
 
 
 class Borehole(object):
