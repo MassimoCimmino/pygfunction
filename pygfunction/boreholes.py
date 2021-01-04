@@ -2,6 +2,8 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 from scipy.constants import pi
+from math import sin, cos
+import matplotlib.pyplot as plt
 
 
 class Borehole(object):
@@ -99,6 +101,96 @@ class Borehole(object):
         """
         pos = (self.x, self.y)
         return pos
+
+    def draw_borehole(self, pos_pipes: list, rp_in: float, rp_out: float, show_plot: bool = False,
+                      save_plot: bool = False, plot_name: str = 'Plot', ):
+        """
+        Draw the borehole from a top view
+        Parameters
+        ----------
+        pos_pipes : list
+            A list of the pipe positions
+        rp_in : float
+            The outer pipe radius
+        rp_out : float
+            The inner pipe radius
+        show_plot : bool
+            Whether or not to display the plot in a window with plt.show(), will need a GUI enabled backend
+        save_plot : bool
+            Whether or not to save the plot, saves plot as pdf
+        plot_name : str
+            If the plot is going to be saved, a plot name can be described, can be a plot path
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        >>> b1 = gt.boreholes.Borehole(H=150.0, D=4.0, r_b=0.075, x=0., y=0.)
+        >>> rp_out = 0.0211
+        >>> rp_in = 0.0147
+        >>> D_s = 0.052
+        >>> pos_pipes = [(-D_s, 0.), (D_s, 0.)]
+        >>> b1.draw_borehole(pos_pipes, rp_in, rp_out, show_plot=True, save_plot=True)
+        """
+
+        def plot_list_tuples(list_of_tuples: list, ax_inst: object, color: str = 'C2'):
+            # the outer pipe and inner pipe points are stored in the same format, but are going to be plotted with
+            # different colors, this function plots that data and allows a color option for the plot
+            for j in range(len(list_of_tuples)):
+                x_points, y_points = list_of_tuples[j]  # separate out x and y points into individual tuples
+                ax_inst.plot(x_points, y_points, c=color)  # plot the points with a given color
+            return
+
+        def draw_circle(origin: tuple, radius: float) -> list:
+            # this function creates a list of points in a circle given the center (origin) and the radius of the circle
+            x_origin = origin[0]
+            y_origin = origin[1]
+
+            angles = [k for k in range(361)]  # 0 to 360 needs to range(361)
+
+            def degrees_to_radians(theta: float) -> float:
+                # Take in an angle theta in Degrees and return the angle in radians
+                return theta * pi / 180
+
+            points = [(x_origin + radius * cos(degrees_to_radians(angles[k])),
+                       y_origin + radius * sin(degrees_to_radians(angles[k])))
+                      for k in range(len(angles))]
+
+            return list(zip(*points))  # return [(x_points), (y_points)]
+
+        bh_origin = (self.x, self.y)  # get outer borehole radius points
+        radius = self.r_b
+        bh_x_points, bh_y_points = draw_circle(bh_origin, radius)
+
+        rp_out_points_list = []
+        rp_in_points_list = []
+        for i in range(len(pos_pipes)):
+            pipe_diff_x, pipe_diff_y = pos_pipes[i]  # loop through the different pipe locations
+            pipe_origin = (bh_origin[0] + pipe_diff_x, bh_origin[1] + pipe_diff_y)  # offset the origin of the pipes
+            rp_out_points_list.append(draw_circle(pipe_origin, rp_out))  # save all rp_out points to a list
+            rp_in_points_list.append(draw_circle(pipe_origin, rp_in))    # save all rp_in points to a list
+
+        if show_plot is False:
+            plt.switch_backend('agg')  # make compatible for non display CPU's (ie. Linux cluster)
+
+        fig, ax = plt.subplots()
+        ax.plot(bh_x_points, bh_y_points, c='C0')
+
+        plot_list_tuples(rp_out_points_list, ax, color='C1')  # plot the outer pipe circle
+        plot_list_tuples(rp_in_points_list, ax, color='C2')   # plot the inner pipe circle
+
+        plt.gca().set_aspect('equal', adjustable='box')  # make the circle look round
+
+        if save_plot is True:
+            fig.savefig(plot_name + '.pdf')
+
+        if show_plot is True:
+            fig.show()
+
+        plt.close(fig)  # close out the figure, make nullptr
+        return
 
 
 def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b):
