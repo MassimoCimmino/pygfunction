@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" Example designing a borehole; outputting a top-view plot of the borehole and the borehole radius.
+""" Example design of a borehole. A top-view plot of the borehole is created and the borehole resistance is computed.
 
 """
 from __future__ import absolute_import, division, print_function
