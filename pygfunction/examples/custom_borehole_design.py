@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" Example of definition and visualization of a borehole.
+""" Example designing a borehole; outputting a top-view plot of the borehole and the borehole radius.
 
 """
 from __future__ import absolute_import, division, print_function
