@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-""" Example design of a borehole. A top-view plot of the borehole is created and the borehole resistance is computed.
+""" Example definition of a borehole. A top-view plot of the borehole is
+    created and the borehole resistance is computed.
 
 """
 from __future__ import absolute_import, division, print_function
@@ -65,7 +66,8 @@ def main():
     # pipe object and raises an error if the pipe geometry is invalid. It is
     # manually called here for demosntration.
     check = SingleUTube._check_geometry()
-    print('The geometry of the borehole is valid (realisitc/possible): ' + str(check))
+    print('The geometry of the borehole is valid (realistic/possible): '
+          + str(check))
 
     # Create a borehole top view
     fig = SingleUTube.visualize_pipes()
