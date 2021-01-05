@@ -238,7 +238,7 @@ class TestSingleUTube(unittest.TestCase):
         self.k_g = 1.0          # Grout thermal conductivity [W/m.K]
         self.cp = 4000          # Fluid specific heat capacity [J/kg.K]
         # Fluid to outer pipe wall thermal resistance [m.K/W]
-        self.Rfp = 0.0
+        self.Rfp = 1e-30
 
     def test_outlet_fluid_temperature(self):
         """ Tests the value of the outlet fluid temperature for a single U-tube
@@ -343,7 +343,7 @@ class TestMultipleUTube(unittest.TestCase):
         self.k_g = 1.0          # Grout thermal conductivity [W/m.K]
         self.cp = 4000          # Fluid specific heat capacity [J/kg.K]
         # Fluid to outer pipe wall thermal resistance [m.K/W]
-        self.Rfp = 0.0
+        self.Rfp = 1e-30
 
     def test_outlet_fluid_temperature_parallel(self):
         """ Tests the value of the outlet fluid temperature for a borehole with
@@ -571,7 +571,7 @@ class TestIndependentMultipleUTube(unittest.TestCase):
         # Fluid specific heat capacity [J/kg.K]
         self.cp = 4000.*np.ones_like(self.m_flow)
         # Fluid to outer pipe wall thermal resistance [m.K/W]
-        self.Rfp = 0.0
+        self.Rfp = 1e-30
         # Inlet fluid temperature in each U-tube [degC]
         self.Tf_in_ref = np.array([6.0, -6.0, 5.0, -5.0])
         # outlet fluid temperature in each U-tube [degC]
