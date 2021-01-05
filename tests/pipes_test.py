@@ -259,7 +259,7 @@ class TestSingleUTube(unittest.TestCase):
         Tf_out = np.zeros_like(Tf_out_ref)
         for i in range(len(m_flow)):
             pos = [(-self.D_s, 0.), (self.D_s, 0.)]
-            UTube = SingleUTube(pos, 0., self.r_out, borehole,
+            UTube = SingleUTube(pos, 1e-30, self.r_out, borehole,
                                 self.k_s, self.k_g, self.Rfp, J=0)
             # Obtain outlet fluid temperature
             Tf_out[i] = UTube.get_outlet_temperature(Tf_in, T_b,
@@ -290,7 +290,7 @@ class TestSingleUTube(unittest.TestCase):
         Tf_in = np.zeros_like(Tf_in_ref)
         for i in range(len(m_flow)):
             pos = [(-self.D_s, 0.), (self.D_s, 0.)]
-            UTube = SingleUTube(pos, 0., self.r_out, borehole,
+            UTube = SingleUTube(pos, 1e-30, self.r_out, borehole,
                                 self.k_s, self.k_g, self.Rfp, J=0)
             # Obtain inlet fluid temperature
             Tf_in[i] = UTube.get_inlet_temperature(Qf[i], T_b,
@@ -321,7 +321,7 @@ class TestSingleUTube(unittest.TestCase):
         Qf = np.zeros_like(Qf_ref)
         for i in range(len(m_flow)):
             pos = [(-self.D_s, 0.), (self.D_s, 0.)]
-            UTube = SingleUTube(pos, 0., self.r_out, borehole,
+            UTube = SingleUTube(pos, 1e-30, self.r_out, borehole,
                                 self.k_s, self.k_g, self.Rfp, J=0)
             # Obtain fluid heat transfer rate
             Qf[i] = UTube.get_fluid_heat_extraction_rate(Tf_in[i], T_b,
@@ -365,7 +365,7 @@ class TestMultipleUTube(unittest.TestCase):
         Tf_out = np.zeros_like(Tf_out_ref)
         for i in range(len(nPipes)):
             pos = self._pipePositions(nPipes[i])
-            UTube = MultipleUTube(pos, 0., self.r_out, borehole,
+            UTube = MultipleUTube(pos, 1e-30, self.r_out, borehole,
                                   self.k_s, self.k_g, self.Rfp, nPipes[i], J=0)
             # Obtain outlet fluid temperature
             Tf_out[i] = UTube.get_outlet_temperature(Tf_in, T_b,
@@ -394,7 +394,7 @@ class TestMultipleUTube(unittest.TestCase):
         Tf_out = np.zeros_like(Tf_out_ref)
         for i in range(len(nPipes)):
             pos = self._pipePositions(nPipes[i])
-            UTube = MultipleUTube(pos, 0., self.r_out, borehole,
+            UTube = MultipleUTube(pos, 1e-30, self.r_out, borehole,
                                   self.k_s, self.k_g, self.Rfp, nPipes[i],
                                   config='series', J=0)
             # Obtain outlet fluid temperature
@@ -428,7 +428,7 @@ class TestMultipleUTube(unittest.TestCase):
         Tf_in = np.zeros_like(Tf_in_ref)
         for i in range(len(nPipes)):
             pos = self._pipePositions(nPipes[i])
-            UTube = MultipleUTube(pos, 0., self.r_out, borehole,
+            UTube = MultipleUTube(pos, 1e-30, self.r_out, borehole,
                                   self.k_s, self.k_g, self.Rfp, nPipes[i], J=0)
             # Obtain inlet fluid temperature
             Tf_in[i] = UTube.get_inlet_temperature(Qf[i], T_b,
@@ -461,7 +461,7 @@ class TestMultipleUTube(unittest.TestCase):
         Tf_in = np.zeros_like(Tf_in_ref)
         for i in range(len(nPipes)):
             pos = self._pipePositions(nPipes[i])
-            UTube = MultipleUTube(pos, 0., self.r_out, borehole,
+            UTube = MultipleUTube(pos, 1e-30, self.r_out, borehole,
                                   self.k_s, self.k_g, self.Rfp, nPipes[i],
                                   config='series', J=0)
             # Obtain inlet fluid temperature
@@ -495,7 +495,7 @@ class TestMultipleUTube(unittest.TestCase):
         Qf = np.zeros_like(Qf_ref)
         for i in range(len(nPipes)):
             pos = self._pipePositions(nPipes[i])
-            UTube = MultipleUTube(pos, 0., self.r_out, borehole,
+            UTube = MultipleUTube(pos, 1e-30, self.r_out, borehole,
                                   self.k_s, self.k_g, self.Rfp, nPipes[i], J=0)
             # Obtain fluid heat extraction rate
             Qf[i] = UTube.get_fluid_heat_extraction_rate(Tf_in[i], T_b,
@@ -528,7 +528,7 @@ class TestMultipleUTube(unittest.TestCase):
         Qf = np.zeros_like(Qf_ref)
         for i in range(len(nPipes)):
             pos = self._pipePositions(nPipes[i])
-            UTube = MultipleUTube(pos, 0., self.r_out, borehole,
+            UTube = MultipleUTube(pos, 1e-30, self.r_out, borehole,
                                   self.k_s, self.k_g, self.Rfp, nPipes[i],
                                   config='series', J=0)
             # Obtain fluid heat extraction rate
@@ -590,7 +590,7 @@ class TestIndependentMultipleUTube(unittest.TestCase):
 
         # Calculate using pipes.IndependentMultipleUTube()
         pos = self._pipePositions(self.nPipes)
-        UTube = IndependentMultipleUTube(pos, 0., self.r_out, borehole,
+        UTube = IndependentMultipleUTube(pos, 1e-30, self.r_out, borehole,
                                          self.k_s, self.k_g, self.Rfp,
                                          self.nPipes, J=0)
         # Obtain outlet fluid temperature
@@ -612,7 +612,7 @@ class TestIndependentMultipleUTube(unittest.TestCase):
 
         # Calculate using pipes.IndependentMultipleUTube()
         pos = self._pipePositions(self.nPipes)
-        UTube = IndependentMultipleUTube(pos, 0., self.r_out, borehole,
+        UTube = IndependentMultipleUTube(pos, 1e-30, self.r_out, borehole,
                                          self.k_s, self.k_g, self.Rfp,
                                          self.nPipes, J=0)
         # Obtain inlet fluid temperature
@@ -634,7 +634,7 @@ class TestIndependentMultipleUTube(unittest.TestCase):
 
         # Calculate using pipes.IndependentMultipleUTube()
         pos = self._pipePositions(self.nPipes)
-        UTube = IndependentMultipleUTube(pos, 0., self.r_out, borehole,
+        UTube = IndependentMultipleUTube(pos, 1e-30, self.r_out, borehole,
                                          self.k_s, self.k_g, self.Rfp,
                                          self.nPipes, J=0)
         # Obtain outlet fluid temperature
