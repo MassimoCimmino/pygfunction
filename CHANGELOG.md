@@ -4,6 +4,8 @@
 
 ### New features
 
+* [Issue 47](https://github.com/MassimoCimmino/pygfunction/issues/47) - Added verification of the validity of pipe geometry to pipe classes. Extended visualization of the borehole cross-section.
+
 ## Version 1.1.1 (2020-06-20)
 
 ### New features
