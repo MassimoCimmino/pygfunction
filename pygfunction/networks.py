@@ -377,6 +377,10 @@ class Network(object):
                  for i in range(self.nBoreholes)]
             a_in, a_b = self._network_coefficients_from_pipe_coefficients(B, C)
 
+            # Store coefficients
+            self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
+                                          method_id)
+
         return a_in, a_b
 
     def coefficients_outlet_temperature(self, m_flow, cp, nSegments):
@@ -430,7 +434,9 @@ class Network(object):
             C = B
             a_in, a_b = self._network_coefficients_from_pipe_coefficients(B, C)
 
-        return a_in, a_b
+            # Store coefficients
+            self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
+                                          method_id)
 
         return a_in, a_b
 
@@ -481,6 +487,10 @@ class Network(object):
             a_qf = b_in_inv
             a_b = -b_in_inv.dot(b_b)
 
+            # Store coefficients
+            self._set_stored_coefficients(m_flow, cp, nSegments, (a_qf, a_b),
+                                          method_id)
+
         return a_qf, a_b
 
     def coefficients_network_outlet_temperature(self, m_flow, cp, nSegments):
@@ -530,6 +540,10 @@ class Network(object):
             m_flow[0,iOutlets] = self._m_flow_in/np.sum(self._m_flow_in)
             a_in = m_flow.dot(b_in)
             a_b = m_flow.dot(b_b)
+
+            # Store coefficients
+            self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
+                                          method_id)
 
         return a_in, a_b
 
@@ -589,6 +603,10 @@ class Network(object):
                  for i in range(self.nBoreholes)]
             a_in, a_b = self._network_coefficients_from_pipe_coefficients(B, C)
 
+            # Store coefficients
+            self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
+                                          method_id)
+
         return a_in, a_b
 
     def coefficients_fluid_heat_extraction_rate(self, m_flow, cp, nSegments):
@@ -646,6 +664,10 @@ class Network(object):
                  for i in range(self.nBoreholes)]
             a_in, a_b = self._network_coefficients_from_pipe_coefficients(B, C)
 
+            # Store coefficients
+            self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
+                                          method_id)
+
         return a_in, a_b
 
     def coefficients_network_heat_extraction_rate(self, m_flow, cp, nSegments):
@@ -695,6 +717,10 @@ class Network(object):
                     m_flow, cp, nSegments)
             a_in = np.reshape(np.sum(b_in, axis=0), (1,-1))
             a_b = np.reshape(np.sum(b_b, axis=0), (1,-1))
+
+            # Store coefficients
+            self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
+                                          method_id)
 
         return a_in, a_b
 
