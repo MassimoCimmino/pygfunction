@@ -6,6 +6,10 @@
 
 * [Issue 47](https://github.com/MassimoCimmino/pygfunction/issues/47) - Added verification of the validity of pipe geometry to pipe classes. Extended visualization of the borehole cross-section.
 
+### Enhancements
+
+* [Issue 59](https://github.com/MassimoCimmino/pygfunction/issues/59) - Use a relative tolerance instead of an absolute tolerance in the identification of borehole pair similarities. This provides faster execution times and similar accuracy.
+
 ### Bug fixes
 
 * [Issue 58](https://github.com/MassimoCimmino/pygfunction/issues/58) - Store matrix coefficients in `Network` class methods for re-use when inlet conditions are constant.
