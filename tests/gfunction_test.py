@@ -214,7 +214,7 @@ class TestEqualInletTemperature(unittest.TestCase):
         g = np.zeros_like(g_ref)
         for i in range(len(Rb)):
             UTubes = [SingleUTube(
-                    pos, r_in, r_out, borehole, self.k_s, k_g, 0., J=0)
+                    pos, r_in, r_out, borehole, self.k_s, k_g, 1e-30, J=0)
                       for borehole in boreField]
             # Overwrite borehole resistances
             Rd_00 = 2*Rb[i]
@@ -266,7 +266,7 @@ class TestEqualInletTemperature(unittest.TestCase):
                                     self.H, self.D, self.r_b)
         g = np.zeros_like(g_ref)
         UTubes = [SingleUTube(
-                pos, r_in, r_out, borehole, self.k_s, k_g, 0., J=0)
+                pos, r_in, r_out, borehole, self.k_s, k_g, 1e-30, J=0)
                   for borehole in boreField]
         # Overwrite borehole resistances
         Rd_00 = 2*Rb
