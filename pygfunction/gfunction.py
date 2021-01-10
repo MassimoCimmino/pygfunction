@@ -5,10 +5,93 @@ import time as tim
 import numpy as np
 from scipy.constants import pi
 from scipy.interpolate import interp1d as interp1d
+import multiprocessing
 
 from .boreholes import Borehole
 from .heat_transfer import thermal_response_factors
 from .networks import network_thermal_resistance
+
+class gFunction:
+    def __init__(self, **kwargs):
+
+        self.boreholes = []                     # type: list
+        self.time = np.array([])                # type: np.ndarray or float
+        self.alpha = 0.                         # type: float
+        self.nSegments = 12
+        self.method = 'linear'
+        self.use_similarities = True            # type: bool
+        self.disTol = 0.1                       # type: float
+        self.tol = 1.0e-6                       # type: float
+        self.processes = multiprocessing.cpu_count()    # type: int
+        self.disp = False                       # type: bool
+
+        # set what variables are given to the instances of this object
+        variables = vars(self)  # get a list of acceptable variables (the ones initialized above)
+        for key in kwargs:  # loop through the arguments passed into the object
+            if key in variables:  # if the key is an instance of this class
+                setattr(self, key, kwargs[key])  # set the instance to the value provided in kwargs
+            else:  # if false then warn the user that the current key is not an acceptable input for this object
+                raise ValueError('The input {} is not an acceptable input for this class.'.format(key))
+
+    def compute_g_function(self, boundary_condition):
+        """
+        Compute the g-function based on the boundary condition supplied
+        Parameters
+        ----------
+        boundary_condition : str
+            A string denoting the g-function to be computed
+
+        Returns
+        -------
+        gFunction : float or array
+            Values of the g-function
+        """
+        self.check_assertions()  # check to make sure none of the instances in the class has an undesired type
+        # provide a list of acceptable boundary conditions
+        acceptable_boundary_conditions = ['UHF', 'UBHWT', 'UIFT']
+        # if the boundary condition specified is not one of the acceptable ones, then warn the user
+        if boundary_condition not in acceptable_boundary_conditions:
+            raise ValueError('Boundary condition specified is not an acceptable boundary condition. \n'
+                             'Please provide one of the following inputs for boundary condition: {}'.\
+                             format(acceptable_boundary_conditions))
+
+        if boundary_condition == 'UHF':
+            # compute g-function for uniform heat flux boundary condition
+            g = uniform_heat_extraction(self.boreholes, self.time, self.alpha, use_similarities=self.use_similarities,
+                                        disTol=self.disTol, tol=self.tol, processes=self.processes, disp=self.disp)
+        elif boundary_condition == 'UBHWT':
+            # compute g-function for uniform borehole wall temperature boundary condition
+            g = uniform_temperature(self.boreholes, self.time, self.alpha, nSegments=self.nSegments,
+                                    method=self.method, use_similarities=self.use_similarities, disTol=self.disTol,
+                                    tol=self.tol, processes=self.processes, disp=self.disp)
+        elif boundary_condition == 'UIFT':
+            # compute g-function for uniform inlet fluid temperature boundary condition
+            a = 1
+        else:
+            raise ValueError('The exact error is questionable. Please double check your inputs.')
+
+        return g
+
+    def check_assertions(self):
+        """
+        This method ensures that the instances filled in the gFunction object are what is expected.
+        Returns
+        -------
+        None
+        """
+        assert isinstance(self.boreholes, list)     # boreholes must be in a list
+        assert len(self.boreholes) > 0              # there must be atleast one borehole location
+        assert type(self.boreholes[0] is Borehole)  # the list of boreholes must be made up of borehole objects
+        assert type(self.time) is np.ndarray or type(self.time) is float
+        assert type(self.alpha) is float
+        assert type(self.nSegments) is int
+        assert type(self.method) is str
+        assert type(self.use_similarities) is bool
+        assert type(self.disTol) is float
+        assert type(self.tol) is float
+        assert type(self.processes) is int
+        assert type(self.disp) is bool
+        return
 
 
 def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
