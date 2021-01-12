@@ -25,6 +25,22 @@ class Network(object):
         connected to the bore field inlet. If this parameter is not provided,
         parallel connections between boreholes is used.
         Default is None.
+    m_flow : float or array, optional
+        Total mass flow rate into the network or inlet mass flow rates
+        into each circuit of the network (in kg/s). If a float is supplied,
+        the total mass flow rate is split equally into all circuits. This
+        parameter is used to initialize the coefficients if it is provided.
+        Default is None.
+    cp : float or array, optional
+        Fluid specific isobaric heat capacity (in J/kg.degC). ust be the same
+        for all circuits (a single float can be supplied). This parameter is
+        used to initialize the coefficients if it is provided.
+        Default is None.
+    nSegments : int, optional
+        Number of line segments used per borehole. This parameter is used to
+        initialize the coefficients if it is provided.
+        Default is None.
+    
 
     References
     ----------
@@ -34,7 +50,8 @@ class Network(object):
        2018. Stockholm, Sweden. pp. 262-270.
 
     """
-    def __init__(self, boreholes, pipes, bore_connectivity=None):
+    def __init__(self, boreholes, pipes, bore_connectivity=None, m_flow=None,
+                 cp=None, nSegments=None):
         self.b = boreholes
         self.nBoreholes = len(boreholes)
         self.p = pipes
@@ -57,7 +74,7 @@ class Network(object):
         self.iCircuit = iCircuit
 
         # Initialize stored_coefficients
-        self._initialize_stored_coefficients()
+        self._initialize_stored_coefficients(m_flow, cp, nSegments)
 
     def get_inlet_temperature(self, Tin, Tb, m_flow, cp, nSegments):
         """
@@ -802,7 +819,7 @@ class Network(object):
 
         return a_in, a_b
 
-    def _initialize_stored_coefficients(self):
+    def _initialize_stored_coefficients(self, m_flow, cp, nSegments):
         nMethods = 7    # Number of class methods
         self._stored_coefficients = [() for i in range(nMethods)]
         self._stored_m_flow_cp = [np.empty(self.nInlets)
@@ -810,6 +827,17 @@ class Network(object):
         self._stored_nSegments = [np.nan for i in range(nMethods)]
         self._m_flow_cp_model_variables = np.empty(self.nInlets)
         self._nSegments_model_variables = np.nan
+
+        # If m_flow, cp, and nSegments are specified, evaluate and store all
+        # matrix coefficients.
+        if m_flow is not None and cp is not None and nSegments is not None:
+            coefficients_inlet_temperature(m_flow, cp, nSegments)
+            coefficients_outlet_temperature(m_flow, cp, nSegments)
+            coefficients_network_inlet_temperature(m_flow, cp, nSegments)
+            coefficients_network_outlet_temperature(m_flow, cp, nSegments)
+            coefficients_borehole_heat_extraction_rate(m_flow, cp, nSegments)
+            coefficients_fluid_heat_extraction_rate(m_flow, cp, nSegments)
+            coefficients_network_heat_extraction_rate(m_flow, cp, nSegments)
 
         return
 
