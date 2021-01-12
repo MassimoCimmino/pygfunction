@@ -20,10 +20,11 @@ class Network(object):
         List of boreholes included in the bore field.
     pipes : list of pipe objects
         List of pipes included in the bore field.
-    bore_connectivity : list
+    bore_connectivity : list, optional
         Index of fluid inlet into each borehole. -1 corresponds to a borehole
         connected to the bore field inlet. If this parameter is not provided,
         parallel connections between boreholes is used.
+        Default is None.
 
     References
     ----------
