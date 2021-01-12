@@ -33,11 +33,11 @@ class Network(object):
        2018. Stockholm, Sweden. pp. 262-270.
 
     """
-    def __init__(self, boreholes, pipes, bore_connectivity='None'):
+    def __init__(self, boreholes, pipes, bore_connectivity=None):
         self.b = boreholes
         self.nBoreholes = len(boreholes)
         self.p = pipes
-        if bore_connectivity == 'None':
+        if bore_connectivity is None:
             bore_connectivity = [-1]*self.nBoreholes
         self.c = bore_connectivity
 
