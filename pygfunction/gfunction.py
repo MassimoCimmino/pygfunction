@@ -77,7 +77,7 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
     # Initialize heat extraction rates
     Q = np.ones(nBoreholes)
     # Initialize g-function
-    gFunction = np.zeros_like(np.atleast_1d(time))
+    gFunction = np.zeros(nt)
     # Borehole lengths
     H = np.array([b.H for b in boreholes])
 
@@ -191,7 +191,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
     # Number of time values
     nt = len(np.atleast_1d(time))
     # Initialize g-function
-    gFunction = np.zeros_like(np.atleast_1d(time))
+    gFunction = np.zeros(nt)
     # Initialize segment heat extraction rates
     Q = np.zeros((nSources, nt))
 
@@ -359,7 +359,7 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
     # Number of time values
     nt = len(np.atleast_1d(time))
     # Initialize g-function
-    gFunction = np.zeros_like(np.atleast_1d(time))
+    gFunction = np.zeros(nt)
     # Initialize segment heat extraction rates
     Q = np.zeros((nSources, nt))
 
@@ -567,7 +567,7 @@ def mixed_inlet_temperature(network, m_flow, cp,
     # Number of time values
     nt = len(np.atleast_1d(time))
     # Initialize g-function
-    gFunction = np.zeros_like(np.atleast_1d(time))
+    gFunction = np.zeros(nt)
     # Initialize segment heat extraction rates
     Q = np.zeros((nSources, nt))
 
