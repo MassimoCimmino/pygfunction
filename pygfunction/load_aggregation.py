@@ -346,20 +346,6 @@ class MLAA(_LoadAggregation):
             end = self._n4
             self.Q4 = np.mean(self.Q[:, start:end], axis=1)
 
-    def get_thermal_response_factor_increment(self):
-        """
-        Returns a matrix of the **dimensional** thermal response factors.
-
-        Returns
-        -------
-        thermal_response_factor_increment : matrix
-            Matrix of **dimensional** thermal response factors used for temporal
-            superposition, in correspondance with the value input in the initialize
-            function (:math:`g(t_{i+1})/(2 \pi k_s) - g(t_{i})/(2 \pi k_s)`).
-
-        """
-        return self.dg
-
     def get_times_for_simulation(self):
         """
         Returns a vector of time values at which the thermal response factors
@@ -607,20 +593,6 @@ class Liu(_LoadAggregation):
                     self.Q3[:,0] = np.mean(self.Q2[:,self._n2-self.N3:self._n2], axis=1)
                     # Remove the N3 latest medium cells
                     self._n2 += -self.N3
-
-    def get_thermal_response_factor_increment(self):
-        """
-        Returns a matrix of the **dimensional** thermal response factors.
-
-        Returns
-        -------
-        thermal_response_factor_increment : matrix
-            Matrix of **dimensional** thermal response factors used for temporal
-            superposition, in correspondance with the value input in the initialize
-            function (:math:`g(t_{i+1})/(2 \pi k_s) - g(t_{i})/(2 \pi k_s)`).
-
-        """
-        return self.dg
 
     def get_times_for_simulation(self):
         """
