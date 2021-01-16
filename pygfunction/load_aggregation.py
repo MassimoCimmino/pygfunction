@@ -135,13 +135,18 @@ class ClaessonJaved(_LoadAggregation):
 
         Returns
         -------
-        thermal_response_factor_increment : matrix
-            Matrix of **dimensional** thermal response factors used for temporal
-            superposition, in correspondance with the value input in the initialize
-            function (:math:`g(t_{i+1})/(2 \pi k_s) - g(t_{i})/(2 \pi k_s)`).
+        dg : array
+            Matrix of **dimensional** thermal response factor increments used
+            for temporal superposition 
+            (:math:`g(t_{i+1})/(2 \pi k_s) - g(t_{i})/(2 \pi k_s)`),
+            in correspondance with the intialized values of the thermal
+            response factors in 
+            :func:`~load_aggregation.ClaessonJaved.initialize`.
+            The output size of the array is (nSources, nSources, Nt) if
+            nSources>1. If nSources=1, then the method returns a 1d array.
 
         """
-        return self.dg
+        return self.dg.flatten()
 
     def get_times_for_simulation(self):
         """
