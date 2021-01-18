@@ -13,6 +13,7 @@
 ### Bug fixes
 
 * [Issue 58](https://github.com/MassimoCimmino/pygfunction/issues/58) - Store matrix coefficients in `Network` class methods for re-use when inlet conditions are constant.
+* [Issue 64](https://github.com/MassimoCimmino/pygfunction/issues/64) - Fixed an issue where the g-function was returned as an array of integers if time values were integers.
 
 ## Version 1.1.1 (2020-06-20)
 
