@@ -131,12 +131,12 @@ class ClaessonJaved(_LoadAggregation):
 
     def get_thermal_response_factor_increment(self):
         """
-        Returns a matrix of the **dimensional** thermal response factors.
+        Returns an array of the **dimensional** thermal response factors.
 
         Returns
         -------
         dg : array
-            Matrix of **dimensional** thermal response factor increments used
+            Array of **dimensional** thermal response factor increments used
             for temporal superposition 
             (:math:`g(t_{i+1})/(2 \pi k_s) - g(t_{i})/(2 \pi k_s)`),
             in correspondance with the intialized values of the thermal
