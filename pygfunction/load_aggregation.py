@@ -146,7 +146,11 @@ class ClaessonJaved(_LoadAggregation):
             nSources>1. If nSources=1, then the method returns a 1d array.
 
         """
-        return self.dg.flatten()
+        if self.nSources == 1:
+            dg = self.dg.flatten()
+        else:
+            dg = self.dg
+        return dg
 
     def get_times_for_simulation(self):
         """
