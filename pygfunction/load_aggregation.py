@@ -129,6 +129,29 @@ class ClaessonJaved(_LoadAggregation):
         # Set the aggregated load of cell (0) to zero.
         self.Q[:,0:1] = 0.
 
+    def get_thermal_response_factor_increment(self):
+        """
+        Returns an array of the **dimensional** thermal response factors.
+
+        Returns
+        -------
+        dg : array
+            Array of **dimensional** thermal response factor increments used
+            for temporal superposition 
+            (:math:`g(t_{i+1})/(2 \pi k_s) - g(t_{i})/(2 \pi k_s)`),
+            in correspondance with the intialized values of the thermal
+            response factors in 
+            :func:`~load_aggregation.ClaessonJaved.initialize`.
+            The output size of the array is (nSources, nSources, Nt) if
+            nSources>1. If nSources=1, then the method returns a 1d array.
+
+        """
+        if self.nSources == 1:
+            dg = self.dg.flatten()
+        else:
+            dg = self.dg
+        return dg
+
     def get_times_for_simulation(self):
         """
         Returns a vector of time values at which the thermal response factors
