@@ -5,72 +5,85 @@ import time as tim
 import numpy as np
 from scipy.constants import pi
 from scipy.interpolate import interp1d as interp1d
-import multiprocessing
 
 from .boreholes import Borehole
 from .heat_transfer import thermal_response_factors
-from .networks import network_thermal_resistance
+from .networks import Network, network_thermal_resistance
 
 class gFunction:
-    def __init__(self, **kwargs):
+    def __init__(self, boreholes_or_network, alpha, time=None,
+                 method='similarities', boundary_condition=None, options=None):
+        # Check if the input is a Network object
+        if isinstance(boreholes_or_network, Network):
+            self.network = boreholes_or_network
+            self.boreholes = boreholes_or_network.b
+            if boundary_condition is None:
+                self.boundary_condition = 'MIFT'
+        else:
+            self.network = None
+            self.boreholes = boreholes_or_network
+            if boundary_condition is None:
+                self.boundary_condition = 'UBWT'
+        self.alpha = alpha
+        self.time = time
+        self.method = method
+        if self.method.lower()=='similarities':
+            self.use_similarities = True
+        else:
+            self.use_similarities = False
+        self.options=options
+        if self.time is not None:
+            self.evaluate_g_function(self.time)
 
-        self.boreholes = []                     # type: list
-        self.time = np.array([])                # type: np.ndarray or float
-        self.alpha = 0.                         # type: float
-        self.nSegments = 12
-        self.method = 'linear'
-        self.use_similarities = True            # type: bool
-        self.disTol = 0.1                       # type: float
-        self.tol = 1.0e-6                       # type: float
-        self.processes = multiprocessing.cpu_count()    # type: int
-        self.disp = False                       # type: bool
-
-        # set what variables are given to the instances of this object
-        variables = vars(self)  # get a list of acceptable variables (the ones initialized above)
-        for key in kwargs:  # loop through the arguments passed into the object
-            if key in variables:  # if the key is an instance of this class
-                setattr(self, key, kwargs[key])  # set the instance to the value provided in kwargs
-            else:  # if false then warn the user that the current key is not an acceptable input for this object
-                raise ValueError('The input {} is not an acceptable input for this class.'.format(key))
-
-    def compute_g_function(self, boundary_condition):
+    def evaluate_g_function(self, time):
         """
         Compute the g-function based on the boundary condition supplied
         Parameters
         ----------
-        boundary_condition : str
-            A string denoting the g-function to be computed
+        time : float or array, optional
+            Values of time (in seconds) for which the g-function is evaluated.
 
         Returns
         -------
         gFunction : float or array
             Values of the g-function
         """
-        self.check_assertions()  # check to make sure none of the instances in the class has an undesired type
+        self.time = time
+        # self.check_assertions()  # check to make sure none of the instances in the class has an undesired type
         # provide a list of acceptable boundary conditions
-        acceptable_boundary_conditions = ['UHF', 'UBHWT', 'UIFT']
+        acceptable_boundary_conditions = ['UHTR', 'UBWT', 'MIFT']
         # if the boundary condition specified is not one of the acceptable ones, then warn the user
-        if boundary_condition not in acceptable_boundary_conditions:
+        if self.boundary_condition not in acceptable_boundary_conditions:
             raise ValueError('Boundary condition specified is not an acceptable boundary condition. \n'
                              'Please provide one of the following inputs for boundary condition: {}'.\
                              format(acceptable_boundary_conditions))
 
-        if boundary_condition == 'UHF':
+        if self.boundary_condition == 'UHTR':
             # compute g-function for uniform heat flux boundary condition
-            g = uniform_heat_extraction(self.boreholes, self.time, self.alpha, use_similarities=self.use_similarities,
-                                        disTol=self.disTol, tol=self.tol, processes=self.processes, disp=self.disp)
-        elif boundary_condition == 'UBHWT':
+            self.gFunc = uniform_heat_extraction(self.boreholes,
+                                        self.time,
+                                        self.alpha,
+                                        use_similarities=self.use_similarities,
+                                        **self.options)
+        elif self.boundary_condition == 'UBWT':
             # compute g-function for uniform borehole wall temperature boundary condition
-            g = uniform_temperature(self.boreholes, self.time, self.alpha, nSegments=self.nSegments,
-                                    method=self.method, use_similarities=self.use_similarities, disTol=self.disTol,
-                                    tol=self.tol, processes=self.processes, disp=self.disp)
-        elif boundary_condition == 'UIFT':
+            self.gFunc = uniform_temperature(self.boreholes,
+                                    self.time,
+                                    self.alpha,
+                                    use_similarities=self.use_similarities,
+                                    **self.options)
+        elif self.boundary_condition == 'MIFT':
             # compute g-function for uniform inlet fluid temperature boundary condition
-            a = 1
+            self.gFunc = mixed_inlet_temperature(self.network,
+                                        self.network.m_flow,
+                                        self.network.cp,
+                                        self.time,
+                                        self.alpha,
+                                        **self.options)
         else:
             raise ValueError('The exact error is questionable. Please double check your inputs.')
 
-        return g
+        return self.gFunc
 
     def check_assertions(self):
         """
@@ -96,7 +109,7 @@ class gFunction:
 
 def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
                             disTol=0.01, tol=1.0e-6, processes=None,
-                            disp=False):
+                            disp=False, **kwargs):
     """
     Evaluate the g-function with uniform heat extraction along boreholes.
 
@@ -195,7 +208,7 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
 
 def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
                         use_similarities=True, disTol=0.01, tol=1.0e-6,
-                        processes=None, disp=False):
+                        processes=None, disp=False, **kwargs):
     """
     Evaluate the g-function with uniform borehole wall temperature.
 
@@ -357,7 +370,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
 def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
                             method='linear', nSegments=12,
                             use_similarities=True, disTol=0.01, tol=1.0e-6,
-                            processes=None, disp=False):
+                            processes=None, disp=False, **kwargs):
     """
     Evaluate the g-function with equal inlet fluid temperatures.
 
@@ -552,7 +565,7 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
 def mixed_inlet_temperature(network, m_flow, cp,
                             time, alpha, method='linear', nSegments=12,
                             use_similarities=True, disTol=0.01, tol=1.0e-6,
-                            processes=None, disp=False):
+                            processes=None, disp=False, **kwargs):
     """
     Evaluate the g-function with mixed inlet fluid temperatures.
 
