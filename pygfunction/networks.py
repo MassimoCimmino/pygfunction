@@ -58,6 +58,8 @@ class Network(object):
         if bore_connectivity is None:
             bore_connectivity = [-1]*self.nBoreholes
         self.c = bore_connectivity
+        self.m_flow = m_flow
+        self.cp = cp
 
         # Verify that borehole connectivity is valid
         _verify_bore_connectivity(bore_connectivity, self.nBoreholes)
@@ -831,13 +833,13 @@ class Network(object):
         # If m_flow, cp, and nSegments are specified, evaluate and store all
         # matrix coefficients.
         if m_flow is not None and cp is not None and nSegments is not None:
-            coefficients_inlet_temperature(m_flow, cp, nSegments)
-            coefficients_outlet_temperature(m_flow, cp, nSegments)
-            coefficients_network_inlet_temperature(m_flow, cp, nSegments)
-            coefficients_network_outlet_temperature(m_flow, cp, nSegments)
-            coefficients_borehole_heat_extraction_rate(m_flow, cp, nSegments)
-            coefficients_fluid_heat_extraction_rate(m_flow, cp, nSegments)
-            coefficients_network_heat_extraction_rate(m_flow, cp, nSegments)
+            self.coefficients_inlet_temperature(m_flow, cp, nSegments)
+            self.coefficients_outlet_temperature(m_flow, cp, nSegments)
+            self.coefficients_network_inlet_temperature(m_flow, cp, nSegments)
+            self.coefficients_network_outlet_temperature(m_flow, cp, nSegments)
+            self.coefficients_borehole_heat_extraction_rate(m_flow, cp, nSegments)
+            self.coefficients_fluid_heat_extraction_rate(m_flow, cp, nSegments)
+            self.coefficients_network_heat_extraction_rate(m_flow, cp, nSegments)
 
         return
 
