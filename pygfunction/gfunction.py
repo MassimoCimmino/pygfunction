@@ -95,7 +95,7 @@ class gFunction:
 
 
 def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
-                            disTol=0.1, tol=1.0e-6, processes=None,
+                            disTol=0.01, tol=1.0e-6, processes=None,
                             disp=False):
     """
     Evaluate the g-function with uniform heat extraction along boreholes.
@@ -115,10 +115,10 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
         True if similarities are used to limit the number of FLS evaluations.
         Default is True.
     disTol : float, optional
-        Absolute tolerance (in meters) on radial distance. Two distances
+        Relative tolerance on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
         difference between the two distances (abs(d1-d2)) is below tolerance.
-        Default is 0.1.
+        Default is 0.01.
     tol : float, optional
         Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
@@ -160,7 +160,7 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
     # Initialize heat extraction rates
     Q = np.ones(nBoreholes)
     # Initialize g-function
-    gFunction = np.zeros_like(np.atleast_1d(time))
+    gFunction = np.zeros(nt)
     # Borehole lengths
     H = np.array([b.H for b in boreholes])
 
@@ -194,7 +194,7 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
 
 
 def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
-                        use_similarities=True, disTol=0.1, tol=1.0e-6,
+                        use_similarities=True, disTol=0.01, tol=1.0e-6,
                         processes=None, disp=False):
     """
     Evaluate the g-function with uniform borehole wall temperature.
@@ -223,10 +223,10 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
         True if similarities are used to limit the number of FLS evaluations.
         Default is True.
     disTol : float, optional
-        Absolute tolerance (in meters) on radial distance. Two distances
+        Relative tolerance on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
         difference between the two distances (abs(d1-d2)) is below tolerance.
-        Default is 0.1.
+        Default is 0.01.
     tol : float, optional
         Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
@@ -274,7 +274,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
     # Number of time values
     nt = len(np.atleast_1d(time))
     # Initialize g-function
-    gFunction = np.zeros_like(np.atleast_1d(time))
+    gFunction = np.zeros(nt)
     # Initialize segment heat extraction rates
     Q = np.zeros((nSources, nt))
 
@@ -356,7 +356,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
 
 def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
                             method='linear', nSegments=12,
-                            use_similarities=True, disTol=0.1, tol=1.0e-6,
+                            use_similarities=True, disTol=0.01, tol=1.0e-6,
                             processes=None, disp=False):
     """
     Evaluate the g-function with equal inlet fluid temperatures.
@@ -391,10 +391,10 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
         True if similarities are used to limit the number of FLS evaluations.
         Default is True.
     disTol : float, optional
-        Absolute tolerance (in meters) on radial distance. Two distances
+        Relative tolerance on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
         difference between the two distances (abs(d1-d2)) is below tolerance.
-        Default is 0.1.
+        Default is 0.01.
     tol : float, optional
         Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
@@ -442,7 +442,7 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
     # Number of time values
     nt = len(np.atleast_1d(time))
     # Initialize g-function
-    gFunction = np.zeros_like(np.atleast_1d(time))
+    gFunction = np.zeros(nt)
     # Initialize segment heat extraction rates
     Q = np.zeros((nSources, nt))
 
@@ -551,7 +551,7 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
 
 def mixed_inlet_temperature(network, m_flow, cp,
                             time, alpha, method='linear', nSegments=12,
-                            use_similarities=True, disTol=0.1, tol=1.0e-6,
+                            use_similarities=True, disTol=0.01, tol=1.0e-6,
                             processes=None, disp=False):
     """
     Evaluate the g-function with mixed inlet fluid temperatures.
@@ -588,10 +588,10 @@ def mixed_inlet_temperature(network, m_flow, cp,
         True if similarities are used to limit the number of FLS evaluations.
         Default is True.
     disTol : float, optional
-        Absolute tolerance (in meters) on radial distance. Two distances
+        Relative tolerance on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
         difference between the two distances (abs(d1-d2)) is below tolerance.
-        Default is 0.1.
+        Default is 0.01.
     tol : float, optional
         Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
@@ -650,7 +650,7 @@ def mixed_inlet_temperature(network, m_flow, cp,
     # Number of time values
     nt = len(np.atleast_1d(time))
     # Initialize g-function
-    gFunction = np.zeros_like(np.atleast_1d(time))
+    gFunction = np.zeros(nt)
     # Initialize segment heat extraction rates
     Q = np.zeros((nSources, nt))
 
