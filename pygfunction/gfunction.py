@@ -1,13 +1,15 @@
 from __future__ import absolute_import, division, print_function
 
 import time as tim
+from functools import partial
+from multiprocessing import Pool
 
 import numpy as np
 from scipy.constants import pi
 from scipy.interpolate import interp1d as interp1d
 
 from .boreholes import Borehole
-from .heat_transfer import thermal_response_factors
+from .heat_transfer import thermal_response_factors, finite_line_source
 from .networks import Network, network_thermal_resistance
 
 class gFunction:
