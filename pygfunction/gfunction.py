@@ -40,7 +40,7 @@ class gFunction:
         Compute the g-function based on the boundary condition supplied
         Parameters
         ----------
-        time : float or array, optional
+        time : float or array
             Values of time (in seconds) for which the g-function is evaluated.
 
         Returns
@@ -49,40 +49,8 @@ class gFunction:
             Values of the g-function
         """
         self.time = time
-        # self.check_assertions()  # check to make sure none of the instances in the class has an undesired type
-        # provide a list of acceptable boundary conditions
-        acceptable_boundary_conditions = ['UHTR', 'UBWT', 'MIFT']
-        # if the boundary condition specified is not one of the acceptable ones, then warn the user
-        if self.boundary_condition not in acceptable_boundary_conditions:
-            raise ValueError('Boundary condition specified is not an acceptable boundary condition. \n'
-                             'Please provide one of the following inputs for boundary condition: {}'.\
-                             format(acceptable_boundary_conditions))
-
-        if self.boundary_condition == 'UHTR':
-            # compute g-function for uniform heat flux boundary condition
-            self.gFunc = uniform_heat_extraction(self.boreholes,
-                                        self.time,
-                                        self.alpha,
-                                        use_similarities=self.use_similarities,
-                                        **self.options)
-        elif self.boundary_condition == 'UBWT':
-            # compute g-function for uniform borehole wall temperature boundary condition
-            self.gFunc = uniform_temperature(self.boreholes,
-                                    self.time,
-                                    self.alpha,
-                                    use_similarities=self.use_similarities,
-                                    **self.options)
-        elif self.boundary_condition == 'MIFT':
-            # compute g-function for uniform inlet fluid temperature boundary condition
-            self.gFunc = mixed_inlet_temperature(self.network,
-                                        self.network.m_flow,
-                                        self.network.cp,
-                                        self.time,
-                                        self.alpha,
-                                        **self.options)
-        else:
-            raise ValueError('The exact error is questionable. Please double check your inputs.')
-
+        # TODO : self.check_assertions()  # check to make sure none of the instances in the class has an undesired type (Acceptable boundary conditions should be checked here ((?)))
+        self.gFunc = self.solver.solve(time, self.alpha)
         return self.gFunc
 
     def check_assertions(self):
