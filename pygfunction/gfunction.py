@@ -107,6 +107,167 @@ class gFunction:
         return
 
 
+class _BaseSolver(object):
+    def __init__(self, boreholes, network, time, boundary_condition, nSegments=12, processes=None, disp=False, profiles=False, **other_options):
+        self.boreholes = boreholes
+        self.network = network
+        self.time = np.atleast_1d(time).flatten()
+        self.boundary_condition = boundary_condition
+        self.nSegments = nSegments
+        self.processes = processes
+        self.disp = disp
+        self.profiles = profiles
+        self.nSources = self.initialize(**other_options)
+        # provide a list of acceptable boundary conditions
+        acceptable_boundary_conditions = ['UHTR', 'UBWT', 'MIFT']
+        # if the boundary condition specified is not one of the acceptable ones, then warn the user
+        if self.boundary_condition not in acceptable_boundary_conditions:
+            raise ValueError('Boundary condition specified is not an acceptable boundary condition. \n'
+                             'Please provide one of the following inputs for boundary condition: {}'.\
+                             format(acceptable_boundary_conditions))
+        return
+
+    def solve(self, time, alpha):
+        # Number of time values
+        nt = len(self.time)
+        # Initialize g-function
+        gFunc = np.zeros(nt)
+        # Initialize segment heat extraction rates
+        if self.boundary_condition == 'UHTR':
+            Q = 1
+        else:
+            Q = np.zeros((self.nSources, nt))
+        if self.boundary_condition == 'UBWT':
+            Tb = np.zeros(nt)
+        else:
+            Tb = np.zeros((self.nSources, nt))
+        # Calculate segment to segment thermal response factors
+        h_ij = self.thermal_response_factors(time, alpha)
+        # Segment lengths
+        Hb = self.segment_lengths()
+        Htot = np.sum(Hb)
+        if self.disp: print('Building and solving the system of equations ...')
+        # Initialize chrono
+        tic = tim.time()
+
+        # Build and solve the system of equations at all times
+        for p in range(nt):
+            if self.boundary_condition == 'UHTR':
+                # compute g-function for uniform heat flux boundary condition
+                h_dt = h_ij.y[p+1]
+                Tb[:,p] = np.sum(h_dt, axis=1).flatten()
+                gFunc[p] = Tb.dot(Hb)/np.sum(Htot)
+            else:
+                # Current thermal response factor matrix
+                if p > 0:
+                    dt = self.time[p] - self.time[p-1]
+                else:
+                    dt = self.time[p]
+                h_dt = h_ij(dt)
+                # Reconstructed load history
+                Q_reconstructed = self.load_history_reconstruction(self.time[0:p+1], Q[:,0:p+1])
+                # Borehole wall temperature for zero heat extraction at current step
+                Tb_0 = self.temporal_superposition(h_ij.y[:,:,1:], Q_reconstructed)
+    
+                if self.boundary_condition == 'UBWT':
+                    # compute g-function for uniform borehole wall temperature boundary condition
+                    # Spatial superposition: [Tb] = [Tb0] + [h_ij_dt]*[Qb]
+                    # Energy conservation: sum([Q*Hb]) = sum([Hb])
+                    A = np.block([[h_dt, -np.ones((self.nSources, 1))],
+                                  [Hb, 0.]])
+                    B = np.hstack((-Tb_0, Htot))
+                    # Solve the system of equations
+                    X = np.linalg.solve(A, B)
+                    # Store calculated heat extraction rates
+                    Q[:,p] = X[0:self.nSources]
+                    # The borehole wall temperatures are equal for all segments
+                    Tb[p] = X[-1]
+                    gFunc[p] = Tb[p]
+                elif self.boundary_condition == 'MIFT':
+                    # compute g-function for uniform inlet fluid temperature boundary condition
+                    # Spatial superposition: [Tb] = [Tb0] + [h_ij_dt]*[Qb]
+                    # [Q_{b,i}] = [a_in]*[T_{f,in}] + [a_{b,i}]*[T_{b,i}]
+                    # Energy conservation: sum([Q*Hb]) = sum([Hb])
+                    a_in, a_b = self.network.coefficients_borehole_heat_extraction_rate(
+                            self.network.m_flow, self.network.cp, self.nSegments)
+                    k_s = self.network.p[0].k_s
+                    A = np.block([[h_dt, -np.eye(self.nSources), np.zeros((self.nSources, 1))],
+                                  [np.eye(self.nSources), a_b/(2.0*pi*k_s*np.atleast_2d(Hb).T), a_in/(2.0*pi*k_s*np.atleast_2d(Hb).T)],
+                                  [Hb, np.zeros(self.nSources + 1)]])
+                    B = np.hstack((-Tb_0, np.zeros(self.nSources), Htot))
+                    # Solve the system of equations
+                    X = np.linalg.solve(A, B)
+                    # Store calculated heat extraction rates
+                    Q[:,p] = X[0:self.nSources]
+                    Tb[:,p] = X[self.nSources:2*self.nSources]
+                    Tf_in = X[-1]
+                    Tf_out = Tf_in - 2*pi*self.network.p[0].k_s*Htot/(self.network.m_flow*self.network.cp)
+                    Tf = 0.5*(Tf_in + Tf_out)
+                    Rfield = network_thermal_resistance(self.network, self.network.m_flow, self.network.cp)
+                    Tb_eff = Tf - 2*pi*self.network.p[0].k_s*Rfield
+                    gFunc[p] = Tb_eff
+                if self.profiles:
+                    self.Q = Q
+                    self.Tb = Tb
+        toc = tim.time()
+        if self.disp: print('{} sec'.format(toc - tic))
+        return gFunc
+
+    def segment_lengths(self):
+        # Borehole lengths
+        H = np.array([b.H for b in self.boreSegments])
+        return H
+
+    def borehole_segments(self):
+        boreSegments = []
+        for b in self.boreholes:
+            for i in range(self.nSegments):
+                # Divide borehole into segments of equal length
+                H = b.H / self.nSegments
+                # Buried depth of the i-th segment
+                D = b.D + i * b.H / self.nSegments
+                # Add to list of segments
+                boreSegments.append(Borehole(H, D, b.r_b, b.x, b.y))
+        return boreSegments
+
+    def temporal_superposition(self, h_ij, Q_reconstructed):
+        # Number of heat sources
+        nSources = Q_reconstructed.shape[0]
+        # Number of time steps
+        nt = Q_reconstructed.shape[1]
+        # Borehole wall temperature
+        Tb_0 = np.zeros(nSources)
+        # Spatial and temporal superpositions
+        dQ = np.concatenate((Q_reconstructed[:,0:1],
+                             Q_reconstructed[:,1:]-Q_reconstructed[:,0:-1]),
+                            axis=1)
+        for it in range(nt):
+            Tb_0 += h_ij[:,:,it].dot(dQ[:,nt-it-1])
+        return Tb_0
+
+    def load_history_reconstruction(self, time, Q):
+        # Number of heat sources
+        nSources = Q.shape[0]
+        # Time step sizes
+        dt = np.hstack((time[0], time[1:]-time[:-1]))
+        # Time vector
+        t = np.hstack((0., time, time[-1] + time[0]))
+        # Inverted time step sizes
+        dt_reconstructed = dt[::-1]
+        # Reconstructed time vector
+        t_reconstructed = np.hstack((0., np.cumsum(dt_reconstructed)))
+        # Accumulated heat extracted
+        f = np.hstack((np.zeros((nSources, 1)), np.cumsum(Q*dt, axis=1)))
+        f = np.hstack((f, f[:,-1:]))
+        # Create interpolation object for accumulated heat extracted
+        sf = interp1d(t, f, kind='linear', axis=1)
+        # Reconstructed load history
+        Q_reconstructed = (sf(t_reconstructed[1:]) - sf(t_reconstructed[:-1])) \
+            / dt_reconstructed
+    
+        return Q_reconstructed
+
+
 def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
                             disTol=0.01, tol=1.0e-6, processes=None,
                             disp=False, **kwargs):
