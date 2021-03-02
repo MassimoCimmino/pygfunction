@@ -11,8 +11,9 @@ from .heat_transfer import thermal_response_factors
 from .networks import Network, network_thermal_resistance
 
 class gFunction:
-    def __init__(self, boreholes_or_network, alpha, time=None,
-                 method='similarities', boundary_condition=None, options=None):
+    def __init__(self, boreholes_or_network, alpha, time=None, UTubes=None,
+                 similarities=True, boundary_condition=None, m_flow=None, cp=None,
+                 options=None):
         # Check if the input is a Network object
         if isinstance(boreholes_or_network, Network):
             self.network = boreholes_or_network
@@ -24,16 +25,18 @@ class gFunction:
             self.boreholes = boreholes_or_network
             if boundary_condition is None:
                 self.boundary_condition = 'UBWT'
-        self.alpha = alpha
-        self.time = time
-        self.method = method
-        if self.method.lower()=='similarities':
-            self.use_similarities = True
-        else:
-            self.use_similarities = False
-        self.options=options
+            else:
+                self.boundary_condition = boundary_condition
+        self.alpha = alpha  # ground thermal diffusivity
+        self.time = time  # time array
+        self.UTubes = UTubes
+        self.use_similarities = similarities  # make use of similarities in the g-function calculation
+        self.options = options  # a dictionary of the options not _required_
+        self.m_flow = m_flow
+        self.cp = cp
+        self.gFunc = list()  # the g-function is initialized as an empty list
         if self.time is not None:
-            self.evaluate_g_function(self.time)
+            self.gFunc = self.evaluate_g_function(self.time)
 
     def evaluate_g_function(self, time):
         """
@@ -49,9 +52,8 @@ class gFunction:
             Values of the g-function
         """
         self.time = time
-        # self.check_assertions()  # check to make sure none of the instances in the class has an undesired type
         # provide a list of acceptable boundary conditions
-        acceptable_boundary_conditions = ['UHTR', 'UBWT', 'MIFT']
+        acceptable_boundary_conditions = ['UHTR', 'UBWT', 'EIFT', 'MIFT']
         # if the boundary condition specified is not one of the acceptable ones, then warn the user
         if self.boundary_condition not in acceptable_boundary_conditions:
             raise ValueError('Boundary condition specified is not an acceptable boundary condition. \n'
@@ -60,6 +62,8 @@ class gFunction:
 
         if self.boundary_condition == 'UHTR':
             # compute g-function for uniform heat flux boundary condition
+            if not self.check_assertions_basic():
+                raise ValueError('Ensure the inputs are proper.')
             self.gFunc = uniform_heat_extraction(self.boreholes,
                                         self.time,
                                         self.alpha,
@@ -67,11 +71,21 @@ class gFunction:
                                         **self.options)
         elif self.boundary_condition == 'UBWT':
             # compute g-function for uniform borehole wall temperature boundary condition
+            if not self.check_assertions_basic():
+                raise ValueError('Ensure the inputs are proper.')
             self.gFunc = uniform_temperature(self.boreholes,
-                                    self.time,
-                                    self.alpha,
-                                    use_similarities=self.use_similarities,
-                                    **self.options)
+                                             self.time,
+                                             self.alpha,
+                                             use_similarities=self.use_similarities,
+                                             **self.options)
+        elif self.boundary_condition == 'EIFT':
+            # compute g-function for equal inlet fluid temperature boundary condition
+            self.gFunc = equal_inlet_temperature(self.boreholes,
+                                                 self.UTubes,
+                                                 self.m_flow,
+                                                 self.cp,
+                                                 self.time,
+                                                 self.alpha)
         elif self.boundary_condition == 'MIFT':
             # compute g-function for uniform inlet fluid temperature boundary condition
             self.gFunc = mixed_inlet_temperature(self.network,
@@ -85,6 +99,17 @@ class gFunction:
 
         return self.gFunc
 
+    def check_assertions_basic(self):
+        # the most basic assertions occur here
+        assert isinstance(self.boreholes, list)  # boreholes must be in a list
+        assert len(self.boreholes) > 0  # there must be atleast one borehole location
+        assert type(self.boreholes[0] is Borehole)  # the list of boreholes must be made up of borehole objects
+        assert type(self.time) is np.ndarray or type(self.time) is float
+        assert type(self.alpha) is float
+        assert type(self.boundary_condition) is str
+        assert type(self.use_similarities) is bool
+        return True
+
     def check_assertions(self):
         """
         This method ensures that the instances filled in the gFunction object are what is expected.
@@ -92,14 +117,7 @@ class gFunction:
         -------
         None
         """
-        assert isinstance(self.boreholes, list)     # boreholes must be in a list
-        assert len(self.boreholes) > 0              # there must be atleast one borehole location
-        assert type(self.boreholes[0] is Borehole)  # the list of boreholes must be made up of borehole objects
-        assert type(self.time) is np.ndarray or type(self.time) is float
-        assert type(self.alpha) is float
         assert type(self.nSegments) is int
-        assert type(self.method) is str
-        assert type(self.use_similarities) is bool
         assert type(self.disTol) is float
         assert type(self.tol) is float
         assert type(self.processes) is int
