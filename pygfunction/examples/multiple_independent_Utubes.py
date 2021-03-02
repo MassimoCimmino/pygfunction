@@ -46,7 +46,7 @@ def main():
     k_g = 1.0           # Grout thermal conductivity (W/m.K)
 
     # Fluid properties
-    R_fp = 0.0          # Fluid to outer pipe wall thermal resistance (m.K/W)
+    R_fp = 1e-30        # Fluid to outer pipe wall thermal resistance (m.K/W)
     # Fluid specific isobaric heat capacity per U-tube (J/kg.K)
     cp = 4000.*np.ones(nPipes)
 

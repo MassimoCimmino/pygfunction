@@ -60,8 +60,9 @@ def main():
     visc_f = fluid.mu   # Fluid dynamic viscosity (kg/m.s)
     k_f = fluid.k       # Fluid thermal conductivity (W/m.K)
 
-    # Number of segments per borehole
+    # g-Function calculation options
     nSegments = 12
+    options = {'nSegments':nSegments, 'disp':True, 'profiles':True}
 
     # Geometrically expanding time vector.
     dt = 100*3600.                  # Time step
@@ -90,17 +91,11 @@ def main():
     # -------------------------------------------------------------------------
 
     # Pipe thermal resistance
-    R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(rp_in,
-                                                               rp_out,
-                                                               k_p)
+    R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(
+        rp_in, rp_out, k_p)
     # Fluid to inner pipe wall thermal resistance (Single U-tube)
-    h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(m_flow,
-                                                                      rp_in,
-                                                                      visc_f,
-                                                                      den_f,
-                                                                      k_f,
-                                                                      cp_f,
-                                                                      epsilon)
+    h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
+        m_flow,  rp_in, visc_f, den_f, k_f, cp_f, epsilon)
     R_f = 1.0/(h_f*2*pi*rp_in)
 
     # Single U-tube, same for all boreholes in the bore field
@@ -109,48 +104,37 @@ def main():
         SingleUTube = gt.pipes.SingleUTube(pos_pipes, rp_in, rp_out,
                                            borehole, k_s, k_g, R_f + R_p)
         UTubes.append(SingleUTube)
-    network = gt.networks.Network(boreField, UTubes, bore_connectivity)
+    network = gt.networks.Network(
+        boreField, UTubes, bore_connectivity=bore_connectivity, m_flow=m_flow,
+        cp=cp_f, nSegments=nSegments)
 
     # -------------------------------------------------------------------------
     # Evaluate the g-functions for the borefield
     # -------------------------------------------------------------------------
 
     # Calculate the g-function for uniform temperature
-    gfunc_Tb = \
-            gt.gfunction.uniform_temperature(
-            boreField, time, alpha,
-            nSegments=nSegments, disp=True)
+    gfunc_Tb = gt.gfunction.gFunction(
+        boreField, alpha, time=time, boundary_condition='UBWT', options=options)
 
     # Calculate the g-function for mixed inlet fluid conditions
-    gfunc_equal_Tf_mixed = \
-            gt.gfunction.mixed_inlet_temperature(
-            network, m_flow, cp_f, time, alpha,
-            nSegments=nSegments, disp=True)
+    gfunc_equal_Tf_mixed = gt.gfunction.gFunction(
+        network, alpha, time=time, boundary_condition='MIFT', options=options)
 
     # -------------------------------------------------------------------------
     # Plot g-functions
     # -------------------------------------------------------------------------
 
-    plt.rc('figure')
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111)
-    # g-functions
-    ax1.plot(np.log(time/ts), gfunc_Tb,
-             'k-', lw=1.5, label='Uniform temperature')
-    ax1.plot(np.log(time/ts), gfunc_equal_Tf_mixed,
-             'r-.', lw=1.5, label='Mixed inlet temperature')
-    ax1.legend()
-    # Axis labels
-    ax1.set_xlabel(r'$ln(t/t_s)$')
-    ax1.set_ylabel(r'g-function')
-    # Axis limits
-    ax1.set_xlim([-10.0, 5.0])
-    ax1.set_ylim([0., 12.])
-    # Show minor ticks
-    ax1.xaxis.set_minor_locator(AutoMinorLocator())
-    ax1.yaxis.set_minor_locator(AutoMinorLocator())
-    # Adjust to plot window
+    ax = gfunc_Tb.visualize_g_function().axes[0]
+    ax.plot(np.log(time/ts), gfunc_equal_Tf_mixed.gFunc, 'r-.')
+    ax.legend(['Uniform temperature', 'Mixed inlet temperature'])
     plt.tight_layout()
+
+    # For the mixed inlet fluid temperature condition, draw the temperatures
+    # and heat extraction rates
+    gfunc_equal_Tf_mixed.visualize_temperatures()
+    gfunc_equal_Tf_mixed.visualize_temperature_profiles()
+    gfunc_equal_Tf_mixed.visualize_heat_extraction_rates()
+    gfunc_equal_Tf_mixed.visualize_heat_extraction_rate_profiles()
 
     return
 

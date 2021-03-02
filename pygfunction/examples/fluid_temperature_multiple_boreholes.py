@@ -66,8 +66,8 @@ def main():
     visc_f = fluid.mu   # Fluid dynamic viscosity (kg/m.s)
     k_f = fluid.k       # Fluid thermal conductivity (W/m.K)
 
-    # Number of segments per borehole
-    nSegments = 12
+    # g-Function calculation options
+    options = {'nSegments':12, 'disp':True}
 
     # Simulation parameters
     dt = 3600.                  # Time step (s)
@@ -102,7 +102,7 @@ def main():
             nPipes=2, config='parallel')
         UTubes.append(UTube)
     # Build a network object from the list of UTubes
-    network = gt.networks.Network(boreField, UTubes)
+    network = gt.networks.Network(boreField, UTubes, m_flow=m_flow, cp=cp_f)
 
     # -------------------------------------------------------------------------
     # Calculate g-function
@@ -111,11 +111,14 @@ def main():
     # Get time values needed for g-function evaluation
     time_req = LoadAgg.get_times_for_simulation()
     # Calculate g-function
-    gFunc = gt.gfunction.mixed_inlet_temperature(
-            network, m_flow, cp_f, time_req, alpha,
-            nSegments=nSegments, disp=True)
+    gFunc = gt.gfunction.gFunction(
+        network, alpha, time=time_req, boundary_condition='MIFT',
+        options=options)
+    # gt.gfunction.mixed_inlet_temperature(
+    #         network, m_flow, cp_f, time_req, alpha,
+    #         nSegments=nSegments, disp=True)
     # Initialize load aggregation scheme
-    LoadAgg.initialize(gFunc/(2*pi*k_s))
+    LoadAgg.initialize(gFunc.gFunc/(2*pi*k_s))
 
     # -------------------------------------------------------------------------
     # Simulation

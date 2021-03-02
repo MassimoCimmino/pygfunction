@@ -66,8 +66,8 @@ def main():
     visc_f = fluid.mu   # Fluid dynamic viscosity (kg/m.s)
     k_f = fluid.k       # Fluid thermal conductivity (W/m.K)
 
-    # Number of segments per borehole
-    nSegments = 12
+    # g-Function calculation options
+    options = {'nSegments':12, 'disp':True}
 
     # Simulation parameters
     dt = 3600.                  # Time step (s)
@@ -87,37 +87,28 @@ def main():
     # Get time values needed for g-function evaluation
     time_req = LoadAgg.get_times_for_simulation()
     # Calculate g-function
-    gFunc = gt.gfunction.uniform_temperature(boreField, time_req, alpha,
-                                             nSegments=nSegments)
+    gFunc = gt.gfunction.gFunction(
+        boreField, alpha, time=time_req, options=options)
+    # gt.gfunction.uniform_temperature(boreField, time_req, alpha,
+    #                                          nSegments=nSegments)
     # Initialize load aggregation scheme
-    LoadAgg.initialize(gFunc/(2*pi*k_s))
+    LoadAgg.initialize(gFunc.gFunc/(2*pi*k_s))
 
     # -------------------------------------------------------------------------
     # Initialize pipe models
     # -------------------------------------------------------------------------
 
     # Pipe thermal resistance
-    R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(rp_in,
-                                                               rp_out,
-                                                               k_p)
+    R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(
+        rp_in, rp_out, k_p)
     # Fluid to inner pipe wall thermal resistance (Single U-tube and double
     # U-tube in series)
-    h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(m_flow,
-                                                                      rp_in,
-                                                                      visc_f,
-                                                                      den_f,
-                                                                      k_f,
-                                                                      cp_f,
-                                                                      epsilon)
+    h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
+        m_flow, rp_in, visc_f, den_f, k_f, cp_f, epsilon)
     R_f_ser = 1.0/(h_f*2*pi*rp_in)
     # Fluid to inner pipe wall thermal resistance (Double U-tube in parallel)
-    h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(m_flow/2,
-                                                                      rp_in,
-                                                                      visc_f,
-                                                                      den_f,
-                                                                      k_f,
-                                                                      cp_f,
-                                                                      epsilon)
+    h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
+        m_flow/2, rp_in, visc_f, den_f, k_f, cp_f, epsilon)
     R_f_par = 1.0/(h_f*2*pi*rp_in)
 
     # Single U-tube
