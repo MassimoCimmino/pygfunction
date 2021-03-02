@@ -58,8 +58,9 @@ def main():
     visc_f = 0.002      # Fluid dynamic viscosity (kg/m.s)
     k_f = 0.5           # Fluid thermal conductivity (W/m.K)
 
-    # Number of segments per borehole
+    # g-Function calculation options
     nSegments = 12
+    options = {'nSegments':nSegments, 'disp':True}
 
     # Geometrically expanding time vector.
     dt = 100*3600.                  # Time step
@@ -107,23 +108,17 @@ def main():
         SingleUTube = gt.pipes.SingleUTube(pos_pipes, rp_in, rp_out,
                                            borehole, k_s, k_g, R_f + R_p)
         UTubes.append(SingleUTube)
-    network = gt.networks.Network(boreField, UTubes, bore_connectivity)
+    network = gt.networks.Network(boreField, UTubes, bore_connectivity=bore_connectivity, m_flow=m_flow, cp=cp_f, nSegments=nSegments)
 
     # -------------------------------------------------------------------------
     # Evaluate the g-functions for the borefield
     # -------------------------------------------------------------------------
 
     # Calculate the g-function for uniform temperature
-    gfunc_Tb = \
-            gt.gfunction.uniform_temperature(
-            boreField, time, alpha,
-            nSegments=nSegments, disp=True)
+    gfunc_Tb = gt.gfunction.gFunction(boreField, alpha, time=time, options=options)
 
     # Calculate the g-function for mixed inlet fluid conditions
-    gfunc_equal_Tf_mixed = \
-            gt.gfunction.mixed_inlet_temperature(
-            network, m_flow, cp_f, time, alpha,
-            nSegments=nSegments, disp=True)
+    gfunc_equal_Tf_mixed = gt.gfunction.gFunction(network, alpha, time=time, options=options)
 
     # -------------------------------------------------------------------------
     # Plot g-functions
@@ -133,9 +128,9 @@ def main():
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
     # g-functions
-    ax1.plot(np.log(time/ts), gfunc_Tb,
+    ax1.plot(np.log(time/ts), gfunc_Tb.gFunc,
              'k-', lw=1.5, label='Uniform temperature')
-    ax1.plot(np.log(time/ts), gfunc_equal_Tf_mixed,
+    ax1.plot(np.log(time/ts), gfunc_equal_Tf_mixed.gFunc,
              'r-.', lw=1.5, label='Mixed inlet temperature')
     ax1.legend()
     # Axis labels
