@@ -119,7 +119,7 @@ def finite_line_source(
 
 def thermal_response_factors(
         boreSegments, time, alpha, use_similarities=True,
-        splitRealAndImage=True, disTol=0.1, tol=1.0e-6, processes=None,
+        splitRealAndImage=True, disTol=0.01, tol=1.0e-6, processes=None,
         disp=False):
     """
     Evaluate segment-to-segment thermal response factors.
@@ -144,10 +144,10 @@ def thermal_response_factors(
         real and image sources.
         Default is True.
     disTol : float, optional
-        Absolute tolerance (in meters) on radial distance. Two distances
+        Relative tolerance on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
         difference between the two distances (abs(d1-d2)) is below tolerance.
-        Default is 0.1.
+        Default is 0.01.
     tol : float, optional
         Relative tolerance on length and depth. Two lenths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
@@ -275,7 +275,7 @@ def thermal_response_factors(
     return h_ij
 
 
-def similarities(boreholes, splitRealAndImage=True, disTol=0.1, tol=1.0e-6,
+def similarities(boreholes, splitRealAndImage=True, disTol=0.01, tol=1.0e-6,
                  processes=None):
     """
     Find similarities in the FLS solution for groups of boreholes.
@@ -291,8 +291,8 @@ def similarities(boreholes, splitRealAndImage=True, disTol=0.1, tol=1.0e-6,
         Set to True if similarities are evaluated separately for real and image
         sources. Set to False if similarities are evaluated for the sum of the
         real and image sources.
-    disTol : float, defaults to 0.1
-        Absolute tolerance (in meters) on radial distance. Two distances
+    disTol : float, defaults to 0.01
+        Relative tolerance on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
         difference between the two distances (abs(d1-d2)) is below tolerance.
     tol : float, defaults to 1.0e-6
@@ -418,7 +418,7 @@ def similarities(boreholes, splitRealAndImage=True, disTol=0.1, tol=1.0e-6,
             nSimNeg, simNeg, disSimNeg, HSimNeg, DSimNeg
 
 
-def _similarities_group_by_distance(boreholes, disTol=0.1):
+def _similarities_group_by_distance(boreholes, disTol=0.01):
     """
     Groups pairs of boreholes by radial distance between borehole.
 
@@ -426,8 +426,8 @@ def _similarities_group_by_distance(boreholes, disTol=0.1):
     ----------
     boreholes : list of Borehole objects
         List of boreholes in the bore field.
-    disTol : float, defaults to 0.1
-        Absolute tolerance (in meters) on radial distance. Two distances
+    disTol : float, defaults to 0.01
+        Relative tolerance on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
         difference between the two distances (abs(d1-d2)) is below tolerance.
 
@@ -477,7 +477,7 @@ def _similarities_group_by_distance(boreholes, disTol=0.1):
                 # distances
                 rTol = 1.0e-6 * b1.r_b
             else:
-                rTol = disTol
+                rTol = disTol*dis
             # Verify if the current pair should be included in the
             # previously identified symmetries
             for k in range(nDis):

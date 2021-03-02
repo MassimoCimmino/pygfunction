@@ -2,13 +2,21 @@
 
 ## Current version
 
+## Version 1.1.2 (2021-01-21)
+
 ### New features
 
 * [Issue 47](https://github.com/MassimoCimmino/pygfunction/issues/47) - Added verification of the validity of pipe geometry to pipe classes. Extended visualization of the borehole cross-section.
+* [Issue 66](https://github.com/MassimoCimmino/pygfunction/issues/66) - Added a class method to the Claesson & Javed load aggregation method to retrieve the thermal response factor increment.
+
+### Enhancements
+
+* [Issue 59](https://github.com/MassimoCimmino/pygfunction/issues/59) - Use a relative tolerance instead of an absolute tolerance in the identification of borehole pair similarities. This provides faster execution times and similar accuracy.
 
 ### Bug fixes
 
 * [Issue 58](https://github.com/MassimoCimmino/pygfunction/issues/58) - Store matrix coefficients in `Network` class methods for re-use when inlet conditions are constant.
+* [Issue 64](https://github.com/MassimoCimmino/pygfunction/issues/64) - Fixed an issue where the g-function was returned as an array of integers if time values were integers.
 
 ## Version 1.1.1 (2020-06-20)
 
