@@ -268,6 +268,282 @@ class _BaseSolver(object):
         return Q_reconstructed
 
 
+class Similarities(_BaseSolver):
+    def initialize(self, disTol=0.01, tol=1.0e-6, **kwargs):
+        self.disTol = disTol
+        self.tol = tol
+        self.splitRealAndImage = self.nSegments > 1
+        # Split boreholes into segments
+        self.boreSegments = self.borehole_segments()
+        # Initialize similarities
+        #TODO : Apply group_by_distance on boreholes rather than segments
+        self.find_similarities()
+        return len(self.boreSegments)
+
+    def thermal_response_factors(self, time, alpha):
+        if self.disp: print('Calculating segment to segment response factors ...')
+        # Number of time values
+        nt = len(np.atleast_1d(time))
+        # Prepare pool of workers for parallel computation
+        pool = Pool(processes=self.processes)
+        # Initialize chrono
+        tic = tim.time()
+        # Initialize segment-to-segment response factors
+        h_ij = np.zeros((self.nSources, self.nSources, nt))
+
+
+        # Similarities for real sources
+        for s in range(self.nSimPos):
+            n1 = self.simPos[s][0][0]
+            n2 = self.simPos[s][0][1]
+            b1 = self.boreSegments[n1]
+            b2 = self.boreSegments[n2]
+            if self.splitRealAndImage:
+                # FLS solution for real source only
+                func = partial(finite_line_source,
+                               alpha=alpha, borehole1=b1, borehole2=b2,
+                               reaSource=True, imgSource=False)
+            else:
+                # FLS solution for combined real and image sources
+                func = partial(finite_line_source,
+                               alpha=alpha, borehole1=b1, borehole2=b2,
+                               reaSource=True, imgSource=True)
+            # Evaluate the FLS solution at all times in parallel
+            hPos = np.array(pool.map(func, np.atleast_1d(time)))
+            # Assign thermal response factors to similar segment pairs
+            for (i, j) in self.simPos[s]:
+                h_ij[j, i, :] = hPos
+                h_ij[i, j, :] = b2.H/b1.H * hPos
+
+        # Similarities for image sources (only if splitRealAndImage=True)
+        if self.splitRealAndImage:
+            for s in range(self.nSimNeg):
+                n1 = self.simNeg[s][0][0]
+                n2 = self.simNeg[s][0][1]
+                b1 = self.boreSegments[n1]
+                b2 = self.boreSegments[n2]
+                # FLS solution for image source only
+                func = partial(finite_line_source,
+                               alpha=alpha, borehole1=b1, borehole2=b2,
+                               reaSource=False, imgSource=True)
+                # Evaluate the FLS solution at all times in parallel
+                hNeg = np.array(pool.map(func, time))
+                # Assign thermal response factors to similar segment pairs
+                for (i, j) in self.simNeg[s]:
+                    h_ij[j, i, :] = h_ij[j, i, :] + hNeg
+                    h_ij[i, j, :] = b2.H/b1.H * h_ij[j, i, :]
+    
+        # Close pool of workers
+        pool.close()
+        pool.join()
+    
+        # Return 2d array if time is a scalar
+        if np.isscalar(time):
+            h_ij = h_ij[:,:,0]
+
+        # Interp1d object for thermal response factors
+        h_ij = interp1d(np.hstack((0., time)),
+                             np.dstack((np.zeros((self.nSources,self.nSources)), h_ij)),
+                             kind='linear', copy=True, axis=2)
+        toc = tim.time()
+        if self.disp: print('{} sec'.format(toc - tic))
+    
+        return h_ij
+
+    def find_similarities(self):
+        if self.disp: print('Identifying similarities ...')
+        # Initialize chrono
+        tic = tim.time()
+        # Initialize pool of workers
+        pool = Pool(processes=self.processes)
+    
+        # Group pairs of boreholes by radial distance
+        (nDis, disPairs, nPairs, pairs) = self.group_by_distance()
+    
+        # If real and image parts of the FLS are split, evaluate real and image
+        # similarities separately:
+        if self.splitRealAndImage:
+            func = partial(self.find_similarities_one_distance, kind='real')
+            # Evaluate similarities for each distance in parallel
+            realSims = pool.map(func, pairs)
+    
+            func = partial(self.find_similarities_one_distance, kind='image')
+            # Evaluate similarities for each distance in parallel
+            imageSims = pool.map(func, pairs)
+    
+        # Otherwise, evaluate the combined real+image FLS similarities
+        else:
+            func = partial(self.find_similarities_one_distance, kind='realandimage')
+            # Evaluate symmetries for each distance in parallel
+            realSims = pool.map(func, pairs)
+    
+        # Close pool of workers
+        pool.close()
+        pool.join()
+    
+        # Aggregate real similarities for all distances
+        self.nSimPos = 0
+        self.simPos = []
+        self.HSimPos = []
+        self.DSimPos = []
+        self.disSimPos = []
+        for i in range(nDis):
+            realSim = realSims[i]
+            nSim = realSim[0]
+            self.nSimPos += nSim
+            self.disSimPos += [disPairs[i] for _ in range(nSim)]
+            self.simPos += realSim[1]
+            self.HSimPos += realSim[2]
+            self.DSimPos += realSim[3]
+    
+        # Aggregate image similarities for all distances
+        self.nSimNeg = 0
+        self.simNeg = []
+        self.HSimNeg = []
+        self.DSimNeg = []
+        self.disSimNeg = []
+        if self.splitRealAndImage:
+            for i in range(nDis):
+                imageSim = imageSims[i]
+                nSim = imageSim[0]
+                self.nSimNeg += nSim
+                self.disSimNeg += [disPairs[i] for _ in range(nSim)]
+                self.simNeg += imageSim[1]
+                self.HSimNeg += imageSim[2]
+                self.DSimNeg += imageSim[3]
+        toc = tim.time()
+        if self.disp: print('{} sec'.format(toc - tic))
+        return
+
+    def find_similarities_one_distance(self, pairs, kind):
+        # Condition for equivalence of the real part of the FLS solution
+        def compare_real_segments(H1a, H1b, H2a, H2b, D1a,
+                                  D1b, D2a, D2b, tol):
+            if (abs((H1a-H1b)/H1a) < tol and
+                abs((H2a-H2b)/H2a) < tol and
+                abs(((D2a-D1a)-(D2b-D1b))/(D2a-D1a+1e-30)) < tol):
+                similarity = True
+            else:
+                similarity = False
+            return similarity
+    
+        # Condition for equivalence of the image part of the FLS solution
+        def compare_image_segments(H1a, H1b, H2a, H2b,
+                                   D1a, D1b, D2a, D2b, tol):
+            if (abs((H1a-H1b)/H1a) < tol and
+                abs((H2a-H2b)/H2a) < tol and
+                abs(((D2a+D1a)-(D2b+D1b))/(D2a+D1a+1e-30)) < tol):
+                similarity = True
+            else:
+                similarity = False
+            return similarity
+    
+        # Condition for equivalence of the full FLS solution
+        def compare_realandimage_segments(H1a, H1b, H2a, H2b,
+                                          D1a, D1b, D2a, D2b,
+                                          tol):
+            if (abs((H1a-H1b)/H1a) < tol and
+                abs((H2a-H2b)/H2a) < tol and
+                abs((D1a-D1b)/(D1a+1e-30)) < tol and
+                abs((D2a-D2b)/(D2a+1e-30)) < tol):
+                similarity = True
+            else:
+                similarity = False
+            return similarity
+    
+        # Initialize comparison function based on input argument
+        if kind.lower() == 'real':
+            # Check real part of FLS
+            compare_segments = compare_real_segments
+        elif kind.lower() == 'image':
+            # Check image part of FLS
+            compare_segments = compare_image_segments
+        elif kind.lower() == 'realandimage':
+            # Check full real+image FLS
+            compare_segments = compare_realandimage_segments
+        else:
+            raise NotImplementedError("Error: '{}' not implemented.".format(kind.lower()))
+    
+        # Initialize symmetries
+        nSim = 1
+        pair0 = pairs[0]
+        i0 = pair0[0]
+        j0 = pair0[1]
+        sim = [[pair0]]
+        HSim = [(self.boreSegments[i0].H, self.boreSegments[j0].H)]
+        DSim = [(self.boreSegments[i0].D, self.boreSegments[j0].D)]
+    
+        # Cycle through all pairs of boreholes for the given distance
+        for pair in pairs[1:]:
+            ibor = pair[0]
+            jbor = pair[1]
+            b1 = self.boreSegments[ibor]
+            b2 = self.boreSegments[jbor]
+            # Verify if the current pair should be included in the
+            # previously identified symmetries
+            for k in range(nSim):
+                H1 = HSim[k][0]
+                H2 = HSim[k][1]
+                D1 = DSim[k][0]
+                D2 = DSim[k][1]
+                if compare_segments(H1, b1.H, H2, b2.H,
+                                    D1, b1.D, D2, b2.D, self.tol):
+                    sim[k].append((ibor, jbor))
+                    break
+                elif compare_segments(H1, b2.H, H2, b1.H,
+                                      D1, b2.D, D2, b1.D, self.tol):
+                    sim[k].append((jbor, ibor))
+                    break
+    
+            else:
+                # Add symmetry to list if no match was found
+                nSim += 1
+                sim.append([pair])
+                HSim.append((b1.H, b2.H))
+                DSim.append((b1.D, b2.D))
+        return nSim, sim, HSim, DSim
+
+    def group_by_distance(self):
+        # Initialize lists
+        nPairs = [1]
+        pairs = [[(0, 0)]]
+        disPairs = [self.boreSegments[0].r_b]
+        nDis = 1
+    
+        nb = len(self.boreSegments)
+        for i in range(nb):
+            b1 = self.boreSegments[i]
+            if i == 0:
+                i2 = i + 1
+            else:
+                i2 = i
+            for j in range(i2, nb):
+                b2 = self.boreSegments[j]
+                # Distance between current pair of boreholes
+                dis = b1.distance(b2)
+                if i == j:
+                    # The relative tolerance is used for same-borehole
+                    # distances
+                    rTol = self.tol * b1.r_b
+                else:
+                    rTol = self.disTol*dis
+                # Verify if the current pair should be included in the
+                # previously identified symmetries
+                for k in range(nDis):
+                    if abs(disPairs[k] - dis) < rTol:
+                        pairs[k].append((i, j))
+                        nPairs[k] += 1
+                        break
+    
+                else:
+                    # Add symmetry to list if no match was found
+                    nDis += 1
+                    disPairs.append(dis)
+                    pairs.append([(i, j)])
+                    nPairs.append(1)
+        return nDis, disPairs, nPairs, pairs
+
+
 def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
                             disTol=0.01, tol=1.0e-6, processes=None,
                             disp=False, **kwargs):
