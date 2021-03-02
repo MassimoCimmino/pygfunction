@@ -12,10 +12,15 @@ from .boreholes import Borehole
 from .heat_transfer import thermal_response_factors, finite_line_source
 from .networks import Network, network_thermal_resistance
 
-class gFunction:
+class gFunction(object):
     def __init__(self, boreholes_or_network, alpha, time=None,
                  method='similarities', boundary_condition=None, options=None):
+        self.alpha = alpha
+        self.time = time
+        self.method = method
+        self.options = options
         # Check if the input is a Network object
+        # TODO m_flow (etc) need to be initialized in the network object
         if isinstance(boreholes_or_network, Network):
             self.network = boreholes_or_network
             self.boreholes = boreholes_or_network.b
@@ -26,16 +31,11 @@ class gFunction:
             self.boreholes = boreholes_or_network
             if boundary_condition is None:
                 self.boundary_condition = 'UBWT'
-        self.alpha = alpha
-        self.time = time
-        self.method = method
         if self.method.lower()=='similarities':
-            self.use_similarities = True
-        else:
-            self.use_similarities = False
-        self.options=options
+            self.solver = Similarities(self.boreholes, self.network, time, self.boundary_condition, **self.options)
+            # TODO : Implement other solvers
         if self.time is not None:
-            self.evaluate_g_function(self.time)
+            self.gFunc = self.evaluate_g_function(self.time)
 
     def evaluate_g_function(self, time):
         """
