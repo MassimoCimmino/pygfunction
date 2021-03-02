@@ -7,3 +7,4 @@ from . import load_aggregation
 from . import networks
 from . import pipes
 from . import utilities
+from . import properties

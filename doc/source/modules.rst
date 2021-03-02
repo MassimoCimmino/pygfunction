@@ -14,3 +14,4 @@ Modules
    networks
    pipes
    utilities
+   properties
