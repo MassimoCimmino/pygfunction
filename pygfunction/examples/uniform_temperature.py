@@ -34,8 +34,8 @@ def main():
     # Path to validation data
     filePath = './data/CiBe14_uniform_temperature.txt'
 
-    # Number of segments per borehole
-    nSegments = 12
+    # g-Function calculation options
+    options = {'nSegments':12, 'disp':True}
 
     # Geometrically expanding time vector.
     dt = 100*3600.                  # Time step
@@ -86,12 +86,11 @@ def main():
     # Evaluate g-functions for all fields
     # -------------------------------------------------------------------------
     for field in [boreField1, boreField2, boreField3]:
-        # Calculate g-function
-        gfunc = gt.gfunction.uniform_temperature(field, time, alpha,
-                                                 nSegments=nSegments,
-                                                 disp=True)
+        gfunc = gt.gfunction.gFunction(field, alpha,
+                                       time=time, 
+                                       options=options)
         # Draw g-function
-        ax1.plot(np.log(time/ts), gfunc, 'k-', lw=1.5)
+        ax1.plot(np.log(time/ts), gfunc.gFunc, 'k-', lw=1.5)
     calculated = mlines.Line2D([], [],
                                color='black',
                                lw=1.5,

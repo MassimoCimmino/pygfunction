@@ -1,20 +1,31 @@
 from __future__ import absolute_import, division, print_function
 
 import time as tim
+from functools import partial
+from multiprocessing import Pool
 
 import numpy as np
 from scipy.constants import pi
 from scipy.interpolate import interp1d as interp1d
 
 from .boreholes import Borehole
-from .heat_transfer import thermal_response_factors
+from .heat_transfer import thermal_response_factors, finite_line_source
 from .networks import Network, network_thermal_resistance
 
-class gFunction:
+
+class gFunction(object):
     def __init__(self, boreholes_or_network, alpha, time=None, UTubes=None,
-                 similarities=True, boundary_condition=None, m_flow=None, cp=None,
-                 options=None):
+                 use_similarities=True, boundary_condition=None, m_flow=None, cp=None, options=None):
+        self.alpha = alpha
+        self.time = time
+        self.use_similarities = use_similarities
+        self.options = options
+        self.m_flow = m_flow
+        self.cp = cp
+        self.gFunc = list()  # the g-function is initialized as an empty list
+
         # Check if the input is a Network object
+        # TODO m_flow (etc) need to be initialized in the network object
         if isinstance(boreholes_or_network, Network):
             self.network = boreholes_or_network
             self.boreholes = boreholes_or_network.b
@@ -27,14 +38,10 @@ class gFunction:
                 self.boundary_condition = 'UBWT'
             else:
                 self.boundary_condition = boundary_condition
-        self.alpha = alpha  # ground thermal diffusivity
-        self.time = time  # time array
-        self.UTubes = UTubes
-        self.use_similarities = similarities  # make use of similarities in the g-function calculation
-        self.options = options  # a dictionary of the options not _required_
-        self.m_flow = m_flow
-        self.cp = cp
-        self.gFunc = list()  # the g-function is initialized as an empty list
+
+        if self.use_similarities is True:  # do we have more methods than true/false for use_similarities?
+            self.solver = Similarities(self.boreholes, self.network, time, self.boundary_condition, **self.options)
+            # TODO : Implement other solvers
         if self.time is not None:
             self.gFunc = self.evaluate_g_function(self.time)
 
@@ -43,7 +50,7 @@ class gFunction:
         Compute the g-function based on the boundary condition supplied
         Parameters
         ----------
-        time : float or array, optional
+        time : float or array
             Values of time (in seconds) for which the g-function is evaluated.
 
         Returns
@@ -52,51 +59,8 @@ class gFunction:
             Values of the g-function
         """
         self.time = time
-        # provide a list of acceptable boundary conditions
-        acceptable_boundary_conditions = ['UHTR', 'UBWT', 'EIFT', 'MIFT']
-        # if the boundary condition specified is not one of the acceptable ones, then warn the user
-        if self.boundary_condition not in acceptable_boundary_conditions:
-            raise ValueError('Boundary condition specified is not an acceptable boundary condition. \n'
-                             'Please provide one of the following inputs for boundary condition: {}'.\
-                             format(acceptable_boundary_conditions))
-
-        if self.boundary_condition == 'UHTR':
-            # compute g-function for uniform heat flux boundary condition
-            if not self.check_assertions_basic():
-                raise ValueError('Ensure the inputs are proper.')
-            self.gFunc = uniform_heat_extraction(self.boreholes,
-                                        self.time,
-                                        self.alpha,
-                                        use_similarities=self.use_similarities,
-                                        **self.options)
-        elif self.boundary_condition == 'UBWT':
-            # compute g-function for uniform borehole wall temperature boundary condition
-            if not self.check_assertions_basic():
-                raise ValueError('Ensure the inputs are proper.')
-            self.gFunc = uniform_temperature(self.boreholes,
-                                             self.time,
-                                             self.alpha,
-                                             use_similarities=self.use_similarities,
-                                             **self.options)
-        elif self.boundary_condition == 'EIFT':
-            # compute g-function for equal inlet fluid temperature boundary condition
-            self.gFunc = equal_inlet_temperature(self.boreholes,
-                                                 self.UTubes,
-                                                 self.m_flow,
-                                                 self.cp,
-                                                 self.time,
-                                                 self.alpha)
-        elif self.boundary_condition == 'MIFT':
-            # compute g-function for uniform inlet fluid temperature boundary condition
-            self.gFunc = mixed_inlet_temperature(self.network,
-                                        self.network.m_flow,
-                                        self.network.cp,
-                                        self.time,
-                                        self.alpha,
-                                        **self.options)
-        else:
-            raise ValueError('The exact error is questionable. Please double check your inputs.')
-
+        # TODO : self.check_assertions()  # check to make sure none of the instances in the class has an undesired type (Acceptable boundary conditions should be checked here ((?)))
+        self.gFunc = self.solver.solve(time, self.alpha)
         return self.gFunc
 
     def check_assertions_basic(self):
@@ -123,6 +87,443 @@ class gFunction:
         assert type(self.processes) is int
         assert type(self.disp) is bool
         return
+
+
+class _BaseSolver(object):
+    def __init__(self, boreholes, network, time, boundary_condition, nSegments=12, processes=None, disp=False, profiles=False, **other_options):
+        self.boreholes = boreholes
+        self.network = network
+        self.time = np.atleast_1d(time).flatten()
+        self.boundary_condition = boundary_condition
+        self.nSegments = nSegments
+        self.processes = processes
+        self.disp = disp
+        self.profiles = profiles
+        self.nSources = self.initialize(**other_options)
+        # provide a list of acceptable boundary conditions
+        acceptable_boundary_conditions = ['UHTR', 'UBWT', 'MIFT']
+        # if the boundary condition specified is not one of the acceptable ones, then warn the user
+        if self.boundary_condition not in acceptable_boundary_conditions:
+            raise ValueError('Boundary condition specified is not an acceptable boundary condition. \n'
+                             'Please provide one of the following inputs for boundary condition: {}'.\
+                             format(acceptable_boundary_conditions))
+        return
+
+    def solve(self, time, alpha):
+        # Number of time values
+        nt = len(self.time)
+        # Initialize g-function
+        gFunc = np.zeros(nt)
+        # Initialize segment heat extraction rates
+        if self.boundary_condition == 'UHTR':
+            Q = 1
+        else:
+            Q = np.zeros((self.nSources, nt))
+        if self.boundary_condition == 'UBWT':
+            Tb = np.zeros(nt)
+        else:
+            Tb = np.zeros((self.nSources, nt))
+        # Calculate segment to segment thermal response factors
+        h_ij = self.thermal_response_factors(time, alpha)
+        # Segment lengths
+        Hb = self.segment_lengths()
+        Htot = np.sum(Hb)
+        if self.disp: print('Building and solving the system of equations ...')
+        # Initialize chrono
+        tic = tim.time()
+
+        # Build and solve the system of equations at all times
+        for p in range(nt):
+            if self.boundary_condition == 'UHTR':
+                # compute g-function for uniform heat flux boundary condition
+                h_dt = h_ij.y[p+1]
+                Tb[:,p] = np.sum(h_dt, axis=1).flatten()
+                gFunc[p] = Tb.dot(Hb)/np.sum(Htot)
+            else:
+                # Current thermal response factor matrix
+                if p > 0:
+                    dt = self.time[p] - self.time[p-1]
+                else:
+                    dt = self.time[p]
+                h_dt = h_ij(dt)
+                # Reconstructed load history
+                Q_reconstructed = self.load_history_reconstruction(self.time[0:p+1], Q[:,0:p+1])
+                # Borehole wall temperature for zero heat extraction at current step
+                Tb_0 = self.temporal_superposition(h_ij.y[:,:,1:], Q_reconstructed)
+    
+                if self.boundary_condition == 'UBWT':
+                    # compute g-function for uniform borehole wall temperature boundary condition
+                    # Spatial superposition: [Tb] = [Tb0] + [h_ij_dt]*[Qb]
+                    # Energy conservation: sum([Q*Hb]) = sum([Hb])
+                    A = np.block([[h_dt, -np.ones((self.nSources, 1))],
+                                  [Hb, 0.]])
+                    B = np.hstack((-Tb_0, Htot))
+                    # Solve the system of equations
+                    X = np.linalg.solve(A, B)
+                    # Store calculated heat extraction rates
+                    Q[:,p] = X[0:self.nSources]
+                    # The borehole wall temperatures are equal for all segments
+                    Tb[p] = X[-1]
+                    gFunc[p] = Tb[p]
+                elif self.boundary_condition == 'MIFT':
+                    # compute g-function for uniform inlet fluid temperature boundary condition
+                    # Spatial superposition: [Tb] = [Tb0] + [h_ij_dt]*[Qb]
+                    # [Q_{b,i}] = [a_in]*[T_{f,in}] + [a_{b,i}]*[T_{b,i}]
+                    # Energy conservation: sum([Q*Hb]) = sum([Hb])
+                    a_in, a_b = self.network.coefficients_borehole_heat_extraction_rate(
+                            self.network.m_flow, self.network.cp, self.nSegments)
+                    k_s = self.network.p[0].k_s
+                    A = np.block([[h_dt, -np.eye(self.nSources), np.zeros((self.nSources, 1))],
+                                  [np.eye(self.nSources), a_b/(2.0*pi*k_s*np.atleast_2d(Hb).T), a_in/(2.0*pi*k_s*np.atleast_2d(Hb).T)],
+                                  [Hb, np.zeros(self.nSources + 1)]])
+                    B = np.hstack((-Tb_0, np.zeros(self.nSources), Htot))
+                    # Solve the system of equations
+                    X = np.linalg.solve(A, B)
+                    # Store calculated heat extraction rates
+                    Q[:,p] = X[0:self.nSources]
+                    Tb[:,p] = X[self.nSources:2*self.nSources]
+                    Tf_in = X[-1]
+                    Tf_out = Tf_in - 2*pi*self.network.p[0].k_s*Htot/(self.network.m_flow*self.network.cp)
+                    Tf = 0.5*(Tf_in + Tf_out)
+                    Rfield = network_thermal_resistance(self.network, self.network.m_flow, self.network.cp)
+                    Tb_eff = Tf - 2*pi*self.network.p[0].k_s*Rfield
+                    gFunc[p] = Tb_eff
+                if self.profiles:
+                    self.Q = Q
+                    self.Tb = Tb
+        toc = tim.time()
+        if self.disp: print('{} sec'.format(toc - tic))
+        return gFunc
+
+    def segment_lengths(self):
+        # Borehole lengths
+        H = np.array([b.H for b in self.boreSegments])
+        return H
+
+    def borehole_segments(self):
+        boreSegments = []
+        for b in self.boreholes:
+            for i in range(self.nSegments):
+                # Divide borehole into segments of equal length
+                H = b.H / self.nSegments
+                # Buried depth of the i-th segment
+                D = b.D + i * b.H / self.nSegments
+                # Add to list of segments
+                boreSegments.append(Borehole(H, D, b.r_b, b.x, b.y))
+        return boreSegments
+
+    def temporal_superposition(self, h_ij, Q_reconstructed):
+        # Number of heat sources
+        nSources = Q_reconstructed.shape[0]
+        # Number of time steps
+        nt = Q_reconstructed.shape[1]
+        # Borehole wall temperature
+        Tb_0 = np.zeros(nSources)
+        # Spatial and temporal superpositions
+        dQ = np.concatenate((Q_reconstructed[:,0:1],
+                             Q_reconstructed[:,1:]-Q_reconstructed[:,0:-1]),
+                            axis=1)
+        for it in range(nt):
+            Tb_0 += h_ij[:,:,it].dot(dQ[:,nt-it-1])
+        return Tb_0
+
+    def load_history_reconstruction(self, time, Q):
+        # Number of heat sources
+        nSources = Q.shape[0]
+        # Time step sizes
+        dt = np.hstack((time[0], time[1:]-time[:-1]))
+        # Time vector
+        t = np.hstack((0., time, time[-1] + time[0]))
+        # Inverted time step sizes
+        dt_reconstructed = dt[::-1]
+        # Reconstructed time vector
+        t_reconstructed = np.hstack((0., np.cumsum(dt_reconstructed)))
+        # Accumulated heat extracted
+        f = np.hstack((np.zeros((nSources, 1)), np.cumsum(Q*dt, axis=1)))
+        f = np.hstack((f, f[:,-1:]))
+        # Create interpolation object for accumulated heat extracted
+        sf = interp1d(t, f, kind='linear', axis=1)
+        # Reconstructed load history
+        Q_reconstructed = (sf(t_reconstructed[1:]) - sf(t_reconstructed[:-1])) \
+            / dt_reconstructed
+    
+        return Q_reconstructed
+
+
+class Similarities(_BaseSolver):
+    def initialize(self, disTol=0.01, tol=1.0e-6, **kwargs):
+        self.disTol = disTol
+        self.tol = tol
+        self.splitRealAndImage = self.nSegments > 1
+        # Split boreholes into segments
+        self.boreSegments = self.borehole_segments()
+        # Initialize similarities
+        #TODO : Apply group_by_distance on boreholes rather than segments
+        self.find_similarities()
+        return len(self.boreSegments)
+
+    def thermal_response_factors(self, time, alpha):
+        if self.disp: print('Calculating segment to segment response factors ...')
+        # Number of time values
+        nt = len(np.atleast_1d(time))
+        # Prepare pool of workers for parallel computation
+        pool = Pool(processes=self.processes)
+        # Initialize chrono
+        tic = tim.time()
+        # Initialize segment-to-segment response factors
+        h_ij = np.zeros((self.nSources, self.nSources, nt))
+
+
+        # Similarities for real sources
+        for s in range(self.nSimPos):
+            n1 = self.simPos[s][0][0]
+            n2 = self.simPos[s][0][1]
+            b1 = self.boreSegments[n1]
+            b2 = self.boreSegments[n2]
+            if self.splitRealAndImage:
+                # FLS solution for real source only
+                func = partial(finite_line_source,
+                               alpha=alpha, borehole1=b1, borehole2=b2,
+                               reaSource=True, imgSource=False)
+            else:
+                # FLS solution for combined real and image sources
+                func = partial(finite_line_source,
+                               alpha=alpha, borehole1=b1, borehole2=b2,
+                               reaSource=True, imgSource=True)
+            # Evaluate the FLS solution at all times in parallel
+            hPos = np.array(pool.map(func, np.atleast_1d(time)))
+            # Assign thermal response factors to similar segment pairs
+            for (i, j) in self.simPos[s]:
+                h_ij[j, i, :] = hPos
+                h_ij[i, j, :] = b2.H/b1.H * hPos
+
+        # Similarities for image sources (only if splitRealAndImage=True)
+        if self.splitRealAndImage:
+            for s in range(self.nSimNeg):
+                n1 = self.simNeg[s][0][0]
+                n2 = self.simNeg[s][0][1]
+                b1 = self.boreSegments[n1]
+                b2 = self.boreSegments[n2]
+                # FLS solution for image source only
+                func = partial(finite_line_source,
+                               alpha=alpha, borehole1=b1, borehole2=b2,
+                               reaSource=False, imgSource=True)
+                # Evaluate the FLS solution at all times in parallel
+                hNeg = np.array(pool.map(func, time))
+                # Assign thermal response factors to similar segment pairs
+                for (i, j) in self.simNeg[s]:
+                    h_ij[j, i, :] = h_ij[j, i, :] + hNeg
+                    h_ij[i, j, :] = b2.H/b1.H * h_ij[j, i, :]
+    
+        # Close pool of workers
+        pool.close()
+        pool.join()
+    
+        # Return 2d array if time is a scalar
+        if np.isscalar(time):
+            h_ij = h_ij[:,:,0]
+
+        # Interp1d object for thermal response factors
+        h_ij = interp1d(np.hstack((0., time)),
+                             np.dstack((np.zeros((self.nSources,self.nSources)), h_ij)),
+                             kind='linear', copy=True, axis=2)
+        toc = tim.time()
+        if self.disp: print('{} sec'.format(toc - tic))
+    
+        return h_ij
+
+    def find_similarities(self):
+        if self.disp: print('Identifying similarities ...')
+        # Initialize chrono
+        tic = tim.time()
+        # Initialize pool of workers
+        pool = Pool(processes=self.processes)
+    
+        # Group pairs of boreholes by radial distance
+        (nDis, disPairs, nPairs, pairs) = self.group_by_distance()
+    
+        # If real and image parts of the FLS are split, evaluate real and image
+        # similarities separately:
+        if self.splitRealAndImage:
+            func = partial(self.find_similarities_one_distance, kind='real')
+            # Evaluate similarities for each distance in parallel
+            realSims = pool.map(func, pairs)
+    
+            func = partial(self.find_similarities_one_distance, kind='image')
+            # Evaluate similarities for each distance in parallel
+            imageSims = pool.map(func, pairs)
+    
+        # Otherwise, evaluate the combined real+image FLS similarities
+        else:
+            func = partial(self.find_similarities_one_distance, kind='realandimage')
+            # Evaluate symmetries for each distance in parallel
+            realSims = pool.map(func, pairs)
+    
+        # Close pool of workers
+        pool.close()
+        pool.join()
+    
+        # Aggregate real similarities for all distances
+        self.nSimPos = 0
+        self.simPos = []
+        self.HSimPos = []
+        self.DSimPos = []
+        self.disSimPos = []
+        for i in range(nDis):
+            realSim = realSims[i]
+            nSim = realSim[0]
+            self.nSimPos += nSim
+            self.disSimPos += [disPairs[i] for _ in range(nSim)]
+            self.simPos += realSim[1]
+            self.HSimPos += realSim[2]
+            self.DSimPos += realSim[3]
+    
+        # Aggregate image similarities for all distances
+        self.nSimNeg = 0
+        self.simNeg = []
+        self.HSimNeg = []
+        self.DSimNeg = []
+        self.disSimNeg = []
+        if self.splitRealAndImage:
+            for i in range(nDis):
+                imageSim = imageSims[i]
+                nSim = imageSim[0]
+                self.nSimNeg += nSim
+                self.disSimNeg += [disPairs[i] for _ in range(nSim)]
+                self.simNeg += imageSim[1]
+                self.HSimNeg += imageSim[2]
+                self.DSimNeg += imageSim[3]
+        toc = tim.time()
+        if self.disp: print('{} sec'.format(toc - tic))
+        return
+
+    def find_similarities_one_distance(self, pairs, kind):
+        # Condition for equivalence of the real part of the FLS solution
+        def compare_real_segments(H1a, H1b, H2a, H2b, D1a,
+                                  D1b, D2a, D2b, tol):
+            if (abs((H1a-H1b)/H1a) < tol and
+                abs((H2a-H2b)/H2a) < tol and
+                abs(((D2a-D1a)-(D2b-D1b))/(D2a-D1a+1e-30)) < tol):
+                similarity = True
+            else:
+                similarity = False
+            return similarity
+    
+        # Condition for equivalence of the image part of the FLS solution
+        def compare_image_segments(H1a, H1b, H2a, H2b,
+                                   D1a, D1b, D2a, D2b, tol):
+            if (abs((H1a-H1b)/H1a) < tol and
+                abs((H2a-H2b)/H2a) < tol and
+                abs(((D2a+D1a)-(D2b+D1b))/(D2a+D1a+1e-30)) < tol):
+                similarity = True
+            else:
+                similarity = False
+            return similarity
+    
+        # Condition for equivalence of the full FLS solution
+        def compare_realandimage_segments(H1a, H1b, H2a, H2b,
+                                          D1a, D1b, D2a, D2b,
+                                          tol):
+            if (abs((H1a-H1b)/H1a) < tol and
+                abs((H2a-H2b)/H2a) < tol and
+                abs((D1a-D1b)/(D1a+1e-30)) < tol and
+                abs((D2a-D2b)/(D2a+1e-30)) < tol):
+                similarity = True
+            else:
+                similarity = False
+            return similarity
+    
+        # Initialize comparison function based on input argument
+        if kind.lower() == 'real':
+            # Check real part of FLS
+            compare_segments = compare_real_segments
+        elif kind.lower() == 'image':
+            # Check image part of FLS
+            compare_segments = compare_image_segments
+        elif kind.lower() == 'realandimage':
+            # Check full real+image FLS
+            compare_segments = compare_realandimage_segments
+        else:
+            raise NotImplementedError("Error: '{}' not implemented.".format(kind.lower()))
+    
+        # Initialize symmetries
+        nSim = 1
+        pair0 = pairs[0]
+        i0 = pair0[0]
+        j0 = pair0[1]
+        sim = [[pair0]]
+        HSim = [(self.boreSegments[i0].H, self.boreSegments[j0].H)]
+        DSim = [(self.boreSegments[i0].D, self.boreSegments[j0].D)]
+    
+        # Cycle through all pairs of boreholes for the given distance
+        for pair in pairs[1:]:
+            ibor = pair[0]
+            jbor = pair[1]
+            b1 = self.boreSegments[ibor]
+            b2 = self.boreSegments[jbor]
+            # Verify if the current pair should be included in the
+            # previously identified symmetries
+            for k in range(nSim):
+                H1 = HSim[k][0]
+                H2 = HSim[k][1]
+                D1 = DSim[k][0]
+                D2 = DSim[k][1]
+                if compare_segments(H1, b1.H, H2, b2.H,
+                                    D1, b1.D, D2, b2.D, self.tol):
+                    sim[k].append((ibor, jbor))
+                    break
+                elif compare_segments(H1, b2.H, H2, b1.H,
+                                      D1, b2.D, D2, b1.D, self.tol):
+                    sim[k].append((jbor, ibor))
+                    break
+    
+            else:
+                # Add symmetry to list if no match was found
+                nSim += 1
+                sim.append([pair])
+                HSim.append((b1.H, b2.H))
+                DSim.append((b1.D, b2.D))
+        return nSim, sim, HSim, DSim
+
+    def group_by_distance(self):
+        # Initialize lists
+        nPairs = [1]
+        pairs = [[(0, 0)]]
+        disPairs = [self.boreSegments[0].r_b]
+        nDis = 1
+    
+        nb = len(self.boreSegments)
+        for i in range(nb):
+            b1 = self.boreSegments[i]
+            if i == 0:
+                i2 = i + 1
+            else:
+                i2 = i
+            for j in range(i2, nb):
+                b2 = self.boreSegments[j]
+                # Distance between current pair of boreholes
+                dis = b1.distance(b2)
+                if i == j:
+                    # The relative tolerance is used for same-borehole
+                    # distances
+                    rTol = self.tol * b1.r_b
+                else:
+                    rTol = self.disTol*dis
+                # Verify if the current pair should be included in the
+                # previously identified symmetries
+                for k in range(nDis):
+                    if abs(disPairs[k] - dis) < rTol:
+                        pairs[k].append((i, j))
+                        nPairs[k] += 1
+                        break
+    
+                else:
+                    # Add symmetry to list if no match was found
+                    nDis += 1
+                    disPairs.append(dis)
+                    pairs.append([(i, j)])
+                    nPairs.append(1)
+        return nDis, disPairs, nPairs, pairs
 
 
 def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
