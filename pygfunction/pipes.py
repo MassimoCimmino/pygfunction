@@ -1132,6 +1132,36 @@ class SingleUTube(_BasePipe):
         return F5
 
 
+class SingleCoaxialPipe(SingleUTube):
+    """
+
+    """
+    def __init__(self, pos, r_in_in, r_in_out, r_out_in, r_out_out,
+                 borehole, k_s, k_g, R_f, R_p, J=2):
+        self.pos = pos
+        self.r_in_in = r_in_in
+        self.r_in_out = r_in_out
+        self.r_out_in = r_out_in
+        self.r_out_out = r_out_out
+        self.b = borehole
+        self.k_s = k_s
+        self.k_g = k_g
+        self.R_f = R_f
+        self.R_p = R_p
+        self.J = J
+        self.nPipes = 1
+        self.nInlets = 1
+        self.nOutlets = 1
+
+        # Delta-circuit thermal resistances
+        self._Rd = thermal_resistances_coaxial(
+                pos, r_in_in, r_in_out, r_out_in, r_out_out, borehole.r_b,
+                k_s, k_g, R_f, R_p, J=self.J)[1]
+
+        # Initialize stored_coefficients
+        self._initialize_stored_coefficients()
+
+
 class MultipleUTube(_BasePipe):
     """
     Class for multiple U-Tube boreholes.
@@ -1843,6 +1873,48 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, J=2):
         K[i, i] = -(K[i, i] +
                     sum([K[i, j] for j in range(n_p) if not i == j]))
     Rd = 1.0/K
+
+    return R, Rd
+
+
+def thermal_resistances_coaxial(pos, r_in_in, r_in_out, r_out_in, r_out_out,
+                                r_b, k_s, k_g, R_f, R_p, J=2):
+    """
+    pos, r_in_in, r_in_out, r_out_in, r_out_out, borehole.r_b,
+    k_s, k_g, R_f, R_p, J=self.J
+    single pipe only
+    """
+    # Number of pipes
+    n_p = len(pos)
+    # If r_out and/or Rfp are supplied as float, build arrays of size n_p
+#    if np.isscalar(r_out):
+#        r_out = np.ones(n_p)*r_out
+#    if np.isscalar(Rfp):
+#        Rfp = np.ones(n_p)*Rfp
+
+    R = np.zeros((n_p, n_p))
+    if J == 0:
+        # Line source approximation
+        sigma = (k_g - k_s)/(k_g + k_s)
+        # Same-pipe thermal resistance
+        xi = pos[0][0]
+        yi = pos[0][1]
+        r = np.sqrt(xi**2 + yi**2)
+        R = R_f[2] + R_p[1] + 1./(2.*pi*k_g) \
+            *(np.log(r_b/r_out_out) - sigma*np.log(1 - r**2/r_b**2))
+    else:
+        # Resistances from multipole method are evaluated from the solution of
+        # n_p problems
+        for m in range(n_p):
+            Q_p = np.zeros(n_p)
+            Q_p[m] = 1.0
+            (T_f, T, it, eps_max) = multipole(pos, r_out_out, r_b, k_s, k_g,
+                                              R_f[2] + R_p[1], 0., Q_p, J)
+            R[:,m] = T_f
+
+    # Delta-circuit thermal resistances
+    Rd = np.array([[np.asscalar(R), R_f[0]+R_f[1]+R_p[0]],
+                   [R_f[0]+R_f[1]+R_p[0], 1.0e9]])
 
     return R, Rd
 
