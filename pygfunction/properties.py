@@ -10,10 +10,8 @@ class Fluid:
 
         Parameters
         ----------
-        m_flow: float
-            The fluid mass flow rate per borehole (kg/s)
         T: float, optional
-            The temperature of the fluid (Kelvin)
+            The temperature of the fluid (Celcius)
         P: float, optional
             The pressure of the fluid (Pascal)
         mixer: str, optional
@@ -31,40 +29,39 @@ class Fluid:
         Examples
         ----------
         >>> import pygfunction as gt
-        >>> m_flow = 0.25  # Total fluid mass flow rate per borehole (kg/s)
-        >>> T = 20 + 273  # Temp at 20 C for now to match GLHEPRO
+        >>> T = 20.     # Temp at 20 C
         >>> gage_P = 20  # PsiG
         >>> atm_P = 14.69595
         >>> P = (gage_P + atm_P) * 6894.75728  # Pressure in Pa
 
         >>> # pure water
-        >>> fluid = gt.properties.Fluid(m_flow, T=T, P=P)
-        >>> print(fluid.__repr__())
+        >>> fluid = gt.properties.Fluid(T=T, P=P)
+        >>> print(fluid)
 
         >>> # 20 % propylene glycol mixed with water
         >>> mix = 'MPG'
         >>> percent = 20
-        >>> fluid = gt.properties.Fluid(m_flow, T=T, P=P, mixer=mix, percent=percent)
+        >>> fluid = gt.properties.Fluid(T=T, P=P, mixer=mix, percent=percent)
 
         >>> # 60% ethylene glycol mixed with water
         >>> mix = 'MEG'
         >>> percent = 60
-        >>> fluid = gt.properties.Fluid(m_flow, T=T, P=P, mixer=mix, percent=percent)
-        >>> print(fluid.__repr__())
+        >>> fluid = gt.properties.Fluid(T=T, P=P, mixer=mix, percent=percent)
+        >>> print(fluid)
 
         >>> # 5% methanol mixed with water water
         >>> mix = 'MMA'
         >>> percent = 5
-        >>> fluid = gt.properties.Fluid(m_flow, T=T, P=P, mixer=mix, percent=percent)
-        >>> print(fluid.__repr__())
+        >>> fluid = gt.properties.Fluid(T=T, P=P, mixer=mix, percent=percent)
+        >>> print(fluid)
 
         >>> # ethanol / water
         >>> mix = 'MEA'
         >>> percent = 10
-        >>> fluid = gt.properties.Fluid(m_flow, T=T, P=P, mixer=mix, percent=percent)
-        >>> print(fluid.__repr__())
+        >>> fluid = gt.properties.Fluid(T=T, P=P, mixer=mix, percent=percent)
+        >>> print(fluid)
     """
-    def __init__(self, m_flow, T: float = 293., P: float = 239220., mixer: str = 'MEG', percent: float = 0):
+    def __init__(self, T: float = 20., P: float = 239220., mixer: str = 'MEG', percent: float = 0):
         self.fluid_mix = 'INCOMP::' + mixer + '-' + str(percent) + '%'
         if mixer == 'MEG':
             pass
@@ -78,8 +75,8 @@ class Fluid:
         else:
             warnings.warn('It is unknown whether or not cool props has the mixing fluid requested, '
                           'proceed with caution.')
-        self.m_flow = m_flow                            # Total fluid mass flow rate per borehole {kg/s}
-        self.T = T                                      # temperature of the fluid {K}
+        self.T_C = T                                    # temperature of the fluid {C}
+        self.T_K = T + 273.15                           # temperature of the fluid {C}
         self.P = P                                      # pressure of the fluid in {Pa}
         self.rho = self.density()                       # Density, {kg/m^3}
         self.mu = self.dynamic_viscosity()              # Dynamic Viscosity, {Pa s} or {N s/ m^2}
@@ -101,22 +98,22 @@ class Fluid:
             dnary[item].append('{:.5E}'.format(self.__dict__[item]))
 
     def density(self):
-        return PropsSI('D', 'T', self.T, 'P', self.P, self.fluid_mix)
+        return PropsSI('D', 'T', self.T_K, 'P', self.P, self.fluid_mix)
 
     def dynamic_viscosity(self):
-        return PropsSI('V', 'T', self.T, 'P', self.P, self.fluid_mix)
+        return PropsSI('V', 'T', self.T_K, 'P', self.P, self.fluid_mix)
 
     def kinematic_viscosity(self):
         return self.mu / self.rho
 
     def mass_heat_capacity(self):
-        return PropsSI('C', 'T', self.T, 'P', self.P, self.fluid_mix)
+        return PropsSI('C', 'T', self.T_K, 'P', self.P, self.fluid_mix)
 
     def volumetric_heat_capacity(self):
         return self.rho * self.cp / 1000
 
     def thermal_conductivity(self):
-        return PropsSI('L', 'T', self.T, 'P', self.P, self.fluid_mix)
+        return PropsSI('L', 'T', self.T_K, 'P', self.P, self.fluid_mix)
 
     def Prandlt_number(self):
-        return PropsSI('PRANDTL', 'T', self.T, 'P', self.P, self.fluid_mix)
+        return PropsSI('PRANDTL', 'T', self.T_K, 'P', self.P, self.fluid_mix)
