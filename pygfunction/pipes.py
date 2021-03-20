@@ -2130,7 +2130,7 @@ def convective_heat_transfer_coefficient_circular_pipe(m_flow, r_in, visc, den,
         Nu = 3.66
     h_fluid = k * Nu / D
 
-    return h_fluid, Re, Nu
+    return h_fluid
 
 
 def conduction_thermal_resistance_circular_pipe(r_in, r_out, k):
