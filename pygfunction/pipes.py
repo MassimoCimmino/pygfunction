@@ -2113,7 +2113,7 @@ def convective_heat_transfer_coefficient_circular_pipe(m_flow, r_in, visc, den,
     transition_lower = 2300.
     transition_upper = 4000.
 
-    if Re > transition_upper:
+    if Re >= transition_upper:
         # Nusselt number from Gnielinski
         Nu = Gnielinski(Re, Pr, fDarcy)
     elif transition_lower < Re < transition_upper:
