@@ -56,7 +56,21 @@ class gFunction(object):
         """
         self.time = time
         # TODO : self.check_assertions()  # check to make sure none of the instances in the class has an undesired type (Acceptable boundary conditions should be checked here ((?)))
+        if self.solver.disp:
+            print(60*'-')
+            print('Calculating g-function for boundary condition : ' + self.boundary_condition)
+            print(60*'-')
+        # Initialize chrono
+        tic = tim.time()
+
+        # Evaluate g-function
         self.gFunc = self.solver.solve(time, self.alpha)
+        toc = tim.time()
+
+        if self.solver.disp:
+            print('Total time for g-function evaluation: {} sec'.format(
+                toc - tic))
+            print(60*'-')
         return self.gFunc
 
     def check_assertions(self):
