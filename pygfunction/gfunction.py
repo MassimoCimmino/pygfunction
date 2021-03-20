@@ -4,6 +4,7 @@ import time as tim
 from functools import partial
 from multiprocessing import Pool
 
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.constants import pi
 from scipy.interpolate import interp1d as interp1d
@@ -72,6 +73,473 @@ class gFunction(object):
                 toc - tic))
             print(60*'-')
         return self.gFunc
+
+    def visualize_g_function(self):
+        """
+        Plot the g-function of the borefield.
+
+        Returns
+        -------
+        fig : figure
+            Figure object (matplotlib).
+
+        """
+        # Configure figure and axes
+        fig = self._initialize_figure()
+        ax = fig.add_subplot(111)
+        ax.set_xlabel(r'ln$(t/t_s)$')
+        ax.set_ylabel(r'$g$-function')
+        self._format_axes(ax)
+
+        # Borefield characteristic time
+        ts = np.mean([b.H for b in self.boreholes])**2/(9.*self.alpha)
+        # Dimensionless time (log)
+        lntts = np.log(self.time/ts)
+        # Draw g-function
+        ax.plot(lntts, self.gFunc)
+
+        # Adjust figure to window
+        plt.tight_layout()
+        return fig
+
+    def visualize_heat_extraction_rates(self, iBoreholes=None):
+        """
+        Plot the time-variation of the average heat extraction rates.
+
+        Parameters
+        ----------
+        iBoreholes : list of int
+            Borehole indices to plot heat extraction rates.
+
+        Returns
+        -------
+        fig : figure
+            Figure object (matplotlib).
+
+        """
+        # If iBoreholes is None, then plot all boreholes
+        if iBoreholes is None:
+            iBoreholes = range(len(self.boreholes))
+        # Import heat extraction rates
+        Q = self._heat_extraction_rates(iBoreholes)
+
+        # Configure figure and axes
+        fig = self._initialize_figure()
+        ax1 = fig.add_subplot(121)
+        ax1.set_xlabel(r'$x$ [m]')
+        ax1.set_ylabel(r'$y$ [m]')
+        ax1.axis('equal')
+        self._format_axes(ax1)
+        ax2 = fig.add_subplot(122)
+        ax2.set_xlabel(r'ln$(t/t_s)$')
+        ax2.set_ylabel(r'$\bar{Q}_b$')
+        self._format_axes(ax2)
+
+        # Borefield characteristic time
+        ts = np.mean([b.H for b in self.boreholes])**2/(9.*self.alpha)
+        # Dimensionless time (log)
+        lntts = np.log(self.time/ts)
+        # Plot curves for requested boreholes
+        for (i, Qi) in zip(iBoreholes, Q):
+            line = ax2.plot(lntts, Qi)
+            color = line[-1]._color
+            ax1.plot(self.boreholes[i].x,
+                     self.boreholes[i].y,
+                     marker='o',
+                     color=color)
+        # Draw positions of other boreholes
+        for i in range(len(self.boreholes)):
+            if i not in iBoreholes:
+                ax1.plot(self.boreholes[i].x,
+                         self.boreholes[i].y,
+                         marker='o',
+                         color='k')
+
+        # Adjust figure to window
+        plt.tight_layout()
+        return fig
+
+    def visualize_heat_extraction_rate_profiles(
+            self, time=None, iBoreholes=None):
+        """
+        Plot the heat extraction rate profiles at chosen time.
+
+        Parameters
+        ----------
+        time : float
+            Values of time (in seconds) to plot heat extraction rate profiles.
+            If time is None, heat extraction rates are plotted at the last
+            time step.
+        iBoreholes : list of int
+            Borehole indices to plot heat extraction rate profiles.
+
+        Returns
+        -------
+        fig : figure
+            Figure object (matplotlib).
+
+        """
+        # If iBoreholes is None, then plot all boreholes
+        if iBoreholes is None:
+            iBoreholes = range(len(self.boreholes))
+        # Import heat extraction rate profiles
+        z, Q = self._heat_extraction_rate_profiles(time, iBoreholes)
+
+        # Configure figure and axes
+        fig = self._initialize_figure()
+        ax1 = fig.add_subplot(121)
+        ax1.set_xlabel(r'$x$ [m]')
+        ax1.set_ylabel(r'$y$ [m]')
+        ax1.axis('equal')
+        self._format_axes(ax1)
+        ax2 = fig.add_subplot(122)
+        ax2.set_xlabel(r'$Q_b$')
+        ax2.set_ylabel(r'$z$ [m]')
+        ax2.invert_yaxis()
+        self._format_axes(ax2)
+
+        # Plot curves for requested boreholes
+        for (i, zi, Qi) in zip(iBoreholes, z, Q):
+            line = ax2.plot(Qi, zi)
+            color = line[-1]._color
+            ax1.plot(self.boreholes[i].x, self.boreholes[i].y, marker='o', color=color)
+        # Draw positions of other boreholes
+        for i in range(len(self.boreholes)):
+            if i not in iBoreholes:
+                ax1.plot(self.boreholes[i].x, self.boreholes[i].y, marker='o', color='k')
+
+        plt.tight_layout()
+        return fig
+
+    def visualize_temperatures(self, iBoreholes=None):
+        """
+        Plot the time-variation of the average borehole wall temperatures.
+
+        Parameters
+        ----------
+        iBoreholes : list of int
+            Borehole indices to plot temperatures.
+
+        Returns
+        -------
+        fig : figure
+            Figure object (matplotlib).
+
+        """
+        # If iBoreholes is None, then plot all boreholes
+        if iBoreholes is None:
+            iBoreholes = range(len(self.boreholes))
+        # Import temperatures
+        Tb = self._temperatures(iBoreholes)
+
+        # Configure figure and axes
+        fig = self._initialize_figure()
+        ax1 = fig.add_subplot(121)
+        ax1.set_xlabel(r'$x$ [m]')
+        ax1.set_ylabel(r'$y$ [m]')
+        ax1.axis('equal')
+        self._format_axes(ax1)
+        ax2 = fig.add_subplot(122)
+        ax2.set_xlabel(r'ln$(t/t_s)$')
+        ax2.set_ylabel(r'$\bar{T}_b$')
+        self._format_axes(ax2)
+
+        # Borefield characteristic time
+        ts = np.mean([b.H for b in self.boreholes])**2/(9.*self.alpha)
+        # Dimensionless time (log)
+        lntts = np.log(self.time/ts)
+        # Plot curves for requested boreholes
+        for (i, Tbi) in zip(iBoreholes, Tb):
+            line = ax2.plot(lntts, Tbi)
+            color = line[-1]._color
+            ax1.plot(self.boreholes[i].x,
+                     self.boreholes[i].y,
+                     marker='o',
+                     color=color)
+        # Draw positions of other boreholes
+        for i in range(len(self.boreholes)):
+            if i not in iBoreholes:
+                ax1.plot(self.boreholes[i].x,
+                         self.boreholes[i].y,
+                         marker='o',
+                         color='k')
+
+        # Adjust figure to window
+        plt.tight_layout()
+        return fig
+
+    def visualize_temperature_profiles(self, time=None, iBoreholes=None):
+        """
+        Plot the borehole wall temperature profiles at chosen time.
+
+        Parameters
+        ----------
+        time : float
+            Values of time (in seconds) to plot temperature profiles.
+            If time is None, temperatures are plotted at the last time step.
+        iBoreholes : list of int
+            Borehole indices to plot temperature profiles.
+
+        Returns
+        -------
+        fig : figure
+            Figure object (matplotlib).
+
+        """
+        # If iBoreholes is None, then plot all boreholes
+        if iBoreholes is None:
+            iBoreholes = range(len(self.boreholes))
+        # Import temperature profiles
+        z, Tb = self._temperature_profiles(time, iBoreholes)
+
+        # Configure figure and axes
+        fig = self._initialize_figure()
+        ax1 = fig.add_subplot(121)
+        ax1.set_xlabel(r'$x$ [m]')
+        ax1.set_ylabel(r'$y$ [m]')
+        ax1.axis('equal')
+        self._format_axes(ax1)
+        ax2 = fig.add_subplot(122)
+        ax2.set_xlabel(r'$T_b$')
+        ax2.set_ylabel(r'$z$ [m]')
+        ax2.invert_yaxis()
+        self._format_axes(ax2)
+
+        # Plot curves for requested boreholes
+        for (i, zi, Tbi) in zip(iBoreholes, z, Tb):
+            line = ax2.plot(Tbi, zi)
+            color = line[-1]._color
+            ax1.plot(self.boreholes[i].x,
+                     self.boreholes[i].y,
+                     marker='o',
+                     color=color)
+        # Draw positions of other boreholes
+        for i in range(len(self.boreholes)):
+            if i not in iBoreholes:
+                ax1.plot(self.boreholes[i].x,
+                         self.boreholes[i].y,
+                         marker='o',
+                         color='k')
+
+        plt.tight_layout()
+        return fig
+
+    def _heat_extraction_rates(self, iBoreholes):
+        """
+        Extract and format heat extraction rates for plotting.
+
+        Parameters
+        ----------
+        iBoreholes : list of int
+            Borehole indices to extract heat extration rates.
+
+        Returns
+        -------
+        Q : list of array
+            Heat extraction rates (dimensionless).
+
+        """
+        # Initialize list
+        Q = []
+        for i in iBoreholes:
+            if self.boundary_condition == 'UHTR':
+                # For the UHTR boundary condition, the heat extraction rate is
+                # constant. A vector of length len(self.solver.time) is
+                # required for the time-dependent figure.
+                Q.append(self.solver.Q*np.ones(len(self.solver.time)))
+            else:
+                # For other boundary conditions, evaluate the average
+                # heat extraction rate.
+                i0 = i*self.solver.nSegments
+                i1 = i0 + self.solver.nSegments
+                Q.append(np.mean(self.solver.Q[i0:i1,:], axis=0))
+        return Q
+
+    def _heat_extraction_rate_profiles(self, time, iBoreholes):
+        """
+        Extract and format heat extraction rate profiles for plotting.
+
+        Parameters
+        ----------
+        time : float
+            Values of time (in seconds) to extract heat extraction rate
+            profiles. If time is None, heat extraction rates are extracted at
+            the last time step.
+        iBoreholes : list of int
+            Borehole indices to extract heat extraction rate profiles.
+
+        Returns
+        -------
+        z : list of array
+            Depths (in meters) corresponding to heat extraction rates.
+        Q : list of array
+            Heat extraction rates (dimensionless).
+
+        """
+        # Initialize lists
+        z = []
+        Q = []
+        for i in iBoreholes:
+            if self.boundary_condition == 'UHTR':
+                # For the UHTR boundary condition, the solver only returns one
+                # heat extraction rate (uniform and equal for all boreholes).
+                # The heat extraction rate is duplicated to draw from
+                # z = D to z = D + H.
+                z.append(
+                    np.array([self.boreholes[i].D,
+                              self.boreholes[i].D + self.boreholes[i].H]))
+                Q.append(np.array(2*[self.solver.Q]))
+            else:
+                i0 = i*self.solver.nSegments
+                i1 = i0 + self.solver.nSegments
+                if time is None:
+                    # If time is None, heat extraction rates are extracted at
+                    # the last time step.
+                    Qi = self.solver.Q[i0:i1,-1].flatten()
+                else:
+                    # Otherwise, heat extraction rates are interpolated.
+                    Qi = interp1d(self.time, self.solver.Q[i0:i1,:],
+                                  kind='linear',
+                                  copy=False,
+                                  axis=1)(time).flatten()
+                if self.solver.nSegments > 1:
+                    # Borehole length ratio at the mid-depth of each segment
+                    z_ratio = np.linspace(start=0.5/self.solver.nSegments,
+                                          stop=1-0.5/self.solver.nSegments,
+                                          num=self.solver.nSegments)
+                    z.append(self.boreholes[i].D + self.boreholes[i].H*z_ratio)
+                    Q.append(Qi)
+                else:
+                    # If there is only one segment, the heat extraction rate is
+                    # duplicated to draw from z = D to z = D + H.
+                    z.append(
+                        np.array([self.boreholes[i].D,
+                                  self.boreholes[i].D + self.boreholes[i].H]))
+                    Q.append(np.array(2*[np.asscalar(Qi)]))
+        return z, Q
+
+    def _temperatures(self, iBoreholes):
+        """
+        Extract and format borehole wall temperatures for plotting.
+
+        Parameters
+        ----------
+        iBoreholes : list of int
+            Borehole indices to extract temperatures.
+
+        Returns
+        -------
+        Tb : list of array
+            Borehole wall temperatures (dimensionless).
+
+        """
+        # Initialize list
+        Tb = []
+        for i in iBoreholes:
+            if self.boundary_condition == 'UBWT':
+                # For the UBWT boundary condition, the solver only returns one
+                # borehole wall temperature (uniform and equal for all
+                # boreholes).
+                Tb.append(self.solver.Tb)
+            else:
+                # For other boundary conditions, evaluate the average
+                # borehole wall temperature.
+                i0 = i*self.solver.nSegments
+                i1 = i0 + self.solver.nSegments
+                Tb.append(np.mean(self.solver.Tb[i0:i1,:], axis=0))
+        return Tb
+
+    def _temperature_profiles(self, time, iBoreholes):
+        """
+        Extract and format borehole wall temperature profiles for plotting.
+
+        Parameters
+        ----------
+        time : float
+            Values of time (in seconds) to extract temperature profiles.
+            If time is None, temperatures are extracted at the last time step.
+        iBoreholes : list of int
+            Borehole indices to extract temperature profiles.
+
+        Returns
+        -------
+        z : list of array
+            Depths (in meters) corresponding to borehole wall temperatures.
+        Tb : list of array
+            Borehole wall temperatures (dimensionless).
+
+        """
+        # Initialize lists
+        z = []
+        Tb = []
+        for i in iBoreholes:
+            if self.boundary_condition == 'UBWT':
+                # For the UBWT boundary condition, the solver only returns one
+                # borehole wall temperature (uniform and equal for all
+                # boreholes). The temperature is duplicated to draw from
+                # z = D to z = D + H.
+                z.append(
+                    np.array([self.boreholes[i].D,
+                              self.boreholes[i].D + self.boreholes[i].H]))
+                if time is None:
+                    # If time is None, temperatures are extracted at the last
+                    # time step.
+                    Tbi = np.asscalar(self.solver.Tb[-1])
+                else:
+                    # Otherwise, temperatures are interpolated.
+                    Tbi = np.asscalar(
+                        interp1d(self.time,
+                                 self.solver.Tb[:],
+                                 kind='linear',
+                                 copy=False)(time))
+                Tb.append(np.array(2*[Tbi]))
+            else:
+                i0 = i*self.solver.nSegments
+                i1 = i0 + self.solver.nSegments
+                if time is None:
+                    # If time is None, temperatures are extracted at the last
+                    # time step.
+                    Tbi = self.solver.Tb[i0:i1,-1].flatten()
+                else:
+                    # Otherwise, temperatures are interpolated.
+                    Tbi = interp1d(self.time,
+                                   self.solver.Tb[i0:i1,:],
+                                   kind='linear',
+                                   copy=False,
+                                   axis=1)(time).flatten()
+                if self.solver.nSegments > 1:
+                    # Borehole length ratio at the mid-depth of each segment
+                    z_ratio = np.linspace(start=0.5/self.solver.nSegments,
+                                          stop=1-0.5/self.solver.nSegments,
+                                          num=self.solver.nSegments)
+                    z.append(self.boreholes[i].D + self.boreholes[i].H*z_ratio)
+                    Tb.append(Tbi)
+                else:
+                    # If there is only one segment, the temperature is
+                    # duplicated to draw from z = D to z = D + H.
+                    z.append(
+                        np.array([self.boreholes[i].D,
+                                  self.boreholes[i].D + self.boreholes[i].H]))
+                    Tb.append(np.array(2*[np.asscalar(Tbi)]))
+        return z, Tb
+
+    def _initialize_figure(self):
+        plt.rc('font', size=9)
+        plt.rc('xtick', labelsize=9)
+        plt.rc('ytick', labelsize=9)
+        plt.rc('lines', lw=1.5, markersize=5.0)
+        plt.rc('savefig', dpi=500)
+        fig = plt.figure()
+        return fig
+
+    def _format_axes(self, ax):
+        from matplotlib.ticker import AutoMinorLocator
+        ax.tick_params(
+            axis='both', which='both', direction='in',
+            bottom=True, top=True, left=True, right=True)
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+        return
 
     def check_assertions(self):
         """
