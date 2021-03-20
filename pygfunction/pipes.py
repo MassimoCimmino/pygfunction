@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 from scipy.constants import pi
 from scipy.special import binom
+from scipy.interpolate import interp1d
 
 
 class _BasePipe(object):
@@ -2010,6 +2011,55 @@ def fluid_friction_factor_circular_pipe(m_flow, r_in, visc, den, epsilon,
     return fDarcy
 
 
+def Gnielinski(Re, Pr, fDarcy):
+    """
+    Cengel and Ghajar (2015, pg. 497) say that the Gnielinski (1976) equation should be considered the preferred
+    equation for determining the Nusselt number for the transition and turbulent in internal forced flow
+
+    .. math::
+
+        0.5 \leq Pr \leq 2000
+
+        3 \times 10^3 < Re < 5 \times 10^6
+
+
+    Parameters
+    ----------
+    Re : float
+        Reynolds number
+    Pr : float
+        Prandlt Number
+    fDarcy : float
+        Darcy-Weisbach friction factor
+
+    Returns
+    -------
+    Nu : float
+        The Nusselt number
+
+    """
+    import warnings
+
+    # Warn the user if the Reynolds number is out of bounds, but don't break
+    if 3.0E03 < Re < 5.0E06:
+        pass
+    else:
+        warnings.warn('This Nusselt calculation is only valid for Reynolds number in the range'
+                      'of 3.0E03 < Re < 5.0E06, your value falls outside of the range at'
+                      ' Re={0:.4f}'.format(Re))
+    # Warn the user if the Prandlt number is out of bounds
+    if 0.5 <= Pr <= 2000.:
+        pass
+    else:
+        warnings.warn('This Nusselt calculation is only valid for Prandlt numbers in the range'
+                      'of 0.5 <= Pr <= 2000, your value falls outside of the range at'
+                      ' Pr={0:.4f}'.format(Pr))
+
+    Nu = 0.125*fDarcy * (Re - 1.0e3) * Pr / \
+         (1.0 + 12.7 * np.sqrt(0.125*fDarcy) * (Pr**(2.0/3.0) - 1.0))
+    return Nu
+
+
 def convective_heat_transfer_coefficient_circular_pipe(m_flow, r_in, visc, den,
                                                        k, cp, epsilon):
     """
@@ -2054,15 +2104,33 @@ def convective_heat_transfer_coefficient_circular_pipe(m_flow, r_in, visc, den,
     # Darcy friction factor
     fDarcy = fluid_friction_factor_circular_pipe(m_flow, r_in, visc, den,
                                                  epsilon)
-    if Re > 2300.:
+
+    # To ensure there are no dramatic jumps in the equation, an interpolation in a transition
+    # region of 2300 <= Re <= 4000 will be used
+    # Cengel and Ghajar (2015, pg. 476) state that Re> 4000 is a conservative value to consider
+    # the flow to be turbulent in piping networks
+
+    transition_lower = 2300.
+    transition_upper = 4000.
+
+    if Re > transition_upper:
         # Nusselt number from Gnielinski
-        Nu = 0.125*fDarcy * (Re - 1.0e3) * Pr / \
-            (1.0 + 12.7 * np.sqrt(0.125*fDarcy) * (Pr**(2.0/3.0) - 1.0))
+        Nu = Gnielinski(Re, Pr, fDarcy)
+    elif transition_lower < Re < transition_upper:
+        Nu_lam = 3.66  # constant surface temperature laminar Nusselt number (Re = 2300.)
+        # Nusselt number at the upper bound of the "transition" region between laminar value
+        # and Gnielinski correlation (Re = 4000.)
+        Nu_turb = Gnielinski(transition_upper, Pr, fDarcy)
+        # outer bound point pairs for 1D linear interpolation
+        interp_pts = [(transition_lower, Nu_lam), (transition_upper, Nu_turb)]
+        x, y = list(zip(*interp_pts))  # seperate x and y values
+        f = interp1d(x, y, kind='linear')
+        Nu = f(Re).tolist()  # scipy.interp1d returns a value in an array, call tolist() to make it a float value
     else:
         Nu = 3.66
     h_fluid = k * Nu / D
 
-    return h_fluid
+    return h_fluid, Re, Nu
 
 
 def conduction_thermal_resistance_circular_pipe(r_in, r_out, k):
