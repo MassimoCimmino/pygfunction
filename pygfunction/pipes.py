@@ -2013,15 +2013,24 @@ def fluid_friction_factor_circular_pipe(m_flow, r_in, visc, den, epsilon,
 
 def Gnielinski(Re, Pr, fDarcy):
     """
-    Cengel and Ghajar (2015, pg. 497) say that the Gnielinski (1976) equation should be considered the preferred
-    equation for determining the Nusselt number for the transition and turbulent in internal forced flow
+    An empirical equation developed by Volker Gnielinski (1975) [#Gnielinski1975]_ based on
+    experimental data for turbulent flow in pipes.
+
+    Cengel and Ghajar (2015, pg. 497) [#CengelGhajar2015]_ say that the Gnielinski equation should be
+    considered the preferred equation for determining the Nusselt number in the transition and turbulent region.
 
     .. math::
+        	\\text{Nu} = \\dfrac{(f/8)(\\text{Re}-1000)\\text{Pr}}{1 + 12.7(f/8)^{0.5} (\\text{Pr}^{2/3}-1)} \\;\\;\\;
+        	\\bigg(
+            \\begin{array}{c}
+                0.5 \leq \\text{Pr} \leq 2000 \\\\
+                3 \\times 10^5 <  \\text{Re} < 5 \\times 10^6
+            \\end{array}
+            \\bigg)
 
-        0.5 \leq Pr \leq 2000
+    .. note::
 
-        3 \times 10^3 < Re < 5 \times 10^6
-
+        This equation does not apply to 2300 < Re < 4000.
 
     Parameters
     ----------
@@ -2030,12 +2039,20 @@ def Gnielinski(Re, Pr, fDarcy):
     Pr : float
         Prandlt Number
     fDarcy : float
-        Darcy-Weisbach friction factor
+        Darcy friction factor found with :func:`fluid_friction_factor_circular_pipe`
 
     Returns
     -------
     Nu : float
         The Nusselt number
+
+    References
+    ------------
+    .. [#Gnielinski1975] Gnielinski, V. (1975). Neue Gleichungen für den Wärme- und den
+        Stoffübergang in turbulent durchströmten Rohren und Kanälen. Forschung im Ingenieurwesen,
+        41(1), 8–16. https://doi.org/10.1007/BF02559682
+    .. [#CengelGhajar2015] Çengel, Y.A., & Ghajar, A.J. (2015). Heat and mass transfer :
+        fundamentals & applications (Fifth edition.). McGraw-Hill.
 
     """
     import warnings
@@ -2065,6 +2082,12 @@ def convective_heat_transfer_coefficient_circular_pipe(m_flow, r_in, visc, den,
     """
     Evaluate the convective heat transfer coefficient for circular pipes.
 
+    The Nusselt number must first be determined to find the convection coefficient.
+    Determination of the Nusselt number in turbulent flow is done by calling :func:`Gnielinski`. An analytical solution
+    for constant borehole wall surface temperature is used for laminar flow. As noted by :func:`Gnielinski`, there is
+    a gap in applicability from 2300 < Re < 4000. This can become an issue in the design process. To over come this,
+    a linear interpolation is used over that range. This approach was verified by Gnielinski (2013) [#Gnielinksi2013]_.
+
     Parameters
     ----------
     m_flow : float
@@ -2090,6 +2113,10 @@ def convective_heat_transfer_coefficient_circular_pipe(m_flow, r_in, visc, den,
     Examples
     --------
 
+    References
+    -----------
+    .. [#Gnielinksi2013] Gnielinski, V. (2013). On heat transfer in tubes. International Journal of Heat and
+        Mass Transfer, 63, 134–140. https://doi.org/10.1016/j.ijheatmasstransfer.2013.04.015
     """
     # Hydraulic diameter
     D = 2.*r_in
@@ -2110,22 +2137,19 @@ def convective_heat_transfer_coefficient_circular_pipe(m_flow, r_in, visc, den,
     # Cengel and Ghajar (2015, pg. 476) state that Re> 4000 is a conservative value to consider
     # the flow to be turbulent in piping networks
 
-    transition_lower = 2300.
-    transition_upper = 4000.
+    critical_lower = 2300.
+    critical_upper = 4000.
 
-    if Re >= transition_upper:
+    if Re >= critical_upper:
         # Nusselt number from Gnielinski
         Nu = Gnielinski(Re, Pr, fDarcy)
-    elif transition_lower < Re < transition_upper:
-        Nu_lam = 3.66  # constant surface temperature laminar Nusselt number (Re = 2300.)
+    elif critical_lower < Re < critical_upper:
+        Nu_lam = 3.66  # constant surface temperature laminar Nusselt number (Re < 2300.)
         # Nusselt number at the upper bound of the "transition" region between laminar value
         # and Gnielinski correlation (Re = 4000.)
-        Nu_turb = Gnielinski(transition_upper, Pr, fDarcy)
-        # outer bound point pairs for 1D linear interpolation
-        interp_pts = [(transition_lower, Nu_lam), (transition_upper, Nu_turb)]
-        x, y = list(zip(*interp_pts))  # seperate x and y values
-        f = interp1d(x, y, kind='linear')
-        Nu = f(Re).tolist()  # scipy.interp1d returns a value in an array, call tolist() to make it a float value
+        Nu_turb = Gnielinski(critical_upper, Pr, fDarcy)
+        gamma = (Re - critical_lower) / (critical_upper - critical_lower)  # Equation (16) from Gnielinski (2013)
+        Nu = (1 - gamma) * Nu_lam + gamma * Nu_turb  # Equation (17) from Gnielinski (2013)
     else:
         Nu = 3.66
     h_fluid = k * Nu / D
