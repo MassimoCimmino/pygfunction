@@ -2030,7 +2030,7 @@ def Gnielinski(Re, Pr, fDarcy):
 
     .. note::
 
-        This equation does not apply to 2300 < Re < 4000.
+        This equation does not apply to 2300 < Re < 3000.
 
     Parameters
     ----------
@@ -2085,8 +2085,9 @@ def convective_heat_transfer_coefficient_circular_pipe(m_flow, r_in, visc, den,
     The Nusselt number must first be determined to find the convection coefficient.
     Determination of the Nusselt number in turbulent flow is done by calling :func:`Gnielinski`. An analytical solution
     for constant borehole wall surface temperature is used for laminar flow. As noted by :func:`Gnielinski`, there is
-    a gap in applicability from 2300 < Re < 4000. This can become an issue in the design process. To over come this,
-    a linear interpolation is used over that range. This approach was verified by Gnielinski (2013) [#Gnielinksi2013]_.
+    a gap in applicability from 2300 < Re < 3000. This can become an issue in the design process. To over come this,
+    a linear interpolation is used over the range 2300 < Re < 4000. This approach was verified by Gnielinski (2013)
+    [#Gnielinksi2013]_.
 
     Parameters
     ----------
