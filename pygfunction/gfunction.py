@@ -23,6 +23,7 @@ class gFunction(object):
         self.options = options
         # Check if the input is a Network object
         # TODO m_flow (etc) need to be initialized in the network object
+        # TODO : self.check_assertions()  # check to make sure none of the instances in the class has an undesired type
         if isinstance(boreholes_or_network, Network):
             self.network = boreholes_or_network
             self.boreholes = boreholes_or_network.b
@@ -44,7 +45,8 @@ class gFunction(object):
 
     def evaluate_g_function(self, time):
         """
-        Compute the g-function based on the boundary condition supplied
+        Evaluate the g-function.
+
         Parameters
         ----------
         time : float or array
@@ -55,11 +57,12 @@ class gFunction(object):
         gFunction : float or array
             Values of the g-function
         """
+        # Save time values
         self.time = time
-        # TODO : self.check_assertions()  # check to make sure none of the instances in the class has an undesired type (Acceptable boundary conditions should be checked here ((?)))
         if self.solver.disp:
             print(60*'-')
-            print('Calculating g-function for boundary condition : ' + self.boundary_condition)
+            print('Calculating g-function for boundary condition : \'{}\''.format(
+                self.boundary_condition))
             print(60*'-')
         # Initialize chrono
         tic = tim.time()
@@ -110,6 +113,8 @@ class gFunction(object):
         ----------
         iBoreholes : list of int
             Borehole indices to plot heat extraction rates.
+            If iBoreholes is None, heat extraction rates are plotted for all
+            boreholes.
 
         Returns
         -------
@@ -172,6 +177,8 @@ class gFunction(object):
             time step.
         iBoreholes : list of int
             Borehole indices to plot heat extraction rate profiles.
+            If iBoreholes is None, heat extraction rates are plotted for all
+            boreholes.
 
         Returns
         -------
@@ -202,11 +209,17 @@ class gFunction(object):
         for (i, zi, Qi) in zip(iBoreholes, z, Q):
             line = ax2.plot(Qi, zi)
             color = line[-1]._color
-            ax1.plot(self.boreholes[i].x, self.boreholes[i].y, marker='o', color=color)
+            ax1.plot(self.boreholes[i].x,
+                     self.boreholes[i].y,
+                     marker='o',
+                     color=color)
         # Draw positions of other boreholes
         for i in range(len(self.boreholes)):
             if i not in iBoreholes:
-                ax1.plot(self.boreholes[i].x, self.boreholes[i].y, marker='o', color='k')
+                ax1.plot(self.boreholes[i].x,
+                         self.boreholes[i].y,
+                         marker='o',
+                         color='k')
 
         plt.tight_layout()
         return fig
@@ -219,6 +232,7 @@ class gFunction(object):
         ----------
         iBoreholes : list of int
             Borehole indices to plot temperatures.
+            If iBoreholes is None, temperatures are plotted for all boreholes.
 
         Returns
         -------
@@ -279,6 +293,7 @@ class gFunction(object):
             If time is None, temperatures are plotted at the last time step.
         iBoreholes : list of int
             Borehole indices to plot temperature profiles.
+            If iBoreholes is None, temperatures are plotted for all boreholes.
 
         Returns
         -------
@@ -524,6 +539,16 @@ class gFunction(object):
         return z, Tb
 
     def _initialize_figure(self):
+        """
+        Initialize a matplotlib figure object with overwritten default
+        parameters.
+
+        Returns
+        -------
+        fig : figure
+            Figure object (matplotlib).
+
+        """
         plt.rc('font', size=9)
         plt.rc('xtick', labelsize=9)
         plt.rc('ytick', labelsize=9)
@@ -533,10 +558,25 @@ class gFunction(object):
         return fig
 
     def _format_axes(self, ax):
+        """
+        Adjust axis parameters.
+
+        Parameters
+        ----------
+        ax : axis
+            Axis object (amtplotlib).
+
+        Returns
+        -------
+        None.
+
+        """
         from matplotlib.ticker import AutoMinorLocator
+        # Draw major and minor tick marks inwards
         ax.tick_params(
             axis='both', which='both', direction='in',
             bottom=True, top=True, left=True, right=True)
+        # Auto-adjust minor tick marks
         ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         return
