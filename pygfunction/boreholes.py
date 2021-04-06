@@ -101,6 +101,68 @@ class Borehole(object):
         return pos
 
 
+def check_duplicates(boreField):
+    """
+    The distance method :func:`Borehole.distance` is utilized to find all duplicate boreholes in a boreField.
+    This function considers a duplicate to be any pair of points that fall within each others radius.
+
+    Parameters
+    ----------
+    boreField : list
+        A list of :class:`Borehole` objects
+
+    Returns
+    -------
+    duplicate_pairs : list
+        A list of tuples where the tuples are pairs of duplicates
+    """
+
+    duplicate_pairs = []   # define an empty list to be appended to
+    for i in range(len(boreField)):
+        borehole_1 = boreField[i]
+        for j in range(i, len(boreField)):  # only loop over the unique interactions
+            borehole_2 = boreField[j]
+            if i == j:  # the distance of borehole itself will return the borehole radius from Borehole.distance()
+                continue
+            else:
+                dist = borehole_1.distance(borehole_2)
+            if abs(dist - borehole_1.r_b) < borehole_1.r_b:
+                duplicate_pairs.append((i, j))
+    return duplicate_pairs
+
+
+def remove_duplicates(boreField, duplicate_pairs):
+    """
+    Removes all of the duplicates found from the duplicate pairs returned in :func:`check_duplicates`.
+
+    Parameters
+    ----------
+    boreField : list
+        A list of :class:`Borehole` objects
+    duplicate_pairs : list
+        A list of borehole duplicates in tuples from :func:`check_duplicates`
+
+    Returns
+    -------
+    new_boreField : list
+        A boreField without duplicates
+    """
+    new_boreField = []
+
+    # values not to be included
+    duplicate_bores = []
+    for i in range(len(duplicate_pairs)):
+        duplicate_bores.append(duplicate_pairs[i][1])
+
+    for i in range(len(boreField)):
+        if i in duplicate_bores:
+            continue
+        else:
+            new_boreField.append(boreField[i])
+
+    return new_boreField
+
+
 def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b):
     """
     Build a list of boreholes in a rectangular bore field configuration.
