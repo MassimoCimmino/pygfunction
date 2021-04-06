@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 from scipy.constants import pi
 from scipy.special import binom
-from scipy.interpolate import interp1d
 
 
 class _BasePipe(object):
@@ -1818,10 +1817,10 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, J=2):
 
     References
     ----------
-    .. [#Hellstrom1991b] Hellstrom, G. (1991). Ground heat storage. Thermal
+    .. [#Hellstrom1991b] Hellström, G. (1991). Ground heat storage. Thermal
        Analyses of Duct Storage Systems I: Theory. PhD Thesis. University of
        Lund, Department of Mathematical Physics. Lund, Sweden.
-    .. [#Claesson2011] Claesson, J., & Hellstrom, G. (2011).
+    .. [#Claesson2011] Claesson, J., & Hellström, G. (2011).
        Multipole method to calculate borehole thermal resistances in a borehole
        heat exchanger. HVAC&R Research, 17(6), 895-911.
 
@@ -1958,19 +1957,32 @@ def fluid_friction_factor_circular_pipe(m_flow, r_in, visc, den, epsilon,
     """
     Evaluate the Darcy-Weisbach friction factor.
 
+    For laminar flow, the friction factor can be found with a simple analytical expression.
+
+    .. math::
+
+        f = \\dfrac{64}{Re} \\;\\;\\;\\; (\\text{laminar flow})
+
+    The Colebrook-White equation is used for turbulent flow. An iterative approach is taken.
+
+    .. math::
+
+        	\\dfrac{1}{\\sqrt{f}} = -2.0 \\log_{10} \\bigg( \\dfrac{\\epsilon / D}{3.7} +
+        	\\dfrac{2.51}{\\text{Re} \\sqrt{f}} \\bigg) \\;\\;\\;\\;\\; (\\text{turbulent flow})
+
     Parameters
     ----------
     m_flow : float
         Fluid mass flow rate (in kg/s).
     r_in : float
-        Inner radius of the pipes (in meters).
+        Inner radius of the pipes (in meters), or the hydraulic radius.
     visc : float
         Fluid dynamic viscosity (in kg/m-s).
     den : float
         Fluid density (in kg/m3).
     epsilon : float
         Pipe roughness (in meters).
-    tol : float
+    tol : float, optional
         Relative convergence tolerance on Darcy friction factor.
         Default is 1.0e-6.
 
@@ -2053,7 +2065,6 @@ def Gnielinski(Re, Pr, fDarcy):
         41(1), 8–16. https://doi.org/10.1007/BF02559682
     .. [#CengelGhajar2015] Çengel, Y.A., & Ghajar, A.J. (2015). Heat and mass transfer :
         fundamentals & applications (Fifth edition.). McGraw-Hill.
-
     """
     import warnings
 
@@ -2075,6 +2086,95 @@ def Gnielinski(Re, Pr, fDarcy):
     Nu = 0.125*fDarcy * (Re - 1.0e3) * Pr / \
          (1.0 + 12.7 * np.sqrt(0.125*fDarcy) * (Pr**(2.0/3.0) - 1.0))
     return Nu
+
+
+def convective_heat_transfer_coefficient_concentric_annulus(m_flow, r_a_in, r_a_out, visc, den,
+                                                            k, cp, epsilon):
+    """
+    Evaluate the inner and outer convective heat transfer coefficient for the annulus region of a concentric pipe.
+
+    Grundman (2007) referenced Hellström (1991) [#Hellstrom1991b]_ in the discussion about inner and outer
+    convection coefficients in an annulus region of a concentric pipe arrangement.
+
+    The following is valid for :math:`Re < 2300` and :math:`0.1 \leq Pr \leq 1000`
+
+    .. math::
+        \\text{Nu}_{ai} = 3.66 + 1.2(r^*)^{-0.8}
+
+    .. math::
+        \\text{Nu}_{ao} = 3.66 + 1.2(r^*)^{0.5}
+
+    Where :math:`r^* = r_{a,in} / r_{a,out}` is the ratio of the inner over the outer annulus radius.
+    Çengel and Ghajar (2015, pg. 476) [#CengelGhajar2015]_ state that inner and outer Nusselt numbers are
+    approximately equivalent for turbulent flow. They additionally state that Gnielinski :func:`Gnielinski`
+    can be used for turbulent flow. The linear interpolation from Gnielinski (2013) [#Gnielinksi2013]_
+    is used.
+
+    Parameters
+    ----------
+    m_flow: float
+        Mass flow rate of the fluid (in kg/s).
+    r_a_in: float
+        Pipe annulus inner radius (in meters).
+    r_a_out: float
+        Pipe annulus outer radius (in meters).
+    visc : float
+        Fluid dynamic viscosity (in kg/m-s).
+    den : float
+        Fluid density (in kg/m3).
+    k : float
+        Fluid thermal conductivity (in W/m-K).
+    cp : float
+        Fluid specific heat capacity (in J/kg-K).
+    epsilon : float
+        Pipe roughness (in meters).
+
+    Returns
+    -------
+    h_fluid_a_in: float
+        The convection heat transfer coefficient of the inner pipe annulus region (in W/m2-K).
+    h_fluid_o_in: float
+        The convection heat transfer coefficient of the outer pipe annulus region (in W/m2-K).
+
+    References
+    -----------
+    .. [#Grundman2007] Grundman, R. (2007) Improved design methods for ground heat exchangers.
+        Oklahoma State University, M.S. Thesis.
+    """
+
+    D_h = 2 * (r_a_out - r_a_in)  # Hydraulic diameter for concentric tube annulus region
+    Pr = cp * visc / k  # Prandlt number
+    Re = 4 * m_flow / visc / pi / D_h  # Reynolds number - Equation (8-5) on page 476 in Cengel and Ghajar (2015)
+    r_star = r_a_in / r_a_out  # Grundman (2007)
+    r_in = D_h / 2  # Hydraulic radius
+    fDarcy = fluid_friction_factor_circular_pipe(m_flow, r_in, visc, den, epsilon)  # Darcy-Wiesbach friction factor
+    # Define a region which is "critical" or not fully turbulent
+    critical_lower = 2300.
+    critical_upper = 4000.
+
+    # compute the Nusselt number based on the region the Reynolds number falls into
+    if Re >= critical_upper:
+        # Ghajar (2015, pg. 500-501) states that Gnielinski can be used for fully turbulent, and
+        # the inner and outer Nusselt numbers can be considered equivalent
+        Nu = Gnielinski(Re, Pr, fDarcy)
+        Nu_a_in = Nu
+        Nu_a_out = Nu
+    elif critical_lower < Re < critical_upper:
+        Nu_a_in_lam = 3.66 + 1.2 * r_star ** (-0.8)  # Inner Nusselt laminar
+        Nu_a_out_lam = 3.66 + 1.2 * r_star ** 0.5  # Outer Nusselt laminar
+        Nu_turb = Gnielinski(critical_upper, Pr, fDarcy)  # Inner and Outer turbulent Nusselt
+        gamma = (Re - critical_lower) / (critical_upper - critical_lower)  # Equation (16) from Gnielinski (2013)
+        # Linear interpolation for inner and outer Nusselt numbers
+        Nu_a_in = (1 - gamma) * Nu_a_in_lam + gamma * Nu_turb  # Equation (17) from Gnielinski (2013)
+        Nu_a_out = (1 - gamma) * Nu_a_out_lam + gamma * Nu_turb  # Equation (17) from Gnielinski (2013)
+    else:
+        Nu_a_in = 3.66 + 1.2 * r_star ** (-0.8)
+        Nu_a_out = 3.66 + 1.2 * r_star ** 0.5
+
+    h_fluid_a_in = k * Nu_a_in / D_h
+    h_fluid_a_out = k * Nu_a_out / D_h
+
+    return h_fluid_a_in, h_fluid_a_out, Re
 
 
 def convective_heat_transfer_coefficient_circular_pipe(m_flow, r_in, visc, den,
@@ -2243,7 +2343,7 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
 
     References
     ----------
-    .. [#Claesson2011b] Claesson, J., & Hellstrom, G. (2011).
+    .. [#Claesson2011b] Claesson, J., & Hellström, G. (2011).
        Multipole method to calculate borehole thermal resistances in a borehole
        heat exchanger. HVAC&R Research, 17(6), 895-911.
 
