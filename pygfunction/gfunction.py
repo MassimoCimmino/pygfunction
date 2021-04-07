@@ -16,30 +16,27 @@ from .networks import Network, network_thermal_resistance
 class gFunction(object):
     def __init__(self, boreholes_or_network, alpha, time=None,
                  method='similarities', boundary_condition=None, options=None):
+        # TODO : Separate documentation pages to describe methods and boundary conditions
         self.alpha = alpha
         self.time = time
         self.method = method
         self.boundary_condition = boundary_condition
         self.options = options
-        # Check if the input is a Network object
-        # TODO m_flow (etc) need to be initialized in the network object
-        # TODO : self.check_assertions()  # check to make sure none of the instances in the class has an undesired type
-        if isinstance(boreholes_or_network, Network):
-            self.network = boreholes_or_network
-            self.boreholes = boreholes_or_network.b
-            if boundary_condition is None:
-                self.boundary_condition = 'MIFT'
-        else:
-            self.network = None
-            self.boreholes = boreholes_or_network
-            if boundary_condition is None:
-                self.boundary_condition = 'UBWT'
+
+        # Format inputs and assign default values where needed
+        self._format_inputs(boreholes_or_network)
+        # Check the validity of inputs
+        self._check_inputs()
+
+        # Load the chosen solver
         if self.method.lower()=='similarities':
-            self.solver = Similarities(self.boreholes, self.network, time, self.boundary_condition, **self.options)
+            self.solver = Similarities(self.boreholes, self.network, self.time, self.boundary_condition, **self.options)
         elif self.method.lower()=='detailed':
-            self.solver = Detailed(self.boreholes, self.network, time, self.boundary_condition, **self.options)
+            self.solver = Detailed(self.boreholes, self.network, self.time, self.boundary_condition, **self.options)
         else:
             raise ValueError('\'{}\' is not a valid method.'.format(method))
+
+        # If a time vector is provided, evaluate the g-function
         if self.time is not None:
             self.gFunc = self.evaluate_g_function(self.time)
 
@@ -57,6 +54,8 @@ class gFunction(object):
         gFunction : float or array
             Values of the g-function
         """
+        assert np.all(time[:-1] <= time[1:]), \
+            "Time values must be provided in increasing order."
         # Save time values
         self.time = time
         if self.solver.disp:
@@ -581,25 +580,61 @@ class gFunction(object):
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         return
 
-    def check_assertions(self):
+    def _format_inputs(self, boreholes_or_network):
         """
-        This method ensures that the instances filled in the gFunction object are what is expected.
-        Returns
-        -------
-        None
+        Process and format the inputs to the gFunction class.
+
         """
-        assert isinstance(self.boreholes, list)     # boreholes must be in a list
-        assert len(self.boreholes) > 0              # there must be atleast one borehole location
-        assert type(self.boreholes[0] is Borehole)  # the list of boreholes must be made up of borehole objects
-        assert type(self.time) is np.ndarray or type(self.time) is float
-        assert type(self.alpha) is float
-        assert type(self.nSegments) is int
-        assert type(self.method) is str
-        assert type(self.use_similarities) is bool
-        assert type(self.disTol) is float
-        assert type(self.tol) is float
-        assert type(self.processes) is int
-        assert type(self.disp) is bool
+        # Convert borehole to a list if a single borehole is provided
+        if isinstance(boreholes_or_network, Borehole):
+            boreholes_or_network = [boreholes_or_network]
+        # Check if a borefield or a network is provided as an input and
+        # correctly assign the variables self.boreholes and self.network
+        if isinstance(boreholes_or_network, Network):
+            self.network = boreholes_or_network
+            self.boreholes = boreholes_or_network.b
+            # If a network is provided and no boundary condition is provided,
+            # use 'MIFT'
+            if self.boundary_condition is None:
+                self.boundary_condition = 'MIFT'
+        else:
+            self.network = None
+            self.boreholes = boreholes_or_network
+            # If a borefield is provided and no boundary condition is provided,
+            # use 'UBWT'
+            if self.boundary_condition is None:
+                self.boundary_condition = 'UBWT'
+        return
+
+    def _check_inputs(self):
+        """
+        This method ensures that the instances filled in the gFunction object
+        are what is expected.
+
+        """
+        assert isinstance(self.boreholes, list), \
+            "Boreholes must be provided in a list."
+        assert len(self.boreholes) > 0, \
+            "The list of boreholes is empty."
+        assert np.all([isinstance(b, Borehole) for b in self.boreholes]), \
+            "The list of boreholes contains elements that are not Borehole objects."
+        assert (self.network is None and not self.boundary_condition=='MIFT') or isinstance(self.network, Network), \
+            "The network is not a valid 'Network' object."
+        assert self.network is None or (self.network.m_flow is not None and self.network.cp is not None), \
+            "The mass flow rate 'm_flow' and heat capacity 'cp' must be " \
+            "provided at the instanciation of the 'Network' object."
+        assert type(self.time) is np.ndarray or type(self.time) is float or self.time is None, \
+            "Time should be a float or an array."
+        assert type(self.alpha) is float, \
+            "The thermal diffusivity 'alpha' should be a float or an array."
+        acceptable_boundary_conditions = ['UHTR', 'UBWT', 'MIFT']
+        assert type(self.boundary_condition) is str and self.boundary_condition in acceptable_boundary_conditions, \
+            "Boundary condition \'{}\' is not an acceptable boundary condition. \n" \
+            "Please provide one of the following inputs : {}".format(self.boundary_condition, acceptable_boundary_conditions)
+        acceptable_methods = ['detailed', 'similarities']
+        assert type(self.method) is str and self.method in acceptable_methods, \
+            "Method \'{}\' is not an acceptable method. \n" \
+            "Please provide one of the following inputs : {}".format(self.boundary_condition, acceptable_methods)
         return
 
 
@@ -656,20 +691,16 @@ class _BaseSolver(object):
         self.disp = disp
         self.profiles = profiles
         self.kind = kind
+        # Check the validity of inputs
+        self._check_inputs()
         # Initialize the solver with solver-specific options
         self.nSources = self.initialize(**other_options)
-        # Verify that the boundary condition is valid
-        acceptable_boundary_conditions = ['UHTR', 'UBWT', 'MIFT']
-        if self.boundary_condition not in acceptable_boundary_conditions:
-            raise ValueError('Boundary condition \'{}\' is not an acceptable boundary condition. \n'
-                             'Please provide one of the following inputs for boundary condition: {}'.\
-                             format(self.boundary_condition,
-                                    acceptable_boundary_conditions))
+
         return
 
     def initialize(self, *kwargs):
         """
-        Performs any calculation required at the initialization of the solver
+        Perform any calculation required at the initialization of the solver
         and returns the number of finite line heat sources in the borefield.
 
         Raises
@@ -887,6 +918,42 @@ class _BaseSolver(object):
             / dt_reconstructed
     
         return Q_reconstructed
+
+    def _check_inputs(self):
+        """
+        This method ensures that the instances filled in the Solver object
+        are what is expected.
+
+        """
+        assert isinstance(self.boreholes, list), \
+            "Boreholes must be provided in a list."
+        assert len(self.boreholes) > 0, \
+            "The list of boreholes is empty."
+        assert np.all([isinstance(b, Borehole) for b in self.boreholes]), \
+            "The list of boreholes contains elements that are not Borehole objects."
+        assert self.network is None or isinstance(self.network, Network), \
+            "The network is not a valid 'Network' object."
+        assert self.network is None or (self.network.m_flow is not None and self.network.cp is not None), \
+            "The mass flow rate 'm_flow' and heat capacity 'cp' must be " \
+            "provided at the instanciation of the 'Network' object."
+        assert type(self.time) is np.ndarray or type(self.time) is float or self.time is None, \
+            "Time should be a float or an array."
+        assert type(self.nSegments) is int and self.nSegments >= 1, \
+            "The number of segments 'nSegments' should be a positive int (>= 1)."
+        acceptable_boundary_conditions = ['UHTR', 'UBWT', 'MIFT']
+        assert type(self.boundary_condition) is str and self.boundary_condition in acceptable_boundary_conditions, \
+            "Boundary condition \'{}\' is not an acceptable boundary condition. \n" \
+            "Please provide one of the following inputs : {}".format(self.boundary_condition, acceptable_boundary_conditions)
+        assert (type(self.processes) is int and self.processes >= 1) or self.processes is None, \
+            "The number of processes 'processes' should be a positive int (>= 1)."
+        assert type(self.disp) is bool, \
+            "The option 'disp' should be set to True or False."
+        assert type(self.profiles) is bool, \
+            "The option 'profiles' should be set to True or False."
+        assert type(self.kind) is str, \
+            "The option 'kind' should be set to a valid interpolation kind " \
+            "in accordance with scipy.interpolate.interp1d options."
+        return
 
 
 class Detailed(_BaseSolver):
@@ -1115,6 +1182,8 @@ class Similarities(_BaseSolver):
         """
         self.disTol = disTol
         self.tol = tol
+        # Check the validity of inputs
+        self._check_solver_specific_inputs()
         # Real and image FLS solutions are only split for numbers of segments
         # greater than 1
         self.splitRealAndImage = self.nSegments > 1
@@ -1477,6 +1546,18 @@ class Similarities(_BaseSolver):
                     pairs.append([(i, j)])
                     nPairs.append(1)
         return nDis, disPairs, nPairs, pairs
+
+    def _check_solver_specific_inputs(self):
+        """
+        This method ensures that solver specific inputs to the Solver object
+        are what is expected.
+
+        """
+        assert type(self.disTol) is float and self.disTol > 0., \
+            "The distance tolerance 'disTol' should be a positive float."
+        assert type(self.tol) is float and self.tol > 0., \
+            "The relative tolerance 'tol' should be a positive float."
+        return
 
 
 def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
