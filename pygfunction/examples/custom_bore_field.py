@@ -18,9 +18,13 @@ def main():
     r_b = 0.075         # Borehole radius (m)
 
     # Borehole positions
+    # Note: Two duplicate boreholes have been added to this list of positions.
+    #       Position 1 has a borehole that is directly on top of another bore
+    #       Position 2 has a borehole with radius inside of another bore
+    #       The duplicates will be removed with the remove_duplicates function
     pos = [(0.0, 0.0),
-           (0.0, 0.0),  # Note: a duplicate borehole has been intentionally added for example purposes
-           (0.03, 0.0),  # Note: a borehole within a borehole radius of another borehole has been added for example
+           (0.0, 0.0),  # Duplicate (for example purposes)
+           (0.03, 0.0),   # Duplicate (for example purposes)
            (5.0, 0.),
            (3.5, 4.0),
            (1.0, 7.0),
@@ -37,14 +41,7 @@ def main():
     # Find and remove duplicates from borehole field
     # -------------------------------------------------------------------------
 
-    print('The number of boreholes defined: {}'.format(len(field)))
-    duplicate_pairs = gt.boreholes.check_duplicates(field)
-    print('Duplicate pairs found in the field: {}'.format(len(duplicate_pairs)))
-    print(duplicate_pairs)
-    field = gt.boreholes.remove_duplicates(field, duplicate_pairs)
-    print('Duplicate pairs found in the new field:')
-    print(gt.boreholes.check_duplicates(field))
-    print('The number of unique boreholes left: {}'.format(len(field)))
+    field = gt.boreholes.remove_duplicates(field, disp=True)
 
     # -------------------------------------------------------------------------
     # Draw bore field
