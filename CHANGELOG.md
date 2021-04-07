@@ -2,6 +2,10 @@
 
 ## Current version
 
+### New features
+
+* [Issue 81](https://github.com/MassimoCimmino/pygfunction/issues/81) - Added functions to find a remove duplicate boreholes.
+
 ## Version 1.1.2 (2021-01-21)
 
 ### New features
