@@ -63,7 +63,7 @@ class Fluid:
         >>> print(fluid)
     """
     def __init__(self, mixer: str, percent: float,
-                 T: float = 20., P: float = 239220.,):
+                 T: float = 20., P: float = 101325.,):
         self.fluid_mix = 'INCOMP::' + mixer + '-' + str(percent) + '%'
         if mixer in ['MEG', 'MPG', 'MMA', 'MEA']:
             # Expected brines
