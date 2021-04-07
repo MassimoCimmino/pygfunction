@@ -2,6 +2,10 @@
 
 ## Current version
 
+### New features
+
+* [Issue 75](https://github.com/MassimoCimmino/pygfunction/issues/75) - New module `media` with properties of brine mixtures.
+
 ## Version 1.1.2 (2021-01-21)
 
 ### New features
