@@ -16,14 +16,16 @@ class Fluid:
                 - 'MPG' - Propylene glycol mixed with water
                 - 'MEA' - Ethanol mixed with water
                 - 'MMA' - Methanol mixed with water
-        percent: int
+        percent: float
             Mass fraction of the mixing fluid added to water (in %).
             Lower bound = 0
             Upper bound is dependent on the mixture.
         T: float, optional
             The temperature of the fluid (in Celcius).
+            Default is 20 degC.
         P: float, optional
             The pressure of the fluid (in Pa).
+            Default is 101325 Pa.
 
         Examples
         ----------
