@@ -98,11 +98,14 @@ def main():
                 SingleUTube = gt.pipes.SingleUTube(pos_pipes, rp_in, rp_out,
                                                    borehole, k_s, k_g, R_f + R_p)
                 UTubes.append(SingleUTube)
+            network = gt.networks.Network(
+                boreField[:nBoreholes],
+                UTubes[:nBoreholes],
+                bore_connectivity=bore_connectivity[:nBoreholes])
 
             # Effective bore field thermal resistance
-            R_field = gt.pipes.field_thermal_resistance(
-                    UTubes[:nBoreholes], bore_connectivity[:nBoreholes],
-                    m_flow, cp_f)
+            R_field = gt.networks.network_thermal_resistance(
+                network, m_flow, cp_f)
             # Add to result array
             R[i,j] = R_field
 

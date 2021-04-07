@@ -194,7 +194,8 @@ def main():
     nz = 20
     it = 8724
     z = np.linspace(0., H, num=nz)
-    T_f = UTubes[0].get_temperature(z, T_f_in[it], T_b[it], m_flow, cp_f)
+    T_f = UTubes[0].get_temperature(
+        z, T_f_in[it], T_b[it], m_flow_borehole, cp_f)
 
     plt.rc('figure')
     fig = plt.figure()
