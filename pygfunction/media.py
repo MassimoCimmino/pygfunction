@@ -18,8 +18,7 @@ class Fluid:
                 - 'MMA' - Methanol mixed with water
         percent: float
             Mass fraction of the mixing fluid added to water (in %).
-            Lower bound = 0
-            Upper bound is dependent on the mixture.
+            Lower bound = 0. Upper bound is dependent on the mixture.
         T: float, optional
             The temperature of the fluid (in Celcius).
             Default is 20 degC.
