@@ -10,13 +10,105 @@ from scipy.constants import pi
 from scipy.interpolate import interp1d as interp1d
 
 from .boreholes import Borehole
-from .heat_transfer import thermal_response_factors, finite_line_source
+from .heat_transfer import finite_line_source
 from .networks import Network, network_thermal_resistance
 
+
 class gFunction(object):
+    """
+    Class for the calculation and visualization of the g-functions o
+    geothermal bore fields.
+
+    This class superimposes the finite line source (FLS) solution to
+    estimate the g-function of a geothermal bore field. Each borehole is
+    modeled as a series of finite line source segments, as proposed in
+    [#CimminoBernier2014]_. Different boundary conditions and solution methods
+    are implemented.
+
+    Attributes
+    ----------
+    boreholes_or_network : list of Borehole objects or Network object
+        List of boreholes included in the bore field, or network of boreholes
+        and pipes.
+    alpha : float
+        Soil thermal diffusivity (in m2/s).
+    time : float or array, optional
+        Values of time (in seconds) for which the g-function is evaluated. The
+        g-function is only evaluated at initialization if a value is provided.
+    method : str, optional
+        Method for the evaluation of the g-function. Should be one of
+            - 'similarities' : The accelerated method of Cimmino
+                [#Cimmino2018]_, using similarities in the bore field to
+                decrease the number of evaluations of the FLS solution.
+            - 'detailed' : The classical superposition of the FLS solution.
+        Default is 'similarities'.
+    boundary_condition : str, optional
+        Boundary condition for the evaluation of the g-function. Should be one
+        of
+            - 'UHTR' : Uniform heat transfer rate.
+            - 'UBWT' : Uniform borehole wall temperature
+                [#CimminoBernier2014]_.
+            - 'MIFT' : Mixed inlet fluid temperatures [#Cimmino2015]_,
+                [#Cimmino2019]_.
+        If not given, chosen to be ''UBWT'' if a list of boreholes is provided
+        or ''MIFT'' if a Network object is provided.
+    options : dict, optional
+        A dictionary of solver options. All methods accept the following
+        generic options:
+            nSegments : int, optional
+                Number of line segments used per borehole.
+                Default is 12.
+            processes : int, optional
+                Number of processors to use in calculations. If the value is
+                set to None, a number of processors equal to cpu_count() is
+                used.
+                Default is None.
+            disp : bool, optional
+                Set to true to print progression messages.
+                Default is False.
+            profiles : bool, optional
+                Set to true to keep in memory the temperatures and heat
+                extraction rates.
+                Default is False.
+            kind : str, optional
+                Interpolation method used for segment-to-segment thermal
+                response factors. See documentation for
+                scipy.interpolate.interp1d.
+                Default is linear.
+        The ''similarities'' solver accepts the following method-specific
+        options:
+            disTol : float, optional
+                Relative tolerance on radial distance. Two distances
+                (d1, d2) between two pairs of boreholes are considered equal if
+                the difference between the two distances (abs(d1-d2)) is below
+                tolerance.
+                Default is 0.01.
+            tol : float, optional
+                Relative tolerance on length and depth. Two lengths H1, H2
+                (or depths D1, D2) are considered equal if
+                abs(H1 - H2)/H2 < tol.
+                Default is 1.0e-6.
+
+    References
+    ----------
+    .. [#CimminoBernier2014] Cimmino, M., & Bernier, M. (2014). A
+       semi-analytical method to generate g-functions for geothermal bore
+       fields. International Journal of Heat and Mass Transfer, 70, 641-650.
+    .. [#Cimmino2015] Cimmino, M. (2015). The effects of borehole thermal
+       resistances and fluid flow rate on the g-functions of geothermal bore
+       fields. International Journal of Heat and Mass Transfer, 91, 1119-1127.
+    .. [#Cimmino2018] Cimmino, M. (2018). Fast calculation of the g-functions
+       of geothermal borehole fields using similarities in the evaluation
+       of the finite line source solution. Journal of Building Performance
+       Simulation 11 (6), 655-668.
+    .. [#Cimmino2019] Cimmino, M. (2019). Semi-analytical method for g-function
+       calculation of bore fields with series- and parallel-connected
+       boreholes. Science and Technology for the Built Environment 25 (8),
+       1007-1022.
+
+    """
     def __init__(self, boreholes_or_network, alpha, time=None,
                  method='similarities', boundary_condition=None, options=None):
-        # TODO : Separate documentation pages to describe methods and boundary conditions
         self.alpha = alpha
         self.time = time
         self.method = method
@@ -565,10 +657,6 @@ class gFunction(object):
         ax : axis
             Axis object (amtplotlib).
 
-        Returns
-        -------
-        None.
-
         """
         from matplotlib.ticker import AutoMinorLocator
         # Draw major and minor tick marks inwards
@@ -655,7 +743,7 @@ class _BaseSolver(object):
     boundary_condition : str
         Boundary condition for the evaluation of the g-function. Should be one
         of
-            - 'UHTF' : Uniform heat transfer rate.
+            - 'UHTR' : Uniform heat transfer rate.
             - 'UBWT' : Uniform borehole wall temperature.
             - 'MIFT' : Mixed inlet fluid temperatures.
     nSegments : int, optional
@@ -866,11 +954,35 @@ class _BaseSolver(object):
         return gFunc
 
     def segment_lengths(self):
+        """
+        Return the length of all segments in the bore field.
+
+        The segments lengths are used for the energy balance in the calculation
+        of the g-function.
+
+        Returns
+        -------
+        H : array
+            Array of segment lengths (in m).
+
+        """
         # Borehole lengths
         H = np.array([b.H for b in self.boreSegments])
         return H
 
     def borehole_segments(self):
+        """
+        Split boreholes into segments.
+
+        This function goes through the list of boreholes and builds a new list,
+        with each borehole split into nSegments of equal lengths.
+
+        Returns
+        -------
+        boreSegments : list
+            List of borehole segments.
+
+        """
         boreSegments = []
         for b in self.boreholes:
             for i in range(self.nSegments):
@@ -883,6 +995,24 @@ class _BaseSolver(object):
         return boreSegments
 
     def temporal_superposition(self, h_ij, Q_reconstructed):
+        """
+        Temporal superposition for inequal time steps.
+
+        Parameters
+        ----------
+        h_ij : array
+            Values of the segment-to-segment thermal response factor increments
+            at the given time step.
+        Q_reconstructed : array
+            Reconstructed heat extraction rates of all segments at all times.
+
+        Returns
+        -------
+        Tb_0 : array
+            Current values of borehole wall temperatures assuming no heat
+            extraction during current time step.
+
+        """
         # Number of heat sources
         nSources = Q_reconstructed.shape[0]
         # Number of time steps
@@ -898,6 +1028,25 @@ class _BaseSolver(object):
         return Tb_0
 
     def load_history_reconstruction(self, time, Q):
+        """
+        Reconstructs the load history.
+
+        This function calculates an equivalent load history for an inverted
+        order of time step sizes.
+
+        Parameters
+        ----------
+        time : array
+            Values of time (in seconds) in the load history.
+        Q : array
+            Heat extraction rates (in Watts) of all segments at all times.
+
+        Returns
+        -------
+        Q_reconstructed : array
+            Reconstructed load history.
+
+        """
         # Number of heat sources
         nSources = Q.shape[0]
         # Time step sizes
@@ -916,7 +1065,7 @@ class _BaseSolver(object):
         # Reconstructed load history
         Q_reconstructed = (sf(t_reconstructed[1:]) - sf(t_reconstructed[:-1])) \
             / dt_reconstructed
-    
+
         return Q_reconstructed
 
     def _check_inputs(self):
@@ -976,7 +1125,7 @@ class Detailed(_BaseSolver):
     boundary_condition : str
         Boundary condition for the evaluation of the g-function. Should be one
         of
-            - 'UHTF' : Uniform heat transfer rate.
+            - 'UHTR' : Uniform heat transfer rate.
             - 'UBWT' : Uniform borehole wall temperature.
             - 'MIFT' : Mixed inlet fluid temperatures.
     nSegments : int, optional
