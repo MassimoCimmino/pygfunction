@@ -5,6 +5,7 @@
 ### New features
 
 * [Issue 75](https://github.com/MassimoCimmino/pygfunction/issues/75) - New module `media` with properties of brine mixtures.
+* [Issue 81](https://github.com/MassimoCimmino/pygfunction/issues/81) - Added functions to find a remove duplicate boreholes.
 
 ## Version 1.1.2 (2021-01-21)
 
