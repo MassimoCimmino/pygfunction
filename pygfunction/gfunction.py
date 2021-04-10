@@ -108,7 +108,7 @@ class gFunction(object):
 
     """
     def __init__(self, boreholes_or_network, alpha, time=None,
-                 method='similarities', boundary_condition=None, options=None):
+                 method='similarities', boundary_condition=None, options={}):
         self.alpha = alpha
         self.time = time
         self.method = method
