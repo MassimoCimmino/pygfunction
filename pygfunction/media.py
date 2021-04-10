@@ -12,6 +12,7 @@ class Fluid:
         ----------
         mixer: str
             The mixer for this application should be one of:
+                - 'Water' - Complete water solution
                 - 'MEG' - Ethylene glycol mixed with water
                 - 'MPG' - Propylene glycol mixed with water
                 - 'MEA' - Ethanol mixed with water
@@ -33,6 +34,12 @@ class Fluid:
         >>> gage_P = 20  # PsiG
         >>> atm_P = 14.69595
         >>> P = (gage_P + atm_P) * 6894.75728  # Pressure in Pa
+
+        >>> # complete water solution
+        >>> mix = 'Water'
+        >>> percent = 0
+        >>> fluid = gt.media.Fluid(mix, percent, T=T, P=P)
+        >>> print(fluid)
 
         >>> # 20 % propylene glycol mixed with water
         >>> mix = 'MPG'
@@ -59,10 +66,10 @@ class Fluid:
     """
     def __init__(self, mixer: str, percent: float,
                  T: float = 20., P: float = 101325.,):
-        self.fluid_mix = 'INCOMP::' + mixer + '-' + str(percent) + '%'
-        if mixer in ['MEG', 'MPG', 'MMA', 'MEA']:
-            # Expected brines
-            pass
+        if mixer == 'Water':
+            self.fluid_mix = mixer
+        elif mixer in ['MEG', 'MPG', 'MMA', 'MEA']:  # Expected brines
+            self.fluid_mix = 'INCOMP::' + mixer + '-' + str(percent) + '%'
         else:
             warnings.warn('It is unknown whether or not cool props has the '
                           'mixing fluid requested, proceed with caution.')
