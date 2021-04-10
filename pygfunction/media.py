@@ -34,10 +34,6 @@ class Fluid:
         >>> atm_P = 14.69595
         >>> P = (gage_P + atm_P) * 6894.75728  # Pressure in Pa
 
-        >>> # pure water
-        >>> fluid = gt.media.Fluid(T=T, P=P)
-        >>> print(fluid)
-
         >>> # 20 % propylene glycol mixed with water
         >>> mix = 'MPG'
         >>> percent = 20
