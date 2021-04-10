@@ -101,6 +101,96 @@ class Borehole(object):
         return pos
 
 
+def find_duplicates(boreField, disp=False):
+    """
+    The distance method :func:`Borehole.distance` is utilized to find all
+    duplicate boreholes in a boreField.
+    This function considers a duplicate to be any pair of points that fall
+    within each others radius. The lower index (i) is always stored in the
+    0 position of the tuple, while the higher index (j) is stored in the 1
+    position.
+
+    Parameters
+    ----------
+    boreField : list
+        A list of :class:`Borehole` objects
+    disp : bool, optional
+        Set to true to print progression messages.
+        Default is False.
+
+    Returns
+    -------
+    duplicate_pairs : list
+        A list of tuples where the tuples are pairs of duplicates
+    """
+
+    duplicate_pairs = []   # define an empty list to be appended to
+    for i in range(len(boreField)):
+        borehole_1 = boreField[i]
+        for j in range(i, len(boreField)):  # only loop unique interactions
+            borehole_2 = boreField[j]
+            if i == j:  # skip the borehole itself
+                continue
+            else:
+                dist = borehole_1.distance(borehole_2)
+            if abs(dist - borehole_1.r_b) < borehole_1.r_b:
+                duplicate_pairs.append((i, j))
+    if disp:
+        # pad with '-' align in center
+        output = f"{ '*gt.boreholes.find_duplicates()*' :-^50}"
+        # keep a space between the function name
+        print(output.replace('*', ' '))
+        print('The duplicate pairs of boreholes found: {}'\
+              .format(duplicate_pairs))
+    return duplicate_pairs
+
+
+def remove_duplicates(boreField, disp=False):
+    """
+    Removes all of the duplicates found from the duplicate pairs returned in
+    :func:`check_duplicates`.
+
+    For each pair of duplicates, the first borehole (with the lower index) is
+    kept and the other (with the higher index) is removed.
+
+    Parameters
+    ----------
+    boreField : list
+        A list of :class:`Borehole` objects
+    disp : bool, optional
+        Set to true to print progression messages.
+        Default is False.
+
+    Returns
+    -------
+    new_boreField : list
+        A boreField without duplicates
+    """
+    # get a list of tuple
+    duplicate_pairs = find_duplicates(boreField, disp=disp)
+
+    new_boreField = []
+
+    # values not to be included
+    duplicate_bores = []
+    for i in range(len(duplicate_pairs)):
+        duplicate_bores.append(duplicate_pairs[i][1])
+
+    for i in range(len(boreField)):
+        if i in duplicate_bores:
+            continue
+        else:
+            new_boreField.append(boreField[i])
+    if disp:
+        # pad with '-' align in center
+        print(f"{'*gt.boreholes.remove_duplicates()*' :-^50}".\
+              replace('*', ' '))  # keep a space between the function name
+        n_duplicates = len(boreField) - len(new_boreField)
+        print('The number of duplicates removed: {}'.format(n_duplicates))
+
+    return new_boreField
+
+
 def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b):
     """
     Build a list of boreholes in a rectangular bore field configuration.
