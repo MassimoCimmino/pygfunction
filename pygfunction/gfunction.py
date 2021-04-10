@@ -9,7 +9,7 @@ import numpy as np
 from scipy.constants import pi
 from scipy.interpolate import interp1d as interp1d
 
-from .boreholes import Borehole
+from .boreholes import Borehole, find_duplicates
 from .heat_transfer import finite_line_source
 from .networks import Network, network_thermal_resistance
 
@@ -706,6 +706,8 @@ class gFunction(object):
             "The list of boreholes is empty."
         assert np.all([isinstance(b, Borehole) for b in self.boreholes]), \
             "The list of boreholes contains elements that are not Borehole objects."
+        assert not find_duplicates(self.boreholes), \
+            "There are duplicate boreholes in the borefield."
         assert (self.network is None and not self.boundary_condition=='MIFT') or isinstance(self.network, Network), \
             "The network is not a valid 'Network' object."
         assert self.network is None or (self.network.m_flow is not None and self.network.cp is not None), \
