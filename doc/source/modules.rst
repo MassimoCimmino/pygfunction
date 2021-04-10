@@ -11,7 +11,7 @@ Modules
    gfunction
    heat_transfer
    load_aggregation
+   media
    networks
    pipes
    utilities
-   properties
