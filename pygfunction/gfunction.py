@@ -75,6 +75,9 @@ class gFunction(object):
                 response factors. See documentation for
                 scipy.interpolate.interp1d.
                 Default is linear.
+            dtype : numpy dtype, optional
+                numpy data type used for matrices and vectors.
+                Default is numpy.double.
         The ''similarities'' solver accepts the following method-specific
         options:
             disTol : float, optional
@@ -770,7 +773,7 @@ class _BaseSolver(object):
     """
     def __init__(self, boreholes, network, time, boundary_condition,
                  nSegments=12, processes=None, disp=False, profiles=False,
-                 kind='linear', **other_options):
+                 kind='linear', dtype=np.double, **other_options):
         self.boreholes = boreholes
         self.network = network
         # Convert time to a 1d array
@@ -781,6 +784,7 @@ class _BaseSolver(object):
         self.disp = disp
         self.profiles = profiles
         self.kind = kind
+        self.dtype = dtype
         # Check the validity of inputs
         self._check_inputs()
         # Initialize the solver with solver-specific options
@@ -837,11 +841,11 @@ class _BaseSolver(object):
         if self.boundary_condition == 'UHTR':
             Q = 1
         else:
-            Q = np.zeros((self.nSources, nt))
+            Q = np.zeros((self.nSources, nt), dtype=self.dtype)
         if self.boundary_condition == 'UBWT':
-            Tb = np.zeros(nt)
+            Tb = np.zeros(nt, dtype=self.dtype)
         else:
-            Tb = np.zeros((self.nSources, nt))
+            Tb = np.zeros((self.nSources, nt), dtype=self.dtype)
         # Calculate segment to segment thermal response factors
         h_ij = self.thermal_response_factors(time, alpha, kind=self.kind)
         # Segment lengths
@@ -895,7 +899,7 @@ class _BaseSolver(object):
                     # Spatial superposition: [Tb] = [Tb0] + [h_ij_dt]*[Qb]
                     # Energy conservation: sum([Q*Hb]) = sum([Hb])
                     # ---------------------------------------------------------
-                    A = np.block([[h_dt, -np.ones((self.nSources, 1))],
+                    A = np.block([[h_dt, -np.ones((self.nSources, 1), dtype=self.dtype)],
                                   [Hb, 0.]])
                     B = np.hstack((-Tb_0, Htot))
                     # Solve the system of equations
@@ -924,10 +928,10 @@ class _BaseSolver(object):
                     a_in, a_b = self.network.coefficients_borehole_heat_extraction_rate(
                             self.network.m_flow, self.network.cp, self.nSegments)
                     k_s = self.network.p[0].k_s
-                    A = np.block([[h_dt, -np.eye(self.nSources), np.zeros((self.nSources, 1))],
-                                  [np.eye(self.nSources), a_b/(2.0*pi*k_s*np.atleast_2d(Hb).T), a_in/(2.0*pi*k_s*np.atleast_2d(Hb).T)],
-                                  [Hb, np.zeros(self.nSources + 1)]])
-                    B = np.hstack((-Tb_0, np.zeros(self.nSources), Htot))
+                    A = np.block([[h_dt, -np.eye(self.nSources, dtype=self.dtype), np.zeros((self.nSources, 1), dtype=self.dtype)],
+                                  [np.eye(self.nSources, dtype=self.dtype), a_b/(2.0*pi*k_s*np.atleast_2d(Hb).T), a_in/(2.0*pi*k_s*np.atleast_2d(Hb).T)],
+                                  [Hb, np.zeros(self.nSources + 1, dtype=self.dtype)]])
+                    B = np.hstack((-Tb_0, np.zeros(self.nSources, dtype=self.dtype), Htot))
                     # Solve the system of equations
                     X = np.linalg.solve(A, B)
                     # Store calculated heat extraction rates
@@ -969,7 +973,7 @@ class _BaseSolver(object):
 
         """
         # Borehole lengths
-        H = np.array([b.H for b in self.boreSegments])
+        H = np.array([b.H for b in self.boreSegments], dtype=self.dtype)
         return H
 
     def borehole_segments(self):
@@ -1060,7 +1064,7 @@ class _BaseSolver(object):
         # Reconstructed time vector
         t_reconstructed = np.hstack((0., np.cumsum(dt_reconstructed)))
         # Accumulated heat extracted
-        f = np.hstack((np.zeros((nSources, 1)), np.cumsum(Q*dt, axis=1)))
+        f = np.hstack((np.zeros((nSources, 1), dtype=self.dtype), np.cumsum(Q*dt, axis=1)))
         f = np.hstack((f, f[:,-1:]))
         # Create interpolation object for accumulated heat extracted
         sf = interp1d(t, f, kind='linear', axis=1)
@@ -1213,7 +1217,7 @@ class Detailed(_BaseSolver):
         # Initialize chrono
         tic = tim.time()
         # Initialize segment-to-segment response factors
-        h_ij = np.zeros((self.nSources, self.nSources, nt))
+        h_ij = np.zeros((self.nSources, self.nSources, nt), dtype=self.dtype)
 
         for i in range(self.nSources):
             # Segment to same-segment thermal response factor
@@ -1222,7 +1226,7 @@ class Detailed(_BaseSolver):
             func = partial(finite_line_source,
                            alpha=alpha, borehole1=b2, borehole2=b2)
             # Evaluate the FLS solution at all times in parallel
-            h = np.array(pool.map(func, time))
+            h = np.array(pool.map(func, time), dtype=self.dtype)
             h_ij[i, i, :] = h
 
             # Segment to other segments thermal response factor
@@ -1231,7 +1235,7 @@ class Detailed(_BaseSolver):
                 # Evaluate the FLS solution at all times in parallel
                 func = partial(finite_line_source,
                                alpha=alpha, borehole1=b1, borehole2=b2)
-                h = np.array(pool.map(func, time))
+                h = np.array(pool.map(func, time), dtype=self.dtype)
                 h_ij[i, j, :] = h
                 h_ij[j, i, :] = b2.H / b1.H * h_ij[i, j, :]
 
@@ -1246,7 +1250,7 @@ class Detailed(_BaseSolver):
         # Interp1d object for thermal response factors
         h_ij = interp1d(
             np.hstack((0., time)),
-            np.dstack((np.zeros((self.nSources,self.nSources)), h_ij)),
+            np.dstack((np.zeros((self.nSources,self.nSources), dtype=self.dtype), h_ij)),
             kind=kind, copy=True, axis=2)
         toc = tim.time()
         if self.disp: print('{} sec'.format(toc - tic))
@@ -1384,7 +1388,7 @@ class Similarities(_BaseSolver):
         # Initialize chrono
         tic = tim.time()
         # Initialize segment-to-segment response factors
-        h_ij = np.zeros((self.nSources, self.nSources, nt))
+        h_ij = np.zeros((self.nSources, self.nSources, nt), dtype=self.dtype)
 
         # Similarities for real sources
         for s in range(self.nSimPos):
@@ -1403,7 +1407,7 @@ class Similarities(_BaseSolver):
                                alpha=alpha, borehole1=b1, borehole2=b2,
                                reaSource=True, imgSource=True)
             # Evaluate the FLS solution at all times in parallel
-            hPos = np.array(pool.map(func, np.atleast_1d(time)))
+            hPos = np.array(pool.map(func, np.atleast_1d(time)), dtype=self.dtype)
             # Assign thermal response factors to similar segment pairs
             for (i, j) in self.simPos[s]:
                 h_ij[j, i, :] = hPos
@@ -1421,7 +1425,7 @@ class Similarities(_BaseSolver):
                                alpha=alpha, borehole1=b1, borehole2=b2,
                                reaSource=False, imgSource=True)
                 # Evaluate the FLS solution at all times in parallel
-                hNeg = np.array(pool.map(func, time))
+                hNeg = np.array(pool.map(func, time), dtype=self.dtype)
                 # Assign thermal response factors to similar segment pairs
                 for (i, j) in self.simNeg[s]:
                     h_ij[j, i, :] = h_ij[j, i, :] + hNeg
@@ -1437,7 +1441,7 @@ class Similarities(_BaseSolver):
 
         # Interp1d object for thermal response factors
         h_ij = interp1d(np.hstack((0., time)),
-                             np.dstack((np.zeros((self.nSources,self.nSources)), h_ij)),
+                             np.dstack((np.zeros((self.nSources,self.nSources), dtype=self.dtype), h_ij)),
                              kind=kind, copy=True, axis=2)
         toc = tim.time()
         if self.disp: print('{} sec'.format(toc - tic))
