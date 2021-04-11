@@ -59,10 +59,12 @@ def main():
     # Fluid properties
     m_flow_borehole = 0.25      # Total fluid mass flow rate per borehole (kg/s)
     m_flow = m_flow_borehole*N_1*N_2    # Total fluid mass flow rate (kg/s)
-    cp_f = 3977.                # Fluid specific heat capacity (J/kg.K)
-    den_f = 1015.               # Fluid density (kg/m3)
-    visc_f = 0.00203            # Fluid dynamic viscosity (kg/m.s)
-    k_f = 0.492                 # Fluid thermal conductivity (W/m.K)
+    # The fluid is propylene-glycol (20 %) at 20 degC
+    fluid = gt.media.Fluid('MPG', 20.)
+    cp_f = fluid.cp     # Fluid specific isobaric heat capacity (J/kg.K)
+    den_f = fluid.rho   # Fluid density (kg/m3)
+    visc_f = fluid.mu   # Fluid dynamic viscosity (kg/m.s)
+    k_f = fluid.k       # Fluid thermal conductivity (W/m.K)
 
     # Number of segments per borehole
     nSegments = 12
@@ -192,7 +194,8 @@ def main():
     nz = 20
     it = 8724
     z = np.linspace(0., H, num=nz)
-    T_f = UTubes[0].get_temperature(z, T_f_in[it], T_b[it], m_flow, cp_f)
+    T_f = UTubes[0].get_temperature(
+        z, T_f_in[it], T_b[it], m_flow_borehole, cp_f)
 
     plt.rc('figure')
     fig = plt.figure()
