@@ -1930,7 +1930,7 @@ def borehole_thermal_resistance(pipe, m_flow, cp):
     m_flow : float
         Fluid mass flow rate (in kg/s).
     cp : float
-        Fluid specific isobaric heat capacity (in J/kg.K)
+        Fluid specific isobaric heat capacity (in J/kg.K).
 
     Returns
     -------
@@ -1950,6 +1950,99 @@ def borehole_thermal_resistance(pipe, m_flow, cp):
     Rb = -0.5*H*(1. + a_out)/a_Q
 
     return Rb
+
+
+def borehole_thermal_resistance_2(Rb, Ra, R_12, H, r_in, m_flow, den, cp,
+                                  case='AVG'):
+    """
+    Compute the effective borehole thermal resistance using the equations
+    presented in Chapter 3 [#JavedSpitler2016]_ (Javed and Spitler 2016) of
+    Advances in Ground-Source Heat Pump Systems [#Rees2016]_ (Edited by Rees
+    2006).
+
+    The uniform heat flux case (UHF) comes from Claesson and Hellström (2011)
+    [#Claesson2011b]_:
+
+    .. math::
+
+        R_b^* = R_b + \\dfrac{1}{3R_a}\\bigg( \dfrac{H}{\\rho_f c_f V_f}
+        \\bigg)^2
+
+    The uniform borehole wall temperature case (UBHWT) also comes from
+    Claesson and Hellström (2011) [#Claesson2011b]_:
+
+    .. math::
+
+        R_b^* = R_b \\eta coth \; \\eta
+
+        \\eta = \dfrac{H}{\\rho_f c_f V_f} \\; \\dfrac{1}{2R_b}
+        \\sqrt{1 + \dfrac{4R_b}{R_{1-2}}}
+
+    Javed and Spitler (2016) [#JavedSpitler2016]_ state that neither the UHF
+    or the UBHWT case are perfect representations of the physics, and that the
+    mean of the two cases are often used in practice.
+
+    Parameters
+    ----------
+    Rb : float
+        Local borehole resistance (in m.K/W).
+    Ra : float
+        Total internal thermal resistance (in m.K/W).
+    R_12 : float
+        Direct coupling resistance (in m.K/W).
+    H : float
+        Height of borehole (in meters).
+    r_in : float
+        Inside pipe diameter (in meters)
+    m_flow : float
+        Fluid mass flow rate (in kg/s).
+    den : float
+        Fluid density (in kg/m3).
+    cp : float
+        Fluid specific isobaric heat capacity (in J/kg.K).
+    case : str, optional
+        - 'UHF': Uniform heat flux
+        - 'UBHWT': Uniform borehole wall temperature
+        - 'AVG': Average of UHF and UBHWT
+        Default is 'AVG'.
+
+    Returns
+    -------
+    Rb_star : float
+        Effective borehole thermal resistance
+
+    References
+    ------------
+    .. [#Rees2016] Rees, S. (2016). Advances in Ground-Source Heat Pump
+        Systems: Vol. number 100. Elsevier Science & Technology.
+    .. [#JavedSpitler2016] Javed, S., Spitler, J.D. (2016). Chapter 3 of
+        Advances in Ground-Source Heat Pump Systems: Calculation of
+        borehole thermal resistance. Pages 63-95, ISBN 9780081003114,
+        https://doi.org/10.1016/B978-0-08-100311-4.00003-0
+    """
+    # Fluid velocity (for the inside pipe)
+    V_flow = m_flow / den
+    A_cs = pi * r_in ** 2
+    V = V_flow / A_cs
+
+    # The UHF case, effective borehole resistance, eq. (3.67)
+    Rb_star_UHF = Rb + 1 / (3 * Ra) * (H / (den * cp * V)) ** 2
+
+    # The UBH temperature case
+    eta = H / (den * cp * V) * 1 / (2 * Rb) * \
+          np.sqrt(1 + 4 * Rb / R_12)  # eq. (3.69)
+
+    Rb_star_UBH = Rb * eta * np.arctanh(eta)  # eq. (3.68)
+
+    if case == 'UHF':
+        return Rb_star_UHF
+    elif case == 'UBHWT':
+        return Rb_star_UBH
+    elif case == 'AVG':
+        return (Rb_star_UHF + Rb_star_UBH) / 2
+    else:
+        raise ValueError('The case provdided, {}, is not an option. The'
+                         'options are UHF, UBHWT or AVG'.format(case))
 
 
 def fluid_friction_factor_circular_pipe(m_flow, r_in, visc, den, epsilon,
