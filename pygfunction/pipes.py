@@ -1137,29 +1137,78 @@ class SingleCoaxialPipe(SingleUTube):
 
     """
     def __init__(self, pos, r_in_in, r_in_out, r_out_in, r_out_out,
-                 borehole, k_s, k_g, R_f, R_p, J=2):
+                 borehole, k_p_in, k_p_out, k_s, k_g, eps_in): # R_f, R_p, J=2):
         self.pos = pos
         self.r_in_in = r_in_in
         self.r_in_out = r_in_out
         self.r_out_in = r_out_in
         self.r_out_out = r_out_out
         self.b = borehole
+        self.k_p_in = k_p_in
+        self.k_p_out = k_p_out
         self.k_s = k_s
         self.k_g = k_g
-        self.R_f = R_f
-        self.R_p = R_p
-        self.J = J
+        self.eps_in = eps_in
+        # self.R_f = R_f
+        # self.R_p = R_p
+        # self.J = J
         self.nPipes = 1
         self.nInlets = 1
         self.nOutlets = 1
 
-        # Delta-circuit thermal resistances
-        self._Rd = thermal_resistances_coaxial(
-                pos, r_in_in, r_in_out, r_out_in, r_out_out, borehole.r_b,
-                k_s, k_g, R_f, R_p, J=self.J)[1]
+        # # Delta-circuit thermal resistances
+        # self._Rd = thermal_resistances_coaxial(
+        #         pos, r_in_in, r_in_out, r_out_in, r_out_out, borehole.r_b,
+        #         k_s, k_g, R_f, R_p, J=self.J)[1]
 
         # Initialize stored_coefficients
         self._initialize_stored_coefficients()
+
+    def compute_effective_borehole_resistance(self, m_flow, visc_f, den_f,
+                                              k_f, cp_f):
+        # Inner pipe thermal resistance
+        R_p_in = conduction_thermal_resistance_circular_pipe(self.r_in_in,
+                                                             self.r_in_out,
+                                                             self.k_p_in)
+        # Outer pipe thermal resistance
+        R_p_out = conduction_thermal_resistance_circular_pipe(self.r_out_in,
+                                                              self.r_out_out,
+                                                              self.k_p_out)
+        # Grout thermal resistance
+        R_grout = conduction_thermal_resistance_circular_pipe(self.r_out_out,
+                                                              self.b.r_b,
+                                                              self.k_g)
+        h_fluid_a_in, h_fluid_a_out, Re =\
+            convective_heat_transfer_coefficient_concentric_annulus(m_flow,
+                                                                self.r_in_out,
+                                                                self.r_out_in,
+                                                                visc_f,
+                                                                den_f,
+                                                                k_f,
+                                                                cp_f,
+                                                                self.eps_in)
+        # Inner fluid convective resistance
+        R_f_a_in = 1. / (h_fluid_a_in * 2 * pi * self.r_in_out)
+        # Outer fluid convective resistance
+        R_f_a_out = 1. / (h_fluid_a_out * 2 * pi * self.r_out_in)
+
+        h_fluid_in = convective_heat_transfer_coefficient_circular_pipe(m_flow,
+                                                           self.r_in_in,
+                                                           visc_f,
+                                                           den_f,
+                                                           k_f,
+                                                           cp_f,
+                                                           self.eps_in)
+        R_f_in = 1. / (h_fluid_in * 2 * pi * self.r_in_in)
+
+        Ra = R_f_in + R_p_in + R_f_a_in
+        R_12 = Ra
+        Rb = R_f_a_out + R_p_out + R_grout
+
+        Rb_star = borehole_thermal_resistance_2(Rb, Ra, R_12, self.b.H,
+                                                self.r_in_in, m_flow, den_f,
+                                                cp_f)
+        return Rb_star
 
 
 class MultipleUTube(_BasePipe):
