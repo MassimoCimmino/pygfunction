@@ -19,6 +19,7 @@
 ### Other changes
 
 * [Issue 72](https://github.com/MassimoCimmino/pygfunction/issues/72) - Added a list of contributors to the front page. The list is managed using [all-contributors](https://github.com/all-contributors/all-contributors).
+* [Issue 87](https://github.com/MassimoCimmino/pygfunction/issues/87) - Drop support for Python 2. All package requirements are updated to the latest conda version.
 
 ## Version 1.1.2 (2021-01-21)
 
