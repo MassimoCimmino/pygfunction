@@ -12,9 +12,10 @@ setup(
     packages=['pygfunction',
               'pygfunction/examples'],
     include_package_data=True,
-    install_requires=['matplotlib>=1.5.3',
-                      'numpy>=1.11.3',
-                      'scipy>=1.0.0'],
+    install_requires=['coolprop>=6.4.1',
+                      'matplotlib>=3.3.4',
+                      'numpy>=1.19.2',
+                      'scipy>=1.6.2'],
     test_suite='tests',
 
     # metadata for upload to PyPI
@@ -32,8 +33,7 @@ setup(
         "License :: OSI Approved :: BSD License",
         "Natural Language :: English",
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Topic :: Scientific/Engineering",
         "Topic :: Utilities",
     ],

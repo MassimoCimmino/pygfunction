@@ -41,16 +41,17 @@ fluid temperatures in the boreholes for several U-tube pipe configurations.
 
 ## Requirements
 
-*pygfunction* was developed and tested using Python 2.7 and supports Python 3.6. In addition, the
+*pygfunction* was developed and tested using Python 3.6. In addition, the
 following packages are needed to run *pygfunction* and its examples:
-- matplotlib (>= 1.5.3), required for the examples
-- numpy (>= 1.11.3)
-- scipy (>= 1.0.0)
+- Coolprop (>=6.4.1)
+- matplotlib (>= 3.3.4),
+- numpy (>= 1.19.2)
+- scipy (>= 1.6.2)
 
 The documentation is generated using [Sphinx](http://www.sphinx-doc.org). The
 following packages are needed to build the documentation:
-- sphinx (>= 1.5.1)
-- numpydoc (>= 0.6.0)
+- sphinx (>= 3.5.4)
+- numpydoc (>= 1.1.0)
 
 
 ## Quick start
