@@ -14,6 +14,10 @@
 * [Issue 47](https://github.com/MassimoCimmino/pygfunction/issues/47) - Added verification of the validity of pipe geometry to pipe classes. Extended visualization of the borehole cross-section.
 * [Issue 66](https://github.com/MassimoCimmino/pygfunction/issues/66) - Added a class method to the Claesson & Javed load aggregation method to retrieve the thermal response factor increment.
 
+### Bug fixes
+
+* [Issue 86](https://github.com/MassimoCimmino/pygfunction/issues/86) - Documentation is now built using Python 3 to support Python 3 features in the code.
+
 ### Enhancements
 
 * [Issue 59](https://github.com/MassimoCimmino/pygfunction/issues/59) - Use a relative tolerance instead of an absolute tolerance in the identification of borehole pair similarities. This provides faster execution times and similar accuracy.
