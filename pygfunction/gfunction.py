@@ -10,7 +10,7 @@ from scipy.constants import pi
 from scipy.interpolate import interp1d as interp1d
 
 from .boreholes import Borehole, find_duplicates
-from .heat_transfer import finite_line_source
+from .heat_transfer import finite_line_source, finite_line_source_vectorized
 from .networks import Network, network_thermal_resistance
 
 
@@ -148,6 +148,10 @@ class gFunction(object):
         # Load the chosen solver
         if self.method.lower()=='similarities':
             self.solver = _Similarities(
+                self.boreholes, self.network, self.time,
+                self.boundary_condition, **self.options)
+        elif self.method.lower()=='new-similarities':
+            self.solver = _NewSimilarities(
                 self.boreholes, self.network, self.time,
                 self.boundary_condition, **self.options)
         elif self.method.lower()=='detailed':
@@ -760,7 +764,7 @@ class gFunction(object):
             "Boundary condition \'{}\' is not an acceptable boundary condition. \n" \
             "Please provide one of the following inputs : {}".format(
                 self.boundary_condition, acceptable_boundary_conditions)
-        acceptable_methods = ['detailed', 'similarities']
+        acceptable_methods = ['detailed', 'similarities', 'new-similarities']
         assert type(self.method) is str and self.method in acceptable_methods, \
             "Method \'{}\' is not an acceptable method. \n" \
             "Please provide one of the following inputs : {}".format(
@@ -2187,6 +2191,423 @@ class _Similarities(_BaseSolver):
                     pairs.append([(i, j)])
                     nPairs.append(1)
         return nDis, disPairs, nPairs, pairs
+
+    def _check_solver_specific_inputs(self):
+        """
+        This method ensures that solver specific inputs to the Solver object
+        are what is expected.
+
+        """
+        assert type(self.disTol) is float and self.disTol > 0., \
+            "The distance tolerance 'disTol' should be a positive float."
+        assert type(self.tol) is float and self.tol > 0., \
+            "The relative tolerance 'tol' should be a positive float."
+        return
+
+
+class _NewSimilarities(_BaseSolver):
+    """
+    Similarities solver for the evaluation of the g-function.
+
+    This solver superimposes the finite line source (FLS) solution to
+    estimate the g-function of a geothermal bore field. Each borehole is
+    modeled as a series of finite line source segments, as proposed in
+    [#Similarities-CimBer2014]_. The number of evaluations of the FLS solution
+    is decreased by identifying similar pairs of boreholes, for which the same
+    FLS value can be applied [#Similarities-Cimmin2018]_.
+
+    Parameters
+    ----------
+    boreholes : list of Borehole objects
+        List of boreholes included in the bore field.
+    network : network object
+        Model of the network.
+    time : float or array
+        Values of time (in seconds) for which the g-function is evaluated.
+    boundary_condition : str
+        Boundary condition for the evaluation of the g-function. Should be one
+        of
+
+            - 'UHTR' :
+                **Uniform heat transfer rate**. This is corresponds to boundary
+                condition *BC-I* as defined by Cimmino and Bernier (2014)
+                [#Similarities-CimBer2014]_.
+            - 'UBWT' :
+                **Uniform borehole wall temperature**. This is corresponds to
+                boundary condition *BC-III* as defined by Cimmino and Bernier
+                (2014) [#Similarities-CimBer2014]_.
+            - 'MIFT' :
+                **Mixed inlet fluid temperatures**. This boundary condition was
+                introduced by Cimmino (2015) [#Similarities-Cimmin2015]_ for
+                parallel-connected boreholes and extended to mixed
+                configurations by Cimmino (2019) [#Similarities-Cimmin2019]_.
+
+    nSegments : int, optional
+        Number of line segments used per borehole.
+        Default is 12.
+    processes : int, optional
+        Number of processors to use in calculations. If the value is set to
+        None, a number of processors equal to cpu_count() is used.
+        Default is None.
+    disp : bool, optional
+        Set to true to print progression messages.
+        Default is False.
+    profiles : bool, optional
+        Set to true to keep in memory the temperatures and heat extraction
+        rates.
+        Default is False.
+    kind : string, optional
+        Interpolation method used for segment-to-segment thermal response
+        factors. See documentation for scipy.interpolate.interp1d.
+        Default is linear.
+    disTol : float, optional
+        Relative tolerance on radial distance. Two distances
+        (d1, d2) between two pairs of boreholes are considered equal if the
+        difference between the two distances (abs(d1-d2)) is below tolerance.
+        Default is 0.01.
+    tol : float, optional
+        Relative tolerance on length and depth. Two lengths H1, H2
+        (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
+        Default is 1.0e-6.
+
+    References
+    ----------
+    .. [#Similarities-CimBer2014] Cimmino, M., & Bernier, M. (2014). A
+       semi-analytical method to generate g-functions for geothermal bore
+       fields. International Journal of Heat and Mass Transfer, 70, 641-650.
+    .. [#Similarities-Cimmin2015] Cimmino, M. (2015). The effects of borehole
+       thermal resistances and fluid flow rate on the g-functions of geothermal
+       bore fields. International Journal of Heat and Mass Transfer, 91,
+       1119-1127.
+    .. [#Similarities-Cimmin2018] Cimmino, M. (2018). Fast calculation of the
+       g-functions of geothermal borehole fields using similarities in the
+       evaluation of the finite line source solution. Journal of Building
+       Performance Simulation, 11 (6), 655-668.
+    .. [#Similarities-Cimmin2019] Cimmino, M. (2019). Semi-analytical method
+       for g-function calculation of bore fields with series- and
+       parallel-connected boreholes. Science and Technology for the Built
+       Environment, 25 (8), 1007-1022.
+
+    """
+    def initialize(self, disTol=0.01, tol=1.0e-6, **kwargs):
+        """
+        Split boreholes into segments and identify similarities in the
+        borefield.
+
+        Returns
+        -------
+        nSources : int
+            Number of finite line heat sources in the borefield used to
+            initialize the matrix of segment-to-segment thermal response
+            factors (of size: nSources x nSources).
+
+        """
+        self.disTol = disTol
+        self.tol = tol
+        # Check the validity of inputs
+        self._check_solver_specific_inputs()
+        # Split boreholes into segments
+        self.boreSegments = self.borehole_segments()
+        # Initialize similarities
+        self.find_similarities()
+        return len(self.boreSegments)
+
+    def thermal_response_factors(self, time, alpha, kind='linear'):
+        """
+        Evaluate the segment-to-segment thermal response factors for all pairs
+        of segments in the borefield at all time steps using the finite line
+        source solution.
+
+        This method returns a scipy.interpolate.interp1d object of the matrix
+        of thermal response factors, containing a copy of the matrix accessible
+        by h_ij.y[:nSources,:nSources,:nt+1]. The first index along the
+        third axis corresponds to time t=0. The interp1d object can be used to
+        obtain thermal response factors at any intermediat time by
+        h_ij(t)[:nSources,:nSources].
+
+        Attributes
+        ----------
+        time : float or array
+            Values of time (in seconds) for which the g-function is evaluated.
+        alpha : float
+            Soil thermal diffusivity (in m2/s).
+        kind : string, optional
+            Interpolation method used for segment-to-segment thermal response
+            factors. See documentation for scipy.interpolate.interp1d.
+            Default is linear.
+
+        Returns
+        -------
+        h_ij : interp1d
+            interp1d object (scipy.interpolate) of the matrix of
+            segment-to-segment thermal response factors.
+
+        """
+        if self.disp:
+            print('Calculating segment to segment response factors ...',
+                  end='')
+        # Number of time values
+        nt = len(np.atleast_1d(time))
+        # Initialize chrono
+        tic = tim.time()
+        # Initialize segment-to-segment response factors
+        h_ij = np.empty((self.nSources, self.nSources, nt), dtype=self.dtype)
+
+        # Segment-to-segment thermal response factors for same-borehole thermal
+        # interactions
+        for group in self.borehole_to_self:
+            # Index of first borehole in group
+            i = group[0]
+            # Find segment-to-segment similarities
+            H1, D1, H2, D2, i_pair, j_pair, k_pair, nPairs = \
+                self._map_axial_segment_pairs(
+                    self.boreholes[i], self.boreholes[i], self.nSegments,
+                    self.tol)
+            # Locate thermal response factors in the h_ij matrix
+            i_segment, j_segment, k_segment, l_segment = \
+                self._map_segment_pairs(
+                    i_pair, j_pair, k_pair, [(n, n) for n in group], [0])
+            # Evaluate FLS at all time steps
+            D1 = D1.reshape(1, -1)
+            D2 = D2.reshape(1, -1)
+            h = np.array(
+                [finite_line_source_vectorized(
+                    t, alpha, self.boreholes[i].r_b, H1, D1, H2, D2)
+                    for t in time])
+            # Broadcast values to h_ij matrix
+            h_ij[j_segment, i_segment, :] = h[:, 0, k_segment].T
+        # Segment-to-segment thermal response factors for borehole-to-borehole
+        # thermal interactions
+        nGroups = len(self.borehole_to_borehole)
+        for n in range(nGroups):
+            # Index of first borehole pair in group
+            i, j = self.borehole_to_borehole[n][0]
+            # Find segment-to-segment similarities
+            H1, D1, H2, D2, i_pair, j_pair, k_pair, nPairs = \
+                self._map_axial_segment_pairs(
+                    self.boreholes[i], self.boreholes[j], self.nSegments,
+                    self.tol)
+            # Locate thermal response factors in the h_ij matrix
+            i_segment, j_segment, k_segment, l_segment = \
+                self._map_segment_pairs(
+                    i_pair, j_pair, k_pair, self.borehole_to_borehole[n],
+                    self.borehole_to_borehole_indices[n])
+            # Evaluate FLS at all time steps
+            dis = np.reshape(self.borehole_to_borehole_distances[n], (-1, 1))
+            D1 = D1.reshape(1, -1)
+            D2 = D2.reshape(1, -1)
+            h = np.array(
+                [finite_line_source_vectorized(t, alpha, dis, H1, D1, H2, D2)
+                 for t in time])
+            # Broadcast values to h_ij matrix
+            h_ij[j_segment, i_segment, :] = h[:, l_segment, k_segment].T
+            H_ratio = self.boreholes[j].H/self.boreholes[i].H
+            h_ij[i_segment, j_segment, :] = \
+                h[:, l_segment, k_segment].T * H_ratio
+
+        # Return 2d array if time is a scalar
+        if np.isscalar(time):
+            h_ij = h_ij[:,:,0]
+
+        # Interp1d object for thermal response factors
+        h_ij = interp1d(np.hstack((0., time)),
+                             np.dstack((np.zeros((self.nSources,self.nSources), dtype=self.dtype), h_ij)),
+                             kind=kind, copy=True, assume_sorted=True, axis=2)
+        toc = tim.time()
+        if self.disp: print(' {:.3f} sec'.format(toc - tic))
+
+        return h_ij
+
+    def find_similarities(self):
+        """
+        Find similarities in the FLS solution for groups of boreholes.
+
+        This function identifies pairs of boreholes for which the evaluation
+        of the Finite Line Source (FLS) solution is equivalent.
+
+        """
+        if self.disp: print('Identifying similarities ...', end='')
+        # Initialize chrono
+        tic = tim.time()
+
+        # Find similar pairs of boreholes
+        self.borehole_to_self, self.borehole_to_borehole = \
+            self._find_axial_borehole_pairs(self.boreholes, self.tol)
+        # Find distances for each similar pairs
+        self.borehole_to_borehole_distances, self.borehole_to_borehole_indices = \
+            self._find_distances(
+                self.boreholes, self.borehole_to_borehole, self.disTol)
+
+        # Stop chrono
+        toc = tim.time()
+        if self.disp: print(' {:.3f} sec'.format(toc - tic))
+
+        return
+
+    def _borehole_segments_one_borehole(self, borehole, nSegments):
+        boreSegments = []
+        for i in range(nSegments):
+            # Divide borehole into segments of equal length
+            H = borehole.H / nSegments
+            # Buried depth of the i-th segment
+            D = borehole.D + i * borehole.H / nSegments
+            # Add to list of segments
+            boreSegments.append(
+                Borehole(H, D, borehole.r_b, borehole.x, borehole.y))
+        return boreSegments
+    
+    def _compare_boreholes(self, borehole1, borehole2, tol):
+        if (abs((borehole1.H - borehole2.H)/borehole1.H) < tol and
+            abs((borehole1.r_b - borehole2.r_b)/borehole1.r_b) < tol and
+            abs((borehole1.D - borehole2.D)/(borehole1.D + 1e-30)) < tol):
+            similarity = True
+        else:
+            similarity = False
+        return similarity
+
+    # Condition for equivalence of the real part of the FLS solution
+    def _compare_real_pairs(self, pair1, pair2, tol):
+        deltaD1 = pair1[1].D - pair1[0].D
+        deltaD2 = pair2[1].D - pair2[0].D
+        cond_H = abs((pair1[0].H - pair2[0].H)/pair1[0].H) < tol and abs((pair1[1].H - pair2[1].H)/pair1[1].H) < tol
+        equal_H = abs((pair1[0].H - pair1[1].H)/pair1[0].H) < tol
+        cond_deltaD = abs(deltaD1 - deltaD2)/abs(deltaD1 + 1e-30) < tol
+        cond_deltaD_equal_H = abs((abs(deltaD1) - abs(deltaD2))/(abs(deltaD1) + 1e-30)) < tol
+        if cond_H and (cond_deltaD or (equal_H and cond_deltaD_equal_H)):
+            similarity = True
+        else:
+            similarity = False
+        return similarity
+    
+    # Condition for equivalence of the image part of the FLS solution
+    def _compare_image_pairs(self, pair1, pair2, tol):
+        sumD1 = pair1[1].D + pair1[0].D
+        sumD2 = pair2[1].D + pair2[0].D
+        if (abs((pair1[0].H - pair2[0].H)/pair1[0].H) < tol and
+            abs((pair1[1].H - pair2[1].H)/pair1[1].H) < tol and
+            abs((sumD1 - sumD2)/(sumD1 + 1e-30)) < tol):
+            similarity = True
+        else:
+            similarity = False
+        return similarity
+    
+    # Condition for equivalence of the full FLS solution
+    def _compare_realandimage_pairs(self, pair1, pair2, tol):
+        if self._compare_real_pairs(pair1, pair2, tol) and self._compare_image_pairs(pair1, pair2, tol):
+            similarity = True
+        else:
+            similarity = False
+        return similarity
+    
+    def _find_axial_borehole_pairs(self, boreholes, tol):
+        compare_pairs = self._compare_realandimage_pairs
+        nBoreholes = len(boreholes)
+        borehole_to_self = []
+        if nBoreholes > 1:
+            borehole_to_borehole = []
+            for i in range(nBoreholes):
+                for k in range(len(borehole_to_self)):
+                    m = borehole_to_self[k][0]
+                    if self._compare_boreholes(boreholes[i], boreholes[m], tol):
+                        borehole_to_self[k].append(i)
+                        break
+                else:
+                    borehole_to_self.append([i])
+                for j in range(i + 1, nBoreholes):
+                    pair0 = (boreholes[i], boreholes[j])
+                    pair1 = (boreholes[j], boreholes[i])
+                    for k in range(len(borehole_to_borehole)):
+                        m, n = borehole_to_borehole[k][0]
+                        pair_ref = (boreholes[m], boreholes[n])
+                        if compare_pairs(pair0, pair_ref, tol):
+                            borehole_to_borehole[k].append((i, j))
+                            break
+                        elif compare_pairs(pair1, pair_ref, tol):
+                            borehole_to_borehole[k].append((j, i))
+                            break
+                    else:
+                        borehole_to_borehole.append([(i, j)])
+        else:
+            borehole_to_self = [[0]]
+            borehole_to_borehole = []
+        return borehole_to_self, borehole_to_borehole
+
+    def _find_distances(self, boreholes, borehole_to_borehole, disTol):
+        nGroups = len(borehole_to_borehole)
+        borehole_to_borehole_distances = []
+        borehole_to_borehole_indices = [np.empty(len(group), dtype=np.uint) for group in borehole_to_borehole]
+        for i in range(nGroups):
+            borehole_to_borehole_distances.append([])
+            pairs = borehole_to_borehole[i]
+            nPairs = len(pairs)
+            all_distances = np.array([boreholes[pair[0]].distance(boreholes[pair[1]]) for pair in pairs])
+            i_sort = all_distances.argsort()
+            distances_sorted = all_distances[i_sort]
+            j0 = 0
+            j1 = 1
+            nDis = 0
+            while j0 < nPairs and j1 > 0:
+                j1 = np.argmax(distances_sorted >= (1+disTol)*distances_sorted[j0])
+                if j1 > j0:
+                    borehole_to_borehole_distances[i].append(np.mean(distances_sorted[j0:j1]))
+                    borehole_to_borehole_indices[i][i_sort[j0:j1]] = nDis
+                else:
+                    borehole_to_borehole_distances[i].append(np.mean(distances_sorted[j0:]))
+                    borehole_to_borehole_indices[i][i_sort[j0:]] = nDis
+                j0 = j1
+                nDis += 1
+        return borehole_to_borehole_distances, borehole_to_borehole_indices
+
+    def _map_axial_segment_pairs(self, borehole1, borehole2, nSegments, tol, reaSource=True, imgSource=True):
+        if reaSource and imgSource:
+            # Find segment pairs for the full (real + image) FLS solution
+            compare_pairs = self._compare_realandimage_pairs
+        elif reaSource:
+            # Find segment pairs for the real FLS solution
+            compare_pairs = self._compare_real_pairs
+        elif imgSource:
+            # Find segment pairs for the image FLS solution
+            compare_pairs = self._compare_image_pairs
+        # else:
+        #     # Invalid input
+        segments1 = self._borehole_segments_one_borehole(borehole1, nSegments)
+        segments2 = self._borehole_segments_one_borehole(borehole2, nSegments)
+        H1 = segments1[0].H
+        H2 = segments2[0].H
+        D1 = []
+        D2 = []
+        i_pair = np.array([i for i in range(nSegments) for j in range(nSegments)], dtype=np.uint)
+        j_pair = np.array([j for i in range(nSegments) for j in range(nSegments)], dtype=np.uint)
+        k_pair = np.empty(nSegments**2, dtype=np.uint)
+        unique_pairs = []
+        nPairs = 0
+
+        p = 0
+        for i in range(nSegments):
+            for j in range(nSegments):
+                pair = (segments1[i], segments2[j])
+                for k in range(nPairs):
+                    m, n = unique_pairs[k][0], unique_pairs[k][1]
+                    pair_ref = (segments1[m], segments2[n])
+                    if compare_pairs(pair, pair_ref, tol):
+                        k_pair[p] = k
+                        break
+                else:
+                    k_pair[p] = nPairs
+                    D1.append(segments1[i].D)
+                    D2.append(segments2[j].D)
+                    unique_pairs.append((i, j))
+                    nPairs += 1
+                p += 1
+        return H1, np.array(D1), H2, np.array(D2), i_pair, j_pair, k_pair, nPairs
+
+
+    def _map_segment_pairs(self, i_pair, j_pair, k_pair, borehole_to_borehole, borehole_to_borehole_indices):
+        i_segment = np.concatenate([i_pair + i*self.nSegments for (i, j) in borehole_to_borehole])
+        j_segment = np.concatenate([j_pair + j*self.nSegments for (i, j) in borehole_to_borehole])
+        k_segment = np.concatenate([k_pair for (i, j) in borehole_to_borehole])
+        l_segment = np.concatenate([np.repeat(i, len(k_pair)) for i in borehole_to_borehole_indices])
+        return i_segment, j_segment, k_segment, l_segment
 
     def _check_solver_specific_inputs(self):
         """

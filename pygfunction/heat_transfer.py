@@ -5,7 +5,7 @@ from functools import partial
 from multiprocessing import Pool
 
 import numpy as np
-from scipy.integrate import quad
+from scipy.integrate import quad, quad_vec
 from scipy.special import erf
 
 
@@ -115,3 +115,41 @@ def finite_line_source(
     h, err = quad(
         _Ils, a, np.inf, args=(borehole1, borehole2, reaSource, imgSource))
     return h
+
+
+def finite_line_source_vectorized(
+        time, alpha, dis, H1, D1, H2, D2, reaSource=True, imgSource=True):
+    """
+
+    """
+    def _erfint(x):
+        # Integral of error function
+        return x * erf(x) - 1.0/np.sqrt(np.pi) * (1.0-np.exp(-x**2))
+
+    if reaSource and imgSource:
+        # Full (real + image) FLS solution
+        func = lambda s: 0.5 / (H2*s**2) * np.exp(-dis**2*s**2) * (
+            _erfint((D2 - D1 + H2)*s) - _erfint((D2 - D1)*s)
+            + _erfint((D2 - D1 - H1)*s) - _erfint((D2 - D1 + H2 - H1)*s)
+            + _erfint((D2 + D1 + H2)*s) - _erfint((D2 + D1)*s)
+            + _erfint((D2 + D1 + H1)*s) - _erfint((D2 + D1 + H2 + H1)*s) )
+    elif reaSource:
+        # Real FLS solution
+        func = lambda s: 0.5 / (H2*s**2) * np.exp(-dis**2*s**2) * (
+            _erfint((D2 - D1 + H2)*s) - _erfint((D2 - D1)*s)
+            + _erfint((D2 - D1 - H1)*s) - _erfint((D2 - D1 + H2 - H1)*s) )
+    elif imgSource:
+        # Image FLS solution
+        func = lambda s: 0.5 / (H2*s**2) * np.exp(-dis**2*s**2) * (
+            _erfint((D2 + D1 + H2)*s) - _erfint((D2 + D1)*s)
+            + _erfint((D2 + D1 + H1)*s) - _erfint((D2 + D1 + H2 + H1)*s) )
+    else:
+        # No heat source
+        func = lambda s: 0.
+
+    # Lower bound of integration
+    a = 1.0 / np.sqrt(4.0*alpha*time)
+    # Evaluate integral using Gauss-Kronrod
+    h, err = quad_vec(func, a, np.inf)
+    return h
+
