@@ -16,14 +16,15 @@ from .networks import Network, network_thermal_resistance
 
 class gFunction(object):
     """
-    Class for the calculation and visualization of the g-functions o
+    Class for the calculation and visualization of the g-functions of
     geothermal bore fields.
 
     This class superimposes the finite line source (FLS) solution to
     estimate the g-function of a geothermal bore field. Each borehole is
     modeled as a series of finite line source segments, as proposed in
-    [#CimminoBernier2014]_. Different boundary conditions and solution methods
-    are implemented.
+    [#gFunction-CimBer2014]_. Different boundary conditions and solution
+    methods are implemented.
+    
 
     Attributes
     ----------
@@ -37,24 +38,41 @@ class gFunction(object):
         g-function is only evaluated at initialization if a value is provided.
     method : str, optional
         Method for the evaluation of the g-function. Should be one of
-            - 'similarities' : The accelerated method of Cimmino
-                [#Cimmino2018]_, using similarities in the bore field to
-                decrease the number of evaluations of the FLS solution.
-            - 'detailed' : The classical superposition of the FLS solution.
+
+            - 'similarities' :
+                The accelerated method of Cimmino (2018)
+                [#gFunction-Cimmin2018]_, using similarities in the bore field
+                to decrease the number of evaluations of the FLS solution.
+            - 'detailed' :
+                The classical superposition of the FLS solution. The FLS
+                solution is evaluated for all pairs of segments in the bore
+                field.
+
         Default is 'similarities'.
     boundary_condition : str, optional
         Boundary condition for the evaluation of the g-function. Should be one
         of
-            - 'UHTR' : Uniform heat transfer rate.
-            - 'UBWT' : Uniform borehole wall temperature
-                [#CimminoBernier2014]_.
-            - 'MIFT' : Mixed inlet fluid temperatures [#Cimmino2015]_,
-                [#Cimmino2019]_.
-        If not given, chosen to be ''UBWT'' if a list of boreholes is provided
-        or ''MIFT'' if a Network object is provided.
+
+            - 'UHTR' :
+                **Uniform heat transfer rate**. This is corresponds to boundary
+                condition *BC-I* as defined by Cimmino and Bernier (2014)
+                [#gFunction-CimBer2014]_.
+            - 'UBWT' :
+                **Uniform borehole wall temperature**. This is corresponds to
+                boundary condition *BC-III* as defined by Cimmino and Bernier
+                (2014) [#gFunction-CimBer2014]_.
+            - 'MIFT' :
+                **Mixed inlet fluid temperatures**. This boundary condition was
+                introduced by Cimmino (2015) [#gFunction-Cimmin2015]_ for
+                parallel-connected boreholes and extended to mixed
+                configurations by Cimmino (2019) [#gFunction-Cimmin2019]_.
+
+        If not given, chosen to be 'UBWT' if a list of boreholes is provided
+        or 'MIFT' if a Network object is provided.
     options : dict, optional
         A dictionary of solver options. All methods accept the following
         generic options:
+
             nSegments : int, optional
                 Number of line segments used per borehole.
                 Default is 12.
@@ -78,8 +96,10 @@ class gFunction(object):
             dtype : numpy dtype, optional
                 numpy data type used for matrices and vectors.
                 Default is numpy.double.
-        The ''similarities'' solver accepts the following method-specific
+
+        The 'similarities' solver accepts the following method-specific
         options:
+
             disTol : float, optional
                 Relative tolerance on radial distance. Two distances
                 (d1, d2) between two pairs of boreholes are considered equal if
@@ -94,20 +114,21 @@ class gFunction(object):
 
     References
     ----------
-    .. [#CimminoBernier2014] Cimmino, M., & Bernier, M. (2014). A
+    .. [#gFunction-CimBer2014] Cimmino, M., & Bernier, M. (2014). A
        semi-analytical method to generate g-functions for geothermal bore
        fields. International Journal of Heat and Mass Transfer, 70, 641-650.
-    .. [#Cimmino2015] Cimmino, M. (2015). The effects of borehole thermal
-       resistances and fluid flow rate on the g-functions of geothermal bore
-       fields. International Journal of Heat and Mass Transfer, 91, 1119-1127.
-    .. [#Cimmino2018] Cimmino, M. (2018). Fast calculation of the g-functions
-       of geothermal borehole fields using similarities in the evaluation
-       of the finite line source solution. Journal of Building Performance
-       Simulation 11 (6), 655-668.
-    .. [#Cimmino2019] Cimmino, M. (2019). Semi-analytical method for g-function
-       calculation of bore fields with series- and parallel-connected
-       boreholes. Science and Technology for the Built Environment 25 (8),
-       1007-1022.
+    .. [#gFunction-Cimmin2015] Cimmino, M. (2015). The effects of borehole
+       thermal resistances and fluid flow rate on the g-functions of geothermal
+       bore fields. International Journal of Heat and Mass Transfer, 91,
+       1119-1127.
+    .. [#gFunction-Cimmin2018] Cimmino, M. (2018). Fast calculation of the
+       g-functions of geothermal borehole fields using similarities in the
+       evaluation of the finite line source solution. Journal of Building
+       Performance Simulation, 11 (6), 655-668.
+    .. [#gFunction-Cimmin2019] Cimmino, M. (2019). Semi-analytical method for
+       g-function calculation of bore fields with series- and
+       parallel-connected boreholes. Science and Technology for the Built
+       Environment, 25 (8), 1007-1022.
 
     """
     def __init__(self, boreholes_or_network, alpha, time=None,
@@ -125,9 +146,13 @@ class gFunction(object):
 
         # Load the chosen solver
         if self.method.lower()=='similarities':
-            self.solver = Similarities(self.boreholes, self.network, self.time, self.boundary_condition, **self.options)
+            self.solver = Similarities(
+                self.boreholes, self.network, self.time,
+                self.boundary_condition, **self.options)
         elif self.method.lower()=='detailed':
-            self.solver = Detailed(self.boreholes, self.network, self.time, self.boundary_condition, **self.options)
+            self.solver = Detailed(
+                self.boreholes, self.network, self.time,
+                self.boundary_condition, **self.options)
         else:
             raise ValueError('\'{}\' is not a valid method.'.format(method))
 
@@ -748,9 +773,14 @@ class _BaseSolver(object):
     boundary_condition : str
         Boundary condition for the evaluation of the g-function. Should be one
         of
-            - 'UHTR' : Uniform heat transfer rate.
-            - 'UBWT' : Uniform borehole wall temperature.
-            - 'MIFT' : Mixed inlet fluid temperatures.
+
+            - 'UHTR' :
+                Uniform heat transfer rate.
+            - 'UBWT' :
+                Uniform borehole wall temperature.
+            - 'MIFT' :
+                Mixed inlet fluid temperatures.
+
     nSegments : int, optional
         Number of line segments used per borehole.
         Default is 12.
@@ -1118,7 +1148,7 @@ class Detailed(_BaseSolver):
     This solver superimposes the finite line source (FLS) solution to
     estimate the g-function of a geothermal bore field. Each borehole is
     modeled as a series of finite line source segments, as proposed in
-    [#CimminoBernier2014]_.
+    [#Detailed-CimBer2014]_.
 
     Parameters
     ----------
@@ -1131,9 +1161,21 @@ class Detailed(_BaseSolver):
     boundary_condition : str
         Boundary condition for the evaluation of the g-function. Should be one
         of
-            - 'UHTR' : Uniform heat transfer rate.
-            - 'UBWT' : Uniform borehole wall temperature.
-            - 'MIFT' : Mixed inlet fluid temperatures.
+
+            - 'UHTR' :
+                **Uniform heat transfer rate**. This is corresponds to boundary
+                condition *BC-I* as defined by Cimmino and Bernier (2014)
+                [#Detailed-CimBer2014]_.
+            - 'UBWT' :
+                **Uniform borehole wall temperature**. This is corresponds to
+                boundary condition *BC-III* as defined by Cimmino and Bernier
+                (2014) [#Detailed-CimBer2014]_.
+            - 'MIFT' :
+                **Mixed inlet fluid temperatures**. This boundary condition was
+                introduced by Cimmino (2015) [#gFunction-Cimmin2015]_ for
+                parallel-connected boreholes and extended to mixed
+                configurations by Cimmino (2019) [#Detailed-Cimmin2019]_.
+
     nSegments : int, optional
         Number of line segments used per borehole.
         Default is 12.
@@ -1155,9 +1197,13 @@ class Detailed(_BaseSolver):
 
     References
     ----------
-    .. [#CimminoBernier2014] Cimmino, M., & Bernier, M. (2014). A
+    .. [#Detailed-CimBer2014] Cimmino, M., & Bernier, M. (2014). A
        semi-analytical method to generate g-functions for geothermal bore
        fields. International Journal of Heat and Mass Transfer, 70, 641-650.
+    .. [#Detailed-Cimmin2019] Cimmino, M. (2019). Semi-analytical method for
+       g-function calculation of bore fields with series- and
+       parallel-connected boreholes. Science and Technology for the Built
+       Environment, 25 (8), 1007-1022.
 
     """
     def initialize(self, **kwargs):
@@ -1265,9 +1311,9 @@ class Similarities(_BaseSolver):
     This solver superimposes the finite line source (FLS) solution to
     estimate the g-function of a geothermal bore field. Each borehole is
     modeled as a series of finite line source segments, as proposed in
-    [#CimminoBernier2014]_. The number of evaluations of the FLS solution is
-    decreased by identifying similar pairs of boreholes, for which the same FLS
-    value can be applied [#Cimmino2018_].
+    [#Similarities-CimBer2014]_. The number of evaluations of the FLS solution
+    is decreased by identifying similar pairs of boreholes, for which the same
+    FLS value can be applied [#Similarities-Cimmin2018]_.
 
     Parameters
     ----------
@@ -1280,9 +1326,21 @@ class Similarities(_BaseSolver):
     boundary_condition : str
         Boundary condition for the evaluation of the g-function. Should be one
         of
-            - 'UHTR' : Uniform heat transfer rate.
-            - 'UBWT' : Uniform borehole wall temperature.
-            - 'MIFT' : Mixed inlet fluid temperatures.
+
+            - 'UHTR' :
+                **Uniform heat transfer rate**. This is corresponds to boundary
+                condition *BC-I* as defined by Cimmino and Bernier (2014)
+                [#Similarities-CimBer2014]_.
+            - 'UBWT' :
+                **Uniform borehole wall temperature**. This is corresponds to
+                boundary condition *BC-III* as defined by Cimmino and Bernier
+                (2014) [#Similarities-CimBer2014]_.
+            - 'MIFT' :
+                **Mixed inlet fluid temperatures**. This boundary condition was
+                introduced by Cimmino (2015) [#Similarities-Cimmin2015]_ for
+                parallel-connected boreholes and extended to mixed
+                configurations by Cimmino (2019) [#Similarities-Cimmin2019]_.
+
     nSegments : int, optional
         Number of line segments used per borehole.
         Default is 12.
@@ -1313,13 +1371,17 @@ class Similarities(_BaseSolver):
 
     References
     ----------
-    .. [#CimminoBernier2014] Cimmino, M., & Bernier, M. (2014). A
+    .. [#Similarities-CimBer2014] Cimmino, M., & Bernier, M. (2014). A
        semi-analytical method to generate g-functions for geothermal bore
        fields. International Journal of Heat and Mass Transfer, 70, 641-650.
-    .. [#CimminoBernier2018] Cimmino, M. (2018). Fast calculation of the
-        g-functions of geothermal borehole fields using similarities in the
-        evaluation of the finite line source solution. Journal of Building
-        Performance Simulation 11 (6), 655-668.
+    .. [#Similarities-Cimmin2018] Cimmino, M. (2018). Fast calculation of the
+       g-functions of geothermal borehole fields using similarities in the
+       evaluation of the finite line source solution. Journal of Building
+       Performance Simulation, 11 (6), 655-668.
+    .. [#Similarities-Cimmin2019] Cimmino, M. (2019). Semi-analytical method
+       for g-function calculation of bore fields with series- and
+       parallel-connected boreholes. Science and Technology for the Built
+       Environment, 25 (8), 1007-1022.
 
     """
     def initialize(self, disTol=0.01, tol=1.0e-6, **kwargs):
@@ -1722,7 +1784,8 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
     Evaluate the g-function with uniform heat extraction along boreholes.
 
     This function superimposes the finite line source (FLS) solution to
-    estimate the g-function of a geothermal bore field.
+    estimate the g-function of a geothermal bore field. This boundary
+    condition correponds to *BC-I*, as defined by [#UHTR-CimBer2014]_.
 
     Parameters
     ----------
@@ -1767,6 +1830,12 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
     array([ 0.75978163,  1.84860837,  2.98861057,  4.33496051,  6.29199383,
         8.13636888,  9.08401497,  9.20736188])
 
+    References
+    ----------
+    .. [#UHTR-CimBer2014] Cimmino, M., & Bernier, M. (2014). A semi-analytical
+       method to generate g-functions for geothermal bore fields. International
+       Journal of Heat and Mass Transfer, 70, 641-650.
+
     """
     boundary_condition = 'UHTR'
     # Build options dict
@@ -1797,8 +1866,8 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, kind='linear',
 
     This function superimposes the finite line source (FLS) solution to
     estimate the g-function of a geothermal bore field. Each borehole is
-    modeled as a series of finite line source segments, as proposed in
-    [#CimminoBernier2014]_.
+    modeled as a series of finite line source segments. This boundary
+    condition correponds to *BC-III*, as defined by [#UBWT-CimBer2014]_.
 
     Parameters
     ----------
@@ -1852,9 +1921,9 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, kind='linear',
 
     References
     ----------
-    .. [#CimminoBernier2014] Cimmino, M., & Bernier, M. (2014). A
-       semi-analytical method to generate g-functions for geothermal bore
-       fields. International Journal of Heat and Mass Transfer, 70, 641-650.
+    .. [#UBWT-CimBer2014] Cimmino, M., & Bernier, M. (2014). A semi-analytical
+       method to generate g-functions for geothermal bore fields. International
+       Journal of Heat and Mass Transfer, 70, 641-650.
 
     """
     boundary_condition = 'UBWT'
@@ -1889,7 +1958,7 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
     This function superimposes the finite line source (FLS) solution to
     estimate the g-function of a geothermal bore field. Each borehole is
     modeled as a series of finite line source segments, as proposed in
-    [#Cimmino2015]_.
+    [#EIFT-Cimmin2015]_.
 
     Parameters
     ----------
@@ -1949,7 +2018,7 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
 
     References
     ----------
-    .. [#Cimmino2015] Cimmino, M. (2015). The effects of borehole thermal
+    .. [#EIFT-Cimmin2015] Cimmino, M. (2015). The effects of borehole thermal
        resistances and fluid flow rate on the g-functions of geothermal bore
        fields. International Journal of Heat and Mass Transfer, 91, 1119-1127.
 
@@ -1988,7 +2057,7 @@ def mixed_inlet_temperature(network, m_flow, cp,
     This function superimposes the finite line source (FLS) solution to
     estimate the g-function of a geothermal bore field. Each borehole is
     modeled as a series of finite line source segments, as proposed in
-    [#Cimmino2018]_. The piping configurations between boreholes can be any
+    [#MIFT-Cimmin2019]_. The piping configurations between boreholes can be any
     combination of series and parallel connections.
 
     Parameters
@@ -2060,10 +2129,10 @@ def mixed_inlet_temperature(network, m_flow, cp,
 
     References
     ----------
-    .. [#Cimmino2018] Cimmino, M. (2018). g-Functions for bore fields with
-       mixed parallel and series connections considering the axial fluid
-       temperature variations. Proceedings of the IGSHPA Sweden Research Track
-       2018. Stockholm, Sweden. pp. 262-270.
+    .. [#MIFT-Cimmin2019] Cimmino, M. (2019). Semi-analytical method for
+       g-function calculation of bore fields with series- and
+       parallel-connected boreholes. Science and Technology for the Built
+       Environment, 25 (8), 1007-1022
 
     """
     boundary_condition = 'MIFT'
