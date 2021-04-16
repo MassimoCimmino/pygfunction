@@ -51,7 +51,9 @@ def main():
                                                                fluid.mu,
                                                                fluid.rho,
                                                                fluid.k,
-                                                               fluid.cp)
+                                                               fluid.cp,
+                                                               'AVG',
+                                                               disp=True)
     print('Effective borehole thermal resistance (K/(W/m)) = {}'.format(Rb))
 
 

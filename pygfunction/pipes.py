@@ -1165,19 +1165,25 @@ class SingleCoaxialPipe(SingleUTube):
         self._initialize_stored_coefficients()
 
     def compute_effective_borehole_resistance(self, m_flow, visc_f, den_f,
-                                              k_f, cp_f):
+                                              k_f, cp_f, case, disp=False):
         # Inner pipe thermal resistance
         R_p_in = conduction_thermal_resistance_circular_pipe(self.r_in_in,
                                                              self.r_in_out,
                                                              self.k_p_in)
+        if disp:
+            print('Inner pipe thermal resistance, R_p_in: {}'.format(R_p_in))
         # Outer pipe thermal resistance
         R_p_out = conduction_thermal_resistance_circular_pipe(self.r_out_in,
                                                               self.r_out_out,
                                                               self.k_p_out)
+        if disp:
+            print('Outer pipe thermal resistance, R_p_out: {}'.format(R_p_out))
         # Grout thermal resistance
         R_grout = conduction_thermal_resistance_circular_pipe(self.r_out_out,
                                                               self.b.r_b,
                                                               self.k_g)
+        if disp:
+            print('Grout thermal resistance: {}'.format(R_grout))
         h_fluid_a_in, h_fluid_a_out, Re =\
             convective_heat_transfer_coefficient_concentric_annulus(m_flow,
                                                                 self.r_in_out,
@@ -1187,10 +1193,19 @@ class SingleCoaxialPipe(SingleUTube):
                                                                 k_f,
                                                                 cp_f,
                                                                 self.eps_in)
+        if disp:
+            print('Annulus region, h_fluid_a_in = {}\th_fluid_a_out={}\tRe={}'
+                  .format(h_fluid_a_in, h_fluid_a_out, Re))
         # Inner fluid convective resistance
         R_f_a_in = 1. / (h_fluid_a_in * 2 * pi * self.r_in_out)
+        if disp:
+            print('Inner fluid convective resistance, R_f_a_in: {}'.
+                  format(R_f_a_in))
         # Outer fluid convective resistance
         R_f_a_out = 1. / (h_fluid_a_out * 2 * pi * self.r_out_in)
+        if disp:
+            print('Outer fluid convective resistance, R_f_a_out: {}'.
+                  format(R_f_a_out))
 
         h_fluid_in = convective_heat_transfer_coefficient_circular_pipe(m_flow,
                                                            self.r_in_in,
@@ -1199,15 +1214,23 @@ class SingleCoaxialPipe(SingleUTube):
                                                            k_f,
                                                            cp_f,
                                                            self.eps_in)
+        if disp:
+            print('Inside convection coefficient, h_fluid_in: {}'.
+                  format(h_fluid_in))
         R_f_in = 1. / (h_fluid_in * 2 * pi * self.r_in_in)
-
+        if disp:
+            print('Fluid thermal resistance, R_f_in: {}'.format(R_f_in))
         Ra = R_f_in + R_p_in + R_f_a_in
+        if disp:
+            print('Ra = {}'.format(Ra))
         R_12 = Ra
         Rb = R_f_a_out + R_p_out + R_grout
+        if disp:
+            print('Rb = {}'.format(Rb))
 
         Rb_star = borehole_thermal_resistance_2(Rb, Ra, R_12, self.b.H,
                                                 self.r_in_in, m_flow, den_f,
-                                                cp_f)
+                                                cp_f, case=case, disp=disp)
         return Rb_star
 
 
@@ -2002,7 +2025,7 @@ def borehole_thermal_resistance(pipe, m_flow, cp):
 
 
 def borehole_thermal_resistance_2(Rb, Ra, R_12, H, r_in, m_flow, den, cp,
-                                  case='AVG'):
+                                  case='AVG', disp=False):
     """
     Compute the effective borehole thermal resistance using the equations
     presented in Chapter 3 [#JavedSpitler2016]_ (Javed and Spitler 2016) of
@@ -2058,7 +2081,7 @@ def borehole_thermal_resistance_2(Rb, Ra, R_12, H, r_in, m_flow, den, cp,
     Returns
     -------
     Rb_star : float
-        Effective borehole thermal resistance
+        Effective borehole thermal resistance (in m.K/W)
 
     References
     ------------
@@ -2076,12 +2099,18 @@ def borehole_thermal_resistance_2(Rb, Ra, R_12, H, r_in, m_flow, den, cp,
 
     # The UHF case, effective borehole resistance, eq. (3.67)
     Rb_star_UHF = Rb + 1 / (3 * Ra) * (H / (den * cp * V)) ** 2
+    if disp:
+        print('The UHF effective borehole resistance (in m.K/W): {}'.
+              format(Rb_star_UHF))
 
     # The UBH temperature case
     eta = H / (den * cp * V) * 1 / (2 * Rb) * \
           np.sqrt(1 + 4 * Rb / R_12)  # eq. (3.69)
 
-    Rb_star_UBH = Rb * eta * np.arctanh(eta)  # eq. (3.68)
+    Rb_star_UBH = Rb * eta * (1 / np.tanh(eta))  # eq. (3.68)
+    if disp:
+        print('The UBH effective borehole resistance (in m.K/W): {}'.
+              format(Rb_star_UHF))
 
     if case == 'UHF':
         return Rb_star_UHF
@@ -2300,9 +2329,11 @@ def convective_heat_transfer_coefficient_concentric_annulus(m_flow, r_a_in,
     """
     # Hydraulic diameter for concentric tube annulus region
     D_h = 2 * (r_a_out - r_a_in)
+    A_c = pi * (r_a_out**2 - r_a_in**2)  # annulus cross sectional area
+    V_dot = m_flow / den
+    V = V_dot / A_c  # average velocity
+    Re = den * V * D_h / visc
     Pr = cp * visc / k  # Prandlt number
-    # Reynolds number - Equation (8-5) on page 476 in Cengel and Ghajar (2015)
-    Re = 4 * m_flow / visc / pi / D_h
     r_star = r_a_in / r_a_out  # Grundman (2007)
     r_in = D_h / 2  # Hydraulic radius
     # Darcy-Wiesbach friction factor
