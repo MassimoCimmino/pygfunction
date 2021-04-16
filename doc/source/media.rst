@@ -1,11 +1,10 @@
-.. pipes:
+.. media:
 
 ************
-Pipes Module
+Media Module
 ************
 
-.. automodule:: pygfunction.pipes
+.. automodule:: pygfunction.media
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:

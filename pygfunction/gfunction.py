@@ -10,94 +10,9 @@ from .boreholes import Borehole
 from .heat_transfer import thermal_response_factors
 from .networks import network_thermal_resistance
 
-import multiprocessing
-
-
-class gFunction:
-    def __init__(self, **kwargs):
-
-        self.boreholes = []                     # type: list
-        self.time = np.array([])                # type: np.ndarray or float
-        self.alpha = 0.                         # type: float
-        self.nSegments = 12
-        self.method = 'linear'
-        self.use_similarities = True            # type: bool
-        self.disTol = 0.1                       # type: float
-        self.tol = 1.0e-6                       # type: float
-        self.processes = multiprocessing.cpu_count()    # type: int
-        self.disp = False                       # type: bool
-
-        # set what variables are given to the instances of this object
-        variables = vars(self)  # get a list of acceptable variables (the ones initialized above)
-        for key in kwargs:  # loop through the arguments passed into the object
-            if key in variables:  # if the key is an instance of this class
-                setattr(self, key, kwargs[key])  # set the instance to the value provided in kwargs
-            else:  # if false then warn the user that the current key is not an acceptable input for this object
-                raise ValueError('The input {} is not an acceptable input for this class.'.format(key))
-
-    def compute_g_function(self, boundary_condition):
-        """
-        Compute the g-function based on the boundary condition supplied
-        Parameters
-        ----------
-        boundary_condition : str
-            A string denoting the g-function to be computed
-
-        Returns
-        -------
-        gFunction : float or array
-            Values of the g-function
-        """
-        self.check_assertions()  # check to make sure none of the instances in the class has an undesired type
-        # provide a list of acceptable boundary conditions
-        acceptable_boundary_conditions = ['UHF', 'UBHWT', 'UIFT']
-        # if the boundary condition specified is not one of the acceptable ones, then warn the user
-        if boundary_condition not in acceptable_boundary_conditions:
-            raise ValueError('Boundary condition specified is not an acceptable boundary condition. \n'
-                             'Please provide one of the following inputs for boundary condition: {}'.\
-                             format(acceptable_boundary_conditions))
-
-        if boundary_condition == 'UHF':
-            # compute g-function for uniform heat flux boundary condition
-            g = uniform_heat_extraction(self.boreholes, self.time, self.alpha, use_similarities=self.use_similarities,
-                                        disTol=self.disTol, tol=self.tol, processes=self.processes, disp=self.disp)
-        elif boundary_condition == 'UBHWT':
-            # compute g-function for uniform borehole wall temperature boundary condition
-            g = uniform_temperature(self.boreholes, self.time, self.alpha, nSegments=self.nSegments,
-                                    method=self.method, use_similarities=self.use_similarities, disTol=self.disTol,
-                                    tol=self.tol, processes=self.processes, disp=self.disp)
-        elif boundary_condition == 'UIFT':
-            # compute g-function for uniform inlet fluid temperature boundary condition
-            a = 1
-        else:
-            raise ValueError('The exact error is questionable. Please double check your inputs.')
-
-        return g
-
-    def check_assertions(self):
-        """
-        This method ensures that the instances filled in the gFunction object are what is expected.
-        Returns
-        -------
-        None
-        """
-        assert isinstance(self.boreholes, list)     # boreholes must be in a list
-        assert len(self.boreholes) > 0              # there must be atleast one borehole location
-        assert type(self.boreholes[0] is Borehole)  # the list of boreholes must be made up of borehole objects
-        assert type(self.time) is np.ndarray or type(self.time) is float
-        assert type(self.alpha) is float
-        assert type(self.nSegments) is int
-        assert type(self.method) is str
-        assert type(self.use_similarities) is bool
-        assert type(self.disTol) is float
-        assert type(self.tol) is float
-        assert type(self.processes) is int
-        assert type(self.disp) is bool
-        return
-
 
 def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
-                            disTol=0.1, tol=1.0e-6, processes=None,
+                            disTol=0.01, tol=1.0e-6, processes=None,
                             disp=False):
     """
     Evaluate the g-function with uniform heat extraction along boreholes.
@@ -117,10 +32,10 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
         True if similarities are used to limit the number of FLS evaluations.
         Default is True.
     disTol : float, optional
-        Absolute tolerance (in meters) on radial distance. Two distances
+        Relative tolerance on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
         difference between the two distances (abs(d1-d2)) is below tolerance.
-        Default is 0.1.
+        Default is 0.01.
     tol : float, optional
         Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
@@ -162,7 +77,7 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
     # Initialize heat extraction rates
     Q = np.ones(nBoreholes)
     # Initialize g-function
-    gFunction = np.zeros_like(np.atleast_1d(time))
+    gFunction = np.zeros(nt)
     # Borehole lengths
     H = np.array([b.H for b in boreholes])
 
@@ -196,7 +111,7 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
 
 
 def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
-                        use_similarities=True, disTol=0.1, tol=1.0e-6,
+                        use_similarities=True, disTol=0.01, tol=1.0e-6,
                         processes=None, disp=False):
     """
     Evaluate the g-function with uniform borehole wall temperature.
@@ -225,10 +140,10 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
         True if similarities are used to limit the number of FLS evaluations.
         Default is True.
     disTol : float, optional
-        Absolute tolerance (in meters) on radial distance. Two distances
+        Relative tolerance on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
         difference between the two distances (abs(d1-d2)) is below tolerance.
-        Default is 0.1.
+        Default is 0.01.
     tol : float, optional
         Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
@@ -276,7 +191,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
     # Number of time values
     nt = len(np.atleast_1d(time))
     # Initialize g-function
-    gFunction = np.zeros_like(np.atleast_1d(time))
+    gFunction = np.zeros(nt)
     # Initialize segment heat extraction rates
     Q = np.zeros((nSources, nt))
 
@@ -358,7 +273,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, method='linear',
 
 def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
                             method='linear', nSegments=12,
-                            use_similarities=True, disTol=0.1, tol=1.0e-6,
+                            use_similarities=True, disTol=0.01, tol=1.0e-6,
                             processes=None, disp=False):
     """
     Evaluate the g-function with equal inlet fluid temperatures.
@@ -393,10 +308,10 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
         True if similarities are used to limit the number of FLS evaluations.
         Default is True.
     disTol : float, optional
-        Absolute tolerance (in meters) on radial distance. Two distances
+        Relative tolerance on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
         difference between the two distances (abs(d1-d2)) is below tolerance.
-        Default is 0.1.
+        Default is 0.01.
     tol : float, optional
         Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
@@ -444,7 +359,7 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
     # Number of time values
     nt = len(np.atleast_1d(time))
     # Initialize g-function
-    gFunction = np.zeros_like(np.atleast_1d(time))
+    gFunction = np.zeros(nt)
     # Initialize segment heat extraction rates
     Q = np.zeros((nSources, nt))
 
@@ -553,7 +468,7 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
 
 def mixed_inlet_temperature(network, m_flow, cp,
                             time, alpha, method='linear', nSegments=12,
-                            use_similarities=True, disTol=0.1, tol=1.0e-6,
+                            use_similarities=True, disTol=0.01, tol=1.0e-6,
                             processes=None, disp=False):
     """
     Evaluate the g-function with mixed inlet fluid temperatures.
@@ -590,10 +505,10 @@ def mixed_inlet_temperature(network, m_flow, cp,
         True if similarities are used to limit the number of FLS evaluations.
         Default is True.
     disTol : float, optional
-        Absolute tolerance (in meters) on radial distance. Two distances
+        Relative tolerance on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
         difference between the two distances (abs(d1-d2)) is below tolerance.
-        Default is 0.1.
+        Default is 0.01.
     tol : float, optional
         Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
@@ -652,7 +567,7 @@ def mixed_inlet_temperature(network, m_flow, cp,
     # Number of time values
     nt = len(np.atleast_1d(time))
     # Initialize g-function
-    gFunction = np.zeros_like(np.atleast_1d(time))
+    gFunction = np.zeros(nt)
     # Initialize segment heat extraction rates
     Q = np.zeros((nSources, nt))
 

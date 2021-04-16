@@ -52,10 +52,12 @@ def main():
     # Fluid properties
     # Total fluid mass flow rate per borehole (kg/s), from 0.01 kg/s to 1 kg/s
     m_flow_boreholes = 10**np.arange(-2, 0.001, 0.05)
-    cp_f = 4000.        # Fluid specific isobaric heat capacity (J/kg.K)
-    den_f = 1015.       # Fluid density (kg/m3)
-    visc_f = 0.002      # Fluid dynamic viscosity (kg/m.s)
-    k_f = 0.5           # Fluid thermal conductivity (W/m.K)
+    # The fluid is propylene-glycol (20 %) at 20 degC
+    fluid = gt.media.Fluid('MPG', 20.)
+    cp_f = fluid.cp     # Fluid specific isobaric heat capacity (J/kg.K)
+    den_f = fluid.rho   # Fluid density (kg/m3)
+    visc_f = fluid.mu   # Fluid dynamic viscosity (kg/m.s)
+    k_f = fluid.k       # Fluid thermal conductivity (W/m.K)
 
     # -------------------------------------------------------------------------
     # Borehole field
@@ -96,11 +98,14 @@ def main():
                 SingleUTube = gt.pipes.SingleUTube(pos_pipes, rp_in, rp_out,
                                                    borehole, k_s, k_g, R_f + R_p)
                 UTubes.append(SingleUTube)
+            network = gt.networks.Network(
+                boreField[:nBoreholes],
+                UTubes[:nBoreholes],
+                bore_connectivity=bore_connectivity[:nBoreholes])
 
             # Effective bore field thermal resistance
-            R_field = gt.pipes.field_thermal_resistance(
-                    UTubes[:nBoreholes], bore_connectivity[:nBoreholes],
-                    m_flow, cp_f)
+            R_field = gt.networks.network_thermal_resistance(
+                network, m_flow, cp_f)
             # Add to result array
             R[i,j] = R_field
 
