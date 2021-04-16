@@ -146,11 +146,11 @@ class gFunction(object):
 
         # Load the chosen solver
         if self.method.lower()=='similarities':
-            self.solver = Similarities(
+            self.solver = _Similarities(
                 self.boreholes, self.network, self.time,
                 self.boundary_condition, **self.options)
         elif self.method.lower()=='detailed':
-            self.solver = Detailed(
+            self.solver = _Detailed(
                 self.boreholes, self.network, self.time,
                 self.boundary_condition, **self.options)
         else:
@@ -756,6 +756,386 @@ class gFunction(object):
         return
 
 
+def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
+                            disTol=0.01, tol=1.0e-6, processes=None,
+                            disp=False, **kwargs):
+    """
+    Evaluate the g-function with uniform heat extraction along boreholes.
+
+    This function superimposes the finite line source (FLS) solution to
+    estimate the g-function of a geothermal bore field. This boundary
+    condition correponds to *BC-I*, as defined by [#UHTR-CimBer2014]_.
+
+    Parameters
+    ----------
+    boreholes : list of Borehole objects
+        List of boreholes included in the bore field.
+    time : float or array
+        Values of time (in seconds) for which the g-function is evaluated.
+    alpha : float
+        Soil thermal diffusivity (in m2/s).
+    use_similarities : bool, optional
+        True if similarities are used to limit the number of FLS evaluations.
+        Default is True.
+    disTol : float, optional
+        Relative tolerance on radial distance. Two distances
+        (d1, d2) between two pairs of boreholes are considered equal if the
+        difference between the two distances (abs(d1-d2)) is below tolerance.
+        Default is 0.01.
+    tol : float, optional
+        Relative tolerance on length and depth. Two lengths H1, H2
+        (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
+        Default is 1.0e-6.
+    processes : int, optional
+        Number of processors to use in calculations. If the value is set to
+        None, a number of processors equal to cpu_count() is used.
+        Default is None.
+    disp : bool, optional
+        Set to true to print progression messages.
+        Default is False.
+
+    Returns
+    -------
+    gFunction : float or array
+        Values of the g-function
+
+    Examples
+    --------
+    >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
+    >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
+    >>> alpha = 1.0e-6
+    >>> time = np.array([1.0*10**i for i in range(4, 12)])
+    >>> gt.gfunction.uniform_heat_extraction([b1, b2], time, alpha)
+    array([ 0.75978163,  1.84860837,  2.98861057,  4.33496051,  6.29199383,
+        8.13636888,  9.08401497,  9.20736188])
+
+    References
+    ----------
+    .. [#UHTR-CimBer2014] Cimmino, M., & Bernier, M. (2014). A semi-analytical
+       method to generate g-functions for geothermal bore fields. International
+       Journal of Heat and Mass Transfer, 70, 641-650.
+
+    """
+    boundary_condition = 'UHTR'
+    # Build options dict
+    options = {'nSegments':1,
+               'disp':disp,
+               'disTol':disTol,
+               'tol':tol,
+               'processes':processes,
+               'disp':disp}
+    # Select the correct solver:
+    if use_similarities:
+        method='similarities'
+    else:
+        method='detailed'
+    # Evaluate g-function
+    gFunc = gFunction(
+        boreholes, alpha, time=time, method=method,
+        boundary_condition=boundary_condition, options=options)
+
+    return gFunc.gFunc
+
+
+def uniform_temperature(boreholes, time, alpha, nSegments=12, kind='linear',
+                        use_similarities=True, disTol=0.01, tol=1.0e-6,
+                        processes=None, disp=False, **kwargs):
+    """
+    Evaluate the g-function with uniform borehole wall temperature.
+
+    This function superimposes the finite line source (FLS) solution to
+    estimate the g-function of a geothermal bore field. Each borehole is
+    modeled as a series of finite line source segments. This boundary
+    condition correponds to *BC-III*, as defined by [#UBWT-CimBer2014]_.
+
+    Parameters
+    ----------
+    boreholes : list of Borehole objects
+        List of boreholes included in the bore field.
+    time : float or array
+        Values of time (in seconds) for which the g-function is evaluated.
+    alpha : float
+        Soil thermal diffusivity (in m2/s).
+    nSegments : int, optional
+        Number of line segments used per borehole.
+        Default is 12.
+    kind : string, optional
+        Interpolation method used for segment-to-segment thermal response
+        factors. See documentation for scipy.interpolate.interp1d.
+        Default is linear.
+    use_similarities : bool, optional
+        True if similarities are used to limit the number of FLS evaluations.
+        Default is True.
+    disTol : float, optional
+        Relative tolerance on radial distance. Two distances
+        (d1, d2) between two pairs of boreholes are considered equal if the
+        difference between the two distances (abs(d1-d2)) is below tolerance.
+        Default is 0.01.
+    tol : float, optional
+        Relative tolerance on length and depth. Two lengths H1, H2
+        (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
+        Default is 1.0e-6.
+    processes : int, optional
+        Number of processors to use in calculations. If the value is set to
+        None, a number of processors equal to cpu_count() is used.
+        Default is None.
+    disp : bool, optional
+        Set to true to print progression messages.
+        Default is False.
+
+    Returns
+    -------
+    gFunction : float or array
+        Values of the g-function
+
+    Examples
+    --------
+    >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
+    >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
+    >>> alpha = 1.0e-6
+    >>> time = np.array([1.0*10**i for i in range(4, 12)])
+    >>> gt.gfunction.uniform_temperature([b1, b2], time, alpha)
+    array([ 0.75978079,  1.84859851,  2.98852756,  4.33406497,  6.27830732,
+        8.05746656,  8.93697282,  9.04925079])
+
+    References
+    ----------
+    .. [#UBWT-CimBer2014] Cimmino, M., & Bernier, M. (2014). A semi-analytical
+       method to generate g-functions for geothermal bore fields. International
+       Journal of Heat and Mass Transfer, 70, 641-650.
+
+    """
+    boundary_condition = 'UBWT'
+    # Build options dict
+    options = {'nSegments':nSegments,
+               'disp':disp,
+               'kind':kind,
+               'disTol':disTol,
+               'tol':tol,
+               'processes':processes,
+               'disp':disp}
+    # Select the correct solver:
+    if use_similarities:
+        method='similarities'
+    else:
+        method='detailed'
+    # Evaluate g-function
+    gFunc = gFunction(
+        boreholes, alpha, time=time, method=method,
+        boundary_condition=boundary_condition, options=options)
+
+    return gFunc.gFunc
+
+
+def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
+                            kind='linear', nSegments=12,
+                            use_similarities=True, disTol=0.01, tol=1.0e-6,
+                            processes=None, disp=False, **kwargs):
+    """
+    Evaluate the g-function with equal inlet fluid temperatures.
+
+    This function superimposes the finite line source (FLS) solution to
+    estimate the g-function of a geothermal bore field. Each borehole is
+    modeled as a series of finite line source segments, as proposed in
+    [#EIFT-Cimmin2015]_.
+
+    Parameters
+    ----------
+    boreholes : list of Borehole objects
+        List of boreholes included in the bore field.
+    UTubes : list of pipe objects
+        Model for pipes inside each borehole.
+    m_flow : float or array
+        Fluid mass flow rate per borehole (in kg/s).
+    cp : float
+        Fluid specific isobaric heat capacity (in J/kg.K).
+    time : float or array
+        Values of time (in seconds) for which the g-function is evaluated.
+    alpha : float
+        Soil thermal diffusivity (in m2/s).
+    nSegments : int, optional
+        Number of line segments used per borehole.
+        Default is 12.
+    kind : string, optional
+        Interpolation method used for segment-to-segment thermal response
+        factors. See documentation for scipy.interpolate.interp1d.
+        Default is 'linear'.
+    use_similarities : bool, optional
+        True if similarities are used to limit the number of FLS evaluations.
+        Default is True.
+    disTol : float, optional
+        Relative tolerance on radial distance. Two distances
+        (d1, d2) between two pairs of boreholes are considered equal if the
+        difference between the two distances (abs(d1-d2)) is below tolerance.
+        Default is 0.01.
+    tol : float, optional
+        Relative tolerance on length and depth. Two lengths H1, H2
+        (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
+        Default is 1.0e-6.
+    processes : int, optional
+        Number of processors to use in calculations. If the value is set to
+        None, a number of processors equal to cpu_count() is used.
+        Default is None.
+    disp : bool, optional
+        Set to true to print progression messages.
+        Default is False.
+
+    Returns
+    -------
+    gFunction : float or array
+        Values of the g-function
+
+    Examples
+    --------
+    >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
+    >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
+    >>> alpha = 1.0e-6
+    >>> time = np.array([1.0*10**i for i in range(4, 12)])
+    >>> gt.gfunction.uniform_temperature([b1, b2], time, alpha)
+    array([ 0.75978079,  1.84859851,  2.98852756,  4.33406497,  6.27830732,
+        8.05746656,  8.93697282,  9.04925079])
+
+    References
+    ----------
+    .. [#EIFT-Cimmin2015] Cimmino, M. (2015). The effects of borehole thermal
+       resistances and fluid flow rate on the g-functions of geothermal bore
+       fields. International Journal of Heat and Mass Transfer, 91, 1119-1127.
+
+    """
+    network = Network(boreholes, UTubes, m_flow=m_flow*len(boreholes), cp=cp,
+                      nSegments=nSegments)
+    boundary_condition = 'MIFT'
+    # Build options dict
+    options = {'nSegments':nSegments,
+                'disp':disp,
+                'kind':kind,
+                'disTol':disTol,
+                'tol':tol,
+                'processes':processes,
+                'disp':disp}
+    # Select the correct solver:
+    if use_similarities:
+        method='similarities'
+    else:
+        method='detailed'
+    # Evaluate g-function
+    gFunc = gFunction(
+        network, alpha, time=time, method=method,
+        boundary_condition=boundary_condition, options=options)
+
+    return gFunc.gFunc
+
+
+def mixed_inlet_temperature(network, m_flow, cp,
+                            time, alpha, kind='linear', nSegments=12,
+                            use_similarities=True, disTol=0.01, tol=1.0e-6,
+                            processes=None, disp=False, **kwargs):
+    """
+    Evaluate the g-function with mixed inlet fluid temperatures.
+
+    This function superimposes the finite line source (FLS) solution to
+    estimate the g-function of a geothermal bore field. Each borehole is
+    modeled as a series of finite line source segments, as proposed in
+    [#MIFT-Cimmin2019]_. The piping configurations between boreholes can be any
+    combination of series and parallel connections.
+
+    Parameters
+    ----------
+    network : Network objects
+        List of boreholes included in the bore field.
+    m_flow : float or array
+        Total mass flow rate into the network or inlet mass flow rates
+        into each circuit of the network (in kg/s). If a float is supplied,
+        the total mass flow rate is split equally into all circuits.
+    cp : float or array
+        Fluid specific isobaric heat capacity (in J/kg.degC).
+        Must be the same for all circuits (a single float can be supplied).
+    time : float or array
+        Values of time (in seconds) for which the g-function is evaluated.
+    alpha : float
+        Soil thermal diffusivity (in m2/s).
+    nSegments : int, optional
+        Number of line segments used per borehole.
+        Default is 12.
+    kind : string, optional
+        Interpolation method used for segment-to-segment thermal response
+        factors. See documentation for scipy.interpolate.interp1d.
+        Default is 'linear'.
+    use_similarities : bool, optional
+        True if similarities are used to limit the number of FLS evaluations.
+        Default is True.
+    disTol : float, optional
+        Relative tolerance on radial distance. Two distances
+        (d1, d2) between two pairs of boreholes are considered equal if the
+        difference between the two distances (abs(d1-d2)) is below tolerance.
+        Default is 0.01.
+    tol : float, optional
+        Relative tolerance on length and depth. Two lengths H1, H2
+        (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
+        Default is 1.0e-6.
+    processes : int, optional
+        Number of processors to use in calculations. If the value is set to
+        None, a number of processors equal to cpu_count() is used.
+        Default is None.
+    disp : bool, optional
+        Set to true to print progression messages.
+        Default is False.
+
+    Returns
+    -------
+    gFunction : float or array
+        Values of the g-function
+
+    Examples
+    --------
+    >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
+    >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
+    >>> Utube1 = gt.pipes.SingleUTube(pos=[(-0.05, 0), (0, -0.05)],
+                                      r_in=0.015, r_out=0.02,
+                                      borehole=b1,k_s=2, k_g=1, R_fp=0.1)
+    >>> Utube2 = gt.pipes.SingleUTube(pos=[(-0.05, 0), (0, -0.05)],
+                                      r_in=0.015, r_out=0.02,
+                                      borehole=b1,k_s=2, k_g=1, R_fp=0.1)
+    >>> bore_connectivity = [-1, 0]
+    >>> network = gt.networks.Network([b1, b2], [Utube1, Utube2], bore_connectivity)
+    >>> time = np.array([1.0*10**i for i in range(4, 12)])
+    >>> m_flow = 0.25
+    >>> cp = 4000.
+    >>> alpha = 1.0e-6
+    >>> gt.gfunction.mixed_inlet_temperature(network, m_flow, cp, time, alpha)
+    array([0.63782415, 1.63304116, 2.72191316, 4.04091713, 5.98240458,
+       7.77216202, 8.66195828, 8.77567215])
+
+    References
+    ----------
+    .. [#MIFT-Cimmin2019] Cimmino, M. (2019). Semi-analytical method for
+       g-function calculation of bore fields with series- and
+       parallel-connected boreholes. Science and Technology for the Built
+       Environment, 25 (8), 1007-1022
+
+    """
+    boundary_condition = 'MIFT'
+    # Build options dict
+    options = {'nSegments':nSegments,
+                'disp':disp,
+                'kind':kind,
+                'disTol':disTol,
+                'tol':tol,
+                'processes':processes,
+                'disp':disp}
+    # Select the correct solver:
+    if use_similarities:
+        method='similarities'
+    else:
+        method='detailed'
+    # Evaluate g-function
+    gFunc = gFunction(
+        network, alpha, time=time, method=method,
+        boundary_condition=boundary_condition, options=options)
+
+    return gFunc.gFunc
+
+
 class _BaseSolver(object):
     """
     Template for solver classes.
@@ -1142,7 +1522,7 @@ class _BaseSolver(object):
         return
 
 
-class Detailed(_BaseSolver):
+class _Detailed(_BaseSolver):
     """
     Detailed solver for the evaluation of the g-function.
 
@@ -1306,7 +1686,7 @@ class Detailed(_BaseSolver):
         return h_ij
 
 
-class Similarities(_BaseSolver):
+class _Similarities(_BaseSolver):
     """
     Detailed solver for the evaluation of the g-function.
 
@@ -1376,6 +1756,10 @@ class Similarities(_BaseSolver):
     .. [#Similarities-CimBer2014] Cimmino, M., & Bernier, M. (2014). A
        semi-analytical method to generate g-functions for geothermal bore
        fields. International Journal of Heat and Mass Transfer, 70, 641-650.
+    .. [#Similarities-Cimmin2015] Cimmino, M. (2015). The effects of borehole
+       thermal resistances and fluid flow rate on the g-functions of geothermal
+       bore fields. International Journal of Heat and Mass Transfer, 91,
+       1119-1127.
     .. [#Similarities-Cimmin2018] Cimmino, M. (2018). Fast calculation of the
        g-functions of geothermal borehole fields using similarities in the
        evaluation of the finite line source solution. Journal of Building
@@ -1779,383 +2163,3 @@ class Similarities(_BaseSolver):
         assert type(self.tol) is float and self.tol > 0., \
             "The relative tolerance 'tol' should be a positive float."
         return
-
-
-def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
-                            disTol=0.01, tol=1.0e-6, processes=None,
-                            disp=False, **kwargs):
-    """
-    Evaluate the g-function with uniform heat extraction along boreholes.
-
-    This function superimposes the finite line source (FLS) solution to
-    estimate the g-function of a geothermal bore field. This boundary
-    condition correponds to *BC-I*, as defined by [#UHTR-CimBer2014]_.
-
-    Parameters
-    ----------
-    boreholes : list of Borehole objects
-        List of boreholes included in the bore field.
-    time : float or array
-        Values of time (in seconds) for which the g-function is evaluated.
-    alpha : float
-        Soil thermal diffusivity (in m2/s).
-    use_similarities : bool, optional
-        True if similarities are used to limit the number of FLS evaluations.
-        Default is True.
-    disTol : float, optional
-        Relative tolerance on radial distance. Two distances
-        (d1, d2) between two pairs of boreholes are considered equal if the
-        difference between the two distances (abs(d1-d2)) is below tolerance.
-        Default is 0.01.
-    tol : float, optional
-        Relative tolerance on length and depth. Two lengths H1, H2
-        (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
-        Default is 1.0e-6.
-    processes : int, optional
-        Number of processors to use in calculations. If the value is set to
-        None, a number of processors equal to cpu_count() is used.
-        Default is None.
-    disp : bool, optional
-        Set to true to print progression messages.
-        Default is False.
-
-    Returns
-    -------
-    gFunction : float or array
-        Values of the g-function
-
-    Examples
-    --------
-    >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
-    >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
-    >>> alpha = 1.0e-6
-    >>> time = np.array([1.0*10**i for i in range(4, 12)])
-    >>> gt.gfunction.uniform_heat_extraction([b1, b2], time, alpha)
-    array([ 0.75978163,  1.84860837,  2.98861057,  4.33496051,  6.29199383,
-        8.13636888,  9.08401497,  9.20736188])
-
-    References
-    ----------
-    .. [#UHTR-CimBer2014] Cimmino, M., & Bernier, M. (2014). A semi-analytical
-       method to generate g-functions for geothermal bore fields. International
-       Journal of Heat and Mass Transfer, 70, 641-650.
-
-    """
-    boundary_condition = 'UHTR'
-    # Build options dict
-    options = {'nSegments':1,
-               'disp':disp,
-               'disTol':disTol,
-               'tol':tol,
-               'processes':processes,
-               'disp':disp}
-    # Select the correct solver:
-    if use_similarities:
-        method='similarities'
-    else:
-        method='detailed'
-    # Evaluate g-function
-    gFunc = gFunction(
-        boreholes, alpha, time=time, method=method,
-        boundary_condition=boundary_condition, options=options)
-
-    return gFunc.gFunc
-
-
-def uniform_temperature(boreholes, time, alpha, nSegments=12, kind='linear',
-                        use_similarities=True, disTol=0.01, tol=1.0e-6,
-                        processes=None, disp=False, **kwargs):
-    """
-    Evaluate the g-function with uniform borehole wall temperature.
-
-    This function superimposes the finite line source (FLS) solution to
-    estimate the g-function of a geothermal bore field. Each borehole is
-    modeled as a series of finite line source segments. This boundary
-    condition correponds to *BC-III*, as defined by [#UBWT-CimBer2014]_.
-
-    Parameters
-    ----------
-    boreholes : list of Borehole objects
-        List of boreholes included in the bore field.
-    time : float or array
-        Values of time (in seconds) for which the g-function is evaluated.
-    alpha : float
-        Soil thermal diffusivity (in m2/s).
-    nSegments : int, optional
-        Number of line segments used per borehole.
-        Default is 12.
-    kind : string, optional
-        Interpolation method used for segment-to-segment thermal response
-        factors. See documentation for scipy.interpolate.interp1d.
-        Default is linear.
-    use_similarities : bool, optional
-        True if similarities are used to limit the number of FLS evaluations.
-        Default is True.
-    disTol : float, optional
-        Relative tolerance on radial distance. Two distances
-        (d1, d2) between two pairs of boreholes are considered equal if the
-        difference between the two distances (abs(d1-d2)) is below tolerance.
-        Default is 0.01.
-    tol : float, optional
-        Relative tolerance on length and depth. Two lengths H1, H2
-        (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
-        Default is 1.0e-6.
-    processes : int, optional
-        Number of processors to use in calculations. If the value is set to
-        None, a number of processors equal to cpu_count() is used.
-        Default is None.
-    disp : bool, optional
-        Set to true to print progression messages.
-        Default is False.
-
-    Returns
-    -------
-    gFunction : float or array
-        Values of the g-function
-
-    Examples
-    --------
-    >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
-    >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
-    >>> alpha = 1.0e-6
-    >>> time = np.array([1.0*10**i for i in range(4, 12)])
-    >>> gt.gfunction.uniform_temperature([b1, b2], time, alpha)
-    array([ 0.75978079,  1.84859851,  2.98852756,  4.33406497,  6.27830732,
-        8.05746656,  8.93697282,  9.04925079])
-
-    References
-    ----------
-    .. [#UBWT-CimBer2014] Cimmino, M., & Bernier, M. (2014). A semi-analytical
-       method to generate g-functions for geothermal bore fields. International
-       Journal of Heat and Mass Transfer, 70, 641-650.
-
-    """
-    boundary_condition = 'UBWT'
-    # Build options dict
-    options = {'nSegments':nSegments,
-               'disp':disp,
-               'kind':kind,
-               'disTol':disTol,
-               'tol':tol,
-               'processes':processes,
-               'disp':disp}
-    # Select the correct solver:
-    if use_similarities:
-        method='similarities'
-    else:
-        method='detailed'
-    # Evaluate g-function
-    gFunc = gFunction(
-        boreholes, alpha, time=time, method=method,
-        boundary_condition=boundary_condition, options=options)
-
-    return gFunc.gFunc
-
-
-def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
-                            kind='linear', nSegments=12,
-                            use_similarities=True, disTol=0.01, tol=1.0e-6,
-                            processes=None, disp=False, **kwargs):
-    """
-    Evaluate the g-function with equal inlet fluid temperatures.
-
-    This function superimposes the finite line source (FLS) solution to
-    estimate the g-function of a geothermal bore field. Each borehole is
-    modeled as a series of finite line source segments, as proposed in
-    [#EIFT-Cimmin2015]_.
-
-    Parameters
-    ----------
-    boreholes : list of Borehole objects
-        List of boreholes included in the bore field.
-    UTubes : list of pipe objects
-        Model for pipes inside each borehole.
-    m_flow : float or array
-        Fluid mass flow rate per borehole (in kg/s).
-    cp : float
-        Fluid specific isobaric heat capacity (in J/kg.K).
-    time : float or array
-        Values of time (in seconds) for which the g-function is evaluated.
-    alpha : float
-        Soil thermal diffusivity (in m2/s).
-    nSegments : int, optional
-        Number of line segments used per borehole.
-        Default is 12.
-    kind : string, optional
-        Interpolation method used for segment-to-segment thermal response
-        factors. See documentation for scipy.interpolate.interp1d.
-        Default is 'linear'.
-    use_similarities : bool, optional
-        True if similarities are used to limit the number of FLS evaluations.
-        Default is True.
-    disTol : float, optional
-        Relative tolerance on radial distance. Two distances
-        (d1, d2) between two pairs of boreholes are considered equal if the
-        difference between the two distances (abs(d1-d2)) is below tolerance.
-        Default is 0.01.
-    tol : float, optional
-        Relative tolerance on length and depth. Two lengths H1, H2
-        (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
-        Default is 1.0e-6.
-    processes : int, optional
-        Number of processors to use in calculations. If the value is set to
-        None, a number of processors equal to cpu_count() is used.
-        Default is None.
-    disp : bool, optional
-        Set to true to print progression messages.
-        Default is False.
-
-    Returns
-    -------
-    gFunction : float or array
-        Values of the g-function
-
-    Examples
-    --------
-    >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
-    >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
-    >>> alpha = 1.0e-6
-    >>> time = np.array([1.0*10**i for i in range(4, 12)])
-    >>> gt.gfunction.uniform_temperature([b1, b2], time, alpha)
-    array([ 0.75978079,  1.84859851,  2.98852756,  4.33406497,  6.27830732,
-        8.05746656,  8.93697282,  9.04925079])
-
-    References
-    ----------
-    .. [#EIFT-Cimmin2015] Cimmino, M. (2015). The effects of borehole thermal
-       resistances and fluid flow rate on the g-functions of geothermal bore
-       fields. International Journal of Heat and Mass Transfer, 91, 1119-1127.
-
-    """
-    network = Network(boreholes, UTubes, m_flow=m_flow*len(boreholes), cp=cp,
-                      nSegments=nSegments)
-    boundary_condition = 'MIFT'
-    # Build options dict
-    options = {'nSegments':nSegments,
-                'disp':disp,
-                'kind':kind,
-                'disTol':disTol,
-                'tol':tol,
-                'processes':processes,
-                'disp':disp}
-    # Select the correct solver:
-    if use_similarities:
-        method='similarities'
-    else:
-        method='detailed'
-    # Evaluate g-function
-    gFunc = gFunction(
-        network, alpha, time=time, method=method,
-        boundary_condition=boundary_condition, options=options)
-
-    return gFunc.gFunc
-
-
-def mixed_inlet_temperature(network, m_flow, cp,
-                            time, alpha, kind='linear', nSegments=12,
-                            use_similarities=True, disTol=0.01, tol=1.0e-6,
-                            processes=None, disp=False, **kwargs):
-    """
-    Evaluate the g-function with mixed inlet fluid temperatures.
-
-    This function superimposes the finite line source (FLS) solution to
-    estimate the g-function of a geothermal bore field. Each borehole is
-    modeled as a series of finite line source segments, as proposed in
-    [#MIFT-Cimmin2019]_. The piping configurations between boreholes can be any
-    combination of series and parallel connections.
-
-    Parameters
-    ----------
-    network : Network objects
-        List of boreholes included in the bore field.
-    m_flow : float or array
-        Total mass flow rate into the network or inlet mass flow rates
-        into each circuit of the network (in kg/s). If a float is supplied,
-        the total mass flow rate is split equally into all circuits.
-    cp : float or array
-        Fluid specific isobaric heat capacity (in J/kg.degC).
-        Must be the same for all circuits (a single float can be supplied).
-    time : float or array
-        Values of time (in seconds) for which the g-function is evaluated.
-    alpha : float
-        Soil thermal diffusivity (in m2/s).
-    nSegments : int, optional
-        Number of line segments used per borehole.
-        Default is 12.
-    kind : string, optional
-        Interpolation method used for segment-to-segment thermal response
-        factors. See documentation for scipy.interpolate.interp1d.
-        Default is 'linear'.
-    use_similarities : bool, optional
-        True if similarities are used to limit the number of FLS evaluations.
-        Default is True.
-    disTol : float, optional
-        Relative tolerance on radial distance. Two distances
-        (d1, d2) between two pairs of boreholes are considered equal if the
-        difference between the two distances (abs(d1-d2)) is below tolerance.
-        Default is 0.01.
-    tol : float, optional
-        Relative tolerance on length and depth. Two lengths H1, H2
-        (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
-        Default is 1.0e-6.
-    processes : int, optional
-        Number of processors to use in calculations. If the value is set to
-        None, a number of processors equal to cpu_count() is used.
-        Default is None.
-    disp : bool, optional
-        Set to true to print progression messages.
-        Default is False.
-
-    Returns
-    -------
-    gFunction : float or array
-        Values of the g-function
-
-    Examples
-    --------
-    >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
-    >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
-    >>> Utube1 = gt.pipes.SingleUTube(pos=[(-0.05, 0), (0, -0.05)],
-                                      r_in=0.015, r_out=0.02,
-                                      borehole=b1,k_s=2, k_g=1, R_fp=0.1)
-    >>> Utube2 = gt.pipes.SingleUTube(pos=[(-0.05, 0), (0, -0.05)],
-                                      r_in=0.015, r_out=0.02,
-                                      borehole=b1,k_s=2, k_g=1, R_fp=0.1)
-    >>> bore_connectivity = [-1, 0]
-    >>> network = gt.networks.Network([b1, b2], [Utube1, Utube2], bore_connectivity)
-    >>> time = np.array([1.0*10**i for i in range(4, 12)])
-    >>> m_flow = 0.25
-    >>> cp = 4000.
-    >>> alpha = 1.0e-6
-    >>> gt.gfunction.mixed_inlet_temperature(network, m_flow, cp, time, alpha)
-    array([0.63782415, 1.63304116, 2.72191316, 4.04091713, 5.98240458,
-       7.77216202, 8.66195828, 8.77567215])
-
-    References
-    ----------
-    .. [#MIFT-Cimmin2019] Cimmino, M. (2019). Semi-analytical method for
-       g-function calculation of bore fields with series- and
-       parallel-connected boreholes. Science and Technology for the Built
-       Environment, 25 (8), 1007-1022
-
-    """
-    boundary_condition = 'MIFT'
-    # Build options dict
-    options = {'nSegments':nSegments,
-                'disp':disp,
-                'kind':kind,
-                'disTol':disTol,
-                'tol':tol,
-                'processes':processes,
-                'disp':disp}
-    # Select the correct solver:
-    if use_similarities:
-        method='similarities'
-    else:
-        method='detailed'
-    # Evaluate g-function
-    gFunc = gFunction(
-        network, alpha, time=time, method=method,
-        boundary_condition=boundary_condition, options=options)
-
-    return gFunc.gFunc
