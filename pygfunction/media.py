@@ -296,30 +296,3 @@ class Pipe:
     def js_r(filename):
         with open(filename) as f_in:
             return json.load(f_in)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
