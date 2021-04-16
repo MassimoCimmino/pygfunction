@@ -733,7 +733,8 @@ class gFunction(object):
         assert len(self.boreholes) > 0, \
             "The list of boreholes is empty."
         assert np.all([isinstance(b, Borehole) for b in self.boreholes]), \
-            "The list of boreholes contains elements that are not Borehole objects."
+            "The list of boreholes contains elements that are not Borehole " \
+            "objects."
         assert not find_duplicates(self.boreholes), \
             "There are duplicate boreholes in the borefield."
         assert (self.network is None and not self.boundary_condition=='MIFT') or isinstance(self.network, Network), \
@@ -748,11 +749,13 @@ class gFunction(object):
         acceptable_boundary_conditions = ['UHTR', 'UBWT', 'MIFT']
         assert type(self.boundary_condition) is str and self.boundary_condition in acceptable_boundary_conditions, \
             "Boundary condition \'{}\' is not an acceptable boundary condition. \n" \
-            "Please provide one of the following inputs : {}".format(self.boundary_condition, acceptable_boundary_conditions)
+            "Please provide one of the following inputs : {}".format(
+                self.boundary_condition, acceptable_boundary_conditions)
         acceptable_methods = ['detailed', 'similarities']
         assert type(self.method) is str and self.method in acceptable_methods, \
             "Method \'{}\' is not an acceptable method. \n" \
-            "Please provide one of the following inputs : {}".format(self.boundary_condition, acceptable_methods)
+            "Please provide one of the following inputs : {}".format(
+                self.boundary_condition, acceptable_methods)
         return
 
 
@@ -1310,7 +1313,8 @@ class _BaseSolver(object):
                     # Spatial superposition: [Tb] = [Tb0] + [h_ij_dt]*[Qb]
                     # Energy conservation: sum([Q*Hb]) = sum([Hb])
                     # ---------------------------------------------------------
-                    A = np.block([[h_dt, -np.ones((self.nSources, 1), dtype=self.dtype)],
+                    A = np.block([[h_dt, -np.ones((self.nSources, 1),
+                                                  dtype=self.dtype)],
                                   [Hb, 0.]])
                     B = np.hstack((-Tb_0, Htot))
                     # Solve the system of equations
@@ -1339,10 +1343,18 @@ class _BaseSolver(object):
                     a_in, a_b = self.network.coefficients_borehole_heat_extraction_rate(
                             self.network.m_flow, self.network.cp, self.nSegments)
                     k_s = self.network.p[0].k_s
-                    A = np.block([[h_dt, -np.eye(self.nSources, dtype=self.dtype), np.zeros((self.nSources, 1), dtype=self.dtype)],
-                                  [np.eye(self.nSources, dtype=self.dtype), a_b/(2.0*pi*k_s*np.atleast_2d(Hb).T), a_in/(2.0*pi*k_s*np.atleast_2d(Hb).T)],
-                                  [Hb, np.zeros(self.nSources + 1, dtype=self.dtype)]])
-                    B = np.hstack((-Tb_0, np.zeros(self.nSources, dtype=self.dtype), Htot))
+                    A = np.block(
+                        [[h_dt,
+                          -np.eye(self.nSources, dtype=self.dtype),
+                          np.zeros((self.nSources, 1), dtype=self.dtype)],
+                         [np.eye(self.nSources, dtype=self.dtype),
+                          a_b/(2.0*pi*k_s*np.atleast_2d(Hb).T),
+                          a_in/(2.0*pi*k_s*np.atleast_2d(Hb).T)],
+                         [Hb, np.zeros(self.nSources + 1, dtype=self.dtype)]])
+                    B = np.hstack(
+                        (-Tb_0,
+                         np.zeros(self.nSources, dtype=self.dtype),
+                         Htot))
                     # Solve the system of equations
                     X = np.linalg.solve(A, B)
                     # Store calculated heat extraction rates
@@ -1437,9 +1449,9 @@ class _BaseSolver(object):
         # Borehole wall temperature
         Tb_0 = np.zeros(nSources)
         # Spatial and temporal superpositions
-        dQ = np.concatenate((Q_reconstructed[:,0:1],
-                             Q_reconstructed[:,1:]-Q_reconstructed[:,0:-1]),
-                            axis=1)
+        dQ = np.concatenate(
+            (Q_reconstructed[:,0:1],
+             Q_reconstructed[:,1:]-Q_reconstructed[:,0:-1]), axis=1)
         for it in range(nt):
             Tb_0 += h_ij[:,:,it].dot(dQ[:,nt-it-1])
         return Tb_0
@@ -1475,7 +1487,9 @@ class _BaseSolver(object):
         # Reconstructed time vector
         t_reconstructed = np.hstack((0., np.cumsum(dt_reconstructed)))
         # Accumulated heat extracted
-        f = np.hstack((np.zeros((nSources, 1), dtype=self.dtype), np.cumsum(Q*dt, axis=1)))
+        f = np.hstack(
+            (np.zeros((nSources, 1), dtype=self.dtype),
+             np.cumsum(Q*dt, axis=1)))
         f = np.hstack((f, f[:,-1:]))
         # Create interpolation object for accumulated heat extracted
         sf = interp1d(t, f, kind='linear', axis=1)
@@ -1496,7 +1510,8 @@ class _BaseSolver(object):
         assert len(self.boreholes) > 0, \
             "The list of boreholes is empty."
         assert np.all([isinstance(b, Borehole) for b in self.boreholes]), \
-            "The list of boreholes contains elements that are not Borehole objects."
+            "The list of boreholes contains elements that are not Borehole " \
+            "objects."
         assert self.network is None or isinstance(self.network, Network), \
             "The network is not a valid 'Network' object."
         assert self.network is None or (self.network.m_flow is not None and self.network.cp is not None), \
@@ -1505,13 +1520,17 @@ class _BaseSolver(object):
         assert type(self.time) is np.ndarray or type(self.time) is float or self.time is None, \
             "Time should be a float or an array."
         assert type(self.nSegments) is int and self.nSegments >= 1, \
-            "The number of segments 'nSegments' should be a positive int (>= 1)."
+            "The number of segments 'nSegments' should be a positive int " \
+            "(>= 1)."
         acceptable_boundary_conditions = ['UHTR', 'UBWT', 'MIFT']
         assert type(self.boundary_condition) is str and self.boundary_condition in acceptable_boundary_conditions, \
-            "Boundary condition \'{}\' is not an acceptable boundary condition. \n" \
-            "Please provide one of the following inputs : {}".format(self.boundary_condition, acceptable_boundary_conditions)
+            "Boundary condition \'{}\' is not an acceptable boundary " \
+            "condition. \n" \
+            "Please provide one of the following inputs : {}".format(
+                self.boundary_condition, acceptable_boundary_conditions)
         assert (type(self.processes) is int and self.processes >= 1) or self.processes is None, \
-            "The number of processes 'processes' should be a positive int (>= 1)."
+            "The number of processes 'processes' should be a positive int " \
+            "(>= 1)."
         assert type(self.disp) is bool, \
             "The option 'disp' should be set to True or False."
         assert type(self.profiles) is bool, \
@@ -1678,7 +1697,9 @@ class _Detailed(_BaseSolver):
         # Interp1d object for thermal response factors
         h_ij = interp1d(
             np.hstack((0., time)),
-            np.dstack((np.zeros((self.nSources,self.nSources), dtype=self.dtype), h_ij)),
+            np.dstack(
+                (np.zeros((self.nSources,self.nSources), dtype=self.dtype),
+                 h_ij)),
             kind=kind, copy=True, axis=2)
         toc = tim.time()
         if self.disp: print(' {:.3f} sec'.format(toc - tic))
@@ -1856,7 +1877,8 @@ class _Similarities(_BaseSolver):
                                alpha=alpha, borehole1=b1, borehole2=b2,
                                reaSource=True, imgSource=True)
             # Evaluate the FLS solution at all times in parallel
-            hPos = np.array(pool.map(func, np.atleast_1d(time)), dtype=self.dtype)
+            hPos = np.array(
+                pool.map(func, np.atleast_1d(time)), dtype=self.dtype)
             # Assign thermal response factors to similar segment pairs
             for (i, j) in self.simPos[s]:
                 h_ij[j, i, :] = hPos
@@ -1874,7 +1896,8 @@ class _Similarities(_BaseSolver):
                                alpha=alpha, borehole1=b1, borehole2=b2,
                                reaSource=False, imgSource=True)
                 # Evaluate the FLS solution at all times in parallel
-                hNeg = np.array(pool.map(func, time), dtype=self.dtype)
+                hNeg = np.array(
+                    pool.map(func, np.atleast_1d(time)), dtype=self.dtype)
                 # Assign thermal response factors to similar segment pairs
                 for (i, j) in self.simNeg[s]:
                     h_ij[j, i, :] = h_ij[j, i, :] + hNeg
@@ -1889,9 +1912,12 @@ class _Similarities(_BaseSolver):
             h_ij = h_ij[:,:,0]
 
         # Interp1d object for thermal response factors
-        h_ij = interp1d(np.hstack((0., time)),
-                             np.dstack((np.zeros((self.nSources,self.nSources), dtype=self.dtype), h_ij)),
-                             kind=kind, copy=True, axis=2)
+        h_ij = interp1d(
+            np.hstack(
+                (0., time)),
+            np.dstack(
+                (np.zeros((self.nSources,self.nSources), dtype=self.dtype),
+                 h_ij)), kind=kind, copy=True, axis=2)
         toc = tim.time()
         if self.disp: print(' {:.3f} sec'.format(toc - tic))
 
