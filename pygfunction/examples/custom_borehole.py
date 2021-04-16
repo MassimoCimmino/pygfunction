@@ -15,18 +15,15 @@ def main():
     D = 5.          # Borehole buried depth (m)
     r_b = 0.0875    # Borehole radius (m)
 
-    # Pipe dimensions
-    pipe_style = 'SDR-11'  # SDR-11 pipe style
-    nominal_size = 0.75  # 3/4 inch nominal pipe size
-    borehole_design = gt.borehole_design.BoreholeDesign(pipe_style=pipe_style, nominal_size=nominal_size)
+    k_p = 0.4  # Pipe thermal conductivity (W/m.K)
 
-    rp_out = borehole_design.Dpo / 2   # Pipe outer radius (m)
-    rp_in = borehole_design.Dpi / 2    # Pipe inner radius (m)
-    # TODO: A, B, C
-    D_s = 0.029445  # Shank spacing (m)
+    # Pipe definition
+    pipe = gt.media.Pipe(k=k_p, standard='standard', schedule='SDR-11',
+                         nominal='0.75')
+    rp_out = pipe.r_out     # Pipe outer radius (m)
+    rp_in = pipe.r_in       # Pipe inner radius (m)
+    R_p = pipe.R             # Pipe conduction thermal resistance (in m-K/W)
 
-    rp_out = 0.0133     # Pipe outer radius (m)
-    rp_in = 0.0108      # Pipe inner radius (m)
     D_s = 0.029445      # Shank spacing (m)
     epsilon = 1.0e-6  # Pipe roughness (m)
 
@@ -37,7 +34,6 @@ def main():
     # Define a borehole
     borehole = gt.boreholes.Borehole(H, D, r_b, x=0., y=0.)
 
-    k_p = 0.4     # Pipe thermal conductivity (W/m.K)
     k_s = 2.0     # Ground thermal conductivity (W/m.K)
     k_g = 1.0     # Grout thermal conductivity (W/m.K)
 
@@ -48,10 +44,6 @@ def main():
     visc_f = 0.00203  # Fluid dynamic viscosity (kg/m.s)
     k_f = 0.492  # Fluid thermal conductivity (W/m.K)
 
-    # Pipe thermal resistance
-    R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(rp_in,
-                                                               rp_out,
-                                                               k_p)
     # Fluid to inner pipe wall thermal resistance (Single U-tube)
     h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(m_flow,
                                                                       rp_in,
