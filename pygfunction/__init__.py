@@ -8,4 +8,3 @@ from . import media
 from . import networks
 from . import pipes
 from . import utilities
-from . import borehole_design
