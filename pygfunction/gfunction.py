@@ -181,7 +181,7 @@ class gFunction(object):
         if self.solver.disp:
             print(60*'-')
             print('Calculating g-function for boundary condition : \'{}\''.format(
-                self.boundary_condition))
+                self.boundary_condition).center(60))
             print(60*'-')
         # Initialize chrono
         tic = tim.time()
@@ -191,7 +191,7 @@ class gFunction(object):
         toc = tim.time()
 
         if self.solver.disp:
-            print('Total time for g-function evaluation: {} sec'.format(
+            print('Total time for g-function evaluation: {:.3f} sec'.format(
                 toc - tic))
             print(60*'-')
         return self.gFunc
@@ -881,7 +881,8 @@ class _BaseSolver(object):
         # Segment lengths
         Hb = self.segment_lengths()
         Htot = np.sum(Hb)
-        if self.disp: print('Building and solving the system of equations ...')
+        if self.disp: print('Building and solving the system of equations ...',
+                            end='')
         # Initialize chrono
         tic = tim.time()
 
@@ -986,7 +987,7 @@ class _BaseSolver(object):
                 self.Q = Q
                 self.Tb = Tb
         toc = tim.time()
-        if self.disp: print('{} sec'.format(toc - tic))
+        if self.disp: print(' {:.3f} sec'.format(toc - tic))
         return gFunc
 
     def segment_lengths(self):
@@ -1255,7 +1256,8 @@ class Detailed(_BaseSolver):
 
         """
         if self.disp:
-            print('Calculating segment to segment response factors ...')
+            print('Calculating segment to segment response factors ...',
+                  end='')
         # Number of time values
         nt = len(np.atleast_1d(time))
         # Prepare pool of workers for parallel computation
@@ -1299,7 +1301,7 @@ class Detailed(_BaseSolver):
             np.dstack((np.zeros((self.nSources,self.nSources), dtype=self.dtype), h_ij)),
             kind=kind, copy=True, axis=2)
         toc = tim.time()
-        if self.disp: print('{} sec'.format(toc - tic))
+        if self.disp: print(' {:.3f} sec'.format(toc - tic))
 
         return h_ij
 
@@ -1442,7 +1444,8 @@ class Similarities(_BaseSolver):
 
         """
         if self.disp:
-            print('Calculating segment to segment response factors ...')
+            print('Calculating segment to segment response factors ...',
+                  end='')
         # Number of time values
         nt = len(np.atleast_1d(time))
         # Prepare pool of workers for parallel computation
@@ -1506,7 +1509,7 @@ class Similarities(_BaseSolver):
                              np.dstack((np.zeros((self.nSources,self.nSources), dtype=self.dtype), h_ij)),
                              kind=kind, copy=True, axis=2)
         toc = tim.time()
-        if self.disp: print('{} sec'.format(toc - tic))
+        if self.disp: print(' {:.3f} sec'.format(toc - tic))
 
         return h_ij
 
@@ -1518,7 +1521,8 @@ class Similarities(_BaseSolver):
         of the Finite Line Source (FLS) solution is equivalent.
 
         """
-        if self.disp: print('Identifying similarities ...')
+        if self.disp: print('Identifying similarities ...',
+                            end='')
         # Initialize chrono
         tic = tim.time()
         # Initialize pool of workers
@@ -1582,7 +1586,7 @@ class Similarities(_BaseSolver):
 
         # Stop chrono
         toc = tim.time()
-        if self.disp: print('{} sec'.format(toc - tic))
+        if self.disp: print(' {:.3f} sec'.format(toc - tic))
 
         return
 
