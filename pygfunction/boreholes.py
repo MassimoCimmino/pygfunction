@@ -136,10 +136,7 @@ def find_duplicates(boreField, disp=False):
             if abs(dist - borehole_1.r_b) < borehole_1.r_b:
                 duplicate_pairs.append((i, j))
     if disp:
-        # pad with '-' align in center
-        output = f"{ '*gt.boreholes.find_duplicates()*' :-^50}"
-        # keep a space between the function name
-        print(output.replace('*', ' '))
+        print(' gt.boreholes.find_duplicates() '.center(50, '-'))
         print('The duplicate pairs of boreholes found: {}'\
               .format(duplicate_pairs))
     return duplicate_pairs
@@ -182,9 +179,7 @@ def remove_duplicates(boreField, disp=False):
         else:
             new_boreField.append(boreField[i])
     if disp:
-        # pad with '-' align in center
-        print(f"{'*gt.boreholes.remove_duplicates()*' :-^50}".\
-              replace('*', ' '))  # keep a space between the function name
+        print(' gt.boreholes.find_duplicates() '.center(50, '-'))
         n_duplicates = len(boreField) - len(new_boreField)
         print('The number of duplicates removed: {}'.format(n_duplicates))
 
