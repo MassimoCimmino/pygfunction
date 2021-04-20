@@ -2455,7 +2455,7 @@ class _NewSimilarities(_BaseSolver):
             boreSegments.append(
                 Borehole(H, D, borehole.r_b, borehole.x, borehole.y))
         return boreSegments
-    
+
     def _compare_boreholes(self, borehole1, borehole2, tol):
         if (abs((borehole1.H - borehole2.H)/borehole1.H) < tol and
             abs((borehole1.r_b - borehole2.r_b)/borehole1.r_b) < tol and
@@ -2478,7 +2478,7 @@ class _NewSimilarities(_BaseSolver):
         else:
             similarity = False
         return similarity
-    
+
     # Condition for equivalence of the image part of the FLS solution
     def _compare_image_pairs(self, pair1, pair2, tol):
         sumD1 = pair1[1].D + pair1[0].D
@@ -2490,7 +2490,7 @@ class _NewSimilarities(_BaseSolver):
         else:
             similarity = False
         return similarity
-    
+
     # Condition for equivalence of the full FLS solution
     def _compare_realandimage_pairs(self, pair1, pair2, tol):
         if self._compare_real_pairs(pair1, pair2, tol) and self._compare_image_pairs(pair1, pair2, tol):
@@ -2498,7 +2498,7 @@ class _NewSimilarities(_BaseSolver):
         else:
             similarity = False
         return similarity
-    
+
     def _find_axial_borehole_pairs(self, boreholes, tol):
         compare_pairs = self._compare_realandimage_pairs
         nBoreholes = len(boreholes)
@@ -2600,7 +2600,6 @@ class _NewSimilarities(_BaseSolver):
                     nPairs += 1
                 p += 1
         return H1, np.array(D1), H2, np.array(D2), i_pair, j_pair, k_pair, nPairs
-
 
     def _map_segment_pairs(self, i_pair, j_pair, k_pair, borehole_to_borehole, borehole_to_borehole_indices):
         i_segment = np.concatenate([i_pair + i*self.nSegments for (i, j) in borehole_to_borehole])
