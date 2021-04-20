@@ -2373,7 +2373,7 @@ class _NewSimilarities(_BaseSolver):
             h = np.array(
                 [finite_line_source_vectorized(
                     t, alpha, self.boreholes[i].r_b, H1, D1, H2, D2)
-                    for t in time])
+                    for t in time], dtype=self.dtype)
             # Broadcast values to h_ij matrix
             h_ij[j_segment, i_segment, :] = h[:, 0, k_segment].T
         # Segment-to-segment thermal response factors for borehole-to-borehole
@@ -2398,7 +2398,7 @@ class _NewSimilarities(_BaseSolver):
             D2 = D2.reshape(1, -1)
             h = np.array(
                 [finite_line_source_vectorized(t, alpha, dis, H1, D1, H2, D2)
-                 for t in time])
+                 for t in time], dtype=self.dtype)
             # Broadcast values to h_ij matrix
             h_ij[j_segment, i_segment, :] = h[:, l_segment, k_segment].T
             H_ratio = self.boreholes[j].H/self.boreholes[i].H
