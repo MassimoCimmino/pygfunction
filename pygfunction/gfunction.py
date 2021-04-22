@@ -36,6 +36,7 @@ class gFunction(object):
     time : float or array, optional
         Values of time (in seconds) for which the g-function is evaluated. The
         g-function is only evaluated at initialization if a value is provided.
+        Default is None.
     method : str, optional
         Method for the evaluation of the g-function. Should be one of
 
@@ -92,7 +93,7 @@ class gFunction(object):
                 Interpolation method used for segment-to-segment thermal
                 response factors. See documentation for
                 scipy.interpolate.interp1d.
-                Default is linear.
+                Default is 'linear'.
             dtype : numpy dtype, optional
                 numpy data type used for matrices and vectors.
                 Default is numpy.double.
@@ -173,6 +174,7 @@ class gFunction(object):
         -------
         gFunction : float or array
             Values of the g-function
+
         """
         assert np.all(time[:-1] <= time[1:]), \
             "Time values must be provided in increasing order."
@@ -234,6 +236,7 @@ class gFunction(object):
             Borehole indices to plot heat extraction rates.
             If iBoreholes is None, heat extraction rates are plotted for all
             boreholes.
+            Default is None.
 
         Returns
         -------
@@ -294,10 +297,12 @@ class gFunction(object):
             Values of time (in seconds) to plot heat extraction rate profiles.
             If time is None, heat extraction rates are plotted at the last
             time step.
+            Default is None.
         iBoreholes : list of int
             Borehole indices to plot heat extraction rate profiles.
             If iBoreholes is None, heat extraction rates are plotted for all
             boreholes.
+            Default is None.
 
         Returns
         -------
@@ -352,6 +357,7 @@ class gFunction(object):
         iBoreholes : list of int
             Borehole indices to plot temperatures.
             If iBoreholes is None, temperatures are plotted for all boreholes.
+            Default is None.
 
         Returns
         -------
@@ -410,9 +416,11 @@ class gFunction(object):
         time : float
             Values of time (in seconds) to plot temperature profiles.
             If time is None, temperatures are plotted at the last time step.
+            Default is None.
         iBoreholes : list of int
             Borehole indices to plot temperature profiles.
             If iBoreholes is None, temperatures are plotted for all boreholes.
+            Default is None.
 
         Returns
         -------
@@ -865,7 +873,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, kind='linear',
     kind : string, optional
         Interpolation method used for segment-to-segment thermal response
         factors. See documentation for scipy.interpolate.interp1d.
-        Default is linear.
+        Default is 'linear'.
     use_similarities : bool, optional
         True if similarities are used to limit the number of FLS evaluations.
         Default is True.
@@ -1181,7 +1189,7 @@ class _BaseSolver(object):
     kind : string, optional
         Interpolation method used for segment-to-segment thermal response
         factors. See documentation for scipy.interpolate.interp1d.
-        Default is linear.
+        Default is 'linear'.
 
     """
     def __init__(self, boreholes, network, time, boundary_condition,
@@ -1593,7 +1601,7 @@ class _Detailed(_BaseSolver):
     kind : string, optional
         Interpolation method used for segment-to-segment thermal response
         factors. See documentation for scipy.interpolate.interp1d.
-        Default is linear.
+        Default is 'linear'.
 
     References
     ----------
@@ -1645,7 +1653,7 @@ class _Detailed(_BaseSolver):
         kind : string, optional
             Interpolation method used for segment-to-segment thermal response
             factors. See documentation for scipy.interpolate.interp1d.
-            Default is linear.
+            Default is 'linear'.
 
         Returns
         -------
@@ -1761,7 +1769,7 @@ class _Similarities(_BaseSolver):
     kind : string, optional
         Interpolation method used for segment-to-segment thermal response
         factors. See documentation for scipy.interpolate.interp1d.
-        Default is linear.
+        Default is 'linear'.
     disTol : float, optional
         Relative tolerance on radial distance. Two distances
         (d1, d2) between two pairs of boreholes are considered equal if the
