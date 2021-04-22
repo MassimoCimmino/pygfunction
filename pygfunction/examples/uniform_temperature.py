@@ -71,9 +71,8 @@ def main():
     # -------------------------------------------------------------------------
     i = 0
     for field in [boreField1, boreField2, boreField3]:
-        gfunc = gt.gfunction.gFunction(field, alpha,
-                                        time=time, 
-                                        options=options)
+        gfunc = gt.gfunction.gFunction(
+            field, alpha, time=time, options=options)
         # Draw g-function
         ax = gfunc.visualize_g_function().axes[0]
         # Draw reference g-function

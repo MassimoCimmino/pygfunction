@@ -114,9 +114,6 @@ def main():
     gFunc = gt.gfunction.gFunction(
         network, alpha, time=time_req, boundary_condition='MIFT',
         options=options)
-    # gt.gfunction.mixed_inlet_temperature(
-    #         network, m_flow, cp_f, time_req, alpha,
-    #         nSegments=nSegments, disp=True)
     # Initialize load aggregation scheme
     LoadAgg.initialize(gFunc.gFunc/(2*pi*k_s))
 
