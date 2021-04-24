@@ -158,6 +158,10 @@ class gFunction(object):
             self.solver = _Detailed(
                 self.boreholes, self.network, self.time,
                 self.boundary_condition, **self.options)
+        elif self.method.lower()=='new-detailed':
+            self.solver = _NewDetailed(
+                self.boreholes, self.network, self.time,
+                self.boundary_condition, **self.options)
         else:
             raise ValueError('\'{}\' is not a valid method.'.format(method))
 
@@ -764,7 +768,7 @@ class gFunction(object):
             "Boundary condition \'{}\' is not an acceptable boundary condition. \n" \
             "Please provide one of the following inputs : {}".format(
                 self.boundary_condition, acceptable_boundary_conditions)
-        acceptable_methods = ['detailed', 'similarities', 'new-similarities']
+        acceptable_methods = ['detailed', 'new-detailed', 'similarities', 'new-similarities']
         assert type(self.method) is str and self.method in acceptable_methods, \
             "Method \'{}\' is not an acceptable method. \n" \
             "Please provide one of the following inputs : {}".format(
@@ -1719,6 +1723,188 @@ class _Detailed(_BaseSolver):
         if self.disp: print(' {:.3f} sec'.format(toc - tic))
 
         return h_ij
+
+
+class _NewDetailed(_BaseSolver):
+    """
+    Detailed solver for the evaluation of the g-function.
+
+    This solver superimposes the finite line source (FLS) solution to
+    estimate the g-function of a geothermal bore field. Each borehole is
+    modeled as a series of finite line source segments, as proposed in
+    [#Detailed-CimBer2014]_.
+
+    Parameters
+    ----------
+    boreholes : list of Borehole objects
+        List of boreholes included in the bore field.
+    network : network object
+        Model of the network.
+    time : float or array
+        Values of time (in seconds) for which the g-function is evaluated.
+    boundary_condition : str
+        Boundary condition for the evaluation of the g-function. Should be one
+        of
+
+            - 'UHTR' :
+                **Uniform heat transfer rate**. This is corresponds to boundary
+                condition *BC-I* as defined by Cimmino and Bernier (2014)
+                [#Detailed-CimBer2014]_.
+            - 'UBWT' :
+                **Uniform borehole wall temperature**. This is corresponds to
+                boundary condition *BC-III* as defined by Cimmino and Bernier
+                (2014) [#Detailed-CimBer2014]_.
+            - 'MIFT' :
+                **Mixed inlet fluid temperatures**. This boundary condition was
+                introduced by Cimmino (2015) [#gFunction-Cimmin2015]_ for
+                parallel-connected boreholes and extended to mixed
+                configurations by Cimmino (2019) [#Detailed-Cimmin2019]_.
+
+    nSegments : int, optional
+        Number of line segments used per borehole.
+        Default is 12.
+    processes : int, optional
+        Number of processors to use in calculations. If the value is set to
+        None, a number of processors equal to cpu_count() is used.
+        Default is None.
+    disp : bool, optional
+        Set to true to print progression messages.
+        Default is False.
+    profiles : bool, optional
+        Set to true to keep in memory the temperatures and heat extraction
+        rates.
+        Default is False.
+    kind : string, optional
+        Interpolation method used for segment-to-segment thermal response
+        factors. See documentation for scipy.interpolate.interp1d.
+        Default is linear.
+
+    References
+    ----------
+    .. [#Detailed-CimBer2014] Cimmino, M., & Bernier, M. (2014). A
+       semi-analytical method to generate g-functions for geothermal bore
+       fields. International Journal of Heat and Mass Transfer, 70, 641-650.
+    .. [#Detailed-Cimmin2019] Cimmino, M. (2019). Semi-analytical method for
+       g-function calculation of bore fields with series- and
+       parallel-connected boreholes. Science and Technology for the Built
+       Environment, 25 (8), 1007-1022.
+
+    """
+    def initialize(self, **kwargs):
+        """
+        Split boreholes into segments.
+
+        Returns
+        -------
+        nSources : int
+            Number of finite line heat sources in the borefield used to
+            initialize the matrix of segment-to-segment thermal response
+            factors (of size: nSources x nSources).
+
+        """
+        # Split boreholes into segments
+        # TODO : Bore segments are no longer required ?
+        self.boreSegments = self.borehole_segments()
+        nSources = len(self.boreSegments)
+        return nSources
+
+    def thermal_response_factors(self, time, alpha, kind='linear'):
+        """
+        Evaluate the segment-to-segment thermal response factors for all pairs
+        of segments in the borefield at all time steps using the finite line
+        source solution.
+
+        This method returns a scipy.interpolate.interp1d object of the matrix
+        of thermal response factors, containing a copy of the matrix accessible
+        by h_ij.y[:nSources,:nSources,:nt+1]. The first index along the
+        third axis corresponds to time t=0. The interp1d object can be used to
+        obtain thermal response factors at any intermediat time by
+        h_ij(t)[:nSources,:nSources].
+
+        Attributes
+        ----------
+        time : float or array
+            Values of time (in seconds) for which the g-function is evaluated.
+        alpha : float
+            Soil thermal diffusivity (in m2/s).
+        kind : string, optional
+            Interpolation method used for segment-to-segment thermal response
+            factors. See documentation for scipy.interpolate.interp1d.
+            Default is linear.
+
+        Returns
+        -------
+        h_ij : interp1d
+            interp1d object (scipy.interpolate) of the matrix of
+            segment-to-segment thermal response factors.
+
+        """
+        if self.disp:
+            print('Calculating segment to segment response factors ...',
+                  end='')
+        # Number of time values
+        nt = len(np.atleast_1d(time))
+        # Initialize chrono
+        tic = tim.time()
+        # Initialize segment-to-segment response factors
+        h_ij = np.zeros((self.nSources, self.nSources, nt), dtype=self.dtype)
+
+        nBoreholes = len(self.boreholes)
+        for i in range(nBoreholes):
+            # Segments of the receiving borehole
+            b2 = self._borehole_segments_one_borehole(
+                self.boreholes[i], self.nSegments)
+            D2 = np.array([seg.D for seg in b2]).reshape(-1, 1)
+            H2 = np.array([seg.H for seg in b2]).reshape(-1, 1)
+
+            for j in range(i, nBoreholes):
+                # Segments of the emitting borehole
+                b1 = self._borehole_segments_one_borehole(
+                    self.boreholes[j], self.nSegments)
+                D1 = np.array([seg.D for seg in b1]).reshape(1, -1)
+                H1 = np.array([seg.H for seg in b1]).reshape(1, -1)
+                dis = b1[0].distance(b2[0])
+                # Evaluate FLS at all time steps
+                h = np.moveaxis(np.array(
+                    [finite_line_source_vectorized(
+                        t, alpha, dis, H1, D1, H2, D2) for t in time],
+                    dtype=self.dtype), 0, -1)
+                # Broadcast values to h_ij matrix
+                i0 = i*self.nSegments
+                i1 = i0 + self.nSegments
+                j0 = j*self.nSegments
+                j1 = j0 + self.nSegments
+                h_ij[i0:i1, j0:j1, :] = h
+                if j > i:
+                    h_ij[j0:j1, i0:i1, :] = np.transpose(h, (1, 0, 2)) * b2[0].H/b1[0].H
+
+        # Return 2d array if time is a scalar
+        if np.isscalar(time):
+            h_ij = h_ij[:,:,0]
+
+        # Interp1d object for thermal response factors
+        h_ij = interp1d(
+            np.hstack((0., time)),
+            np.dstack(
+                (np.zeros((self.nSources,self.nSources), dtype=self.dtype),
+                 h_ij)),
+            kind=kind, copy=True, axis=2)
+        toc = tim.time()
+        if self.disp: print(' {:.3f} sec'.format(toc - tic))
+
+        return h_ij
+
+    def _borehole_segments_one_borehole(self, borehole, nSegments):
+        boreSegments = []
+        for i in range(nSegments):
+            # Divide borehole into segments of equal length
+            H = borehole.H / nSegments
+            # Buried depth of the i-th segment
+            D = borehole.D + i * borehole.H / nSegments
+            # Add to list of segments
+            boreSegments.append(
+                Borehole(H, D, borehole.r_b, borehole.x, borehole.y))
+        return boreSegments
 
 
 class _Similarities(_BaseSolver):
