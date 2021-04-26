@@ -15,10 +15,9 @@ def finite_line_source(
     Evaluate the Finite Line Source (FLS) solution.
 
     This function uses a numerical quadrature to evaluate the one-integral form
-    of the FLS solution, as proposed by Claesson and Javed
-    [#ClaessonJaved2011]_ and extended to boreholes with different vertical
-    positions by Cimmino and Bernier [#CimminoBernier2014]_. The FlS solution
-    is given by:
+    of the FLS solution, as proposed by Claesson and Javed [#FLS-ClaJav2011]_
+    and extended to boreholes with different vertical positions by Cimmino and
+    Bernier [#FLS-CimBer2014]_. The FlS solution is given by:
 
         .. math::
             h_{1\\rightarrow2}(t) &= \\frac{1}{2H_2}
@@ -79,10 +78,10 @@ def finite_line_source(
 
     References
     ----------
-    .. [#ClaessonJaved2011] Claesson, J., & Javed, S. (2011). An analytical
+    .. [#FLS-ClaJav2011] Claesson, J., & Javed, S. (2011). An analytical
        method to calculate borehole fluid temperatures for time-scales from
        minutes to decades. ASHRAE Transactions, 117(2), 279-288.
-    .. [#CimminoBernier2014] Cimmino, M., & Bernier, M. (2014). A
+    .. [#FLS-CimBer2014] Cimmino, M., & Bernier, M. (2014). A
        semi-analytical method to generate g-functions for geothermal bore
        fields. International Journal of Heat and Mass Transfer, 70, 641-650.
 
@@ -120,6 +119,85 @@ def finite_line_source(
 def finite_line_source_vectorized(
         time, alpha, dis, H1, D1, H2, D2, reaSource=True, imgSource=True):
     """
+    Evaluate the Finite Line Source (FLS) solution.
+
+    This function uses a numerical quadrature to evaluate the one-integral form
+    of the FLS solution, as proposed by Claesson and Javed
+    [#FLSVec-ClaJav2011]_ and extended to boreholes with different vertical
+    positions by Cimmino and Bernier [#FLSVec-CimBer2014]_. The FlS solution
+    is given by:
+
+        .. math::
+            h_{1\\rightarrow2}(t) &= \\frac{1}{2H_2}
+            \\int_{\\frac{1}{\\sqrt{4\\alpha t}}}^{\\infty}
+            e^{-d_{12}^2s^2}(I_{real}(s)+I_{imag}(s))ds
+
+
+            I_{real}(s) &= erfint((D_2-D_1+H_2)s) - erfint((D_2-D_1)s)
+
+            &+ erfint((D_2-D_1-H_1)s) - erfint((D_2-D_1+H_2-H_1)s)
+
+            I_{imag}(s) &= erfint((D_2+D_1+H_2)s) - erfint((D_2+D_1)s)
+
+            &+ erfint((D_2+D_1+H_1)s) - erfint((D_2+D_1+H_2+H_1)s)
+
+
+            erfint(X) &= \\int_{0}^{X} erf(x) dx
+
+                      &= Xerf(X) - \\frac{1}{\\sqrt{\\pi}}(1-e^{-X^2})
+
+        .. Note::
+            The reciprocal thermal response factor
+            :math:`h_{2\\rightarrow1}(t)` can be conveniently calculated by:
+
+                .. math::
+                    h_{2\\rightarrow1}(t) = \\frac{H_2}{H_1}
+                    h_{1\\rightarrow2}(t)
+
+    Parameters
+    ----------
+    time : float
+        Value of time (in seconds) for which the FLS solution is evaluated.
+    alpha : float
+        Soil thermal diffusivity (in m2/s).
+    dis : float or array
+        Radial distances to evaluate the FLS solution.
+    H1 : float or array
+        Lengths of the emitting heat sources.
+    D1 : float or array
+        Buried depths of the emitting heat sources.
+    H2 : float or array
+        Lengths of the receiving heat sources.
+    D2 : float or array
+        Buried depths of the receiving heat sources.
+    reaSource : boolean, defaults to True
+        True if the real part of the FLS solution is to be included.
+    imgSource : boolean, defaults to True
+        True if the image part of the FLS solution is to be included.
+
+    Returns
+    -------
+    h : float
+        Value of the FLS solution. The average (over the length) temperature
+        drop on the wall of borehole2 due to heat extracted from borehole1 is:
+
+        .. math:: \\Delta T_{b,2} = T_g - \\frac{Q_1}{2\\pi k_s H_2} h
+
+    Notes
+    -----
+    This is a vectorized version of the :func:`finite_line_source` function
+    using scipy.integrate.quad_vec to speed up calculations. All arrays
+    (dis, H1, D1, H2, D2) must follow numpy array broadcasting rules.
+    
+
+    References
+    ----------
+    .. [#FLSVec-ClaJav2011] Claesson, J., & Javed, S. (2011). An analytical
+       method to calculate borehole fluid temperatures for time-scales from
+       minutes to decades. ASHRAE Transactions, 117(2), 279-288.
+    .. [#FLSVec-CimBer2014] Cimmino, M., & Bernier, M. (2014). A
+       semi-analytical method to generate g-functions for geothermal bore
+       fields. International Journal of Heat and Mass Transfer, 70, 641-650.
 
     """
     def _erfint(x):
