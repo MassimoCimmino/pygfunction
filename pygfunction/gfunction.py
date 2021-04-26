@@ -1864,10 +1864,8 @@ class _NewDetailed(_BaseSolver):
                 H1 = np.array([seg.H for seg in b1]).reshape(1, -1)
                 dis = b1[0].distance(b2[0])
                 # Evaluate FLS at all time steps
-                h = np.moveaxis(np.array(
-                    [finite_line_source_vectorized(
-                        t, alpha, dis, H1, D1, H2, D2) for t in time],
-                    dtype=self.dtype), 0, -1)
+                h = np.dstack([finite_line_source_vectorized(
+                    t, alpha, dis, H1, D1, H2, D2) for t in time])
                 # Broadcast values to h_ij matrix
                 i0 = i*self.nSegments
                 i1 = i0 + self.nSegments
@@ -2557,12 +2555,12 @@ class _NewSimilarities(_BaseSolver):
             # Evaluate FLS at all time steps
             D1 = D1.reshape(1, -1)
             D2 = D2.reshape(1, -1)
-            h = np.array(
-                [finite_line_source_vectorized(
-                    t, alpha, self.boreholes[i].r_b, H1, D1, H2, D2)
-                    for t in time], dtype=self.dtype)
+            dis = self.boreholes[i].r_b
+            h = np.dstack(
+                [finite_line_source_vectorized(t, alpha, dis, H1, D1, H2, D2)
+                 for t in time])
             # Broadcast values to h_ij matrix
-            h_ij[j_segment, i_segment, :] = h[:, 0, k_segment].T
+            h_ij[j_segment, i_segment, :] = h[0, k_segment, :]
         # ---------------------------------------------------------------------
         # Segment-to-segment thermal response factors for borehole-to-borehole
         # thermal interactions
@@ -2584,14 +2582,17 @@ class _NewSimilarities(_BaseSolver):
             dis = np.reshape(self.borehole_to_borehole_distances[n], (-1, 1))
             D1 = D1.reshape(1, -1)
             D2 = D2.reshape(1, -1)
-            h = np.array(
+            h = np.dstack(
                 [finite_line_source_vectorized(t, alpha, dis, H1, D1, H2, D2)
-                 for t in time], dtype=self.dtype)
+                 for t in time])
             # Broadcast values to h_ij matrix
-            h_ij[j_segment, i_segment, :] = h[:, l_segment, k_segment].T
-            H_ratio = self.boreholes[j].H/self.boreholes[i].H
-            h_ij[i_segment, j_segment, :] = \
-                h[:, l_segment, k_segment].T * H_ratio
+            h_ij[j_segment, i_segment, :] = h[l_segment, k_segment, :]
+            if self._compare_boreholes(self.boreholes[j], self.boreholes[i]):
+                h_ij[i_segment, j_segment, :] = h[l_segment, k_segment, :]
+            else:
+                H_ratio = self.boreholes[j].H/self.boreholes[i].H
+                h_ij[i_segment, j_segment, :] = \
+                    h[l_segment, k_segment, :] * H_ratio
 
         # Return 2d array if time is a scalar
         if np.isscalar(time):
