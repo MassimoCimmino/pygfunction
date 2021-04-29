@@ -1255,6 +1255,7 @@ class _BaseSolver(object):
 
         """
         # Number of time values
+        self.time = time
         nt = len(self.time)
         # Initialize g-function
         gFunc = np.zeros(nt)
