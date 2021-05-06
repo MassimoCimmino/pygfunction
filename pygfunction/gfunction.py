@@ -1383,10 +1383,10 @@ class _BaseSolver(object):
                     # Effective borehole wall temperature
                     Tb_eff = Tf - 2*pi*self.network.p[0].k_s*Rfield
                     gFunc[p] = Tb_eff
-            # Store temperature and heat extraction rate profiles
-            if self.profiles:
-                self.Q = Q
-                self.Tb = Tb
+        # Store temperature and heat extraction rate profiles
+        if self.profiles:
+            self.Q = Q
+            self.Tb = Tb
         toc = tim.time()
         if self.disp: print(' {:.3f} sec'.format(toc - tic))
         return gFunc
