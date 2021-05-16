@@ -1,6 +1,7 @@
 # pygfunction: A g-function calculator for Python
 
-[![Build Status](https://travis-ci.org/MassimoCimmino/pygfunction.svg?branch=master)](https://travis-ci.org/MassimoCimmino/pygfunction) [![DOI](https://zenodo.org/badge/100305705.svg)](https://zenodo.org/badge/latestdoi/100305705)
+[![Build Status](https://travis-ci.org/MassimoCimmino/pygfunction.svg?branch=master)](https://travis-ci.org/MassimoCimmino/pygfunction)
+[![DOI](https://zenodo.org/badge/100305705.svg)](https://zenodo.org/badge/latestdoi/100305705)
 
 
 ## What is *pygfunction*?
@@ -84,6 +85,12 @@ working properly by running the examples in `pygfunction/examples/`.
 [ReadTheDocs](https://pygfunction.readthedocs.io).
 
 
+## License
+
+*pygfunction* is licensed under the terms of the 3-clause BSD-license.
+See [pygfunction license](LICENSE.md).
+
+
 ## Contributing to *pygfunction*
 
 You can report bugs and propose enhancements on the
@@ -93,7 +100,24 @@ To contribute code to *pygfunction*, follow the
 [contribution workflow](CONTRIBUTING.md).
 
 
-## License
+## Contributors
 
-*pygfunction* is licensed under the terms of the 3-clause BSD-license.
-See [pygfunction license](LICENSE.md).
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tr>
+    <td align="center"><a href="https://www.polymtl.ca/expertises/en/cimmino-massimo"><img src="https://avatars.githubusercontent.com/u/23085996?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Massimo Cimmino</b></sub></a><br /><a href="https://github.com/MassimoCimmino/pygfunction/commits?author=MassimoCimmino" title="Code">💻</a> <a href="https://github.com/MassimoCimmino/pygfunction/commits?author=MassimoCimmino" title="Documentation">📖</a> <a href="#example-MassimoCimmino" title="Examples">💡</a> <a href="#ideas-MassimoCimmino" title="Ideas, Planning, & Feedback">🤔</a> <a href="#maintenance-MassimoCimmino" title="Maintenance">🚧</a> <a href="https://github.com/MassimoCimmino/pygfunction/pulls?q=is%3Apr+reviewed-by%3AMassimoCimmino" title="Reviewed Pull Requests">👀</a></td>
+  </tr>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
