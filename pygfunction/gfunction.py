@@ -9,6 +9,7 @@ from scipy.interpolate import interp1d as interp1d
 from .boreholes import Borehole, find_duplicates
 from .heat_transfer import finite_line_source, finite_line_source_vectorized
 from .networks import Network, network_thermal_resistance
+from .utilities import _initialize_figure, _format_axes
 
 
 class gFunction(object):
@@ -207,11 +208,11 @@ class gFunction(object):
 
         """
         # Configure figure and axes
-        fig = self._initialize_figure()
+        fig = _initialize_figure()
         ax = fig.add_subplot(111)
         ax.set_xlabel(r'ln$(t/t_s)$')
         ax.set_ylabel(r'$g$-function')
-        self._format_axes(ax)
+        _format_axes(ax)
 
         # Borefield characteristic time
         ts = np.mean([b.H for b in self.boreholes])**2/(9.*self.alpha)
@@ -249,16 +250,16 @@ class gFunction(object):
         Q = self._heat_extraction_rates(iBoreholes)
 
         # Configure figure and axes
-        fig = self._initialize_figure()
+        fig = _initialize_figure()
         ax1 = fig.add_subplot(121)
         ax1.set_xlabel(r'$x$ [m]')
         ax1.set_ylabel(r'$y$ [m]')
         ax1.axis('equal')
-        self._format_axes(ax1)
+        _format_axes(ax1)
         ax2 = fig.add_subplot(122)
         ax2.set_xlabel(r'ln$(t/t_s)$')
         ax2.set_ylabel(r'$\bar{Q}_b$')
-        self._format_axes(ax2)
+        _format_axes(ax2)
 
         # Borefield characteristic time
         ts = np.mean([b.H for b in self.boreholes])**2/(9.*self.alpha)
@@ -315,17 +316,17 @@ class gFunction(object):
         z, Q = self._heat_extraction_rate_profiles(time, iBoreholes)
 
         # Configure figure and axes
-        fig = self._initialize_figure()
+        fig = _initialize_figure()
         ax1 = fig.add_subplot(121)
         ax1.set_xlabel(r'$x$ [m]')
         ax1.set_ylabel(r'$y$ [m]')
         ax1.axis('equal')
-        self._format_axes(ax1)
+        _format_axes(ax1)
         ax2 = fig.add_subplot(122)
         ax2.set_xlabel(r'$Q_b$')
         ax2.set_ylabel(r'$z$ [m]')
         ax2.invert_yaxis()
-        self._format_axes(ax2)
+        _format_axes(ax2)
 
         # Plot curves for requested boreholes
         for (i, zi, Qi) in zip(iBoreholes, z, Q):
@@ -370,16 +371,16 @@ class gFunction(object):
         Tb = self._temperatures(iBoreholes)
 
         # Configure figure and axes
-        fig = self._initialize_figure()
+        fig = _initialize_figure()
         ax1 = fig.add_subplot(121)
         ax1.set_xlabel(r'$x$ [m]')
         ax1.set_ylabel(r'$y$ [m]')
         ax1.axis('equal')
-        self._format_axes(ax1)
+        _format_axes(ax1)
         ax2 = fig.add_subplot(122)
         ax2.set_xlabel(r'ln$(t/t_s)$')
         ax2.set_ylabel(r'$\bar{T}_b$')
-        self._format_axes(ax2)
+        _format_axes(ax2)
 
         # Borefield characteristic time
         ts = np.mean([b.H for b in self.boreholes])**2/(9.*self.alpha)
@@ -433,17 +434,17 @@ class gFunction(object):
         z, Tb = self._temperature_profiles(time, iBoreholes)
 
         # Configure figure and axes
-        fig = self._initialize_figure()
+        fig = _initialize_figure()
         ax1 = fig.add_subplot(121)
         ax1.set_xlabel(r'$x$ [m]')
         ax1.set_ylabel(r'$y$ [m]')
         ax1.axis('equal')
-        self._format_axes(ax1)
+        _format_axes(ax1)
         ax2 = fig.add_subplot(122)
         ax2.set_xlabel(r'$T_b$')
         ax2.set_ylabel(r'$z$ [m]')
         ax2.invert_yaxis()
-        self._format_axes(ax2)
+        _format_axes(ax2)
 
         # Plot curves for requested boreholes
         for (i, zi, Tbi) in zip(iBoreholes, z, Tb):
@@ -662,45 +663,6 @@ class gFunction(object):
                                   self.boreholes[i].D + self.boreholes[i].H]))
                     Tb.append(np.array(2*[np.asscalar(Tbi)]))
         return z, Tb
-
-    def _initialize_figure(self):
-        """
-        Initialize a matplotlib figure object with overwritten default
-        parameters.
-
-        Returns
-        -------
-        fig : figure
-            Figure object (matplotlib).
-
-        """
-        plt.rc('font', size=9)
-        plt.rc('xtick', labelsize=9)
-        plt.rc('ytick', labelsize=9)
-        plt.rc('lines', lw=1.5, markersize=5.0)
-        plt.rc('savefig', dpi=500)
-        fig = plt.figure()
-        return fig
-
-    def _format_axes(self, ax):
-        """
-        Adjust axis parameters.
-
-        Parameters
-        ----------
-        ax : axis
-            Axis object (amtplotlib).
-
-        """
-        from matplotlib.ticker import AutoMinorLocator
-        # Draw major and minor tick marks inwards
-        ax.tick_params(
-            axis='both', which='both', direction='in',
-            bottom=True, top=True, left=True, right=True)
-        # Auto-adjust minor tick marks
-        ax.xaxis.set_minor_locator(AutoMinorLocator())
-        ax.yaxis.set_minor_locator(AutoMinorLocator())
-        return
 
     def _format_inputs(self, boreholes_or_network):
         """
