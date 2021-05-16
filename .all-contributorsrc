@@ -1,0 +1,29 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "contributors": [
+    {
+      "login": "MassimoCimmino",
+      "name": "Massimo Cimmino",
+      "avatar_url": "https://avatars.githubusercontent.com/u/23085996?v=4",
+      "profile": "https://www.polymtl.ca/expertises/en/cimmino-massimo",
+      "contributions": [
+        "code",
+        "doc",
+        "example",
+        "ideas",
+        "maintenance",
+        "review"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "projectName": "pygfunction",
+  "projectOwner": "MassimoCimmino",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "skipCi": true
+}
