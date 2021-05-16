@@ -184,3 +184,25 @@ def _format_axes(ax):
     ax.xaxis.set_minor_locator(AutoMinorLocator())
     ax.yaxis.set_minor_locator(AutoMinorLocator())
     return
+
+
+def _format_axes_3d(ax):
+    """
+    Adjust axis parameters.
+
+    Parameters
+    ----------
+    ax : axis
+        Axis object (matplotlib).
+
+    """
+    from matplotlib.ticker import AutoMinorLocator
+    # Draw major and minor tick marks inwards
+    ax.tick_params(
+        axis='both', which='major', direction='in',
+        bottom=True, top=True, left=True, right=True)
+    # Auto-adjust minor tick marks
+    # ax.xaxis.set_minor_locator(AutoMinorLocator())
+    # ax.yaxis.set_minor_locator(AutoMinorLocator())
+    # ax.zaxis.set_minor_locator(AutoMinorLocator())
+    return
