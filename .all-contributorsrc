@@ -14,6 +14,7 @@
         "code",
         "doc",
         "example",
+        "founder",
         "ideas",
         "maintenance",
         "review"
@@ -21,9 +22,16 @@
     }
   ],
   "contributorsPerLine": 7,
+  "contributorsSortAlphabetically": false,
   "projectName": "pygfunction",
   "projectOwner": "MassimoCimmino",
   "repoType": "github",
   "repoHost": "https://github.com",
-  "skipCi": true
+  "skipCi": true,
+  "types": {
+    "founder": {
+      "symbol": ":rocket:",
+      "description": "Founder of pygfunction.",
+      "link": "[<%= symbol %>](http://www.ibpsa.org/proceedings/eSimPapers/2018/2-3-A-4.pdf),"
+    }
 }
