@@ -25,9 +25,12 @@ the *g*-function of a 10 x 10 square array of boreholes (100 boreholes
 total):
 
 ```python
-time = [(i+1)*3600. for i in range(24)] # Calculate hourly for one day
+import pygfunction as gt
+import numpy as np
+time = np.array([(i+1)*3600. for i in range(24)]) # Calculate hourly for one day
 boreField = gt.boreholes.rectangle_field(N_1=10, N_2=10, B_1=7.5, B_2=7.5, H=150., D=4., r_b=0.075)
-gFunc = gt.gfunction.uniform_temperature(boreField, time, alpha=1.0e-6)
+gFunc = gt.gfunction.gFunction(boreField, alpha=1.0e-6, time=time)
+gFunc.visualize_g_function()
 ```
 
 Once the *g*-function is evaluated, *pygfunction* provides tools to predict
