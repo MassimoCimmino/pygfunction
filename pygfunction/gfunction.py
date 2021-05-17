@@ -176,7 +176,8 @@ class gFunction(object):
             Values of the g-function
 
         """
-        assert np.all(time[:-1] <= time[1:]), \
+        time = np.atleast_1d(time)
+        assert len(time) == 1 or np.all(time[:-1] <= time[1:]), \
             "Time values must be provided in increasing order."
         # Save time values
         self.time = time
