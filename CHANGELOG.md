@@ -12,6 +12,10 @@
 
 * [Issue 86](https://github.com/MassimoCimmino/pygfunction/issues/86) - Documentation is now built using Python 3 to support Python 3 features in the code.
 
+### Other changes
+
+* [Issue 72](https://github.com/MassimoCimmino/pygfunction/issues/72) - Added a list of contributors to the front page. The list is managed using [all-contributors](https://github.com/all-contributors/all-contributors).
+
 ## Version 1.1.2 (2021-01-21)
 
 ### New features
