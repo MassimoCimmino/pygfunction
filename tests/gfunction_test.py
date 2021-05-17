@@ -38,7 +38,7 @@ class TestUniformHeatExtractionRate(unittest.TestCase):
                                     self.H, self.D, self.r_b)
         g = uniform_heat_extraction(boreField, time, self.alpha)
 
-        self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-10),
+        self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-6),
                         msg='Incorrect values of the g-function of one '
                             'borehole for uniform heat extraction rate.')
 
@@ -60,7 +60,7 @@ class TestUniformHeatExtractionRate(unittest.TestCase):
                                     self.H, self.D, self.r_b)
         g = uniform_heat_extraction(boreField, time, self.alpha)
 
-        self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-10),
+        self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-6),
                         msg='Incorrect values of the g-function of three by '
                             'two field for uniform heat extraction rate.')
 
@@ -95,7 +95,7 @@ class TestUniformTemperature(unittest.TestCase):
                                     self.H, self.D, self.r_b)
         g = uniform_temperature(boreField, time, self.alpha, nSegments=1)
 
-        self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-10),
+        self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-6),
                         msg='Incorrect values of the g-function of one '
                             'borehole for uniform temperature (1 segment).')
 
@@ -117,7 +117,7 @@ class TestUniformTemperature(unittest.TestCase):
                                     self.H, self.D, self.r_b)
         g = uniform_temperature(boreField, time, self.alpha, nSegments=1)
 
-        self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-10),
+        self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-6),
                         msg='Incorrect values of the g-function of three by '
                             'two field for uniform temperature (1 segment).')
 
@@ -139,7 +139,7 @@ class TestUniformTemperature(unittest.TestCase):
                                     self.H, self.D, self.r_b)
         g = uniform_temperature(boreField, time, self.alpha, nSegments=12)
 
-        self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-10),
+        self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-6),
                         msg='Incorrect values of the g-function of one '
                             'borehole for uniform temperature (12 segments).')
 
@@ -160,7 +160,7 @@ class TestUniformTemperature(unittest.TestCase):
                                     self.H, self.D, self.r_b)
         g = uniform_temperature(boreField, time, self.alpha, nSegments=12)
 
-        self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-10),
+        self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-6),
                         msg='Incorrect values of the g-function of three by '
                             'two field for uniform temperature (12 segments).')
 
@@ -194,7 +194,7 @@ class TestEqualInletTemperature(unittest.TestCase):
         pos = [(-Ds, 0.), (Ds, 0.)]
         k_g = 1.5
 
-        # Results of Cimmino (2015)
+        # Reference results
         # Number of line source segments per borehole
         nSegments = 24
         # Very large time values to approximate steady-state
@@ -203,8 +203,7 @@ class TestEqualInletTemperature(unittest.TestCase):
         Rb = np.array([0.1, 0.3])
         # Borehole short-circuit resistance [m.K/W]
         Ra = 0.25
-        g_ref = np.array([6.63770426518980,
-                          6.65263629558422])
+        g_ref = np.array([6.63668744, 6.65139651])
 
         # Calculation of the g-function at the same time values
         N_1 = 1
@@ -229,7 +228,7 @@ class TestEqualInletTemperature(unittest.TestCase):
                                            self.cp, time, self.alpha,
                                            nSegments=nSegments)
 
-        self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-10),
+        self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-6),
                         msg='Incorrect values of the g-function of one '
                             'borehole for equal inlet fluid temperature '
                             '(24 segments).')
@@ -248,7 +247,7 @@ class TestEqualInletTemperature(unittest.TestCase):
         pos = [(-Ds, 0.), (Ds, 0.)]
         k_g = 1.5
 
-        # Results of Cimmino (2015)
+        # Reference results
         # Number of line source segments per borehole
         nSegments = 24
         # Very large time values to approximate steady-state
@@ -257,7 +256,7 @@ class TestEqualInletTemperature(unittest.TestCase):
         Rb = 1.0
         # Borehole short-circuit resistance [m.K/W]
         Ra = 0.25
-        g_ref = 28.0185515095651
+        g_ref = 28.01257172
 
         # Calculation of the g-function at the same time values
         N_1 = 4
@@ -281,7 +280,7 @@ class TestEqualInletTemperature(unittest.TestCase):
                                        self.cp, time, self.alpha,
                                        nSegments=nSegments)
 
-        self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-10),
+        self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-6),
                         msg='Incorrect values of the g-function of four by '
                             'four field for equal inlet fluid temperature '
                             '(24 segments).')
