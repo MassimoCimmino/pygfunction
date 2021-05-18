@@ -1,12 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
-import time as tim
-from functools import partial
-from multiprocessing import Pool
-
 import numpy as np
 from scipy.integrate import quad, quad_vec
 from scipy.special import erf
+
+from .boreholes import Borehole
 
 
 def finite_line_source(
@@ -48,26 +46,37 @@ def finite_line_source(
 
     Parameters
     ----------
-    time : float
+    time : float or array, shape (K)
         Value of time (in seconds) for which the FLS solution is evaluated.
     alpha : float
         Soil thermal diffusivity (in m2/s).
-    borehole1 : Borehole object
+    borehole1 : Borehole object or list of Borehole objects, length (N)
         Borehole object of the borehole extracting heat.
-    borehole2 : Borehole object
+    borehole2 : Borehole object or list of Borehole objects, length (M)
         Borehole object for which the FLS is evaluated.
-    reaSource : boolean, defaults to True
+    reaSource : bool
         True if the real part of the FLS solution is to be included.
-    imgSource : boolean, defaults to True
+        Default is True.
+    imgSource : bool
         True if the image part of the FLS solution is to be included.
+        Default is True.
 
     Returns
     -------
-    h : float
+    h : float or array, shape (M, N, K), (M, N) or (K)
         Value of the FLS solution. The average (over the length) temperature
         drop on the wall of borehole2 due to heat extracted from borehole1 is:
 
         .. math:: \\Delta T_{b,2} = T_g - \\frac{Q_1}{2\\pi k_s H_2} h
+
+    Notes
+    -----
+    The function returns a float if time is a float and borehole1 and borehole2
+    are Borehole objects. If time is a float and any of borehole1 and borehole2
+    are lists, the function returns an array, shape (M, N), If time is an array
+    and borehole1 and borehole2 are Borehole objects, the function returns an
+    array, shape (K).If time is an array and any of borehole1 and borehole2 are
+    are lists, the function returns an array, shape (M, N, K).
 
     Examples
     --------
@@ -86,33 +95,39 @@ def finite_line_source(
        fields. International Journal of Heat and Mass Transfer, 70, 641-650.
 
     """
-    def _Ils(s, b1, b2, reaSource, imgSource):
-        r = b1.distance(b2)
-        func = 0.
-        # Function to integrate
-        if reaSource:
-            # Real part of the FLS solution
-            func += _erfint((b2.D - b1.D + b2.H)*s)
-            func += -_erfint((b2.D - b1.D)*s)
-            func += _erfint((b2.D - b1.D - b1.H)*s)
-            func += -_erfint((b2.D - b1.D + b2.H - b1.H)*s)
-        if imgSource:
-            # Image part of the FLS solution
-            func += _erfint((b2.D + b1.D + b2.H)*s)
-            func += -_erfint((b2.D + b1.D)*s)
-            func += _erfint((b2.D + b1.D + b1.H)*s)
-            func += -_erfint((b2.D + b1.D + b2.H + b1.H)*s)
-        return 0.5 / (b2.H*s**2) * func * np.exp(-r**2*s**2)
+    if isinstance(borehole1, Borehole) and isinstance(borehole2, Borehole):
+        # Unpack parameters
+        dis = borehole1.distance(borehole2)
+        H1, D1 = borehole1.H, borehole1.D
+        H2, D2 = borehole2.H, borehole2.D
+        # Integrand of the finite line source solution
+        f = _finite_line_source_integrand(
+            dis, H1, D1, H2, D2, reaSource, imgSource)
 
-    def _erfint(x):
-        # Integral of error function
-        return x * erf(x) - 1.0/np.sqrt(np.pi) * (1.0-np.exp(-x**2))
+        # Evaluate integral
+        if isinstance(time, (np.floating, float)):
+            # Lower bound of integration
+            a = 1.0 / np.sqrt(4.0*alpha*time)
+            h = quad(f, a, np.inf)[0]
+        else:
+            h = np.stack(
+                [quad(f, 1.0 / np.sqrt(4.0*alpha*t), np.inf)[0] for t in time],
+                axis=-1)
+    else:
+        # Unpack parameters
+        if isinstance(borehole1, Borehole): borehole1 = [borehole1]
+        if isinstance(borehole2, Borehole): borehole2 = [borehole2]
+        dis = np.array(
+            [[b1.distance(b2) for b1 in borehole1] for b2 in borehole2])
+        D1 = np.array([b.D for b in borehole1]).reshape(1, -1)
+        H1 = np.array([b.H for b in borehole1]).reshape(1, -1)
+        D2 = np.array([b.D for b in borehole2]).reshape(-1, 1)
+        H2 = np.array([b.H for b in borehole2]).reshape(-1, 1)
 
-    # Lower bound of integration
-    a = 1.0 / np.sqrt(4.0*alpha*time)
-    # Evaluate integral using Gauss-Kronrod
-    h, err = quad(
-        _Ils, a, np.inf, args=(borehole1, borehole2, reaSource, imgSource))
+        # Evaluate integral
+        h = finite_line_source_vectorized(
+            time, alpha, dis, H1, D1, H2, D2,
+            reaSource=reaSource, imgSource=imgSource)
     return h
 
 
@@ -156,7 +171,7 @@ def finite_line_source_vectorized(
 
     Parameters
     ----------
-    time : float
+    time : float or array, shape (K)
         Value of time (in seconds) for which the FLS solution is evaluated.
     alpha : float
         Soil thermal diffusivity (in m2/s).
@@ -170,10 +185,12 @@ def finite_line_source_vectorized(
         Lengths of the receiving heat sources.
     D2 : float or array
         Buried depths of the receiving heat sources.
-    reaSource : boolean, defaults to True
+    reaSource : bool
         True if the real part of the FLS solution is to be included.
-    imgSource : boolean, defaults to True
+        Default is True.
+    imgSource : bool
         True if the image part of the FLS solution is to be included.
+        Default is True.
 
     Returns
     -------
@@ -187,7 +204,9 @@ def finite_line_source_vectorized(
     -----
     This is a vectorized version of the :func:`finite_line_source` function
     using scipy.integrate.quad_vec to speed up calculations. All arrays
-    (dis, H1, D1, H2, D2) must follow numpy array broadcasting rules.
+    (dis, H1, D1, H2, D2) must follow numpy array broadcasting rules. If time
+    is an array, the integrals for different time values are stacked on the
+    last axis.
     
 
     References
@@ -200,34 +219,91 @@ def finite_line_source_vectorized(
        fields. International Journal of Heat and Mass Transfer, 70, 641-650.
 
     """
-    def _erfint(x):
-        # Integral of error function
-        return x * erf(x) - 1.0/np.sqrt(np.pi) * (1.0-np.exp(-x**2))
+    # Integrand of the finite line source solution
+    f = _finite_line_source_integrand(
+        dis, H1, D1, H2, D2, reaSource, imgSource)
 
+    # Evaluate integral
+    if isinstance(time, (np.floating, float)):
+        # Lower bound of integration
+        a = 1.0 / np.sqrt(4.0*alpha*time)
+        h = quad_vec(f, a, np.inf)[0]
+    else:
+        h = np.stack(
+            [quad_vec(f, 1.0 / np.sqrt(4.0*alpha*t), np.inf)[0]
+             for t in time],
+            axis=-1)
+    return h
+
+
+def _erfint(x):
+    """
+    Integral of the error function.
+
+    Parameters
+    ----------
+    x : float or array
+        Argument.
+
+    Returns
+    -------
+    float or array
+        Integral of the error function.
+
+    """
+    return x * erf(x) - 1.0/np.sqrt(np.pi) * (1.0-np.exp(-x**2))
+
+
+def _finite_line_source_integrand(dis, H1, D1, H2, D2, reaSource, imgSource):
+    """
+    Integrand of the finite line source solution.
+
+    Parameters
+    ----------
+    dis : float or array
+        Radial distances to evaluate the FLS solution.
+    H1 : float or array
+        Lengths of the emitting heat sources.
+    D1 : float or array
+        Buried depths of the emitting heat sources.
+    H2 : float or array
+        Lengths of the receiving heat sources.
+    D2 : float or array
+        Buried depths of the receiving heat sources.
+    reaSource : bool
+        True if the real part of the FLS solution is to be included.
+    imgSource : bool
+        True if the image part of the FLS solution is to be included.
+
+    Returns
+    -------
+    f : callable
+        Integrand of the finite line source solution. Can be vector-valued.
+
+    Notes
+    -----
+    All arrays (dis, H1, D1, H2, D2) must follow numpy array broadcasting
+    rules.
+
+    """
     if reaSource and imgSource:
         # Full (real + image) FLS solution
-        func = lambda s: 0.5 / (H2*s**2) * np.exp(-dis**2*s**2) * (
+        f = lambda s: 0.5 / (H2*s**2) * np.exp(-dis**2*s**2) * (
             _erfint((D2 - D1 + H2)*s) - _erfint((D2 - D1)*s)
             + _erfint((D2 - D1 - H1)*s) - _erfint((D2 - D1 + H2 - H1)*s)
             + _erfint((D2 + D1 + H2)*s) - _erfint((D2 + D1)*s)
             + _erfint((D2 + D1 + H1)*s) - _erfint((D2 + D1 + H2 + H1)*s) )
     elif reaSource:
         # Real FLS solution
-        func = lambda s: 0.5 / (H2*s**2) * np.exp(-dis**2*s**2) * (
+        f = lambda s: 0.5 / (H2*s**2) * np.exp(-dis**2*s**2) * (
             _erfint((D2 - D1 + H2)*s) - _erfint((D2 - D1)*s)
             + _erfint((D2 - D1 - H1)*s) - _erfint((D2 - D1 + H2 - H1)*s) )
     elif imgSource:
         # Image FLS solution
-        func = lambda s: 0.5 / (H2*s**2) * np.exp(-dis**2*s**2) * (
+        f = lambda s: 0.5 / (H2*s**2) * np.exp(-dis**2*s**2) * (
             _erfint((D2 + D1 + H2)*s) - _erfint((D2 + D1)*s)
             + _erfint((D2 + D1 + H1)*s) - _erfint((D2 + D1 + H2 + H1)*s) )
     else:
         # No heat source
-        func = lambda s: 0.
-
-    # Lower bound of integration
-    a = 1.0 / np.sqrt(4.0*alpha*time)
-    # Evaluate integral using Gauss-Kronrod
-    h, err = quad_vec(func, a, np.inf)
-    return h
-
+        f = lambda s: 0.
+    return f

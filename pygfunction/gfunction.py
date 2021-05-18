@@ -1853,19 +1853,12 @@ class _NewDetailed(_BaseSolver):
             # Segments of the receiving borehole
             b2 = self._borehole_segments_one_borehole(
                 self.boreholes[i], self.nSegments)
-            D2 = np.array([seg.D for seg in b2]).reshape(-1, 1)
-            H2 = np.array([seg.H for seg in b2]).reshape(-1, 1)
 
             for j in range(i, nBoreholes):
                 # Segments of the emitting borehole
                 b1 = self._borehole_segments_one_borehole(
                     self.boreholes[j], self.nSegments)
-                D1 = np.array([seg.D for seg in b1]).reshape(1, -1)
-                H1 = np.array([seg.H for seg in b1]).reshape(1, -1)
-                dis = b1[0].distance(b2[0])
-                # Evaluate FLS at all time steps
-                h = np.dstack([finite_line_source_vectorized(
-                    t, alpha, dis, H1, D1, H2, D2) for t in time])
+                h = finite_line_source(time, alpha, b1, b2)
                 # Broadcast values to h_ij matrix
                 i0 = i*self.nSegments
                 i1 = i0 + self.nSegments
@@ -2556,9 +2549,7 @@ class _NewSimilarities(_BaseSolver):
             D1 = D1.reshape(1, -1)
             D2 = D2.reshape(1, -1)
             dis = self.boreholes[i].r_b
-            h = np.dstack(
-                [finite_line_source_vectorized(t, alpha, dis, H1, D1, H2, D2)
-                 for t in time])
+            h = finite_line_source_vectorized(time, alpha, dis, H1, D1, H2, D2)
             # Broadcast values to h_ij matrix
             h_ij[j_segment, i_segment, :] = h[0, k_segment, :]
         # ---------------------------------------------------------------------
@@ -2582,9 +2573,7 @@ class _NewSimilarities(_BaseSolver):
             dis = np.reshape(self.borehole_to_borehole_distances[n], (-1, 1))
             D1 = D1.reshape(1, -1)
             D2 = D2.reshape(1, -1)
-            h = np.dstack(
-                [finite_line_source_vectorized(t, alpha, dis, H1, D1, H2, D2)
-                 for t in time])
+            h = finite_line_source_vectorized(time, alpha, dis, H1, D1, H2, D2)
             # Broadcast values to h_ij matrix
             h_ij[j_segment, i_segment, :] = h[l_segment, k_segment, :]
             if self._compare_boreholes(self.boreholes[j], self.boreholes[i]):
