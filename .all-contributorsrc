@@ -42,7 +42,7 @@
     "founder": {
       "symbol": ":rocket:",
       "description": "Founder",
-      "link": "[<%= symbol %>](http://www.ibpsa.org/proceedings/eSimPapers/2018/2-3-A-4.pdf),"
+      "link": "http://www.ibpsa.org/proceedings/eSimPapers/2018/2-3-A-4.pdf"
     }
   }
 }
