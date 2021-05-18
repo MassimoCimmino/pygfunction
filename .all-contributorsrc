@@ -19,6 +19,17 @@
         "maintenance",
         "review"
       ]
+    },
+    {
+      "login": "j-c-cook",
+      "name": "Jack Cook",
+      "avatar_url": "https://avatars.githubusercontent.com/u/39248734?v=4",
+      "profile": "https://github.com/j-c-cook",
+      "contributions": [
+        "code",
+        "example",
+        "ideas"
+      ]
     }
   ],
   "contributorsPerLine": 7,
@@ -31,7 +42,7 @@
     "founder": {
       "symbol": ":rocket:",
       "description": "Founder",
-      "link": "[<%= symbol %>](http://www.ibpsa.org/proceedings/eSimPapers/2018/2-3-A-4.pdf),"
+      "link": "http://www.ibpsa.org/proceedings/eSimPapers/2018/2-3-A-4.pdf"
     }
   }
 }
