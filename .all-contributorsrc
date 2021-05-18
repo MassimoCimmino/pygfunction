@@ -19,6 +19,17 @@
         "maintenance",
         "review"
       ]
+    },
+    {
+      "login": "j-c-cook",
+      "name": "Jack Cook",
+      "avatar_url": "https://avatars.githubusercontent.com/u/39248734?v=4",
+      "profile": "https://github.com/j-c-cook",
+      "contributions": [
+        "code",
+        "example",
+        "ideas"
+      ]
     }
   ],
   "contributorsPerLine": 7,
