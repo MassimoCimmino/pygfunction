@@ -1846,7 +1846,7 @@ class _NewDetailed(_BaseSolver):
         # Initialize chrono
         tic = tim.time()
         # Initialize segment-to-segment response factors
-        h_ij = np.zeros((self.nSources, self.nSources, nt), dtype=self.dtype)
+        h_ij = np.zeros((self.nSources, self.nSources, nt+1), dtype=self.dtype)
 
         nBoreholes = len(self.boreholes)
         for i in range(nBoreholes):
@@ -1864,22 +1864,18 @@ class _NewDetailed(_BaseSolver):
                 i1 = i0 + self.nSegments
                 j0 = j*self.nSegments
                 j1 = j0 + self.nSegments
-                h_ij[i0:i1, j0:j1, :] = h
+                h_ij[i0:i1, j0:j1, 1:] = h
                 if j > i:
                     H_ratio = b2[0].H/b1[0].H
-                    h_ij[j0:j1, i0:i1, :] = np.transpose(h*H_ratio, (1, 0, 2))
+                    h_ij[j0:j1, i0:i1, 1:] = np.transpose(h*H_ratio, (1, 0, 2))
 
         # Return 2d array if time is a scalar
         if np.isscalar(time):
-            h_ij = h_ij[:,:,0]
+            h_ij = h_ij[:,:,1]
 
         # Interp1d object for thermal response factors
-        h_ij = interp1d(
-            np.hstack((0., time)),
-            np.dstack(
-                (np.zeros((self.nSources,self.nSources), dtype=self.dtype),
-                 h_ij)),
-            kind=kind, copy=True, axis=2)
+        h_ij = interp1d(np.hstack((0., time)), h_ij,
+                        kind=kind, copy=True, axis=2)
         toc = tim.time()
         if self.disp: print(' {:.3f} sec'.format(toc - tic))
 
@@ -2528,7 +2524,7 @@ class _NewSimilarities(_BaseSolver):
         # Initialize chrono
         tic = tim.time()
         # Initialize segment-to-segment response factors
-        h_ij = np.empty((self.nSources, self.nSources, nt), dtype=self.dtype)
+        h_ij = np.zeros((self.nSources, self.nSources, nt+1), dtype=self.dtype)
 
         # ---------------------------------------------------------------------
         # Segment-to-segment thermal response factors for same-borehole thermal
@@ -2551,7 +2547,7 @@ class _NewSimilarities(_BaseSolver):
             dis = self.boreholes[i].r_b
             h = finite_line_source_vectorized(time, alpha, dis, H1, D1, H2, D2)
             # Broadcast values to h_ij matrix
-            h_ij[j_segment, i_segment, :] = h[0, k_segment, :]
+            h_ij[j_segment, i_segment, 1:] = h[0, k_segment, :]
         # ---------------------------------------------------------------------
         # Segment-to-segment thermal response factors for borehole-to-borehole
         # thermal interactions
@@ -2575,24 +2571,21 @@ class _NewSimilarities(_BaseSolver):
             D2 = D2.reshape(1, -1)
             h = finite_line_source_vectorized(time, alpha, dis, H1, D1, H2, D2)
             # Broadcast values to h_ij matrix
-            h_ij[j_segment, i_segment, :] = h[l_segment, k_segment, :]
+            h_ij[j_segment, i_segment, 1:] = h[l_segment, k_segment, :]
             if self._compare_boreholes(self.boreholes[j], self.boreholes[i]):
-                h_ij[i_segment, j_segment, :] = h[l_segment, k_segment, :]
+                h_ij[i_segment, j_segment, 1:] = h[l_segment, k_segment, :]
             else:
                 H_ratio = self.boreholes[j].H/self.boreholes[i].H
-                h_ij[i_segment, j_segment, :] = \
+                h_ij[i_segment, j_segment, 1:] = \
                     h[l_segment, k_segment, :] * H_ratio
 
         # Return 2d array if time is a scalar
         if np.isscalar(time):
-            h_ij = h_ij[:,:,0]
+            h_ij = h_ij[:,:,1]
 
         # Interp1d object for thermal response factors
         h_ij = interp1d(
-            np.hstack((0., time)),
-            np.dstack(
-                (np.zeros((self.nSources,self.nSources), dtype=self.dtype),
-                 h_ij)),
+            np.hstack((0., time)), h_ij,
             kind=kind, copy=True, assume_sorted=True, axis=2)
         toc = tim.time()
         if self.disp: print(' {:.3f} sec'.format(toc - tic))
