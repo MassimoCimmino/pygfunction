@@ -1847,27 +1847,43 @@ class _NewDetailed(_BaseSolver):
         tic = tim.time()
         # Initialize segment-to-segment response factors
         h_ij = np.zeros((self.nSources, self.nSources, nt+1), dtype=self.dtype)
-
         nBoreholes = len(self.boreholes)
+
         for i in range(nBoreholes):
             # Segments of the receiving borehole
             b2 = self._borehole_segments_one_borehole(
                 self.boreholes[i], self.nSegments)
+            # -----------------------------------------------------------------
+            # Segment-to-segment thermal response factors for same-borehole
+            # thermal interactions
+            # -----------------------------------------------------------------
+            b1 = b2
+            h = finite_line_source(time, alpha, b1, b2)
+            # Broadcast values to h_ij matrix
+            i0 = i*self.nSegments
+            i1 = i0 + self.nSegments
+            h_ij[i0:i1, i0:i1, 1:] = h
 
-            for j in range(i, nBoreholes):
+            # -----------------------------------------------------------------
+            # Segment-to-segment thermal response factors for
+            # borehole-to-borehole thermal interactions
+            # -----------------------------------------------------------------
+            if i+1 < nBoreholes:
                 # Segments of the emitting borehole
-                b1 = self._borehole_segments_one_borehole(
-                    self.boreholes[j], self.nSegments)
+                b1 = [seg
+                      for b in self.boreholes[i+1:]
+                      for seg in self._borehole_segments_one_borehole(
+                              b, self.nSegments)]
                 h = finite_line_source(time, alpha, b1, b2)
                 # Broadcast values to h_ij matrix
-                i0 = i*self.nSegments
-                i1 = i0 + self.nSegments
-                j0 = j*self.nSegments
-                j1 = j0 + self.nSegments
-                h_ij[i0:i1, j0:j1, 1:] = h
-                if j > i:
-                    H_ratio = b2[0].H/b1[0].H
-                    h_ij[j0:j1, i0:i1, 1:] = np.transpose(h*H_ratio, (1, 0, 2))
+                for j in range(i+1, nBoreholes):
+                    j0 = j*self.nSegments
+                    j1 = j0 + self.nSegments
+                    h_ij[i0:i1, j0:j1, 1:] = h[:, j0-i1:j1-i1, :]
+                    if j > i:
+                        H_ratio = self.boreholes[i].H/self.boreholes[j].H
+                        h_ij[j0:j1, i0:i1, 1:] = np.transpose(
+                            h[:, j0-i1:j1-i1, :]*H_ratio, (1, 0, 2))
 
         # Return 2d array if time is a scalar
         if np.isscalar(time):
