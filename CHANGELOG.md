@@ -15,6 +15,7 @@
 ### Bug fixes
 
 * [Issue 86](https://github.com/MassimoCimmino/pygfunction/issues/86) - Documentation is now built using Python 3 to support Python 3 features in the code.
+* [Issue 103](https://github.com/MassimoCimmino/pygfunction/issues/103) - Fixed `gFunction` class to allow both builtin `float` and `numpy.floating` inputs.
 
 ### Other changes
 
