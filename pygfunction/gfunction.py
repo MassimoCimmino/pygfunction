@@ -1604,7 +1604,7 @@ class _Detailed(_BaseSolver):
     kind : string, optional
         Interpolation method used for segment-to-segment thermal response
         factors. See documentation for scipy.interpolate.interp1d.
-        Default is linear.
+        Default is 'linear'.
     dtype : numpy dtype, optional
         numpy data type used for matrices and vectors.
         Default is numpy.double.
@@ -1659,7 +1659,7 @@ class _Detailed(_BaseSolver):
         kind : string, optional
             Interpolation method used for segment-to-segment thermal response
             factors. See documentation for scipy.interpolate.interp1d.
-            Default is linear.
+            Default is 'linear'.
 
         Returns
         -------
@@ -1794,7 +1794,7 @@ class _Similarities(_BaseSolver):
     kind : string, optional
         Interpolation method used for segment-to-segment thermal response
         factors. See documentation for scipy.interpolate.interp1d.
-        Default is linear.
+        Default is 'linear'.
     dtype : numpy dtype, optional
         numpy data type used for matrices and vectors.
         Default is numpy.double.
@@ -1872,7 +1872,7 @@ class _Similarities(_BaseSolver):
         kind : string, optional
             Interpolation method used for segment-to-segment thermal response
             factors. See documentation for scipy.interpolate.interp1d.
-            Default is linear.
+            Default is 'linear'.
 
         Returns
         -------
