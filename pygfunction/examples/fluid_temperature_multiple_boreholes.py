@@ -154,32 +154,31 @@ def main():
     # Plot hourly heat extraction rates and temperatures
     # -------------------------------------------------------------------------
 
-    plt.rc('figure')
-    fig = plt.figure()
+    # Configure figure and axes
+    fig = gt.utilities._initialize_figure()
 
     ax1 = fig.add_subplot(211)
     # Axis labels
-    ax1.set_xlabel(r'Time (hours)')
-    ax1.set_ylabel(r'Total heat extraction rate (W)')
-    hours = np.array([(j+1)*dt/3600. for j in range(Nt)])
+    ax1.set_xlabel(r'Time [hours]')
+    ax1.set_ylabel(r'Total heat extraction rate [W]')
+    gt.utilities._format_axes(ax1)
+
     # Plot heat extraction rates
-    ax1.plot(hours, Q_tot, 'b-', lw=1.5)
+    hours = np.array([(j+1)*dt/3600. for j in range(Nt)])
+    ax1.plot(hours, Q_tot)
 
     ax2 = fig.add_subplot(212)
     # Axis labels
-    ax2.set_xlabel(r'Time (hours)')
-    ax2.set_ylabel(r'Temperature (degC)')
+    ax2.set_xlabel(r'Time [hours]')
+    ax2.set_ylabel(r'Temperature [degC]')
+    gt.utilities._format_axes(ax2)
+
     # Plot temperatures
-    ax2.plot(hours, T_b, 'k-', lw=1.5, label='Borehole wall')
-    ax2.plot(hours, T_f_out, 'r-.', lw=1.5,
+    ax2.plot(hours, T_b, label='Borehole wall')
+    ax2.plot(hours, T_f_out, '-.',
              label='Outlet, double U-tube (parallel)')
     ax2.legend()
 
-    # Show minor ticks
-    ax1.xaxis.set_minor_locator(AutoMinorLocator())
-    ax1.yaxis.set_minor_locator(AutoMinorLocator())
-    ax2.xaxis.set_minor_locator(AutoMinorLocator())
-    ax2.yaxis.set_minor_locator(AutoMinorLocator())
     # Adjust to plot window
     plt.tight_layout()
 
@@ -195,22 +194,22 @@ def main():
     T_f = UTubes[0].get_temperature(
         z, T_f_in[it], T_b[it], m_flow_borehole, cp_f)
 
-    plt.rc('figure')
-    fig = plt.figure()
+
+    # Configure figure and axes
+    fig = gt.utilities._initialize_figure()
 
     ax3 = fig.add_subplot(111)
     # Axis labels
-    ax3.set_xlabel(r'Temperature (degC)')
-    ax3.set_ylabel(r'Depth from borehole head (m)')
+    ax3.set_xlabel(r'Temperature [degC]')
+    ax3.set_ylabel(r'Depth from borehole head [m]')
+    gt.utilities._format_axes(ax3)
+
     # Plot temperatures
-    pltFlu = ax3.plot(T_f, z, 'b-', lw=1.5, label='Fluid')
+    pltFlu = ax3.plot(T_f, z, 'b-', label='Fluid')
     pltWal = ax3.plot(np.array([T_b[it], T_b[it]]), np.array([0., H]),
-                      'k--', lw=1.5, label='Borehole wall')
+                      'k--', label='Borehole wall')
     ax3.legend(handles=[pltFlu[0]]+pltWal)
 
-    # Show minor ticks
-    ax3.xaxis.set_minor_locator(AutoMinorLocator())
-    ax3.yaxis.set_minor_locator(AutoMinorLocator())
     # Reverse y-axes
     ax3.set_ylim(ax3.get_ylim()[::-1])
     # Adjust to plot window

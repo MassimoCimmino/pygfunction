@@ -101,35 +101,36 @@ def main():
     # plot results
     # -------------------------------------------------------------------------
 
-    plt.rc('figure')
-    fig = plt.figure()
+    # Configure figure and axes
+    fig = gt.utilities._initialize_figure()
 
     ax1 = fig.add_subplot(311)
     # Axis labels
-    ax1.set_xlabel(r'$t$ (hours)')
-    ax1.set_ylabel(r'$Q$ (W)')
+    ax1.set_xlabel(r'$t$ [hours]')
+    ax1.set_ylabel(r'$Q$ [W]')
+    gt.utilities._format_axes(ax1)
+
+
     hours = np.array([(j+1)*dt/3600. for j in range(Nt)])
-    ax1.plot(hours, Q, 'b-', lw=1.5)
+    ax1.plot(hours, Q)
 
     ax2 = fig.add_subplot(312)
     # Axis labels
-    ax2.set_xlabel(r'$t$ (hours)')
-    ax2.set_ylabel(r'$T_b$ (degC)')
-    ax2.plot(hours, T_b, 'b-', lw=1.5)
-    ax2.plot(hours, T_b_exact, 'k.', lw=1.5)
+    ax2.set_xlabel(r'$t$ [hours]')
+    ax2.set_ylabel(r'$T_b$ [degC]')
+    gt.utilities._format_axes(ax2)
+
+    ax2.plot(hours, T_b)
+    ax2.plot(hours, T_b_exact, 'k.')
 
     ax3 = fig.add_subplot(313)
     # Axis labels
-    ax3.set_xlabel(r'$t$ (hours)')
-    ax3.set_ylabel(r'Error (degC)')
-    ax3.plot(hours, T_b - T_b_exact, 'b-', lw=1.5)
-    # Show minor ticks
-    ax1.xaxis.set_minor_locator(AutoMinorLocator())
-    ax1.yaxis.set_minor_locator(AutoMinorLocator())
-    ax2.xaxis.set_minor_locator(AutoMinorLocator())
-    ax2.yaxis.set_minor_locator(AutoMinorLocator())
-    ax3.xaxis.set_minor_locator(AutoMinorLocator())
-    ax3.yaxis.set_minor_locator(AutoMinorLocator())
+    ax3.set_xlabel(r'$t$ [hours]')
+    ax3.set_ylabel(r'Error [degC]')
+    gt.utilities._format_axes(ax3)
+
+    ax3.plot(hours, T_b - T_b_exact)
+
     # Adjust to plot window
     plt.tight_layout()
 
