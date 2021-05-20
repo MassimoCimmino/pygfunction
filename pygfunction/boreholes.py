@@ -100,6 +100,43 @@ class Borehole(object):
         pos = (self.x, self.y)
         return pos
 
+    def segments(self, nSegments):
+        """
+        Split a borehole into segments.
+
+        Parameters
+        ----------
+        nSegments : int
+            Number of segments.
+
+        Returns
+        -------
+        boreSegments : list
+            List of borehole segments.
+
+        Examples
+        --------
+        >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
+        >>> b1.segments(5)
+
+        """
+        boreSegments = []
+        for i in range(nSegments):
+            # Divide borehole into segments of equal length
+            H = self.H / nSegments
+            # Buried depth of the i-th segment
+            D = self.D + i * self.H / nSegments * np.cos(self.tilt)
+            # x-position
+            x = self.x + i * self.H / nSegments * np.sin(self.tilt) * np.cos(self.orientation)
+            # y-position
+            y = self.y + i * self.H / nSegments * np.sin(self.tilt) * np.sin(self.orientation)
+            # Add to list of segments
+            boreSegments.append(
+                Borehole(H, D, self.r_b, x, y,
+                         tilt=self.tilt,
+                         orientation=self.orientation))
+        return boreSegments
+
 
 def find_duplicates(boreField, disp=False):
     """
@@ -547,7 +584,7 @@ def visualize_field(borefield):
         y_H = y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)
         z_H = borehole.D + borehole.H*np.cos(borehole.tilt)
         # Add current borehole to the figure
-        ax1.plot(np.atleast_1d(x), np.atleast_1d(y), np.atleast_1d(borehole.D),
+        ax1.plot(np.atleast_1d(x), np.atleast_1d(y), -np.atleast_1d(borehole.D),
                  'ko')
         ax1.plot(np.array([x, x_H]),
                  np.array([y, y_H]),
