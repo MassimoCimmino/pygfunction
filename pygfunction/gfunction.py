@@ -1681,8 +1681,7 @@ class _Detailed(_BaseSolver):
 
         for i in range(nBoreholes):
             # Segments of the receiving borehole
-            b2 = self._borehole_segments_one_borehole(
-                self.boreholes[i], self.nSegments)
+            b2 = self.boreholes[i].segments(self.nSegments)
             # -----------------------------------------------------------------
             # Segment-to-segment thermal response factors for same-borehole
             # thermal interactions
@@ -1702,8 +1701,7 @@ class _Detailed(_BaseSolver):
                 # Segments of the emitting borehole
                 b1 = [seg
                       for b in self.boreholes[i+1:]
-                      for seg in self._borehole_segments_one_borehole(
-                              b, self.nSegments)]
+                      for seg in b.segments(self.nSegments)]
                 h = finite_line_source(time, alpha, b1, b2)
                 # Broadcast values to h_ij matrix
                 for j in range(i+1, nBoreholes):
@@ -1726,18 +1724,6 @@ class _Detailed(_BaseSolver):
         if self.disp: print(' {:.3f} sec'.format(toc - tic))
 
         return h_ij
-
-    def _borehole_segments_one_borehole(self, borehole, nSegments):
-        boreSegments = []
-        for i in range(nSegments):
-            # Divide borehole into segments of equal length
-            H = borehole.H / nSegments
-            # Buried depth of the i-th segment
-            D = borehole.D + i * borehole.H / nSegments
-            # Add to list of segments
-            boreSegments.append(
-                Borehole(H, D, borehole.r_b, borehole.x, borehole.y))
-        return boreSegments
 
 
 class _Similarities(_BaseSolver):
@@ -1982,32 +1968,6 @@ class _Similarities(_BaseSolver):
         if self.disp: print(' {:.3f} sec'.format(toc - tic))
 
         return
-
-    def _borehole_segments_one_borehole(self, borehole):
-        """
-        Split a borehole into segments.
-
-        Parameters
-        ----------
-        borehole : Borehole object
-            Borehole to be split into segments.
-
-        Returns
-        -------
-        boreSegments : list
-            List of borehole segments.
-
-        """
-        boreSegments = []
-        for i in range(self.nSegments):
-            # Divide borehole into segments of equal length
-            H = borehole.H / self.nSegments
-            # Buried depth of the i-th segment
-            D = borehole.D + i * borehole.H / self.nSegments
-            # Add to list of segments
-            boreSegments.append(
-                Borehole(H, D, borehole.r_b, borehole.x, borehole.y))
-        return boreSegments
 
     def _compare_boreholes(self, borehole1, borehole2):
         """
@@ -2309,8 +2269,8 @@ class _Similarities(_BaseSolver):
             # Find segment pairs for the image FLS solution
             compare_pairs = self._compare_image_pairs
         # Dive both boreholes into segments
-        segments1 = self._borehole_segments_one_borehole(borehole1)
-        segments2 = self._borehole_segments_one_borehole(borehole2)
+        segments1 = borehole1.segments(self.nSegments)
+        segments2 = borehole2.segments(self.nSegments)
         # Segments have equal lengths
         H1 = segments1[0].H
         H2 = segments2[0].H
