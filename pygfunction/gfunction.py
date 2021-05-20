@@ -710,9 +710,9 @@ class gFunction(object):
         assert self.network is None or (self.network.m_flow is not None and self.network.cp is not None), \
             "The mass flow rate 'm_flow' and heat capacity 'cp' must be " \
             "provided at the instanciation of the 'Network' object."
-        assert type(self.time) is np.ndarray or type(self.time) is float or self.time is None, \
+        assert type(self.time) is np.ndarray or isinstance(self.time, (np.floating, float)) or self.time is None, \
             "Time should be a float or an array."
-        assert type(self.alpha) is float, \
+        assert isinstance(self.alpha, (np.floating, float)), \
             "The thermal diffusivity 'alpha' should be a float or an array."
         acceptable_boundary_conditions = ['UHTR', 'UBWT', 'MIFT']
         assert type(self.boundary_condition) is str and self.boundary_condition in acceptable_boundary_conditions, \
@@ -1489,7 +1489,7 @@ class _BaseSolver(object):
         assert self.network is None or (self.network.m_flow is not None and self.network.cp is not None), \
             "The mass flow rate 'm_flow' and heat capacity 'cp' must be " \
             "provided at the instanciation of the 'Network' object."
-        assert type(self.time) is np.ndarray or type(self.time) is float or self.time is None, \
+        assert type(self.time) is np.ndarray or isinstance(self.time, (float, np.floating)) or self.time is None, \
             "Time should be a float or an array."
         assert type(self.nSegments) is int and self.nSegments >= 1, \
             "The number of segments 'nSegments' should be a positive int " \
@@ -2329,8 +2329,8 @@ class _Similarities(_BaseSolver):
         are what is expected.
 
         """
-        assert type(self.disTol) is float and self.disTol > 0., \
+        assert isinstance(self.disTol, (np.floating, float)) and self.disTol > 0., \
             "The distance tolerance 'disTol' should be a positive float."
-        assert type(self.tol) is float and self.tol > 0., \
+        assert isinstance(self.tol, (np.floating, float)) and self.tol > 0., \
             "The relative tolerance 'tol' should be a positive float."
         return
