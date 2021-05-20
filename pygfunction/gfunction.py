@@ -1484,6 +1484,9 @@ class _BaseSolver(object):
         assert np.all([isinstance(b, Borehole) for b in self.boreholes]), \
             "The list of boreholes contains elements that are not Borehole " \
             "objects."
+        assert np.all(np.abs([b.tilt for b in self.boreholes]) <= 1e-6), \
+            "The current version of pygfunction only supports vertical " \
+            "boreholes."
         assert self.network is None or isinstance(self.network, Network), \
             "The network is not a valid 'Network' object."
         assert self.network is None or (self.network.m_flow is not None and self.network.cp is not None), \
