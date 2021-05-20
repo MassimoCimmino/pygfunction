@@ -6,8 +6,6 @@
     equal for all boreholes.
 
 """
-from __future__ import absolute_import, division, print_function
-
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
 import numpy as np

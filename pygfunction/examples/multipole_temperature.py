@@ -10,8 +10,6 @@
     against the results of Claesson and Hellstrom (2011).
 
 """
-from __future__ import absolute_import, division, print_function
-
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import AutoMinorLocator

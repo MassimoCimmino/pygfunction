@@ -1,5 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
+# -*- coding: utf-8 -*-
 import numpy as np
 from scipy.constants import pi
 from scipy.special import binom

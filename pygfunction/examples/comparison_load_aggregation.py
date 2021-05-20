@@ -12,8 +12,6 @@
     Default parameters are used for each of the aggregation schemes.
 
 """
-from __future__ import absolute_import, division, print_function
-
 import time as tim
 
 import matplotlib.pyplot as plt

@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """ Test suite for boreholes module.
 """
-from __future__ import absolute_import, division, print_function
-
 import unittest
 
 import numpy as np

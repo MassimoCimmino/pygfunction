@@ -3,8 +3,6 @@
     created and the borehole resistance is computed.
 
 """
-from __future__ import absolute_import, division, print_function
-
 import pygfunction as gt
 from numpy import pi
 

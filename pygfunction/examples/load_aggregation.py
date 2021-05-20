@@ -7,8 +7,6 @@
     are simulated using the aggregation method of Claesson and Javed (2012).
 
 """
-from __future__ import absolute_import, division, print_function
-
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import AutoMinorLocator

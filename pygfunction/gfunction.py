@@ -1,5 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
+# -*- coding: utf-8 -*-
 import time as tim
 
 import matplotlib.pyplot as plt
