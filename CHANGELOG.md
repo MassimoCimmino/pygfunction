@@ -11,6 +11,7 @@
 ### Enhancements
 
 * [Issue 78](https://github.com/MassimoCimmino/pygfunction/issues/78) - Optimization of solvers for the calculation of g-functions. The finite line source (FLS) solution is now calculated using `scipy.integrate.quad_vec` which significantly improves calculation time over `scipy.integrate.quad`. The identification of similarities in the 'similarities' solver has also been refactored to identify similarities between boreholes as an intermediate step before identifying similarities between segments. The calculation time for the identification of similarities is significantly decreased.
+* [Issue 94](https://github.com/MassimoCimmino/pygfunction/issues/94) - Refactor visualization functions and methods to uniformize figure styles across modules.
 
 ### Bug fixes
 

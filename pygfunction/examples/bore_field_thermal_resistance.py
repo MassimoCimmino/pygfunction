@@ -111,23 +111,24 @@ def main():
     # Plot bore field thermal resistances
     # -------------------------------------------------------------------------
 
-    plt.rc('figure')
-    fig = plt.figure()
+    # Configure figure and axes
+    fig = gt.utilities._initialize_figure()
+
     ax1 = fig.add_subplot(111)
-    # Bore field thermal resistances
-    ax1.plot(m_flow_boreholes, R[0,:], 'k-', lw=1.5, label='1 borehole')
-    ax1.plot(m_flow_boreholes, R[2,:], 'r--', lw=1.5, label='3 boreholes')
-    ax1.plot(m_flow_boreholes, R[4,:], 'b-.', lw=1.5, label='5 boreholes')
-    ax1.legend()
     # Axis labels
     ax1.set_xlabel(r'$\dot{m}$ [kg/s]')
     ax1.set_ylabel(r'$R^*_{field}$ [m.K/W]')
     # Axis limits
     ax1.set_xlim([0., 1.])
     ax1.set_ylim([0., 1.])
-    # Show minor ticks
-    ax1.xaxis.set_minor_locator(AutoMinorLocator())
-    ax1.yaxis.set_minor_locator(AutoMinorLocator())
+
+    gt.utilities._format_axes(ax1)
+
+    # Bore field thermal resistances
+    ax1.plot(m_flow_boreholes, R[0,:], '-', label='1 borehole')
+    ax1.plot(m_flow_boreholes, R[2,:], '--', label='3 boreholes')
+    ax1.plot(m_flow_boreholes, R[4,:], '-.', label='5 boreholes')
+    ax1.legend()
     # Adjust to plot window
     plt.tight_layout()
 

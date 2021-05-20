@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.constants import pi
 from scipy.special import binom
+
+from .utilities import _initialize_figure, _format_axes
 
 
 class _BasePipe(object):
@@ -539,20 +542,26 @@ class _BasePipe(object):
             Figure object (matplotlib).
 
         """
-        import matplotlib.pyplot as plt
-        from matplotlib.ticker import AutoMinorLocator
-
-        # Initialize figure
-        LW = .5    # Line width
-        FS = 12.    # Font size
-
-        plt.rc('figure', figsize=(80.0/25.4, 80.0/25.4))
-        fig = plt.figure()
+        # Configure figure and axes
+        fig = _initialize_figure()
         ax = fig.add_subplot(111)
+        ax.set_xlabel(r'$x$ [m]')
+        ax.set_ylabel(r'$y$ [m]')
+        ax.axis('equal')
+        _format_axes(ax)
+
+        # Color cycle
+        prop_cycle = plt.rcParams['axes.prop_cycle']
+        colors = prop_cycle.by_key()['color']
+        lw = plt.rcParams['lines.linewidth']
 
         # Borehole wall outline
-        borewall = plt.Circle((0., 0.), radius=self.b.r_b,
-                              fill=False, linestyle='--', linewidth=LW)
+        ax.plot([-self.b.r_b, 0., self.b.r_b, 0.],
+                [0., self.b.r_b, 0., -self.b.r_b],
+                'k.', alpha=0.)
+        borewall = plt.Circle(
+            (0., 0.), radius=self.b.r_b, fill=False,
+            color='k', linestyle='--', lw=lw)
         ax.add_patch(borewall)
 
         # Pipes
@@ -562,32 +571,29 @@ class _BasePipe(object):
             (x_out, y_out) = self.pos[i + self.nPipes]
 
             # Pipe outline (inlet)
-            pipe_in_in = plt.Circle((x_in, y_in), radius=self.r_in,
-                                    fill=False, linestyle='-', linewidth=LW)
-            pipe_in_out = plt.Circle((x_in, y_in), radius=self.r_out,
-                                     fill=False, linestyle='-', linewidth=LW)
-            ax.text(x_in, y_in, i + 1,
-                    ha="center", va="center", size=FS)
+            pipe_in_in = plt.Circle(
+                (x_in, y_in), radius=self.r_in,
+                fill=False, linestyle='-', color=colors[i], lw=lw)
+            pipe_in_out = plt.Circle(
+                (x_in, y_in), radius=self.r_out,
+                fill=False, linestyle='-', color=colors[i], lw=lw)
+            ax.text(x_in, y_in, i, ha="center", va="center")
 
             # Pipe outline (outlet)
-            pipe_out_in = plt.Circle((x_out, y_out), radius=self.r_in,
-                                     fill=False, linestyle='-', linewidth=LW)
-            pipe_out_out = plt.Circle((x_out, y_out), radius=self.r_out,
-                                      fill=False, linestyle='-', linewidth=LW)
-            ax.text(x_out, y_out, i + self.nPipes + 1,
-                    ha="center", va="center", size=FS)
+            pipe_out_in = plt.Circle(
+                (x_out, y_out), radius=self.r_in,
+                fill=False, linestyle='-', color=colors[i], lw=lw)
+            pipe_out_out = plt.Circle(
+                (x_out, y_out), radius=self.r_out,
+                fill=False, linestyle='-', color=colors[i], lw=lw)
+            ax.text(x_out, y_out, i + self.nPipes,
+                    ha="center", va="center")
 
             ax.add_patch(pipe_in_in)
             ax.add_patch(pipe_in_out)
             ax.add_patch(pipe_out_in)
             ax.add_patch(pipe_out_out)
 
-        # Configure figure axes
-        ax.set_xlabel('x (m)')
-        ax.set_ylabel('y (m)')
-        plt.axis('equal')
-        ax.xaxis.set_minor_locator(AutoMinorLocator())
-        ax.yaxis.set_minor_locator(AutoMinorLocator())
         plt.tight_layout()
 
         return fig

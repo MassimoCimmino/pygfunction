@@ -84,42 +84,36 @@ def main():
     # Plot fluid temperature profiles
     # -------------------------------------------------------------------------
 
-    plt.rc('figure')
-    fig = plt.figure()
+    # Configure figure and axes
+    fig = gt.utilities._initialize_figure()
+
     ax1 = fig.add_subplot(111)
     # Axis labels
-    ax1.set_xlabel(r'Temperature (degC)')
-    ax1.set_ylabel(r'Depth from borehole head (m)')
+    ax1.set_xlabel(r'Temperature [degC]')
+    ax1.set_ylabel(r'Depth from borehole head [m]')
+    gt.utilities._format_axes(ax1)
+
     # Plot temperatures
-    ax1.plot(T_f, z, 'k.', lw=1.5)
-    ax1.plot(np.array([T_b, T_b]), np.array([0., H]), 'k--', lw=1.5)
+    ax1.plot(T_f, z, 'k.')
+    ax1.plot(np.array([T_b, T_b]), np.array([0., H]), 'k--')
     # Labels
     calculated = mlines.Line2D([], [],
                                color='black',
                                ls='None',
-                               lw=1.5,
                                marker='.',
                                label='Fluid')
     borehole_temp = mlines.Line2D([], [],
                                   color='black',
                                   ls='--',
-                                  lw=1.5,
                                   marker='None',
                                   label='Borehole wall')
-
-    # Show minor ticks
-    ax1.xaxis.set_minor_locator(AutoMinorLocator())
-    ax1.yaxis.set_minor_locator(AutoMinorLocator())
-    # Reverse y-axis
-    ax1.set_ylim(ax1.get_ylim()[::-1])
-    # Adjust to plot window
     plt.tight_layout()
 
     # -------------------------------------------------------------------------
     # Load data from Cimmino (2016)
     # -------------------------------------------------------------------------
     data = np.loadtxt(filePath, skiprows=1)
-    ax1.plot(data[:,2:], data[:,0], 'b-', lw=1.5)
+    ax1.plot(data[:,2:], data[:,0], 'b-',)
     reference = mlines.Line2D([], [],
                               color='blue',
                               ls='-',
@@ -128,6 +122,10 @@ def main():
                               label='Cimmino (2016)')
     ax1.legend(handles=[borehole_temp, calculated, reference],
                loc='upper left')
+
+    # Reverse y-axis
+    ax1.set_ylim(ax1.get_ylim()[::-1])
+    # Adjust to plot window
 
     return
 

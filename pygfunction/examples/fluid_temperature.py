@@ -171,36 +171,35 @@ def main():
     # Plot hourly heat extraction rates and temperatures
     # -------------------------------------------------------------------------
 
-    plt.rc('figure')
-    fig = plt.figure()
+    # Configure figure and axes
+    fig = gt.utilities._initialize_figure()
 
     ax1 = fig.add_subplot(211)
     # Axis labels
-    ax1.set_xlabel(r'Time (hours)')
-    ax1.set_ylabel(r'Total heat extraction rate (W)')
-    hours = np.array([(j+1)*dt/3600. for j in range(Nt)])
+    ax1.set_xlabel(r'Time [hours]')
+    ax1.set_ylabel(r'Total heat extraction rate [W]')
+    gt.utilities._format_axes(ax1)
+
     # Plot heat extraction rates
-    ax1.plot(hours, Q, 'b-', lw=1.5)
+    hours = np.array([(j+1)*dt/3600. for j in range(Nt)])
+    ax1.plot(hours, Q)
 
     ax2 = fig.add_subplot(212)
     # Axis labels
-    ax2.set_xlabel(r'Time (hours)')
-    ax2.set_ylabel(r'Temperature (degC)')
+    ax2.set_xlabel(r'Time [hours]')
+    ax2.set_ylabel(r'Temperature [degC]')
+    gt.utilities._format_axes(ax2)
+
     # Plot temperatures
     ax2.plot(hours, T_b, 'k-', lw=1.5, label='Borehole wall')
-    ax2.plot(hours, T_f_out_single, 'b--', lw=1.5,
+    ax2.plot(hours, T_f_out_single, '--',
              label='Outlet, single U-tube')
-    ax2.plot(hours, T_f_out_double_par, 'r-.', lw=1.5,
+    ax2.plot(hours, T_f_out_double_par, '-.',
              label='Outlet, double U-tube (parallel)')
-    ax2.plot(hours, T_f_out_double_ser, 'g:', lw=1.5,
+    ax2.plot(hours, T_f_out_double_ser, ':',
              label='Outlet, double U-tube (series)')
     ax2.legend()
 
-    # Show minor ticks
-    ax1.xaxis.set_minor_locator(AutoMinorLocator())
-    ax1.yaxis.set_minor_locator(AutoMinorLocator())
-    ax2.xaxis.set_minor_locator(AutoMinorLocator())
-    ax2.yaxis.set_minor_locator(AutoMinorLocator())
     # Adjust to plot window
     plt.tight_layout()
 
@@ -229,42 +228,40 @@ def main():
                                                      m_flow,
                                                      cp_f)
 
-    plt.rc('figure')
-    fig = plt.figure()
+    # Configure figure and axes
+    fig = gt.utilities._initialize_figure()
 
     ax3 = fig.add_subplot(131)
     # Axis labels
-    ax3.set_xlabel(r'Temperature (degC)')
-    ax3.set_ylabel(r'Depth from borehole head (m)')
+    ax3.set_xlabel(r'Temperature [degC]')
+    ax3.set_ylabel(r'Depth from borehole head [m]')
+    gt.utilities._format_axes(ax3)
+
     # Plot temperatures
-    ax3.plot(T_f_single, z, 'b-', lw=1.5, label='Fluid')
-    ax3.plot(np.array([T_b[it], T_b[it]]), np.array([0., H]), 'k--', lw=1.5,
-             label='Borehole wall')
-    ax3.legend()
+    ax3.plot(np.array([T_b[it], T_b[it]]), np.array([0., H]), 'k--')
+    ax3.plot(T_f_single, z, 'b-')
+    ax3.legend(['Borehole wall', 'Fluid'])
 
     ax4 = fig.add_subplot(132)
     # Axis labels
-    ax4.set_xlabel(r'Temperature (degC)')
-    ax4.set_ylabel(r'Depth from borehole head (m)')
+    ax4.set_xlabel(r'Temperature [degC]')
+    ax4.set_ylabel(r'Depth from borehole head [m]')
+    gt.utilities._format_axes(ax4)
+
     # Plot temperatures
-    ax4.plot(T_f_double_par, z, 'b-', lw=1.5)
-    ax4.plot(np.array([T_b[it], T_b[it]]), np.array([0., H]), 'k--', lw=1.5)
+    ax4.plot(T_f_double_par, z, 'b-')
+    ax4.plot(np.array([T_b[it], T_b[it]]), np.array([0., H]), 'k--')
 
     ax5 = fig.add_subplot(133)
     # Axis labels
-    ax5.set_xlabel(r'Temperature (degC)')
-    ax5.set_ylabel(r'Depth from borehole head (m)')
-    # Plot temperatures
-    ax5.plot(T_f_double_ser, z, 'b-', lw=1.5)
-    ax5.plot(np.array([T_b[it], T_b[it]]), np.array([0., H]), 'k--', lw=1.5)
+    ax5.set_xlabel(r'Temperature [degC]')
+    ax5.set_ylabel(r'Depth from borehole head [m]')
+    gt.utilities._format_axes(ax5)
 
-    # Show minor ticks
-    ax3.xaxis.set_minor_locator(AutoMinorLocator())
-    ax3.yaxis.set_minor_locator(AutoMinorLocator())
-    ax4.xaxis.set_minor_locator(AutoMinorLocator())
-    ax4.yaxis.set_minor_locator(AutoMinorLocator())
-    ax5.xaxis.set_minor_locator(AutoMinorLocator())
-    ax5.yaxis.set_minor_locator(AutoMinorLocator())
+    # Plot temperatures
+    ax5.plot(T_f_double_ser, z, 'b-')
+    ax5.plot(np.array([T_b[it], T_b[it]]), np.array([0., H]), 'k--')
+
     # Reverse y-axes
     ax3.set_ylim(ax3.get_ylim()[::-1])
     ax4.set_ylim(ax4.get_ylim()[::-1])

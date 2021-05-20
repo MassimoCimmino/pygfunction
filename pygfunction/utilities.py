@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -143,3 +144,65 @@ def time_geometric(dt, tmax, Nt):
         time = np.array([dt*(j+1) for j in range(Nt)])
 
     return time
+
+
+def _initialize_figure():
+    """
+    Initialize a matplotlib figure object with overwritten default parameters.
+
+    Returns
+    -------
+    fig : figure
+        Figure object (matplotlib).
+
+    """
+    plt.rc('font', size=9)
+    plt.rc('xtick', labelsize=9)
+    plt.rc('ytick', labelsize=9)
+    plt.rc('lines', lw=1.5, markersize=5.0)
+    plt.rc('savefig', dpi=500)
+    fig = plt.figure()
+    return fig
+
+
+def _format_axes(ax):
+    """
+    Adjust axis parameters.
+
+    Parameters
+    ----------
+    ax : axis
+        Axis object (matplotlib).
+
+    """
+    from matplotlib.ticker import AutoMinorLocator
+    # Draw major and minor tick marks inwards
+    ax.tick_params(
+        axis='both', which='both', direction='in',
+        bottom=True, top=True, left=True, right=True)
+    # Auto-adjust minor tick marks
+    ax.xaxis.set_minor_locator(AutoMinorLocator())
+    ax.yaxis.set_minor_locator(AutoMinorLocator())
+    return
+
+
+def _format_axes_3d(ax):
+    """
+    Adjust axis parameters.
+
+    Parameters
+    ----------
+    ax : axis
+        Axis object (matplotlib).
+
+    """
+    from matplotlib.ticker import AutoMinorLocator
+    # Draw major and minor tick marks inwards
+    ax.tick_params(
+        axis='both', which='major', direction='in',
+        bottom=True, top=True, left=True, right=True)
+    # Auto-adjust minor tick marks
+    # ax.xaxis.set_minor_locator(AutoMinorLocator())
+    # ax.yaxis.set_minor_locator(AutoMinorLocator())
+    # ax.zaxis.set_minor_locator(AutoMinorLocator())
+    return
