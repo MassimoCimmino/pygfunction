@@ -1418,14 +1418,13 @@ class _BaseSolver(object):
         nSources = Q_reconstructed.shape[0]
         # Number of time steps
         nt = Q_reconstructed.shape[1]
-        # Borehole wall temperature
-        Tb_0 = np.zeros(nSources)
         # Spatial and temporal superpositions
         dQ = np.concatenate(
             (Q_reconstructed[:,0:1],
-             Q_reconstructed[:,1:]-Q_reconstructed[:,0:-1]), axis=1)
-        for it in range(nt):
-            Tb_0 += h_ij[:,:,it].dot(dQ[:,nt-it-1])
+             Q_reconstructed[:,1:] - Q_reconstructed[:,0:-1]), axis=1)[:,::-1]
+        # Borehole wall temperature
+        Tb_0 = np.einsum('ijk,jk', h_ij[:,:,:nt], dQ)
+        
         return Tb_0
 
     def load_history_reconstruction(self, time, Q):
