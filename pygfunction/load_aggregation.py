@@ -195,10 +195,14 @@ class ClaessonJaved(_LoadAggregation):
            :math:`T_b = T_g - \Delta T_b`.
 
         """
-        deltaT = self.dg[:,:,0].dot(self.Q[:,0])
-        for i in range(1, len(self._time)):
-            deltaT += (self.dg[:,:,i]).dot(self.Q[:,i])
-        return np.reshape(deltaT, (self.nSources, 1))
+        # Use numpy.einsum for spatial and temporal superposition
+        # This is equivalent to :
+        #    deltaT = self.dg[:,:,0].dot(self.Q[:,0])
+        #    for i in range(1, len(self._time)):
+        #        deltaT += (self.dg[:,:,i]).dot(self.Q[:,i])
+
+        deltaT = np.einsum('ijk,jk', self.dg, self.Q)
+        return deltaT
 
     def _build_cells(self, dt, tmax, nSources, cells_per_level):
         """
