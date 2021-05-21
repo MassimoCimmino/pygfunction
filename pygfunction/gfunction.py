@@ -75,11 +75,6 @@ class gFunction(object):
             nSegments : int, optional
                 Number of line segments used per borehole.
                 Default is 12.
-            processes : int, optional
-                Number of processors to use in calculations. If the value is
-                set to None, a number of processors equal to cpu_count() is
-                used.
-                Default is None.
             disp : bool, optional
                 Set to true to print progression messages.
                 Default is False.
@@ -93,7 +88,8 @@ class gFunction(object):
                 scipy.interpolate.interp1d.
                 Default is 'linear'.
             dtype : numpy dtype, optional
-                numpy data type used for matrices and vectors.
+                numpy data type used for matrices and vectors. Should be one of
+                numpy.single or numpy.double.
                 Default is numpy.double.
 
         The 'similarities' solver accepts the following method-specific
@@ -728,7 +724,7 @@ class gFunction(object):
 
 
 def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
-                            disTol=0.01, tol=1.0e-6, processes=None,
+                            disTol=0.01, tol=1.0e-6, dtype=np.double,
                             disp=False, **kwargs):
     """
     Evaluate the g-function with uniform heat extraction along boreholes.
@@ -757,10 +753,10 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
         Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
         Default is 1.0e-6.
-    processes : int, optional
-        Number of processors to use in calculations. If the value is set to
-        None, a number of processors equal to cpu_count() is used.
-        Default is None.
+    dtype : numpy dtype, optional
+        numpy data type used for matrices and vectors. Should be one of
+        numpy.single or numpy.double.
+        Default is numpy.double.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -793,7 +789,7 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
                'disp':disp,
                'disTol':disTol,
                'tol':tol,
-               'processes':processes,
+               'dtype':dtype,
                'disp':disp}
     # Select the correct solver:
     if use_similarities:
@@ -810,7 +806,7 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
 
 def uniform_temperature(boreholes, time, alpha, nSegments=12, kind='linear',
                         use_similarities=True, disTol=0.01, tol=1.0e-6,
-                        processes=None, disp=False, **kwargs):
+                        dtype=np.double, disp=False, **kwargs):
     """
     Evaluate the g-function with uniform borehole wall temperature.
 
@@ -846,10 +842,10 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, kind='linear',
         Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
         Default is 1.0e-6.
-    processes : int, optional
-        Number of processors to use in calculations. If the value is set to
-        None, a number of processors equal to cpu_count() is used.
-        Default is None.
+    dtype : numpy dtype, optional
+        numpy data type used for matrices and vectors. Should be one of
+        numpy.single or numpy.double.
+        Default is numpy.double.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -883,7 +879,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, kind='linear',
                'kind':kind,
                'disTol':disTol,
                'tol':tol,
-               'processes':processes,
+               'dtype':dtype,
                'disp':disp}
     # Select the correct solver:
     if use_similarities:
@@ -901,7 +897,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, kind='linear',
 def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
                             kind='linear', nSegments=12,
                             use_similarities=True, disTol=0.01, tol=1.0e-6,
-                            processes=None, disp=False, **kwargs):
+                            dtype=np.double, disp=False, **kwargs):
     """
     Evaluate the g-function with equal inlet fluid temperatures.
 
@@ -943,10 +939,10 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
         Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
         Default is 1.0e-6.
-    processes : int, optional
-        Number of processors to use in calculations. If the value is set to
-        None, a number of processors equal to cpu_count() is used.
-        Default is None.
+    dtype : numpy dtype, optional
+        numpy data type used for matrices and vectors. Should be one of
+        numpy.single or numpy.double.
+        Default is numpy.double.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -982,7 +978,7 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
                 'kind':kind,
                 'disTol':disTol,
                 'tol':tol,
-                'processes':processes,
+                'dtype':dtype,
                 'disp':disp}
     # Select the correct solver:
     if use_similarities:
@@ -1000,7 +996,7 @@ def equal_inlet_temperature(boreholes, UTubes, m_flow, cp, time, alpha,
 def mixed_inlet_temperature(network, m_flow, cp,
                             time, alpha, kind='linear', nSegments=12,
                             use_similarities=True, disTol=0.01, tol=1.0e-6,
-                            processes=None, disp=False, **kwargs):
+                            dtype=np.double, disp=False, **kwargs):
     """
     Evaluate the g-function with mixed inlet fluid temperatures.
 
@@ -1044,10 +1040,10 @@ def mixed_inlet_temperature(network, m_flow, cp,
         Relative tolerance on length and depth. Two lengths H1, H2
         (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
         Default is 1.0e-6.
-    processes : int, optional
-        Number of processors to use in calculations. If the value is set to
-        None, a number of processors equal to cpu_count() is used.
-        Default is None.
+    dtype : numpy dtype, optional
+        numpy data type used for matrices and vectors. Should be one of
+        numpy.single or numpy.double.
+        Default is numpy.double.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -1092,7 +1088,7 @@ def mixed_inlet_temperature(network, m_flow, cp,
                 'kind':kind,
                 'disTol':disTol,
                 'tol':tol,
-                'processes':processes,
+                'dtype':dtype,
                 'disp':disp}
     # Select the correct solver:
     if use_similarities:
@@ -1135,10 +1131,6 @@ class _BaseSolver(object):
     nSegments : int, optional
         Number of line segments used per borehole.
         Default is 12.
-    processes : int, optional
-        Number of processors to use in calculations. If the value is set to
-        None, a number of processors equal to cpu_count() is used.
-        Default is None.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -1151,12 +1143,13 @@ class _BaseSolver(object):
         factors. See documentation for scipy.interpolate.interp1d.
         Default is 'linear'.
     dtype : numpy dtype, optional
-        numpy data type used for matrices and vectors.
+        numpy data type used for matrices and vectors. Should be one of
+        numpy.single or numpy.double.
         Default is numpy.double.
 
     """
     def __init__(self, boreholes, network, time, boundary_condition,
-                 nSegments=12, processes=None, disp=False, profiles=False,
+                 nSegments=12, disp=False, profiles=False,
                  kind='linear', dtype=np.double, **other_options):
         self.boreholes = boreholes
         self.network = network
@@ -1164,7 +1157,6 @@ class _BaseSolver(object):
         self.time = np.atleast_1d(time).flatten()
         self.boundary_condition = boundary_condition
         self.nSegments = nSegments
-        self.processes = processes
         self.disp = disp
         self.profiles = profiles
         self.kind = kind
@@ -1503,9 +1495,6 @@ class _BaseSolver(object):
             "condition. \n" \
             "Please provide one of the following inputs : {}".format(
                 self.boundary_condition, acceptable_boundary_conditions)
-        assert (type(self.processes) is int and self.processes >= 1) or self.processes is None, \
-            "The number of processes 'processes' should be a positive int " \
-            "(>= 1)."
         assert type(self.disp) is bool, \
             "The option 'disp' should be set to True or False."
         assert type(self.profiles) is bool, \
@@ -1513,6 +1502,11 @@ class _BaseSolver(object):
         assert type(self.kind) is str, \
             "The option 'kind' should be set to a valid interpolation kind " \
             "in accordance with scipy.interpolate.interp1d options."
+        acceptable_dtypes = (np.single, np.double)
+        assert np.any([self.dtype is dtype for dtype in acceptable_dtypes]), \
+            "Data type \'{}\' is not an acceptable data type. \n" \
+            "Please provide one of the following inputs : {}".format(
+                self.dtype, acceptable_dtypes)
         return
 
 
@@ -1554,10 +1548,6 @@ class _Detailed(_BaseSolver):
     nSegments : int, optional
         Number of line segments used per borehole.
         Default is 12.
-    processes : int, optional
-        Number of processors to use in calculations. If the value is set to
-        None, a number of processors equal to cpu_count() is used.
-        Default is None.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -1570,7 +1560,8 @@ class _Detailed(_BaseSolver):
         factors. See documentation for scipy.interpolate.interp1d.
         Default is 'linear'.
     dtype : numpy dtype, optional
-        numpy data type used for matrices and vectors.
+        numpy data type used for matrices and vectors. Should be one of
+        numpy.single or numpy.double.
         Default is numpy.double.
 
     References
@@ -1730,10 +1721,6 @@ class _Similarities(_BaseSolver):
     nSegments : int, optional
         Number of line segments used per borehole.
         Default is 12.
-    processes : int, optional
-        Number of processors to use in calculations. If the value is set to
-        None, a number of processors equal to cpu_count() is used.
-        Default is None.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -1746,7 +1733,8 @@ class _Similarities(_BaseSolver):
         factors. See documentation for scipy.interpolate.interp1d.
         Default is 'linear'.
     dtype : numpy dtype, optional
-        numpy data type used for matrices and vectors.
+        numpy data type used for matrices and vectors. Should be one of
+        numpy.single or numpy.double.
         Default is numpy.double.
     disTol : float, optional
         Relative tolerance on radial distance. Two distances
