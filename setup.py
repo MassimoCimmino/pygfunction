@@ -22,6 +22,7 @@ setup(
     author="Massimo Cimmino",
     author_email="massimo.cimmino@polymtl.ca",
     description="A g-function calculator for Python",
+    long_description_content_type='text/markdown',
     long_description=read('README.md'),
     license="BSD-3-Clause",
     keywords="Geothermal, Ground-source, Ground heat exchangers",
