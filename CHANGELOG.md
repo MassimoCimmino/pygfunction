@@ -2,6 +2,8 @@
 
 ## Current version
 
+## Version 2.0.0 (2021-05-22)
+
 ### New features
 
 * [Issue 33](https://github.com/MassimoCimmino/pygfunction/issues/33), [Issue 54](https://github.com/MassimoCimmino/pygfunction/issues/54), [Issue 85](https://github.com/MassimoCimmino/pygfunction/issues/85) - New class `gFunction` for the calculation of g-functions. The new class is a common interface to all boundary conditions and calculation methods. The new implementation of the solver reduces the memory requirements of pygfunction. The new class implements visualization features for the g-function and for heat extraction rates and borehole wall temperatures (both as a function of time and for the profiles along the borehole lengths).
