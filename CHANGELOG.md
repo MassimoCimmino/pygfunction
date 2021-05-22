@@ -13,6 +13,7 @@
 * [Issue 78](https://github.com/MassimoCimmino/pygfunction/issues/78), [Issue 109](https://github.com/MassimoCimmino/pygfunction/issues/109) - Optimization of solvers for the calculation of g-functions. The finite line source (FLS) solution is now calculated using `scipy.integrate.quad_vec` which significantly improves calculation time over `scipy.integrate.quad`. The identification of similarities in the 'similarities' solver has also been refactored to identify similarities between boreholes as an intermediate step before identifying similarities between segments. The calculation time for the identification of similarities is significantly decreased.
 * [Issue 94](https://github.com/MassimoCimmino/pygfunction/issues/94) - Refactor visualization functions and methods to uniformize figure styles across modules.
 * [Issue 112](https://github.com/MassimoCimmino/pygfunction/issues/112) - Optimization of `_BaseSolver.temporal_superposition()`. The computationally expensive for loop is replaced by a call to `numpy.einsum()`. This decreases the calculation time of large bore fields.
+* [Issue 114](https://github.com/MassimoCimmino/pygfunction/issues/114) - Optimization of `_finite_line_source_integrand()`. The call to `_erfint()` is now vectorized. This decreases the number of calls by a factor 8 during integration. The calculation time of g-functions is decreased, especially for smaller bore fields.
 
 ### Bug fixes
 

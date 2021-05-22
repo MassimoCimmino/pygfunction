@@ -287,21 +287,35 @@ def _finite_line_source_integrand(dis, H1, D1, H2, D2, reaSource, imgSource):
     """
     if reaSource and imgSource:
         # Full (real + image) FLS solution
-        f = lambda s: 0.5 / (H2*s**2) * np.exp(-dis**2*s**2) * (
-            _erfint((D2 - D1 + H2)*s) - _erfint((D2 - D1)*s)
-            + _erfint((D2 - D1 - H1)*s) - _erfint((D2 - D1 + H2 - H1)*s)
-            + _erfint((D2 + D1 + H2)*s) - _erfint((D2 + D1)*s)
-            + _erfint((D2 + D1 + H1)*s) - _erfint((D2 + D1 + H2 + H1)*s) )
+        p = np.array([1, -1, 1, -1, 1, -1, 1, -1])
+        q = np.stack([D2 - D1 + H2,
+                      D2 - D1,
+                      D2 - D1 - H1,
+                      D2 - D1 + H2 - H1,
+                      D2 + D1 + H2,
+                      D2 + D1,
+                      D2 + D1 + H1,
+                      D2 + D1 + H2 + H1],
+                     axis=-1)
+        f = lambda s: 0.5 / (H2*s**2) * np.exp(-dis**2*s**2) * np.inner(p, _erfint(q*s))
     elif reaSource:
         # Real FLS solution
-        f = lambda s: 0.5 / (H2*s**2) * np.exp(-dis**2*s**2) * (
-            _erfint((D2 - D1 + H2)*s) - _erfint((D2 - D1)*s)
-            + _erfint((D2 - D1 - H1)*s) - _erfint((D2 - D1 + H2 - H1)*s) )
+        p = np.array([1, -1, 1, -1])
+        q = np.stack([D2 - D1 + H2,
+                      D2 - D1,
+                      D2 - D1 - H1,
+                      D2 - D1 + H2 - H1],
+                     axis=-1)
+        f = lambda s: 0.5 / (H2*s**2) * np.exp(-dis**2*s**2) * np.inner(p, _erfint(q*s))
     elif imgSource:
         # Image FLS solution
-        f = lambda s: 0.5 / (H2*s**2) * np.exp(-dis**2*s**2) * (
-            _erfint((D2 + D1 + H2)*s) - _erfint((D2 + D1)*s)
-            + _erfint((D2 + D1 + H1)*s) - _erfint((D2 + D1 + H2 + H1)*s) )
+        p = np.array([1, -1, 1, -1])
+        q = np.stack([D2 + D1 + H2,
+                      D2 + D1,
+                      D2 + D1 + H1,
+                      D2 + D1 + H2 + H1],
+                     axis=-1)
+        f = lambda s: 0.5 / (H2*s**2) * np.exp(-dis**2*s**2) * np.inner(p, _erfint(q*s))
     else:
         # No heat source
         f = lambda s: 0.
