@@ -156,12 +156,12 @@ class ClaessonJaved(_LoadAggregation):
 
         Parameters
         ----------
-        Q : array
+        Q : float or array
             Current value of heat extraction rates per unit borehole length
             (in watts per meter).
 
         """
-        self.Q[:,0:1] = Q
+        self.Q[:,0] = Q
 
     def temporal_superposition(self):
         """
