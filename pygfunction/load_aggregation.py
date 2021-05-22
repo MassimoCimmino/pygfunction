@@ -111,21 +111,7 @@ class ClaessonJaved(_LoadAggregation):
             Current value of time (in seconds).
 
         """
-        for i in range(len(self._time)-2, -1, -1):
-            # If the current time is greater than the time of cell (i+1),
-            # remove one unit from cell (i+1) and add one unit of cell (i)
-            # into cell (i+1).
-            if time > self._time[i+1]:
-                self.Q[:,i+1] = ((self._width[i+1] - 1)*self.Q[:,i+1]
-                                 + self.Q[:,i])/self._width[i+1]
-            # If the current time is greater than the time of cell (i) but less
-            # than the time of cell (i+1), add one unit of cell (i) into cell
-            # (i+1).
-            elif time > self._time[i]:
-                self.Q[:,i+1] = (self._width[i+1]*self.Q[:,i+1] + self.Q[:,i])\
-                            /self._width[i+1]
-        # Set the aggregated load of cell (0) to zero.
-        self.Q[:,0:1] = 0.
+        self.Q = self.Q @ self.A
 
     def get_thermal_response_factor_increment(self):
         """
@@ -170,12 +156,12 @@ class ClaessonJaved(_LoadAggregation):
 
         Parameters
         ----------
-        Q : array
+        Q : float or array
             Current value of heat extraction rates per unit borehole length
             (in watts per meter).
 
         """
-        self.Q[:,0:1] = Q
+        self.Q[:,0] = Q
 
     def temporal_superposition(self):
         """
@@ -195,10 +181,14 @@ class ClaessonJaved(_LoadAggregation):
            :math:`T_b = T_g - \Delta T_b`.
 
         """
-        deltaT = self.dg[:,:,0].dot(self.Q[:,0])
-        for i in range(1, len(self._time)):
-            deltaT += (self.dg[:,:,i]).dot(self.Q[:,i])
-        return np.reshape(deltaT, (self.nSources, 1))
+        # Use numpy.einsum for spatial and temporal superposition
+        # This is equivalent to :
+        #    deltaT = self.dg[:,:,0].dot(self.Q[:,0])
+        #    for i in range(1, len(self._time)):
+        #        deltaT += (self.dg[:,:,i]).dot(self.Q[:,i])
+
+        deltaT = np.einsum('ijk,jk', self.dg, self.Q)
+        return deltaT
 
     def _build_cells(self, dt, tmax, nSources, cells_per_level):
         """
@@ -222,7 +212,13 @@ class ClaessonJaved(_LoadAggregation):
         self._width = np.hstack((1,
                                  (self._time[1:] - self._time[:-1])/dt))
         # Initialize aggregated loads
-        self.Q = np.zeros((nSources, len(self._time)))
+        nt = len(self._time)
+        self.Q = np.zeros((nSources, nt))
+        # Matrix for time shifting of aggregated loads. For two consecutive
+        # time steps : Q(t+1) = Q(t) @ A
+        self.A = (1. - 1./self._width) * np.eye(nt) \
+            + np.diag(1./self._width[1:], k=1)
+        
 
 
 class MLAA(_LoadAggregation):

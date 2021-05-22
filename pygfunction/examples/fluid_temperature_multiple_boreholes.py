@@ -11,7 +11,6 @@
 """
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.ticker import AutoMinorLocator
 from scipy.constants import pi
 
 import pygfunction as gt
@@ -71,6 +70,7 @@ def main():
     dt = 3600.                  # Time step (s)
     tmax = 1.*8760. * 3600.     # Maximum time (s)
     Nt = int(np.ceil(tmax/dt))  # Number of time steps
+    time = dt * np.arange(1, Nt+1)
 
     # Load aggregation scheme
     LoadAgg = gt.load_aggregation.ClaessonJaved(dt, tmax)
@@ -119,20 +119,15 @@ def main():
     # Simulation
     # -------------------------------------------------------------------------
 
-    time = 0.
-    i = -1
+    # Evaluate heat extraction rate
+    Q_tot = nBoreholes*synthetic_load(time/3600.)
+
     T_b = np.zeros(Nt)
-    Q_tot = np.zeros(Nt)
     T_f_in = np.zeros(Nt)
     T_f_out = np.zeros(Nt)
-    while time < tmax:
+    for i in range(Nt):
         # Increment time step by (1)
-        time += dt
-        i += 1
-        LoadAgg.next_time_step(time)
-
-        # Evaluate heat extraction rate
-        Q_tot[i] = nBoreholes*synthetic_load(time/3600.)
+        LoadAgg.next_time_step(time[i])
 
         # Apply current load (in watts per meter of borehole)
         Q_b = Q_tot[i]/nBoreholes

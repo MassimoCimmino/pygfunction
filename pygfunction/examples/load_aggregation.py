@@ -9,7 +9,6 @@
 """
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.ticker import AutoMinorLocator
 from scipy.constants import pi
 from scipy.interpolate import interp1d
 from scipy.signal import fftconvolve
@@ -39,6 +38,10 @@ def main():
     dt = 3600.                  # Time step (s)
     tmax = 20.*8760. * 3600.    # Maximum time (s)
     Nt = int(np.ceil(tmax/dt))  # Number of time steps
+    time = dt * np.arange(1, Nt+1)
+
+    # Evaluate heat extraction rate
+    Q = synthetic_load(time/3600.)
 
     # Load aggregation scheme
     LoadAgg = gt.load_aggregation.ClaessonJaved(dt, tmax)
@@ -61,18 +64,10 @@ def main():
     # Simulation
     # -------------------------------------------------------------------------
 
-    time = 0.
-    i = -1
     T_b = np.zeros(Nt)
-    Q = np.zeros(Nt)
-    while time < tmax:
+    for i in range(Nt):
         # Increment time step by (1)
-        time += dt
-        i += 1
-        LoadAgg.next_time_step(time)
-
-        # Evaluate heat extraction rate
-        Q[i] = synthetic_load(time/3600.)
+        LoadAgg.next_time_step(time[i])
 
         # Apply current load
         LoadAgg.set_current_load(Q[i]/H)
@@ -89,7 +84,6 @@ def main():
     dQ = np.zeros(Nt)
     dQ[0] = Q[0]
     # Interpolated g-function
-    time = np.array([(j+1)*dt for j in range(Nt)])
     g = interp1d(time_req, gFunc)(time)
     for i in range(1, Nt):
         dQ[i] = Q[i] - Q[i-1]
@@ -160,7 +154,7 @@ def synthetic_load(x):
 
     y = func + (-1.0)**np.floor(D/8760.0*(x-B))*abs(func) \
       + E*(-1.0)**np.floor(D/8760.0*(x-B))/np.sign(np.cos(D*pi/4380.0*(x-F))+G)
-    return -np.array([y])
+    return -y
 
 
 # Main function
