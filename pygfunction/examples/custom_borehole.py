@@ -34,10 +34,16 @@ def main():
 
     # Fluid properties
     m_flow = 0.25  # Total fluid mass flow rate per borehole (kg/s)
-    cp_f = 3977.  # Fluid specific isobaric heat capacity (J/kg.K)
-    den_f = 1015.  # Fluid density (kg/m3)
-    visc_f = 0.00203  # Fluid dynamic viscosity (kg/m.s)
-    k_f = 0.492  # Fluid thermal conductivity (W/m.K)
+    mixer = 'MPG'  # Propylene glycol/water mixture
+    percent = 20.  # 20% of the mixture of propylene glycol
+    T = 20.  # Temperature of fluid (degrees C)
+    P = 101325.  # Gage pressure of the fluid (Pa)
+    fluid = gt.media.Fluid(mixer=mixer, percent=percent, T=T, P=P)
+
+    cp_f = fluid.cp  # Fluid specific isobaric heat capacity (J/kg.K)
+    den_f = fluid.rho  # Fluid density (kg/m3)
+    visc_f = fluid.mu  # Fluid dynamic viscosity (kg/m.s)
+    k_f = fluid.k  # Fluid thermal conductivity (W/m.K)
 
     # Pipe thermal resistance
     R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(rp_in,
