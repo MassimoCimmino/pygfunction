@@ -622,8 +622,8 @@ class _BasePipe(object):
     def _check_model_variables(self, m_flow, cp, nSegments, tol=1e-6):
         stored_m_flow_cp = self._m_flow_cp_model_variables
         stored_nSegments = self._nSegments_model_variables
-        if (np.allclose(m_flow*cp, stored_m_flow_cp, rtol=tol)
-                and nSegments == stored_nSegments):
+        if (np.all(np.abs(m_flow*cp - stored_m_flow_cp) < np.abs(stored_m_flow_cp)*tol)
+            and nSegments == stored_nSegments):
             check = True
         else:
             self._update_model_variables(m_flow, cp, nSegments)
@@ -636,8 +636,8 @@ class _BasePipe(object):
     def _check_coefficients(self, m_flow, cp, nSegments, method_id, tol=1e-6):
         stored_m_flow_cp = self._stored_m_flow_cp[method_id]
         stored_nSegments = self._stored_nSegments[method_id]
-        if (np.allclose(m_flow*cp, stored_m_flow_cp, rtol=tol)
-                and nSegments == stored_nSegments):
+        if (np.all(np.abs(m_flow*cp - stored_m_flow_cp) < np.abs(stored_m_flow_cp)*tol)
+            and nSegments == stored_nSegments):
             check = True
         else:
             check = False

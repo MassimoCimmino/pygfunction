@@ -858,8 +858,8 @@ class Network(object):
     def _check_coefficients(self, m_flow, cp, nSegments, method_id, tol=1e-6):
         stored_m_flow_cp = self._stored_m_flow_cp[method_id]
         stored_nSegments = self._stored_nSegments[method_id]
-        if (np.allclose(m_flow*cp, stored_m_flow_cp, rtol=tol)
-                and nSegments == stored_nSegments):
+        if (np.all(np.abs(m_flow*cp - stored_m_flow_cp) < np.abs(stored_m_flow_cp)*tol)
+            and nSegments == stored_nSegments):
             check = True
         else:
             check = False
