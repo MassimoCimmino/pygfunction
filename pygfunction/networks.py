@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
+from scipy.linalg import block_diag
 
 
 class Network(object):
@@ -75,6 +76,7 @@ class Network(object):
         self.iCircuit = iCircuit
 
         # Initialize stored_coefficients
+        self._initialize_coefficients_connectivity()
         self._initialize_stored_coefficients(m_flow, cp, nSegments)
 
     def get_inlet_temperature(self, Tin, Tb, m_flow, cp, nSegments):
@@ -387,14 +389,25 @@ class Network(object):
         else:
             # Update input variables
             self._format_inputs(m_flow, cp, nSegments)
-            B = [self.p[i].coefficients_outlet_temperature(
+            # Coefficient matrices for borehole inlet temperatures:
+            # [T_{f,b,in}] = [c_in]*[T_{f,n,in}] + [c_out]*[T_{f,b,out}]
+            c_in = self._c_in
+            c_out = self._c_out
+            # Coefficient matrices for borehole outlet temperatures:
+            # [T_{f,b,out}] = [A]*[T_{f,b,in}] + [B]*[T_{b}]
+            AB = [
+                self.p[i].coefficients_outlet_temperature(
                     self._m_flow_borehole[i],
                     self._cp_borehole[i],
                     self.nSegments[i])
-                 for i in range(self.nBoreholes)]
-            C = [(np.eye(1), np.zeros((1, self.nSegments[i])))
-                 for i in range(self.nBoreholes)]
-            a_in, a_b = self._network_coefficients_from_pipe_coefficients(B, C)
+                for i in range(self.nBoreholes)]
+            A = block_diag(*[ab[0] for ab in AB])
+            B = block_diag(*[ab[1] for ab in AB])
+            # Coefficient matrices for borehole inlet temperatures:
+            # [T_{f,b,in}] = [a_in]*[T_{f,n,in}] + [a_b]*[T_{b}]
+            ICA = np.eye(self.nBoreholes) - c_out @ A
+            a_in = np.linalg.solve(ICA, c_in)
+            a_b = np.linalg.solve(ICA, c_out @ B)
 
             # Store coefficients
             self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
@@ -445,13 +458,25 @@ class Network(object):
         else:
             # Update input variables
             self._format_inputs(m_flow, cp, nSegments)
-            B = [self.p[i].coefficients_outlet_temperature(
+            # Coefficient matrices for borehole inlet temperatures:
+            # [T_{f,b,in}] = [c_in]*[T_{f,n,in}] + [c_out]*[T_{f,b,out}]
+            c_in = self._c_in
+            c_out = self._c_out
+            # Coefficient matrices for borehole outlet temperatures:
+            # [T_{f,b,out}] = [A]*[T_{f,b,in}] + [B]*[T_{b}]
+            AB = [
+                self.p[i].coefficients_outlet_temperature(
                     self._m_flow_borehole[i],
                     self._cp_borehole[i],
                     self.nSegments[i])
-                 for i in range(self.nBoreholes)]
-            C = B
-            a_in, a_b = self._network_coefficients_from_pipe_coefficients(B, C)
+                for i in range(self.nBoreholes)]
+            A = block_diag(*[ab[0] for ab in AB])
+            B = block_diag(*[ab[1] for ab in AB])
+            # Coefficient matrices for borehole outlet temperatures:
+            # [T_{f,b,out}] = [a_in]*[T_{f,n,in}] + [a_b]*[T_{b}]
+            IAC = np.eye(self.nBoreholes) - A @ c_out
+            a_in = np.linalg.solve(IAC, A @ c_in)
+            a_b = np.linalg.solve(IAC, B)
 
             # Store coefficients
             self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
@@ -500,8 +525,12 @@ class Network(object):
         if self._check_coefficients(m_flow, cp, nSegments, method_id):
             a_qf, a_b = self._get_stored_coefficients(method_id)
         else:
+            # Coefficient matrices for network heat extraction rates:
+            # [Q_{tot}] = [b_in]*[T_{f,n,in}] + [b_b]*[T_{b}]
             b_in, b_b = self.coefficients_network_heat_extraction_rate(
                     m_flow, cp, nSegments)
+            # Coefficient matrices for network inlet temperature:
+            # [T_{f,n,in}] = [a_qf]*[Q_{tot}] + [a_b]*[T_{b}]
             b_in_inv = np.linalg.inv(b_in)
             a_qf = b_in_inv
             a_b = -b_in_inv.dot(b_b)
@@ -553,12 +582,14 @@ class Network(object):
         if self._check_coefficients(m_flow, cp, nSegments, method_id):
             a_in, a_b = self._get_stored_coefficients(method_id)
         else:
+            # Coefficient matrices for borehole outlet temperatures:
+            # [T_{f,b,out}] = [b_in]*[T_{f,n,in}] + [b_b]*[T_{b}]
             b_in, b_b = self.coefficients_outlet_temperature(m_flow, cp, nSegments)
-            iOutlets = self.iOutlets
-            m_flow = np.zeros((1,self.nBoreholes))
-            m_flow[0,iOutlets] = self._m_flow_in/np.sum(self._m_flow_in)
-            a_in = m_flow.dot(b_in)
-            a_b = m_flow.dot(b_b)
+            # Coefficient matrices for network outlet temperature:
+            # [T_{f,n,out}] = [a_in]*[T_{f,n,in}] + [a_b]*[T_{b}]
+            mix_out = self._coefficients_mixing(m_flow)
+            a_in = mix_out @ b_in
+            a_b = mix_out @ b_b
 
             # Store coefficients
             self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
@@ -610,17 +641,23 @@ class Network(object):
         else:
             # Update input variables
             self._format_inputs(m_flow, cp, nSegments)
-            B = [self.p[i].coefficients_outlet_temperature(
+            # Coefficient matrices for borehole inlet temperatures:
+            # [T_{f,b,in}] = [b_in]*[T_{f,n,in}] + [b_b]*[T_{b}]
+            b_in, b_b = self.coefficients_inlet_temperature(m_flow, cp, nSegments)
+            # Coefficient matrices for borehole heat extraction rates:
+            # [Q_{b}] = [A]*[T_{f,b,in}] + [B]*[T_{b}]
+            AB = [
+                self.p[i].coefficients_borehole_heat_extraction_rate(
                     self._m_flow_borehole[i],
                     self._cp_borehole[i],
                     self.nSegments[i])
-                 for i in range(self.nBoreholes)]
-            C = [self.p[i].coefficients_borehole_heat_extraction_rate(
-                    self._m_flow_borehole[i],
-                    self._cp_borehole[i],
-                    self.nSegments[i])
-                 for i in range(self.nBoreholes)]
-            a_in, a_b = self._network_coefficients_from_pipe_coefficients(B, C)
+                for i in range(self.nBoreholes)]
+            A = block_diag(*[ab[0] for ab in AB])
+            B = block_diag(*[ab[1] for ab in AB])
+            # Coefficient matrices for borehole heat extraction rates:
+            # [Q_{b}] = [a_in]*[T_{f,n,in}] + [a_b]*[T_{b}]
+            a_in = A @ b_in
+            a_b = A @ b_b + B
 
             # Store coefficients
             self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
@@ -671,17 +708,23 @@ class Network(object):
         else:
             # Update input variables
             self._format_inputs(m_flow, cp, nSegments)
-            B = [self.p[i].coefficients_outlet_temperature(
+            # Coefficient matrices for borehole inlet temperatures:
+            # [T_{f,b,in}] = [b_in]*[T_{f,n,in}] + [b_b]*[T_{b}]
+            b_in, b_b = self.coefficients_inlet_temperature(m_flow, cp, nSegments)
+            # Coefficient matrices for fluid heat extraction rates:
+            # [Q_{f}] = [A]*[T_{f,b,in}] + [B]*[T_{b}]
+            AB = [
+                self.p[i].coefficients_fluid_heat_extraction_rate(
                     self._m_flow_borehole[i],
                     self._cp_borehole[i],
                     self.nSegments[i])
-                 for i in range(self.nBoreholes)]
-            C = [self.p[i].coefficients_fluid_heat_extraction_rate(
-                    self._m_flow_borehole[i],
-                    self._cp_borehole[i],
-                    self.nSegments[i])
-                 for i in range(self.nBoreholes)]
-            a_in, a_b = self._network_coefficients_from_pipe_coefficients(B, C)
+                for i in range(self.nBoreholes)]
+            A = block_diag(*[ab[0] for ab in AB])
+            B = block_diag(*[ab[1] for ab in AB])
+            # Coefficient matrices for fluid heat extraction rates:
+            # [Q_{f}] = [a_in]*[T_{f,n,in}] + [a_b]*[T_{b}]
+            a_in = A @ b_in
+            a_b = A @ b_b + B
 
             # Store coefficients
             self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
@@ -730,10 +773,13 @@ class Network(object):
         if self._check_coefficients(m_flow, cp, nSegments, method_id):
             a_in, a_b = self._get_stored_coefficients(method_id)
         else:
-            # The total network heat extraction rate is the some of heat
-            # extraction rates from all boreholes
+            # Coefficient matrices for fluid heat extraction rates:
+            # [Q_{f}] = [b_in]*[T_{f,n,in}] + [b_b]*[T_{b}]
             b_in, b_b = self.coefficients_fluid_heat_extraction_rate(
                     m_flow, cp, nSegments)
+            # The total network heat extraction rate is the sum of heat
+            # extraction rates from all boreholes:
+            # [Q_{tot}] = [a_in]*[T_{f,n,in}] + [a_b]*[T_{b}]
             a_in = np.reshape(np.sum(b_in, axis=0), (1,-1))
             a_b = np.reshape(np.sum(b_b, axis=0), (1,-1))
 
@@ -743,82 +789,55 @@ class Network(object):
 
         return a_in, a_b
 
-    def _network_coefficients_from_pipe_coefficients(self,
-            coefficients_outlet_temperature,
-            coefficients_output_variable):
+    def _coefficients_mixing(self, m_flow):
         """
-        Build network coefficient matrices from list of pipe coefficients
-        for the outlet temperatures and for the desired variable.
+        Returns coefficients for the relation:
 
-        This class method builds the coefficient matrices (a_in, a_b) of the
-        system:
+            .. math::
 
-            [Desired_variable(network)] = [a_in]*T_{in,network} + [a_b]*[T_b]
-
-        from the coefficients (b_in, b_b) and (c_in, c_b) of the systems:
-
-            T_{out,borehole} = [b_in]*T_{in,borehole} + [b_b]*[T_b]
-
-            [Desired_variable(borehole)] = [c_in]*T_{in,borehole} + [c_b]*[T_b]
+                T_{f,network,out} =
+                \\mathbf{a_{out}} \\mathbf{T_{f,borehole,out}}
 
         Parameters
         ----------
-        coefficients_outlet_temperature : list of tuples of arrays
-            List of tuples of coefficients (a_in, a_b) for outlet temperature
-            of the boreholes from the pipe objects.
-        coefficients_output_variable : list of tuples of arrays
-            List of tuples of coefficients (a_in, a_b) for the desired variable
-            from the pipe objects.
+        m_flow : float or array
+            Total mass flow rate into the network or inlet mass flow rates
+            into each circuit of the network (in kg/s). If a float is supplied,
+            the total mass flow rate is split equally into all circuits.
 
         Returns
         -------
-        a_in : array
-            Array of coefficients for inlet fluid temperature.
-        a_b : array
-            Array of coefficients for borehole wall temperatures.
+        mix_out : array
+            Array of coefficients for outlet fluid temperatures of all
+            boreholes.
 
         """
-        # Initialize lists of coefficients (A_in, A_b) for the desired
-        # variable
-        A_in = [np.zeros((np.shape(coefficients_output_variable[i][0])[0], 1)) for i in range(self.nBoreholes)]
-        A_b = [[np.zeros((np.shape(coefficients_output_variable[i][1])[0], self.nSegments[j])) for j in range(self.nBoreholes)] for i in range(self.nBoreholes)]
+        if not self._check_mixing_coefficients(m_flow):
+            self._mix_out = np.zeros((1, self.nBoreholes))
+            self._mix_out[0, self.iOutlets] = self._m_flow_in/np.sum(self._m_flow_in)
+            self._mixing_m_flow = m_flow
+        return self._mix_out
 
-        # Solve each circuit independently
-        for iOutlet in self.iOutlets:
-            # Identify path from inlet to outlet of current circuit
-            outlet_to_inlet = _path_to_inlet(self.c, iOutlet)
-            inlet_to_outlet = outlet_to_inlet[::-1]
-            iInlet = inlet_to_outlet[0]
-            # For boreholes connected to the network inlet, the coefficient
-            # sub-matrices of (a_in, a_b) are equal to (c_in, c_c)
-            A_in[iInlet] = coefficients_output_variable[iInlet][0]
-            A_b[iInlet][iInlet] = coefficients_output_variable[iInlet][1]
-            b_in_previous = coefficients_outlet_temperature[iInlet][0]
+    def _initialize_coefficients_connectivity(self):
+        """
+        Initializes coefficients for the relation:
 
-            # Progress towards outlet:
-            # The value of the desired variable for any given borehole is
-            # dependent on the inlet fluid temperature of the network and the
-            # borehole wall temperatures of all boreholes in the path from the
-            # given borehole to the inlet.
-            for i in inlet_to_outlet[1:]:
-                b_in_current = coefficients_outlet_temperature[i][0]
-                c_in = coefficients_output_variable[i][0]
-                A_in[i] = c_in.dot(b_in_previous)
-                b_in_previous = b_in_current.dot(b_in_previous)
+            .. math::
 
-                A_b[i][i] = coefficients_output_variable[i][1]
+                \\mathbf{T_{f,borehole,in}} =
+                \\mathbf{c_{in}} T_{f,network,in}
+                + \\mathbf{c_{out}} \\mathbf{T_{f,borehole,out}}
 
-                path_to_inlet = _path_to_inlet(self.c, i)
-                d_in_previous = np.ones((1,1))
-                for j in path_to_inlet[1:]:
-                    b_in_current = coefficients_outlet_temperature[j][0]
-                    b_b_current = coefficients_outlet_temperature[j][1]
-                    A_b[i][j] = np.linalg.multi_dot([c_in, d_in_previous, b_b_current])
-                    d_in_previous = b_in_current.dot(d_in_previous)
-        a_in = np.vstack(A_in)
-        a_b = np.block(A_b)
-
-        return a_in, a_b
+        """
+        self._c_in = np.zeros((self.nBoreholes, 1))
+        self._c_out = np.zeros((self.nBoreholes, self.nBoreholes))
+        for i in range(self.nInlets):
+            self._c_in[self.iInlets[i], 0] = 1.
+        for i in range(self.nBoreholes):
+            if not self.c[i] == -1:
+                self._c_out[i, self.c[i]] = 1.
+            
+        return
 
     def _initialize_stored_coefficients(self, m_flow, cp, nSegments):
         nMethods = 7    # Number of class methods
@@ -828,6 +847,8 @@ class Network(object):
         self._stored_nSegments = [np.nan for i in range(nMethods)]
         self._m_flow_cp_model_variables = np.empty(self.nInlets)
         self._nSegments_model_variables = np.nan
+        self._mixing_m_flow = np.empty(self.nInlets)
+        self._mix_out = np.empty((self.nBoreholes, 1))
 
         # If m_flow, cp, and nSegments are specified, evaluate and store all
         # matrix coefficients.
@@ -854,6 +875,15 @@ class Network(object):
         coefficients = self._stored_coefficients[method_id]
 
         return coefficients
+
+    def _check_mixing_coefficients(self, m_flow, tol=1e-6):
+        mixing_m_flow = self._mixing_m_flow
+        if np.all(np.abs(m_flow - mixing_m_flow) < np.abs(mixing_m_flow)*tol):
+            check = True
+        else:
+            check = False
+
+        return check
 
     def _check_coefficients(self, m_flow, cp, nSegments, method_id, tol=1e-6):
         stored_m_flow_cp = self._stored_m_flow_cp[method_id]
