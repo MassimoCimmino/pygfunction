@@ -39,7 +39,15 @@ class Network(object):
         Number of line segments used per borehole. This parameter is used to
         initialize the coefficients if it is provided.
         Default is None.
-    
+
+    Notes
+    -----
+    The expected array shapes of input parameters and outputs are documented
+    for each class method. `nInlets` and `nOutlets` are the number of inlets
+    and outlets to the network, and both correspond to the number of parallel
+    circuits. `nTotalSegments` is the sum of the number of discretized segments
+    along every borehole. `nBoreholes` is the total number of boreholes in the
+    network.
 
     References
     ----------

@@ -24,6 +24,16 @@ class _BasePipe(object):
     nOutlets : int
         Total number of pipe outlets, equals to 1.
 
+    Notes
+    -----
+    The expected array shapes of input parameters and outputs are documented
+    for each class method. `nInlets` and `nOutlets` are the number of inlets
+    and outlets to the borehole, and both correspond to the number of
+    independent parallel pipes. `nSegments` is the number of discretized
+    segments along the borehole. `nPipes` is the number of pipes (i.e. the
+    number of U-tubes) in the borehole. `nDepths` is the number of depths at
+    which temperatures are evaluated.
+
     """
     def __init__(self, borehole):
         self.b = borehole
@@ -784,6 +794,16 @@ class SingleUTube(_BasePipe):
     nOutlets : int
         Total number of pipe outlets, equals to 1.
 
+    Notes
+    -----
+    The expected array shapes of input parameters and outputs are documented
+    for each class method. `nInlets` and `nOutlets` are the number of inlets
+    and outlets to the borehole, and both are equal to 1 for a single U-tube
+    borehole. `nSegments` is the number of discretized segments along the
+    borehole. `nPipes` is the number of pipes (i.e. the number of U-tubes) in
+    the borehole, equal to 1. `nDepths` is the number of depths at which
+    temperatures are evaluated.
+
     References
     ----------
     .. [#Hellstrom1991] Hellstrom, G. (1991). Ground heat storage. Thermal
@@ -1170,6 +1190,16 @@ class MultipleUTube(_BasePipe):
         Total number of pipe inlets, equals to 1.
     nOutlets : int
         Total number of pipe outlets, equals to 1.
+
+    Notes
+    -----
+    The expected array shapes of input parameters and outputs are documented
+    for each class method. `nInlets` and `nOutlets` are the number of inlets
+    and outlets to the borehole, and both are equal to 1 for a multiple U-tube
+    borehole. `nSegments` is the number of discretized segments along the
+    borehole. `nPipes` is the number of pipes (i.e. the number of U-tubes) in
+    the borehole. `nDepths` is the number of depths at which temperatures are
+    evaluated.
 
     References
     ----------
@@ -1583,6 +1613,16 @@ class IndependentMultipleUTube(MultipleUTube):
         Total number of pipe inlets, equals to nPipes.
     nOutlets : int
         Total number of pipe outlets, equals to nPipes.
+
+    Notes
+    -----
+    The expected array shapes of input parameters and outputs are documented
+    for each class method. `nInlets` and `nOutlets` are the number of inlets
+    and outlets to the borehole, and both are equal to the number of pipes.
+    `nSegments` is the number of discretized segments along the borehole.
+    `nPipes` is the number of pipes (i.e. the number of U-tubes) in the
+    borehole. `nDepths` is the number of depths at which temperatures are
+    evaluated.
 
     References
     ----------
