@@ -1742,6 +1742,9 @@ class IndependentMultipleUTube(MultipleUTube):
         # Format mass flow rate inputs
         # Mass flow rate in each fluid circuit
         m_flow_in = np.atleast_1d(m_flow)
+        if not len(m_flow_in) == self.nInlets:
+            raise ValueError(
+                'Incorrect length of mass flow vector.')
         self._m_flow_in = m_flow_in
         # Mass flow rate in pipes
         m_flow_pipe = np.tile(m_flow_in, 2)
@@ -1750,6 +1753,11 @@ class IndependentMultipleUTube(MultipleUTube):
         # Format heat capacity inputs
         # Heat capacity in each fluid circuit
         cp_in = np.atleast_1d(cp)
+        if len(cp_in) == 1:
+            cp_in = np.tile(cp, self.nInlets)
+        elif not len(cp_in) == self.nInlets:
+            raise ValueError(
+                'Incorrect length of heat capacity vector.')
         self._cp_in = cp_in
         # Heat capacity in pipes
         cp_pipe = np.tile(cp_in, 2)
