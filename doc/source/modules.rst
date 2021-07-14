@@ -7,11 +7,11 @@ Modules
 .. toctree::
    :maxdepth: 2
 
-   boreholes
-   gfunction
-   heat_transfer
-   load_aggregation
-   media
-   networks
-   pipes
-   utilities
+   modules/boreholes
+   modules/gfunction
+   modules/heat_transfer
+   modules/load_aggregation
+   modules/media
+   modules/networks
+   modules/pipes
+   modules/utilities
