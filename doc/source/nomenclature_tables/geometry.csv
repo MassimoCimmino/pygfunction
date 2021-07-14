@@ -2,5 +2,7 @@ Parameter,Units,Description
 H,m,Borehole length
 D,m,Borehole burial depth
 r_b,m,Borehole radius
+x,m,Position of borehole in x-axis
+y,m,Position of borehole in y-axis
 r_in,m,Inner radius of pipe
 r_out ,m,Outer radius of pipe

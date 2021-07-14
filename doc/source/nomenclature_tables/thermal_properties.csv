@@ -1,9 +1,0 @@
-Parameter,Units,Description
-k,W/m.K,Thermal conductivity
-alpha,m2/s,Soil thermal diffusivity
-cp,J/kg.degC,Fluid specific isobaric heat capacity
-m_flow_borehole,kg/s,Mass flow rate to each borehole
-m_flow_network,kg/s,Mass flow rate of the network
-h,-,Value of the dimensionless FLS solution
-time,seconds,Value of time in seconds
-R_fp,m-K/W,Fluid to pipe wall thermal resistance

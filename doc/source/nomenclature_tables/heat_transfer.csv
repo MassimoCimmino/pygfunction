@@ -1,0 +1,4 @@
+Parameter,Units,Description
+time,s,The time in seconds
+alpha,m2/s,Soil thermal diffusivity
+h,,Value of the dimensionless FLS solution
