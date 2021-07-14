@@ -8,11 +8,11 @@ Nomenclature
    :maxdepth: 2
    
 
-Borehole geometry
+Geometry
 ==================
 
  
-.. csv-table:: Borehole geometry
+.. csv-table:: 
    :file: nomenclature_tables/geometry.csv
    :widths: 30, 30, 70
    :header-rows: 1
@@ -20,7 +20,7 @@ Borehole geometry
 Thermal properties
 ===================
    
-.. csv-table:: Thermal properties
+.. csv-table:: 
    :file: nomenclature_tables/thermal_properties.csv 
    :widths: 30, 30, 70
    :header-rows: 1
