@@ -8,7 +8,7 @@ Nomenclature
    :maxdepth: 1
 
  
-.. csv-table:: Variables used in pygfunction
-   :file: nomenclature.csv
+.. csv-table:: Borehole geometry
+   :file: nomenclature_tables/borehole_geometry.csv
    :widths: 30, 30, 70
    :header-rows: 1
