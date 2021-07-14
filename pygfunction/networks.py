@@ -12,7 +12,7 @@ class Network(object):
     characteristics of the pipes and the grout material in each boreholes, the
     topology of the connections between boreholes, as well as methods to
     evaluate fluid temperatures and heat extraction rates based on the work of
-    Cimmino [#Cimmino2018]_.
+    Cimmino (2018, 2019) [#Network-Cimmin2018]_, [#Network-Cimmin2019]_.
 
     Attributes
     ----------
@@ -31,23 +31,34 @@ class Network(object):
         the total mass flow rate is split equally into all circuits. This
         parameter is used to initialize the coefficients if it is provided.
         Default is None.
-    cp : float or array, optional
-        Fluid specific isobaric heat capacity (in J/kg.degC). ust be the same
-        for all circuits (a single float can be supplied). This parameter is
+    cp : float, optional
+        Fluid specific isobaric heat capacity (in J/kg.degC). This parameter is
         used to initialize the coefficients if it is provided.
         Default is None.
     nSegments : int, optional
         Number of line segments used per borehole. This parameter is used to
         initialize the coefficients if it is provided.
         Default is None.
-    
+
+    Notes
+    -----
+    The expected array shapes of input parameters and outputs are documented
+    for each class method. `nInlets` and `nOutlets` are the number of inlets
+    and outlets to the network, and both correspond to the number of parallel
+    circuits. `nTotalSegments` is the sum of the number of discretized segments
+    along every borehole. `nBoreholes` is the total number of boreholes in the
+    network.
 
     References
     ----------
-    .. [#Cimmino2018] Cimmino, M. (2018). g-Functions for bore fields with
+    .. [#Network-Cimmin2018] Cimmino, M. (2018). g-Functions for bore fields with
        mixed parallel and series connections considering the axial fluid
        temperature variations. Proceedings of the IGSHPA Sweden Research Track
        2018. Stockholm, Sweden. pp. 262-270.
+    .. [#Network-Cimmin2019] Cimmino, M. (2019). Semi-analytical method for
+       g-function calculation of bore fields with series- and
+       parallel-connected boreholes. Science and Technology for the Built
+       Environment, 25 (8), 1007-1022.
 
     """
     def __init__(self, boreholes, pipes, bore_connectivity=None, m_flow=None,
@@ -85,18 +96,17 @@ class Network(object):
 
         Parameters
         ----------
-        Tin : float or array
+        Tin : float or (1,) array
             Inlet fluid temperatures into network (in Celsius).
-        Tb : float or array
+        Tb : float or (nTotalSegments,) array
             Borehole wall temperatures (in Celsius). If a float is supplied,
             the same temperature is applied to all segments of all boreholes.
-        m_flow : float or array
+        m_flow : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
-        cp : float or array
+        cp : float
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -104,7 +114,7 @@ class Network(object):
 
         Returns
         -------
-        Tin : array
+        Tin : (nBoreholes,) array
             Inlet fluid temperature (in Celsius) into each borehole.
 
         """
@@ -114,7 +124,7 @@ class Network(object):
         # Evaluate outlet temperatures
         if np.isscalar(Tb):
             Tb = np.tile(Tb, sum(self.nSegments))
-        Tin_borehole = a_in.dot(Tin).flatten() + a_b.dot(Tb).flatten()
+        Tin_borehole = a_in @ np.atleast_1d(Tin) + a_b @ Tb
         return Tin_borehole
 
     def get_outlet_temperature(self, Tin, Tb, m_flow, cp, nSegments):
@@ -123,18 +133,17 @@ class Network(object):
 
         Parameters
         ----------
-        Tin : float or array
+        Tin : float or (1,) array
             Inlet fluid temperatures into network (in Celsius).
-        Tb : float or array
+        Tb : float or (nTotalSegments,) array
             Borehole wall temperatures (in Celsius). If a float is supplied,
             the same temperature is applied to all segments of all boreholes.
-        m_flow : float or array
+        m_flow : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
-        cp : float or array
+        cp : float
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -142,7 +151,7 @@ class Network(object):
 
         Returns
         -------
-        Tout : array
+        Tout : (nBoreholes,) array
             Outlet fluid temperatures (in Celsius) from each borehole.
 
         """
@@ -152,7 +161,7 @@ class Network(object):
         # Evaluate outlet temperatures
         if np.isscalar(Tb):
             Tb = np.tile(Tb, sum(self.nSegments))
-        Tout = a_in.dot(Tin).flatten() + a_b.dot(Tb).flatten()
+        Tout = a_in @ np.atleast_1d(Tin) + a_b @ Tb
         return Tout
 
     def get_borehole_heat_extraction_rate(self, Tin, Tb, m_flow, cp, nSegments):
@@ -161,18 +170,17 @@ class Network(object):
 
         Parameters
         ----------
-        Tin : float or array
+        Tin : float or (1,) array
             Inlet fluid temperatures into network (in Celsius).
-        Tb : float or array
+        Tb : float or (nTotalSegments,) array
             Borehole wall temperatures (in Celsius). If a float is supplied,
             the same temperature is applied to all segments of all boreholes.
-        m_flow : float or array
+        m_flow : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
-        cp : float or array
+        cp : float
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -180,7 +188,7 @@ class Network(object):
 
         Returns
         -------
-        Qb : float or array
+        Qb : (nTotalSegments,) array
             Heat extraction rates along each borehole segment (in Watts).
 
         """
@@ -188,7 +196,7 @@ class Network(object):
                 m_flow, cp, nSegments)
         if np.isscalar(Tb):
             Tb = np.tile(Tb, sum(self.nSegments))
-        Qb = a_in.dot(Tin).flatten() + a_b.dot(Tb).flatten()
+        Qb = a_in @ np.atleast_1d(Tin) + a_b @ Tb
 
         return Qb
 
@@ -198,18 +206,17 @@ class Network(object):
 
         Parameters
         ----------
-        Tin : float or array
+        Tin : float or (1,) array
             Inlet fluid temperatures into network (in Celsius).
-        Tb : float or array
+        Tb : float or (nTotalSegments,) array
             Borehole wall temperatures (in Celsius). If a float is supplied,
             the same temperature is applied to all segments of all boreholes.
-        m_flow : float or array
+        m_flow : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
-        cp : float or array
+        cp : float
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -217,7 +224,7 @@ class Network(object):
 
         Returns
         -------
-        Qf : float or array
+        Qf : (nBoreholes,) array
             Total heat extraction rates from each borehole (in Watts).
 
         """
@@ -225,7 +232,7 @@ class Network(object):
                 m_flow, cp, nSegments)
         if np.isscalar(Tb):
             Tb = np.tile(Tb, sum(self.nSegments))
-        Qf = a_in.dot(Tin).flatten() + a_b.dot(Tb).flatten()
+        Qf = a_in @ np.atleast_1d(Tin) + a_b @ Tb
 
         return Qf
 
@@ -235,18 +242,17 @@ class Network(object):
 
         Parameters
         ----------
-        Qt : float or array
+        Qt : float or (1,) array
             Total heat extraction rate from the network (in Watts).
-        Tb : float or array
+        Tb : float or (nTotalSegments,) array
             Borehole wall temperatures (in Celsius). If a float is supplied,
             the same temperature is applied to all segments of all boreholes.
-        m_flow : float or array
+        m_flow : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
-        cp : float or array
+        cp : float
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -254,19 +260,20 @@ class Network(object):
 
         Returns
         -------
-        Tin : float or array
-            Inlet fluid temperature (in Celsius) into the network.
+        Tin : float or (1,) array
+            Inlet fluid temperature (in Celsius) into the network. The returned
+            type corresponds to the type of the parameter `Qt`.
 
         """
         # Build coefficient matrices
-        a_in, a_b = self.coefficients_network_inlet_temperature(
+        a_q, a_b = self.coefficients_network_inlet_temperature(
                 m_flow, cp, nSegments)
         # Evaluate outlet temperatures
         if np.isscalar(Tb):
             Tb = np.tile(Tb, sum(self.nSegments))
-        Tin = a_in.dot(Qt).flatten() + a_b.dot(Tb).flatten()
+        Tin = a_q @ np.atleast_1d(Qt) + a_b @ Tb
         if np.isscalar(Qt):
-            Tin = np.asscalar(Tin)
+            Tin = Tin.item()
         return Tin
 
     def get_network_outlet_temperature(self, Tin, Tb, m_flow, cp, nSegments):
@@ -275,18 +282,17 @@ class Network(object):
 
         Parameters
         ----------
-        Tin : float or array
+        Tin : float or (1,) array
             Inlet fluid temperatures into network (in Celsius).
-        Tb : float or array
+        Tb : float or (nTotalSegments,) array
             Borehole wall temperatures (in Celsius). If a float is supplied,
             the same temperature is applied to all segments of all boreholes.
-        m_flow : float or array
+        m_flow : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
-        cp : float or array
+        cp : float
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -294,8 +300,9 @@ class Network(object):
 
         Returns
         -------
-        Tout : float or array
-            Outlet fluid temperature (in Celsius) from the network.
+        Tout : float or (1,) array
+            Outlet fluid temperature (in Celsius) from the network. The
+            returned type corresponds to the type of the parameter `Tin`.
 
         """
         # Build coefficient matrices
@@ -304,9 +311,9 @@ class Network(object):
         # Evaluate outlet temperatures
         if np.isscalar(Tb):
             Tb = np.tile(Tb, sum(self.nSegments))
-        Tout = a_in.dot(Tin).flatten() + a_b.dot(Tb).flatten()
+        Tout = a_in @ np.atleast_1d(Tin) + a_b @ Tb
         if np.isscalar(Tin):
-            Tout = np.asscalar(Tout)
+            Tout = Tout.item()
         return Tout
 
     def get_network_heat_extraction_rate(self, Tin, Tb, m_flow, cp, nSegments):
@@ -315,18 +322,17 @@ class Network(object):
 
         Parameters
         ----------
-        Tin : float or array
+        Tin : float or (1,) array
             Inlet fluid temperatures into network (in Celsius).
-        Tb : float or array
+        Tb : float or (nTotalSegments,) array
             Borehole wall temperatures (in Celsius). If a float is supplied,
             the same temperature is applied to all segments of all boreholes.
-        m_flow : float or array
+        m_flow : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
-        cp : float or array
+        cp : float
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -334,15 +340,18 @@ class Network(object):
 
         Returns
         -------
-        Qt : float or array
-            Heat extraction rate of the network (in Watts).
+        Qt : float or (1,) array
+            Heat extraction rate of the network (in Watts). The returned type
+            corresponds to the type of the parameter `Tin`.
 
         """
         a_in, a_b = self.coefficients_network_heat_extraction_rate(
                 m_flow, cp, nSegments)
         if np.isscalar(Tb):
             Tb = np.tile(Tb, sum(self.nSegments))
-        Qt = a_in.dot(Tin).flatten() + a_b.dot(Tb).flatten()
+        Qt = a_in @ np.atleast_1d(Tin) + a_b @ Tb
+        if np.isscalar(Tin):
+            Qt = Qt.item()
 
         return Qt
 
@@ -361,13 +370,12 @@ class Network(object):
 
         Parameters
         ----------
-        m_flow : float or array
+        m_flow : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
-        cp : float or array
+        cp : float
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -375,9 +383,9 @@ class Network(object):
 
         Returns
         -------
-        a_in : array
+        a_in : (nBoreholes, 1,) array
             Array of coefficients for inlet fluid temperature.
-        a_b : array
+        a_b : (nBoreholes, nTotalSegments,) array
             Array of coefficients for borehole wall temperatures.
 
         """
@@ -395,14 +403,14 @@ class Network(object):
             c_out = self._c_out
             # Coefficient matrices for borehole outlet temperatures:
             # [T_{f,b,out}] = [A]*[T_{f,b,in}] + [B]*[T_{b}]
-            AB = [
+            AB = list(zip(*[
                 self.p[i].coefficients_outlet_temperature(
                     self._m_flow_borehole[i],
                     self._cp_borehole[i],
                     self.nSegments[i])
-                for i in range(self.nBoreholes)]
-            A = block_diag(*[ab[0] for ab in AB])
-            B = block_diag(*[ab[1] for ab in AB])
+                for i in range(self.nBoreholes)]))
+            A = block_diag(*AB[0])
+            B = block_diag(*AB[1])
             # Coefficient matrices for borehole inlet temperatures:
             # [T_{f,b,in}] = [a_in]*[T_{f,n,in}] + [a_b]*[T_{b}]
             ICA = np.eye(self.nBoreholes) - c_out @ A
@@ -430,13 +438,12 @@ class Network(object):
 
         Parameters
         ----------
-        m_flow : float or array
+        m_flow : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
-        cp : float or array
+        cp : float
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -444,9 +451,9 @@ class Network(object):
 
         Returns
         -------
-        a_in : array
+        a_in : (nBoreholes, 1,) array
             Array of coefficients for inlet fluid temperature.
-        a_b : array
+        a_b : (nBoreholes, nTotalSegments,) array
             Array of coefficients for borehole wall temperatures.
 
         """
@@ -464,14 +471,14 @@ class Network(object):
             c_out = self._c_out
             # Coefficient matrices for borehole outlet temperatures:
             # [T_{f,b,out}] = [A]*[T_{f,b,in}] + [B]*[T_{b}]
-            AB = [
+            AB = list(zip(*[
                 self.p[i].coefficients_outlet_temperature(
                     self._m_flow_borehole[i],
                     self._cp_borehole[i],
                     self.nSegments[i])
-                for i in range(self.nBoreholes)]
-            A = block_diag(*[ab[0] for ab in AB])
-            B = block_diag(*[ab[1] for ab in AB])
+                for i in range(self.nBoreholes)]))
+            A = block_diag(*AB[0])
+            B = block_diag(*AB[1])
             # Coefficient matrices for borehole outlet temperatures:
             # [T_{f,b,out}] = [a_in]*[T_{f,n,in}] + [a_b]*[T_{b}]
             IAC = np.eye(self.nBoreholes) - A @ c_out
@@ -499,13 +506,12 @@ class Network(object):
 
         Parameters
         ----------
-        m_flow : float or array
+        m_flow : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
-        cp : float or array
+        cp : float
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -513,9 +519,9 @@ class Network(object):
 
         Returns
         -------
-        a_qf : array
+        a_qf : (1, 1,) array
             Array of coefficients for total heat extraction rate.
-        a_b : array
+        a_b : (1, nTotalSegments,) array
             Array of coefficients for borehole wall temperatures.
 
         """
@@ -556,13 +562,12 @@ class Network(object):
 
         Parameters
         ----------
-        m_flow : float or array
+        m_flow : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
-        cp : float or array
+        cp : float
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -570,9 +575,9 @@ class Network(object):
 
         Returns
         -------
-        a_in : array
+        a_in : (1, 1,) array
             Array of coefficients for inlet fluid temperature.
-        a_b : array
+        a_b : (1, nTotalSegments,) array
             Array of coefficients for borehole wall temperatures.
 
         """
@@ -613,13 +618,12 @@ class Network(object):
 
         Parameters
         ----------
-        m_flow : float or array
+        m_flow : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
-        cp : float or array
+        cp : float
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -627,9 +631,9 @@ class Network(object):
 
         Returns
         -------
-        a_in : array
+        a_in : (nTotalSegments, 1,) array
             Array of coefficients for inlet fluid temperature.
-        a_b : array
+        a_b : (nTotalSegments, nTotalSegments,) array
             Array of coefficients for borehole wall temperatures.
 
         """
@@ -646,14 +650,14 @@ class Network(object):
             b_in, b_b = self.coefficients_inlet_temperature(m_flow, cp, nSegments)
             # Coefficient matrices for borehole heat extraction rates:
             # [Q_{b}] = [A]*[T_{f,b,in}] + [B]*[T_{b}]
-            AB = [
+            AB = list(zip(*[
                 self.p[i].coefficients_borehole_heat_extraction_rate(
                     self._m_flow_borehole[i],
                     self._cp_borehole[i],
                     self.nSegments[i])
-                for i in range(self.nBoreholes)]
-            A = block_diag(*[ab[0] for ab in AB])
-            B = block_diag(*[ab[1] for ab in AB])
+                for i in range(self.nBoreholes)]))
+            A = block_diag(*AB[0])
+            B = block_diag(*AB[1])
             # Coefficient matrices for borehole heat extraction rates:
             # [Q_{b}] = [a_in]*[T_{f,n,in}] + [a_b]*[T_{b}]
             a_in = A @ b_in
@@ -680,13 +684,12 @@ class Network(object):
 
         Parameters
         ----------
-        m_flow : float or array
+        m_flow : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
-        cp : float or array
+        cp : float
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -694,9 +697,9 @@ class Network(object):
 
         Returns
         -------
-        a_in : array
+        a_in : (nBoreholes, 1,) array
             Array of coefficients for inlet fluid temperature.
-        a_b : array
+        a_b : (nBoreholes, nTotalSegments,) array
             Array of coefficients for borehole wall temperatures.
 
         """
@@ -713,14 +716,14 @@ class Network(object):
             b_in, b_b = self.coefficients_inlet_temperature(m_flow, cp, nSegments)
             # Coefficient matrices for fluid heat extraction rates:
             # [Q_{f}] = [A]*[T_{f,b,in}] + [B]*[T_{b}]
-            AB = [
+            AB = list(zip(*[
                 self.p[i].coefficients_fluid_heat_extraction_rate(
                     self._m_flow_borehole[i],
                     self._cp_borehole[i],
                     self.nSegments[i])
-                for i in range(self.nBoreholes)]
-            A = block_diag(*[ab[0] for ab in AB])
-            B = block_diag(*[ab[1] for ab in AB])
+                for i in range(self.nBoreholes)]))
+            A = block_diag(*AB[0])
+            B = block_diag(*AB[1])
             # Coefficient matrices for fluid heat extraction rates:
             # [Q_{f}] = [a_in]*[T_{f,n,in}] + [a_b]*[T_{b}]
             a_in = A @ b_in
@@ -747,13 +750,12 @@ class Network(object):
 
         Parameters
         ----------
-        m_flow : float or array
+        m_flow : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
-        cp : float or array
+        cp : float
             Fluid specific isobaric heat capacity (in J/kg.degC).
-            Must be the same for all circuits (a single float can be supplied).
         nSegments : int or list
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
@@ -761,9 +763,9 @@ class Network(object):
 
         Returns
         -------
-        a_in : array
+        a_in : (1, 1,) array
             Array of coefficients for inlet fluid temperature.
-        a_b : array
+        a_b : (1, nTotalSegments,) array
             Array of coefficients for borehole wall temperatures.
 
         """
@@ -800,14 +802,14 @@ class Network(object):
 
         Parameters
         ----------
-        m_flow : float or array
+        m_flow : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
 
         Returns
         -------
-        mix_out : array
+        mix_out : (1, nOutlets,) array
             Array of coefficients for outlet fluid temperatures of all
             boreholes.
 
@@ -945,19 +947,19 @@ def network_thermal_resistance(network, m_flow, cp):
     """
     Evaluate the effective bore field thermal resistance.
 
-    As proposed in [#Cimmino2018]_.
+    As proposed in Cimmino (2018, 2019) [#Network-Cimmin2018]_,
+    [#Network-Cimmin2019]_.
 
     Parameters
     ----------
     network : network object
         Model of the network.
-    m_flow : float or array
+    m_flow : float or (nInlets, ) array
         Total mass flow rate into the network or inlet mass flow rates
         into each circuit of the network (in kg/s). If a float is supplied,
         the total mass flow rate is split equally into all circuits.
-    cp : float or array
+    cp : float
         Fluid specific isobaric heat capacity (in J/kg.degC).
-        Must be the same for all circuits (a single float can be supplied).
 
     Returns
     -------
@@ -982,7 +984,7 @@ def network_thermal_resistance(network, m_flow, cp):
     # Effective bore field thermal resistance
     Rfield = -0.5*H_tot*(1. + A_out)/A_Q
     if not np.isscalar(Rfield):
-        Rfield = np.asscalar(Rfield)
+        Rfield = Rfield.item()
 
     return Rfield
 
