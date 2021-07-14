@@ -49,7 +49,7 @@ def main():
 
     # Fluid properties
     # Total fluid mass flow rate per borehole (kg/s), from 0.01 kg/s to 1 kg/s
-    m_flow_boreholes = 10**np.arange(-2, 0.001, 0.05)
+    m_flow_network = 10**np.arange(-2, 0.001, 0.05)
     # The fluid is propylene-glycol (20 %) at 20 degC
     fluid = gt.media.Fluid('MPG', 20.)
     cp_f = fluid.cp     # Fluid specific isobaric heat capacity (J/kg.K)
@@ -76,25 +76,28 @@ def main():
     # -------------------------------------------------------------------------
 
     # Initialize result array
-    R = np.zeros((nBoreholes, len(m_flow_boreholes)))
+    R = np.zeros((nBoreholes, len(m_flow_network)))
     for i in range(nBoreholes):
-        for j in range(len(m_flow_boreholes)):
+        for j in range(len(m_flow_network)):
             nBoreholes = i + 1
-            m_flow = m_flow_boreholes[j]
+            # Boreholes are connected in series
+            m_flow_borehole = m_flow_network[j]
+            # Boreholes are single U-tube
+            m_flow_pipe = m_flow_borehole
 
             # Pipe thermal resistance
             R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(
                     rp_in, rp_out, k_p)
             # Fluid to inner pipe wall thermal resistance (Single U-tube)
             h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
-                    m_flow, rp_in, visc_f, den_f, k_f, cp_f, epsilon)
+                    m_flow_pipe, rp_in, visc_f, den_f, k_f, cp_f, epsilon)
             R_f = 1.0/(h_f*2*pi*rp_in)
 
             # Single U-tube, same for all boreholes in the bore field
             UTubes = []
             for borehole in boreField:
-                SingleUTube = gt.pipes.SingleUTube(pos_pipes, rp_in, rp_out,
-                                                   borehole, k_s, k_g, R_f + R_p)
+                SingleUTube = gt.pipes.SingleUTube(
+                    pos_pipes, rp_in, rp_out, borehole, k_s, k_g, R_f + R_p)
                 UTubes.append(SingleUTube)
             network = gt.networks.Network(
                 boreField[:nBoreholes],
@@ -103,7 +106,7 @@ def main():
 
             # Effective bore field thermal resistance
             R_field = gt.networks.network_thermal_resistance(
-                network, m_flow, cp_f)
+                network, m_flow_network[j], cp_f)
             # Add to result array
             R[i,j] = R_field
 
@@ -125,9 +128,9 @@ def main():
     gt.utilities._format_axes(ax1)
 
     # Bore field thermal resistances
-    ax1.plot(m_flow_boreholes, R[0,:], '-', label='1 borehole')
-    ax1.plot(m_flow_boreholes, R[2,:], '--', label='3 boreholes')
-    ax1.plot(m_flow_boreholes, R[4,:], '-.', label='5 boreholes')
+    ax1.plot(m_flow_network, R[0,:], '-', label='1 borehole')
+    ax1.plot(m_flow_network, R[2,:], '--', label='3 boreholes')
+    ax1.plot(m_flow_network, R[4,:], '-.', label='5 boreholes')
     ax1.legend()
     # Adjust to plot window
     plt.tight_layout()

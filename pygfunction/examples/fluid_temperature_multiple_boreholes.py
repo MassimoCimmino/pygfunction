@@ -55,7 +55,7 @@ def main():
 
     # Fluid properties
     m_flow_borehole = 0.25      # Total fluid mass flow rate per borehole (kg/s)
-    m_flow = m_flow_borehole*N_1*N_2    # Total fluid mass flow rate (kg/s)
+    m_flow_network = m_flow_borehole*N_1*N_2    # Total fluid mass flow rate (kg/s)
     # The fluid is propylene-glycol (20 %) at 20 degC
     fluid = gt.media.Fluid('MPG', 20.)
     cp_f = fluid.cp     # Fluid specific isobaric heat capacity (J/kg.K)
@@ -88,8 +88,9 @@ def main():
             rp_in, rp_out, k_p)
 
     # Fluid to inner pipe wall thermal resistance (Double U-tube in parallel)
+    m_flow_pipe = m_flow_borehole/2
     h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
-            m_flow_borehole/2, rp_in, visc_f, den_f, k_f, cp_f, epsilon)
+            m_flow_pipe, rp_in, visc_f, den_f, k_f, cp_f, epsilon)
     R_f = 1.0/(h_f*2*pi*rp_in)
 
     # Double U-tube (parallel), same for all boreholes in the bore field
@@ -100,7 +101,8 @@ def main():
             nPipes=2, config='parallel')
         UTubes.append(UTube)
     # Build a network object from the list of UTubes
-    network = gt.networks.Network(boreField, UTubes, m_flow=m_flow, cp=cp_f)
+    network = gt.networks.Network(
+        boreField, UTubes, m_flow_network=m_flow_network, cp=cp_f)
 
     # -------------------------------------------------------------------------
     # Calculate g-function
@@ -139,11 +141,11 @@ def main():
 
         # Evaluate inlet fluid temperature (all boreholes are the same)
         T_f_in[i] = network.get_network_inlet_temperature(
-                Q_tot[i], T_b[i], m_flow, cp_f, nSegments=1)
+                Q_tot[i], T_b[i], m_flow_network, cp_f, nSegments=1)
 
         # Evaluate outlet fluid temperature
         T_f_out[i] = network.get_network_outlet_temperature(
-                T_f_in[i],  T_b[i], m_flow, cp_f, nSegments=1)
+                T_f_in[i],  T_b[i], m_flow_network, cp_f, nSegments=1)
 
     # -------------------------------------------------------------------------
     # Plot hourly heat extraction rates and temperatures

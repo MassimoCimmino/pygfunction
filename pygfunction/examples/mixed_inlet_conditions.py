@@ -50,7 +50,9 @@ def main():
     k_p = 0.4           # Pipe thermal conductivity (W/m.K)
 
     # Fluid properties
-    m_flow = 0.25       # Total fluid mass flow rate in network (kg/s)
+    m_flow_network = 0.25   # Total fluid mass flow rate in network (kg/s)
+    # All boreholes are in series
+    m_flow_borehole = m_flow_network
     # The fluid is propylene-glycol (20 %) at 20 degC
     fluid = gt.media.Fluid('MPG', 20.)
     cp_f = fluid.cp     # Fluid specific isobaric heat capacity (J/kg.K)
@@ -92,8 +94,9 @@ def main():
     R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(
         rp_in, rp_out, k_p)
     # Fluid to inner pipe wall thermal resistance (Single U-tube)
+    m_flow_pipe = m_flow_borehole
     h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
-        m_flow,  rp_in, visc_f, den_f, k_f, cp_f, epsilon)
+        m_flow_pipe,  rp_in, visc_f, den_f, k_f, cp_f, epsilon)
     R_f = 1.0/(h_f*2*pi*rp_in)
 
     # Single U-tube, same for all boreholes in the bore field
@@ -103,8 +106,8 @@ def main():
                                            borehole, k_s, k_g, R_f + R_p)
         UTubes.append(SingleUTube)
     network = gt.networks.Network(
-        boreField, UTubes, bore_connectivity=bore_connectivity, m_flow=m_flow,
-        cp=cp_f, nSegments=nSegments)
+        boreField, UTubes, bore_connectivity=bore_connectivity,
+        m_flow_network=m_flow_network, cp=cp_f, nSegments=nSegments)
 
     # -------------------------------------------------------------------------
     # Evaluate the g-functions for the borefield

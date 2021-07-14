@@ -25,7 +25,7 @@ class Network(object):
         connected to the bore field inlet. If this parameter is not provided,
         parallel connections between boreholes is used.
         Default is None.
-    m_flow : float or array, optional
+    m_flow_network : float or array, optional
         Total mass flow rate into the network or inlet mass flow rates
         into each circuit of the network (in kg/s). If a float is supplied,
         the total mass flow rate is split equally into all circuits. This
@@ -61,15 +61,15 @@ class Network(object):
        Environment, 25 (8), 1007-1022.
 
     """
-    def __init__(self, boreholes, pipes, bore_connectivity=None, m_flow=None,
-                 cp=None, nSegments=None):
+    def __init__(self, boreholes, pipes, bore_connectivity=None,
+                 m_flow_network=None, cp=None, nSegments=None):
         self.b = boreholes
         self.nBoreholes = len(boreholes)
         self.p = pipes
         if bore_connectivity is None:
             bore_connectivity = [-1]*self.nBoreholes
         self.c = bore_connectivity
-        self.m_flow = m_flow
+        self.m_flow_network = m_flow_network
         self.cp = cp
 
         # Verify that borehole connectivity is valid
@@ -88,9 +88,9 @@ class Network(object):
 
         # Initialize stored_coefficients
         self._initialize_coefficients_connectivity()
-        self._initialize_stored_coefficients(m_flow, cp, nSegments)
+        self._initialize_stored_coefficients(m_flow_network, cp, nSegments)
 
-    def get_inlet_temperature(self, Tin, Tb, m_flow, cp, nSegments):
+    def get_inlet_temperature(self, Tin, Tb, m_flow_network, cp, nSegments):
         """
         Returns the inlet fluid temperatures of all boreholes.
 
@@ -101,7 +101,7 @@ class Network(object):
         Tb : float or (nTotalSegments,) array
             Borehole wall temperatures (in Celsius). If a float is supplied,
             the same temperature is applied to all segments of all boreholes.
-        m_flow : float or (nInlets,) array
+        m_flow_network : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
@@ -120,14 +120,14 @@ class Network(object):
         """
         # Build coefficient matrices
         a_in, a_b = self.coefficients_inlet_temperature(
-                m_flow, cp, nSegments)
+                m_flow_network, cp, nSegments)
         # Evaluate outlet temperatures
         if np.isscalar(Tb):
             Tb = np.tile(Tb, sum(self.nSegments))
         Tin_borehole = a_in @ np.atleast_1d(Tin) + a_b @ Tb
         return Tin_borehole
 
-    def get_outlet_temperature(self, Tin, Tb, m_flow, cp, nSegments):
+    def get_outlet_temperature(self, Tin, Tb, m_flow_network, cp, nSegments):
         """
         Returns the outlet fluid temperatures of all boreholes.
 
@@ -138,7 +138,7 @@ class Network(object):
         Tb : float or (nTotalSegments,) array
             Borehole wall temperatures (in Celsius). If a float is supplied,
             the same temperature is applied to all segments of all boreholes.
-        m_flow : float or (nInlets,) array
+        m_flow_network : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
@@ -157,14 +157,15 @@ class Network(object):
         """
         # Build coefficient matrices
         a_in, a_b = self.coefficients_outlet_temperature(
-                m_flow, cp, nSegments)
+                m_flow_network, cp, nSegments)
         # Evaluate outlet temperatures
         if np.isscalar(Tb):
             Tb = np.tile(Tb, sum(self.nSegments))
         Tout = a_in @ np.atleast_1d(Tin) + a_b @ Tb
         return Tout
 
-    def get_borehole_heat_extraction_rate(self, Tin, Tb, m_flow, cp, nSegments):
+    def get_borehole_heat_extraction_rate(
+            self, Tin, Tb, m_flow_network, cp, nSegments):
         """
         Returns the heat extraction rates of all boreholes.
 
@@ -175,7 +176,7 @@ class Network(object):
         Tb : float or (nTotalSegments,) array
             Borehole wall temperatures (in Celsius). If a float is supplied,
             the same temperature is applied to all segments of all boreholes.
-        m_flow : float or (nInlets,) array
+        m_flow_network : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
@@ -193,14 +194,15 @@ class Network(object):
 
         """
         a_in, a_b = self.coefficients_borehole_heat_extraction_rate(
-                m_flow, cp, nSegments)
+                m_flow_network, cp, nSegments)
         if np.isscalar(Tb):
             Tb = np.tile(Tb, sum(self.nSegments))
         Qb = a_in @ np.atleast_1d(Tin) + a_b @ Tb
 
         return Qb
 
-    def get_fluid_heat_extraction_rate(self, Tin, Tb, m_flow, cp, nSegments):
+    def get_fluid_heat_extraction_rate(
+            self, Tin, Tb, m_flow_network, cp, nSegments):
         """
         Returns the total heat extraction rates of all boreholes.
 
@@ -211,7 +213,7 @@ class Network(object):
         Tb : float or (nTotalSegments,) array
             Borehole wall temperatures (in Celsius). If a float is supplied,
             the same temperature is applied to all segments of all boreholes.
-        m_flow : float or (nInlets,) array
+        m_flow_network : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
@@ -229,14 +231,15 @@ class Network(object):
 
         """
         a_in, a_b = self.coefficients_fluid_heat_extraction_rate(
-                m_flow, cp, nSegments)
+                m_flow_network, cp, nSegments)
         if np.isscalar(Tb):
             Tb = np.tile(Tb, sum(self.nSegments))
         Qf = a_in @ np.atleast_1d(Tin) + a_b @ Tb
 
         return Qf
 
-    def get_network_inlet_temperature(self, Qt, Tb, m_flow, cp, nSegments):
+    def get_network_inlet_temperature(
+            self, Qt, Tb, m_flow_network, cp, nSegments):
         """
         Returns the inlet fluid temperature of the network.
 
@@ -247,7 +250,7 @@ class Network(object):
         Tb : float or (nTotalSegments,) array
             Borehole wall temperatures (in Celsius). If a float is supplied,
             the same temperature is applied to all segments of all boreholes.
-        m_flow : float or (nInlets,) array
+        m_flow_network : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
@@ -267,7 +270,7 @@ class Network(object):
         """
         # Build coefficient matrices
         a_q, a_b = self.coefficients_network_inlet_temperature(
-                m_flow, cp, nSegments)
+                m_flow_network, cp, nSegments)
         # Evaluate outlet temperatures
         if np.isscalar(Tb):
             Tb = np.tile(Tb, sum(self.nSegments))
@@ -276,7 +279,8 @@ class Network(object):
             Tin = Tin.item()
         return Tin
 
-    def get_network_outlet_temperature(self, Tin, Tb, m_flow, cp, nSegments):
+    def get_network_outlet_temperature(
+            self, Tin, Tb, m_flow_network, cp, nSegments):
         """
         Returns the outlet fluid temperature of the network.
 
@@ -287,7 +291,7 @@ class Network(object):
         Tb : float or (nTotalSegments,) array
             Borehole wall temperatures (in Celsius). If a float is supplied,
             the same temperature is applied to all segments of all boreholes.
-        m_flow : float or (nInlets,) array
+        m_flow_network : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
@@ -307,7 +311,7 @@ class Network(object):
         """
         # Build coefficient matrices
         a_in, a_b = self.coefficients_network_outlet_temperature(
-                m_flow, cp, nSegments)
+                m_flow_network, cp, nSegments)
         # Evaluate outlet temperatures
         if np.isscalar(Tb):
             Tb = np.tile(Tb, sum(self.nSegments))
@@ -316,7 +320,8 @@ class Network(object):
             Tout = Tout.item()
         return Tout
 
-    def get_network_heat_extraction_rate(self, Tin, Tb, m_flow, cp, nSegments):
+    def get_network_heat_extraction_rate(
+            self, Tin, Tb, m_flow_network, cp, nSegments):
         """
         Returns the total heat extraction rate of the network.
 
@@ -346,7 +351,7 @@ class Network(object):
 
         """
         a_in, a_b = self.coefficients_network_heat_extraction_rate(
-                m_flow, cp, nSegments)
+                m_flow_network, cp, nSegments)
         if np.isscalar(Tb):
             Tb = np.tile(Tb, sum(self.nSegments))
         Qt = a_in @ np.atleast_1d(Tin) + a_b @ Tb
@@ -355,7 +360,7 @@ class Network(object):
 
         return Qt
 
-    def coefficients_inlet_temperature(self, m_flow, cp, nSegments):
+    def coefficients_inlet_temperature(self, m_flow_network, cp, nSegments):
         """
         Build coefficient matrices to evaluate intlet fluid temperatures of all
         boreholes.
@@ -370,7 +375,7 @@ class Network(object):
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
+        m_flow_network : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
@@ -392,11 +397,11 @@ class Network(object):
         # method_id for coefficients_inlet_temperature is 0
         method_id = 0
         # Check if stored coefficients are available
-        if self._check_coefficients(m_flow, cp, nSegments, method_id):
+        if self._check_coefficients(m_flow_network, cp, nSegments, method_id):
             a_in, a_b = self._get_stored_coefficients(method_id)
         else:
             # Update input variables
-            self._format_inputs(m_flow, cp, nSegments)
+            self._format_inputs(m_flow_network, cp, nSegments)
             # Coefficient matrices for borehole inlet temperatures:
             # [T_{f,b,in}] = [c_in]*[T_{f,n,in}] + [c_out]*[T_{f,b,out}]
             c_in = self._c_in
@@ -418,12 +423,12 @@ class Network(object):
             a_b = np.linalg.solve(ICA, c_out @ B)
 
             # Store coefficients
-            self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
-                                          method_id)
+            self._set_stored_coefficients(
+                m_flow_network, cp, nSegments, (a_in, a_b), method_id)
 
         return a_in, a_b
 
-    def coefficients_outlet_temperature(self, m_flow, cp, nSegments):
+    def coefficients_outlet_temperature(self, m_flow_network, cp, nSegments):
         """
         Build coefficient matrices to evaluate outlet fluid temperatures of all
         boreholes.
@@ -438,7 +443,7 @@ class Network(object):
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
+        m_flow_network : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
@@ -460,11 +465,11 @@ class Network(object):
         # method_id for coefficients_outlet_temperature is 1
         method_id = 1
         # Check if stored coefficients are available
-        if self._check_coefficients(m_flow, cp, nSegments, method_id):
+        if self._check_coefficients(m_flow_network, cp, nSegments, method_id):
             a_in, a_b = self._get_stored_coefficients(method_id)
         else:
             # Update input variables
-            self._format_inputs(m_flow, cp, nSegments)
+            self._format_inputs(m_flow_network, cp, nSegments)
             # Coefficient matrices for borehole inlet temperatures:
             # [T_{f,b,in}] = [c_in]*[T_{f,n,in}] + [c_out]*[T_{f,b,out}]
             c_in = self._c_in
@@ -486,12 +491,13 @@ class Network(object):
             a_b = np.linalg.solve(IAC, B)
 
             # Store coefficients
-            self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
-                                          method_id)
+            self._set_stored_coefficients(
+                m_flow_network, cp, nSegments, (a_in, a_b), method_id)
 
         return a_in, a_b
 
-    def coefficients_network_inlet_temperature(self, m_flow, cp, nSegments):
+    def coefficients_network_inlet_temperature(
+            self, m_flow_network, cp, nSegments):
         """
         Build coefficient matrices to evaluate intlet fluid temperature of the
         network.
@@ -506,7 +512,7 @@ class Network(object):
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
+        m_flow_network : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
@@ -528,13 +534,13 @@ class Network(object):
         # method_id for coefficients_network_inlet_temperature is 2
         method_id = 2
         # Check if stored coefficients are available
-        if self._check_coefficients(m_flow, cp, nSegments, method_id):
+        if self._check_coefficients(m_flow_network, cp, nSegments, method_id):
             a_qf, a_b = self._get_stored_coefficients(method_id)
         else:
             # Coefficient matrices for network heat extraction rates:
             # [Q_{tot}] = [b_in]*[T_{f,n,in}] + [b_b]*[T_{b}]
             b_in, b_b = self.coefficients_network_heat_extraction_rate(
-                    m_flow, cp, nSegments)
+                    m_flow_network, cp, nSegments)
             # Coefficient matrices for network inlet temperature:
             # [T_{f,n,in}] = [a_qf]*[Q_{tot}] + [a_b]*[T_{b}]
             b_in_inv = np.linalg.inv(b_in)
@@ -542,12 +548,13 @@ class Network(object):
             a_b = -b_in_inv.dot(b_b)
 
             # Store coefficients
-            self._set_stored_coefficients(m_flow, cp, nSegments, (a_qf, a_b),
-                                          method_id)
+            self._set_stored_coefficients(
+                m_flow_network, cp, nSegments, (a_qf, a_b), method_id)
 
         return a_qf, a_b
 
-    def coefficients_network_outlet_temperature(self, m_flow, cp, nSegments):
+    def coefficients_network_outlet_temperature(
+            self, m_flow_network, cp, nSegments):
         """
         Build coefficient matrices to evaluate outlet fluid temperature of the
         network.
@@ -562,7 +569,7 @@ class Network(object):
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
+        m_flow_network : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
@@ -584,26 +591,27 @@ class Network(object):
         # method_id for coefficients_network_outlet_temperature is 3
         method_id = 3
         # Check if stored coefficients are available
-        if self._check_coefficients(m_flow, cp, nSegments, method_id):
+        if self._check_coefficients(m_flow_network, cp, nSegments, method_id):
             a_in, a_b = self._get_stored_coefficients(method_id)
         else:
             # Coefficient matrices for borehole outlet temperatures:
             # [T_{f,b,out}] = [b_in]*[T_{f,n,in}] + [b_b]*[T_{b}]
-            b_in, b_b = self.coefficients_outlet_temperature(m_flow, cp, nSegments)
+            b_in, b_b = self.coefficients_outlet_temperature(
+                m_flow_network, cp, nSegments)
             # Coefficient matrices for network outlet temperature:
             # [T_{f,n,out}] = [a_in]*[T_{f,n,in}] + [a_b]*[T_{b}]
-            mix_out = self._coefficients_mixing(m_flow)
+            mix_out = self._coefficients_mixing(m_flow_network)
             a_in = mix_out @ b_in
             a_b = mix_out @ b_b
 
             # Store coefficients
-            self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
-                                          method_id)
+            self._set_stored_coefficients(
+                m_flow_network, cp, nSegments, (a_in, a_b), method_id)
 
         return a_in, a_b
 
-    def coefficients_borehole_heat_extraction_rate(self,
-                                                   m_flow, cp, nSegments):
+    def coefficients_borehole_heat_extraction_rate(
+            self, m_flow_network, cp, nSegments):
         """
         Build coefficient matrices to evaluate heat extraction rates of all
         boreholes segments.
@@ -618,7 +626,7 @@ class Network(object):
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
+        m_flow_network : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
@@ -640,14 +648,15 @@ class Network(object):
         # method_id for coefficients_borehole_heat_extraction_rate is 4
         method_id = 4
         # Check if stored coefficients are available
-        if self._check_coefficients(m_flow, cp, nSegments, method_id):
+        if self._check_coefficients(m_flow_network, cp, nSegments, method_id):
             a_in, a_b = self._get_stored_coefficients(method_id)
         else:
             # Update input variables
-            self._format_inputs(m_flow, cp, nSegments)
+            self._format_inputs(m_flow_network, cp, nSegments)
             # Coefficient matrices for borehole inlet temperatures:
             # [T_{f,b,in}] = [b_in]*[T_{f,n,in}] + [b_b]*[T_{b}]
-            b_in, b_b = self.coefficients_inlet_temperature(m_flow, cp, nSegments)
+            b_in, b_b = self.coefficients_inlet_temperature(
+                m_flow_network, cp, nSegments)
             # Coefficient matrices for borehole heat extraction rates:
             # [Q_{b}] = [A]*[T_{f,b,in}] + [B]*[T_{b}]
             AB = list(zip(*[
@@ -664,12 +673,13 @@ class Network(object):
             a_b = A @ b_b + B
 
             # Store coefficients
-            self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
-                                          method_id)
+            self._set_stored_coefficients(
+                m_flow_network, cp, nSegments, (a_in, a_b), method_id)
 
         return a_in, a_b
 
-    def coefficients_fluid_heat_extraction_rate(self, m_flow, cp, nSegments):
+    def coefficients_fluid_heat_extraction_rate(
+            self, m_flow_network, cp, nSegments):
         """
         Build coefficient matrices to evaluate heat extraction rates of all
         boreholes.
@@ -684,7 +694,7 @@ class Network(object):
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
+        m_flow_network : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
@@ -706,14 +716,15 @@ class Network(object):
         # method_id for coefficients_fluid_heat_extraction_rate is 5
         method_id = 5
         # Check if stored coefficients are available
-        if self._check_coefficients(m_flow, cp, nSegments, method_id):
+        if self._check_coefficients(m_flow_network, cp, nSegments, method_id):
             a_in, a_b = self._get_stored_coefficients(method_id)
         else:
             # Update input variables
-            self._format_inputs(m_flow, cp, nSegments)
+            self._format_inputs(m_flow_network, cp, nSegments)
             # Coefficient matrices for borehole inlet temperatures:
             # [T_{f,b,in}] = [b_in]*[T_{f,n,in}] + [b_b]*[T_{b}]
-            b_in, b_b = self.coefficients_inlet_temperature(m_flow, cp, nSegments)
+            b_in, b_b = self.coefficients_inlet_temperature(
+                m_flow_network, cp, nSegments)
             # Coefficient matrices for fluid heat extraction rates:
             # [Q_{f}] = [A]*[T_{f,b,in}] + [B]*[T_{b}]
             AB = list(zip(*[
@@ -730,12 +741,13 @@ class Network(object):
             a_b = A @ b_b + B
 
             # Store coefficients
-            self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
-                                          method_id)
+            self._set_stored_coefficients(
+                m_flow_network, cp, nSegments, (a_in, a_b), method_id)
 
         return a_in, a_b
 
-    def coefficients_network_heat_extraction_rate(self, m_flow, cp, nSegments):
+    def coefficients_network_heat_extraction_rate(
+            self, m_flow_network, cp, nSegments):
         """
         Build coefficient matrices to evaluate total heat extraction rate of
         the network.
@@ -750,7 +762,7 @@ class Network(object):
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
+        m_flow_network : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
@@ -772,13 +784,13 @@ class Network(object):
         # method_id for coefficients_network_heat_extraction_rate is 6
         method_id = 6
         # Check if stored coefficients are available
-        if self._check_coefficients(m_flow, cp, nSegments, method_id):
+        if self._check_coefficients(m_flow_network, cp, nSegments, method_id):
             a_in, a_b = self._get_stored_coefficients(method_id)
         else:
             # Coefficient matrices for fluid heat extraction rates:
             # [Q_{f}] = [b_in]*[T_{f,n,in}] + [b_b]*[T_{b}]
             b_in, b_b = self.coefficients_fluid_heat_extraction_rate(
-                    m_flow, cp, nSegments)
+                    m_flow_network, cp, nSegments)
             # The total network heat extraction rate is the sum of heat
             # extraction rates from all boreholes:
             # [Q_{tot}] = [a_in]*[T_{f,n,in}] + [a_b]*[T_{b}]
@@ -786,12 +798,12 @@ class Network(object):
             a_b = np.reshape(np.sum(b_b, axis=0), (1,-1))
 
             # Store coefficients
-            self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
-                                          method_id)
+            self._set_stored_coefficients(
+                m_flow_network, cp, nSegments, (a_in, a_b), method_id)
 
         return a_in, a_b
 
-    def _coefficients_mixing(self, m_flow):
+    def _coefficients_mixing(self, m_flow_network):
         """
         Returns coefficients for the relation:
 
@@ -802,7 +814,7 @@ class Network(object):
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
+        m_flow_network : float or (nInlets,) array
             Total mass flow rate into the network or inlet mass flow rates
             into each circuit of the network (in kg/s). If a float is supplied,
             the total mass flow rate is split equally into all circuits.
@@ -814,10 +826,10 @@ class Network(object):
             boreholes.
 
         """
-        if not self._check_mixing_coefficients(m_flow):
+        if not self._check_mixing_coefficients(m_flow_network):
             self._mix_out = np.zeros((1, self.nBoreholes))
             self._mix_out[0, self.iOutlets] = self._m_flow_in/np.sum(self._m_flow_in)
-            self._mixing_m_flow = m_flow
+            self._mixing_m_flow = m_flow_network
         return self._mix_out
 
     def _initialize_coefficients_connectivity(self):
@@ -841,7 +853,7 @@ class Network(object):
             
         return
 
-    def _initialize_stored_coefficients(self, m_flow, cp, nSegments):
+    def _initialize_stored_coefficients(self, m_flow_network, cp, nSegments):
         nMethods = 7    # Number of class methods
         self._stored_coefficients = [() for i in range(nMethods)]
         self._stored_m_flow_cp = [np.empty(self.nInlets)
@@ -854,21 +866,28 @@ class Network(object):
 
         # If m_flow, cp, and nSegments are specified, evaluate and store all
         # matrix coefficients.
-        if m_flow is not None and cp is not None and nSegments is not None:
-            self.coefficients_inlet_temperature(m_flow, cp, nSegments)
-            self.coefficients_outlet_temperature(m_flow, cp, nSegments)
-            self.coefficients_network_inlet_temperature(m_flow, cp, nSegments)
-            self.coefficients_network_outlet_temperature(m_flow, cp, nSegments)
-            self.coefficients_borehole_heat_extraction_rate(m_flow, cp, nSegments)
-            self.coefficients_fluid_heat_extraction_rate(m_flow, cp, nSegments)
-            self.coefficients_network_heat_extraction_rate(m_flow, cp, nSegments)
+        if m_flow_network is not None and cp is not None and nSegments is not None:
+            self.coefficients_inlet_temperature(
+                m_flow_network, cp, nSegments)
+            self.coefficients_outlet_temperature(
+                m_flow_network, cp, nSegments)
+            self.coefficients_network_inlet_temperature(
+                m_flow_network, cp, nSegments)
+            self.coefficients_network_outlet_temperature(
+                m_flow_network, cp, nSegments)
+            self.coefficients_borehole_heat_extraction_rate(
+                m_flow_network, cp, nSegments)
+            self.coefficients_fluid_heat_extraction_rate(
+                m_flow_network, cp, nSegments)
+            self.coefficients_network_heat_extraction_rate(
+                m_flow_network, cp, nSegments)
 
         return
 
-    def _set_stored_coefficients(self, m_flow, cp, nSegments, coefficients,
+    def _set_stored_coefficients(self, m_flow_network, cp, nSegments, coefficients,
                                  method_id):
         self._stored_coefficients[method_id] = coefficients
-        self._stored_m_flow_cp[method_id] = m_flow*cp
+        self._stored_m_flow_cp[method_id] = m_flow_network*cp
         self._stored_nSegments[method_id] = nSegments
 
         return
@@ -878,19 +897,19 @@ class Network(object):
 
         return coefficients
 
-    def _check_mixing_coefficients(self, m_flow, tol=1e-6):
+    def _check_mixing_coefficients(self, m_flow_network, tol=1e-6):
         mixing_m_flow = self._mixing_m_flow
-        if np.all(np.abs(m_flow - mixing_m_flow) < np.abs(mixing_m_flow)*tol):
+        if np.all(np.abs(m_flow_network - mixing_m_flow) < np.abs(mixing_m_flow)*tol):
             check = True
         else:
             check = False
 
         return check
 
-    def _check_coefficients(self, m_flow, cp, nSegments, method_id, tol=1e-6):
+    def _check_coefficients(self, m_flow_network, cp, nSegments, method_id, tol=1e-6):
         stored_m_flow_cp = self._stored_m_flow_cp[method_id]
         stored_nSegments = self._stored_nSegments[method_id]
-        if (np.all(np.abs(m_flow*cp - stored_m_flow_cp) < np.abs(stored_m_flow_cp)*tol)
+        if (np.all(np.abs(m_flow_network*cp - stored_m_flow_cp) < np.abs(stored_m_flow_cp)*tol)
             and nSegments == stored_nSegments):
             check = True
         else:
@@ -898,15 +917,15 @@ class Network(object):
 
         return check
 
-    def _format_inputs(self, m_flow, cp, nSegments):
+    def _format_inputs(self, m_flow_network, cp, nSegments):
         """
         Format mass flow rate and heat capacity inputs.
         """
         # Format mass flow rate inputs
         # Mass flow rate in each fluid circuit
-        m_flow_in = np.atleast_1d(m_flow)
+        m_flow_in = np.atleast_1d(m_flow_network)
         if len(m_flow_in) == 1:
-            m_flow_in = np.tile(m_flow/self.nInlets, self.nInlets)
+            m_flow_in = np.tile(m_flow_network/self.nInlets, self.nInlets)
         elif not len(m_flow_in) == self.nInlets:
             raise ValueError(
                 'Incorrect length of mass flow vector.')
@@ -943,7 +962,7 @@ class Network(object):
             self.nSegments = nSegments
 
 
-def network_thermal_resistance(network, m_flow, cp):
+def network_thermal_resistance(network, m_flow_network, cp):
     """
     Evaluate the effective bore field thermal resistance.
 
@@ -954,7 +973,7 @@ def network_thermal_resistance(network, m_flow, cp):
     ----------
     network : network object
         Model of the network.
-    m_flow : float or (nInlets, ) array
+    m_flow_network : float or (nInlets, ) array
         Total mass flow rate into the network or inlet mass flow rates
         into each circuit of the network (in kg/s). If a float is supplied,
         the total mass flow rate is split equally into all circuits.
@@ -977,9 +996,9 @@ def network_thermal_resistance(network, m_flow, cp):
     # Coefficients for T_{f,out} = A_out*T_{f,in} + [B_out]*[T_b], and
     # Q_b = [A_Q]*T{f,in} + [B_Q]*[T_b]
     A_out, B_out = network.coefficients_network_outlet_temperature(
-            m_flow, cp, 1)
+            m_flow_network, cp, 1)
     A_Q, B_Q = network.coefficients_network_heat_extraction_rate(
-            m_flow, cp, 1)
+            m_flow_network, cp, 1)
 
     # Effective bore field thermal resistance
     Rfield = -0.5*H_tot*(1. + A_out)/A_Q

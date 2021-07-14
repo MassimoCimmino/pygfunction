@@ -703,8 +703,8 @@ class gFunction(object):
             "There are duplicate boreholes in the borefield."
         assert (self.network is None and not self.boundary_condition=='MIFT') or isinstance(self.network, Network), \
             "The network is not a valid 'Network' object."
-        assert self.network is None or (self.network.m_flow is not None and self.network.cp is not None), \
-            "The mass flow rate 'm_flow' and heat capacity 'cp' must be " \
+        assert self.network is None or (self.network.m_flow_network is not None and self.network.cp is not None), \
+            "The mass flow rate 'm_flow_network' and heat capacity 'cp' must be " \
             "provided at the instanciation of the 'Network' object."
         assert type(self.time) is np.ndarray or isinstance(self.time, (np.floating, float)) or self.time is None, \
             "Time should be a float or an array."
@@ -1305,7 +1305,7 @@ class _BaseSolver(object):
                     # Energy conservation: sum([Q*Hb]) = sum([Hb])
                     # ---------------------------------------------------------
                     a_in, a_b = self.network.coefficients_borehole_heat_extraction_rate(
-                            self.network.m_flow, self.network.cp, self.nSegments)
+                            self.network.m_flow_network, self.network.cp, self.nSegments)
                     k_s = self.network.p[0].k_s
                     A = np.block(
                         [[h_dt,
@@ -1329,12 +1329,13 @@ class _BaseSolver(object):
                     # temperature
                     # Outlet fluid temperature
                     Tf_out = Tf_in - 2*pi*self.network.p[0].k_s*Htot/(
-                        self.network.m_flow*self.network.cp)
+                        self.network.m_flow_network*self.network.cp)
                     # Average fluid temperature
                     Tf = 0.5*(Tf_in + Tf_out)
                     # Borefield thermal resistance
                     Rfield = network_thermal_resistance(
-                        self.network, self.network.m_flow, self.network.cp)
+                        self.network, self.network.m_flow_network,
+                        self.network.cp)
                     # Effective borehole wall temperature
                     Tb_eff = Tf - 2*pi*self.network.p[0].k_s*Rfield
                     gFunc[p] = Tb_eff
@@ -1480,8 +1481,8 @@ class _BaseSolver(object):
             "boreholes."
         assert self.network is None or isinstance(self.network, Network), \
             "The network is not a valid 'Network' object."
-        assert self.network is None or (self.network.m_flow is not None and self.network.cp is not None), \
-            "The mass flow rate 'm_flow' and heat capacity 'cp' must be " \
+        assert self.network is None or (self.network.m_flow_network is not None and self.network.cp is not None), \
+            "The mass flow rate 'm_flow_network' and heat capacity 'cp' must be " \
             "provided at the instanciation of the 'Network' object."
         assert type(self.time) is np.ndarray or isinstance(self.time, (float, np.floating)) or self.time is None, \
             "Time should be a float or an array."

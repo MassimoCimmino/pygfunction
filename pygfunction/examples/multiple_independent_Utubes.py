@@ -51,7 +51,7 @@ def main():
     # Borehole wall temperature (degC)
     T_b = 2.0
     # Total fluid mass flow rate per U-tube (kg/s)
-    m_flow_in = np.array([0.40, 0.35, 0.30, 0.25])
+    m_flow_borehole = np.array([0.40, 0.35, 0.30, 0.25])
     # Inlet fluid temperatures per U-tube (degC)
     T_f_in = np.array([6.0, -6.0, 5.0, -5.0])
 
@@ -73,12 +73,13 @@ def main():
     # -------------------------------------------------------------------------
 
     # Calculate the outlet fluid temperatures
-    T_f_out = MultipleUTube.get_outlet_temperature(T_f_in, T_b, m_flow_in, cp)
+    T_f_out = MultipleUTube.get_outlet_temperature(
+        T_f_in, T_b, m_flow_borehole, cp)
 
     # Evaluate temperatures at nz evenly spaced depths along the borehole
     nz = 20
     z = np.linspace(0., H, num=nz)
-    T_f = MultipleUTube.get_temperature(z, T_f_in, T_b, m_flow_in, cp)
+    T_f = MultipleUTube.get_temperature(z, T_f_in, T_b, m_flow_borehole, cp)
 
     # -------------------------------------------------------------------------
     # Plot fluid temperature profiles
