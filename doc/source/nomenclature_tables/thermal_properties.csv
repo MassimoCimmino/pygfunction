@@ -1,9 +1,4 @@
 Parameter,Units,Description
-H,m,Borehole length
-D,m,Borehole burial depth
-r_b,m,Borehole radius
-r_in,m,Inner radius of pipe
-r_out ,m,Outer radius of pipe
 k,W/m.K,Thermal conductivity
 alpha,m2/s,Soil thermal diffusivity
 cp,J/kg.degC,Fluid specific isobaric heat capacity
