@@ -4,7 +4,7 @@
 Calculation of g-functions with uniform borehole wall temperature
 *****************************************************************
 
-This example demonstrates the use of the :doc:`g-function <gfunction>` module
+This example demonstrates the use of the :doc:`g-function <../modules/gfunction>` module
 to calculate *g*-functions using a boundary condition of uniform and equal 
 borehole wall temperature for all boreholes. The total rate of heat extraction
 in the bore field is constant.
@@ -16,7 +16,7 @@ The following script generates the *g*-functions of rectangular fields of
 The script is located in: 
 `pygfunction/examples/uniform_temperature.py`
 
-.. literalinclude:: ../../pygfunction/examples/uniform_temperature.py
+.. literalinclude:: ../../../pygfunction/examples/uniform_temperature.py
    :language: python
    :linenos:
 

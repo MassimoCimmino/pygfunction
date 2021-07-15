@@ -4,8 +4,8 @@
 Calculation of g-functions with mixed parallel and series connections
 *********************************************************************
 
-This example demonstrates the use of the :doc:`g-function <gfunction>` module
-and the :doc:`networks <networks>` module to calculate *g*-functions considering
+This example demonstrates the use of the :doc:`g-function <../modules/gfunction>` module
+and the :doc:`networks <../modules/networks>` module to calculate *g*-functions considering
 the piping connections between the boreholes, based on the method of Cimmino
 [1]_.
 For boreholes connected in series, it is considered the outlet fluid temperature
@@ -22,7 +22,7 @@ temperature.
 The script is located in: 
 `pygfunction/examples/mixed_inlet_conditions.py`
 
-.. literalinclude:: ../../pygfunction/examples/mixed_inlet_conditions.py
+.. literalinclude:: ../../../pygfunction/examples/mixed_inlet_conditions.py
    :language: python
    :linenos:
 

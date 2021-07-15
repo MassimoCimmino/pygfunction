@@ -1,0 +1,10 @@
+Parameter,Units,Description
+time,s,The time in seconds
+alpha,m2/s,Soil thermal diffusivity
+k_s,W/m.K,Soil thermal conductivity
+k_g,W/m.K,Ground thermal conductivity
+R_fp,m.K/W,Fluid to outer pipe wall thermal resistance
+R_pipe,m.K/W,Conduction thermal resistance 
+Rb,m.K/W,Effective borehole thermal resistance
+Q,Watts,Total net heat extraction rate of boreholes
+h,,Value of the dimensionless FLS solution

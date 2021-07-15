@@ -20,7 +20,7 @@ results of Claesson and Hellstrom [1]_.
 The script is located in: 
 `pygfunction/examples/multipole_temperature.py`
 
-.. literalinclude:: ../../pygfunction/examples/multipole_temperature.py
+.. literalinclude:: ../../../pygfunction/examples/multipole_temperature.py
    :language: python
    :linenos:
 
