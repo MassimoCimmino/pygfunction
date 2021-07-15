@@ -48,7 +48,7 @@ def main():
     time = dt * np.arange(1, Nt+1)
 
     # Evaluate heat extraction rate
-    Q = synthetic_load(time/3600.)
+    Q_b = synthetic_load(time/3600.)
 
     # Load aggregation schemes
     ClaessonJaved = gt.load_aggregation.ClaessonJaved(dt, tmax)
@@ -97,7 +97,7 @@ def main():
             LoadAgg.next_time_step(time[i])
 
             # Apply current load
-            LoadAgg.set_current_load(Q[i]/H)
+            LoadAgg.set_current_load(Q_b[i]/H)
 
             # Evaluate borehole wall temeprature
             deltaT_b = LoadAgg.temporal_superposition()
@@ -111,11 +111,11 @@ def main():
 
     # Heat extraction rate increment
     dQ = np.zeros(Nt)
-    dQ[0] = Q[0]
+    dQ[0] = Q_b[0]
     # Interpolated g-function
     g = interp1d(time_gFunc, gFunc.gFunc)(time)
     for i in range(1, Nt):
-        dQ[i] = Q[i] - Q[i-1]
+        dQ[i] = Q_b[i] - Q_b[i-1]
 
     # Convolution in Fourier domain
     T_b_exact = T_g - fftconvolve(dQ, g/(2.0*pi*k_s*H), mode='full')[0:Nt]
@@ -130,10 +130,10 @@ def main():
     ax1 = fig.add_subplot(311)
     # Axis labels
     ax1.set_xlabel(r'$t$ [hours]')
-    ax1.set_ylabel(r'$Q$ [W]')
+    ax1.set_ylabel(r'$Q_b$ [W]')
     gt.utilities._format_axes(ax1)
     hours = np.array([(j+1)*dt/3600. for j in range(Nt)])
-    ax1.plot(hours, Q)
+    ax1.plot(hours, Q_b)
 
     ax2 = fig.add_subplot(312)
     # Axis labels

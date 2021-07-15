@@ -29,8 +29,8 @@ def main():
     r_b = 0.075         # Borehole radius (m)
 
     # Pipe dimensions
-    rp_out = 0.010      # Pipe outer radius (m)
-    rp_in = 0.008       # Pipe inner radius (m)
+    r_out = 0.010       # Pipe outer radius (m)
+    r_in = 0.008        # Pipe inner radius (m)
     D_s = 0.060         # Shank spacing (m)
 
     # Pipe positions
@@ -46,7 +46,7 @@ def main():
     # Fluid properties
     R_fp = 1e-30        # Fluid to outer pipe wall thermal resistance (m.K/W)
     # Fluid specific isobaric heat capacity per U-tube (J/kg.K)
-    cp = 4000.*np.ones(nPipes)
+    cp_f = 4000.*np.ones(nPipes)
 
     # Borehole wall temperature (degC)
     T_b = 2.0
@@ -66,7 +66,7 @@ def main():
     borehole = gt.boreholes.Borehole(H, D, r_b, 0., 0.)
     # Multiple independent U-tubes
     MultipleUTube = gt.pipes.IndependentMultipleUTube(
-            pos_pipes, rp_in, rp_out, borehole, k_s, k_g, R_fp, nPipes, J=0)
+            pos_pipes, r_in, r_out, borehole, k_s, k_g, R_fp, nPipes, J=0)
 
     # -------------------------------------------------------------------------
     # Evaluate the outlet fluid temperatures and fluid temperature profiles
@@ -74,12 +74,12 @@ def main():
 
     # Calculate the outlet fluid temperatures
     T_f_out = MultipleUTube.get_outlet_temperature(
-        T_f_in, T_b, m_flow_borehole, cp)
+        T_f_in, T_b, m_flow_borehole, cp_f)
 
     # Evaluate temperatures at nz evenly spaced depths along the borehole
     nz = 20
     z = np.linspace(0., H, num=nz)
-    T_f = MultipleUTube.get_temperature(z, T_f_in, T_b, m_flow_borehole, cp)
+    T_f = MultipleUTube.get_temperature(z, T_f_in, T_b, m_flow_borehole, cp_f)
 
     # -------------------------------------------------------------------------
     # Plot fluid temperature profiles

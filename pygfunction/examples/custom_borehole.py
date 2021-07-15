@@ -14,10 +14,10 @@ def main():
     r_b = 0.0875    # Borehole radius (m)
 
     # Pipe dimensions
-    rp_out = 0.0133     # Pipe outer radius (m)
-    rp_in = 0.0108      # Pipe inner radius (m)
+    r_out = 0.0133      # Pipe outer radius (m)
+    r_in = 0.0108       # Pipe inner radius (m)
     D_s = 0.029445      # Shank spacing (m)
-    epsilon = 1.0e-6  # Pipe roughness (m)
+    epsilon = 1.0e-6    # Pipe roughness (m)
 
     # Pipe positions
     # Single U-tube [(x_in, y_in), (x_out, y_out)]
@@ -31,32 +31,28 @@ def main():
     k_g = 1.0     # Grout thermal conductivity (W/m.K)
 
     # Fluid properties
-    m_flow = 0.25  # Total fluid mass flow rate per borehole (kg/s)
-    cp_f = 3977.  # Fluid specific isobaric heat capacity (J/kg.K)
-    den_f = 1015.  # Fluid density (kg/m3)
-    visc_f = 0.00203  # Fluid dynamic viscosity (kg/m.s)
-    k_f = 0.492  # Fluid thermal conductivity (W/m.K)
+    m_flow_borehole = 0.25  # Total fluid mass flow rate per borehole (kg/s)
+    cp_f = 3977.            # Fluid specific isobaric heat capacity (J/kg.K)
+    rho_f = 1015.           # Fluid density (kg/m3)
+    mu_f = 0.00203          # Fluid dynamic viscosity (kg/m.s)
+    k_f = 0.492             # Fluid thermal conductivity (W/m.K)
 
     # Pipe thermal resistance
-    R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(rp_in,
-                                                               rp_out,
-                                                               k_p)
+    R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(
+        r_in, r_out, k_p)
     # Fluid to inner pipe wall thermal resistance (Single U-tube)
-    h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(m_flow,
-                                                                      rp_in,
-                                                                      visc_f,
-                                                                      den_f,
-                                                                      k_f,
-                                                                      cp_f,
-                                                                      epsilon)
-    R_f = 1.0 / (h_f * 2 * pi * rp_in)
+    m_flow_pipe = m_flow_borehole
+    h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
+        m_flow_pipe, r_in, mu_f, rho_f, k_f, cp_f, epsilon)
+    R_f = 1.0 / (h_f * 2 * pi * r_in)
 
     SingleUTube = gt.pipes.SingleUTube(
-        pos, rp_in, rp_out, borehole, k_s, k_g, R_f + R_p)
+        pos, r_in, r_out, borehole, k_s, k_g, R_f + R_p)
 
-    Rb = gt.pipes.borehole_thermal_resistance(SingleUTube, m_flow, cp_f)
+    R_b = gt.pipes.borehole_thermal_resistance(
+        SingleUTube, m_flow_borehole, cp_f)
 
-    print('Borehole thermal resistance: {0:.4f} m.K/W'.format(Rb))
+    print('Borehole thermal resistance: {0:.4f} m.K/W'.format(R_b))
 
     # Check the geometry to make sure it is physically possible
     #

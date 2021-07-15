@@ -32,8 +32,8 @@ def main():
     B = 7.5             # Borehole spacing, in both directions (m)
 
     # Pipe dimensions
-    rp_out = 0.0211     # Pipe outer radius (m)
-    rp_in = 0.0147      # Pipe inner radius (m)
+    r_out = 0.0211      # Pipe outer radius (m)
+    r_in = 0.0147       # Pipe inner radius (m)
     D_s = 0.052         # Shank spacing (m)
     epsilon = 1.0e-6    # Pipe roughness (m)
 
@@ -59,8 +59,8 @@ def main():
     # The fluid is propylene-glycol (20 %) at 20 degC
     fluid = gt.media.Fluid('MPG', 20.)
     cp_f = fluid.cp     # Fluid specific isobaric heat capacity (J/kg.K)
-    den_f = fluid.rho   # Fluid density (kg/m3)
-    visc_f = fluid.mu   # Fluid dynamic viscosity (kg/m.s)
+    rho_f = fluid.rho   # Fluid density (kg/m3)
+    mu_f = fluid.mu     # Fluid dynamic viscosity (kg/m.s)
     k_f = fluid.k       # Fluid thermal conductivity (W/m.K)
 
     # g-Function calculation options
@@ -85,24 +85,24 @@ def main():
 
     # Pipe thermal resistance
     R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(
-            rp_in, rp_out, k_p)
+            r_in, r_out, k_p)
 
     # Fluid to inner pipe wall thermal resistance (Double U-tube in parallel)
     m_flow_pipe = m_flow_borehole/2
     h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
-            m_flow_pipe, rp_in, visc_f, den_f, k_f, cp_f, epsilon)
-    R_f = 1.0/(h_f*2*pi*rp_in)
+            m_flow_pipe, r_in, mu_f, rho_f, k_f, cp_f, epsilon)
+    R_f = 1.0/(h_f*2*pi*r_in)
 
     # Double U-tube (parallel), same for all boreholes in the bore field
     UTubes = []
     for borehole in boreField:
         UTube = gt.pipes.MultipleUTube(
-            pos, rp_in, rp_out, borehole, k_s, k_g, R_f + R_p,
+            pos, r_in, r_out, borehole, k_s, k_g, R_f + R_p,
             nPipes=2, config='parallel')
         UTubes.append(UTube)
     # Build a network object from the list of UTubes
     network = gt.networks.Network(
-        boreField, UTubes, m_flow_network=m_flow_network, cp=cp_f)
+        boreField, UTubes, m_flow_network=m_flow_network, cp_f=cp_f)
 
     # -------------------------------------------------------------------------
     # Calculate g-function
