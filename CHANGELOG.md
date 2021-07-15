@@ -12,6 +12,10 @@
 * [Issue 100](https://github.com/MassimoCimmino/pygfunction/issues/100) - Replaced calls to `numpy.asscalar()` with calls to `array.item()`. `numpy.asscalar()` is deprecated as of `numpy` version `1.16`.
 * [Issue 125](https://github.com/MassimoCimmino/pygfunction/issues/125) - Refactored class methods and docstrings in `Pipe` and `Network` objects to better represent the expected shapes of array inputs and outputs.
 
+### Bug fixes
+
+* [Issue 130](https://github.com/MassimoCimmino/pygfunction/issues/130) - Fix incorrect initialization of variables `_mix_out` and `_mixing_m_flow` in `Network`.
+
 ## Version 2.0.0 (2021-05-22)
 
 ### New features
