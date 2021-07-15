@@ -11,6 +11,8 @@ Nomenclature
 Geometry
 ==================
 
+Parameters in the table below are related to the definition of borehole
+and pipe geometries.
  
 .. csv-table:: 
    :file: nomenclature_tables/geometry.csv
@@ -19,6 +21,9 @@ Geometry
    
 Fluid properties
 ===================
+
+Parameters in the table below are related to the evaluation of fluid
+thermal properties in the :doc:`media <modules/media>` module.
    
 .. csv-table:: 
    :file: nomenclature_tables/fluid_properties.csv 
@@ -27,6 +32,9 @@ Fluid properties
    
 Heat transfer
 ===================
+
+Parameters in the table below are used throughout **pygfunction** for the
+calculation of heat transfer in geothermal bore fields.
    
 .. csv-table:: 
    :file: nomenclature_tables/heat_transfer.csv 

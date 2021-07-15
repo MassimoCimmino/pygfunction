@@ -7,5 +7,3 @@ nu,m2/s,Kinematic viscosity
 cp,J/kg.K,Specific isobaric heat capacity 
 k,W/m.K,Thermal conductivity 
 rhoCp,J/m3.K,Volumetric heat capacity
-m_flow_borehole,kg/s,Mass flow rate to each borehole
-m_flow_network,kg/s,Mass flow rate to the borefield
