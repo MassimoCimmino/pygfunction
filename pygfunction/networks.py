@@ -869,7 +869,9 @@ class Network(object):
         self._m_flow_cp_model_variables = np.empty(self.nInlets)
         self._nSegments_model_variables = np.nan
         self._mixing_m_flow = np.empty(self.nInlets)
-        self._mix_out = np.empty((self.nBoreholes, 1))
+        self._mixing_m_flow[:] = np.nan
+        self._mix_out = np.empty((1, self.nBoreholes))
+        self._mix_out[:] = np.nan
 
         # If m_flow, cp_f, and nSegments are specified, evaluate and store all
         # matrix coefficients.
