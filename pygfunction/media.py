@@ -29,7 +29,7 @@ class Fluid:
         Examples
         ----------
         >>> import pygfunction as gt
-        >>> T = 20.     # Temp at 20 C
+        >>> T_f = 20.     # Temp at 20 C
         >>> gage_P = 20  # PsiG
         >>> atm_P = 14.69595
         >>> P = (gage_P + atm_P) * 6894.75728  # Pressure in Pa
@@ -37,30 +37,30 @@ class Fluid:
         >>> # complete water solution
         >>> mix = 'Water'
         >>> percent = 0
-        >>> fluid = gt.media.Fluid(mix, percent, T=T, P=P)
+        >>> fluid = gt.media.Fluid(mix, percent, T=T_f, P=P)
         >>> print(fluid)
 
         >>> # 20 % propylene glycol mixed with water
         >>> mix = 'MPG'
         >>> percent = 20
-        >>> fluid = gt.media.Fluid(mix, percent, T=T, P=P)
+        >>> fluid = gt.media.Fluid(mix, percent, T=T_f, P=P)
 
         >>> # 60% ethylene glycol mixed with water
         >>> mix = 'MEG'
         >>> percent = 60
-        >>> fluid = gt.media.Fluid(mix, percent, T=T, P=P)
+        >>> fluid = gt.media.Fluid(mix, percent, T=T_f, P=P)
         >>> print(fluid)
 
         >>> # 5% methanol mixed with water water
         >>> mix = 'MMA'
         >>> percent = 5
-        >>> fluid = gt.media.Fluid(mix, percent, T=T, P=P)
+        >>> fluid = gt.media.Fluid(mix, percent, T=T_f, P=P)
         >>> print(fluid)
 
         >>> # ethanol / water
         >>> mix = 'MEA'
         >>> percent = 10
-        >>> fluid = gt.media.Fluid(mix, percent, T=T, P=P)
+        >>> fluid = gt.media.Fluid(mix, percent, T=T_f, P=P)
         >>> print(fluid)
     """
     def __init__(self, mixer: str, percent: float,

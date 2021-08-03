@@ -1,0 +1,18 @@
+Parameter,Units,Description
+time,s,The time in seconds
+alpha,m2/s,Soil thermal diffusivity
+h,-,Value of the dimensionless FLS solution
+k_s,W/m.K,Soil thermal conductivity
+k_g,W/m.K,Grout thermal conductivity
+k_p,W/m.K,Pipe thermal conductivity
+m_flow_borehole,kg/s,Mass flow rate(s) into a borehole
+m_flow_network,kg/s,Mass flow rate(s) into a network (i.e.a borefield)
+m_flow_pipe,kg/s,Mass flow rate through a pipe
+Q_b,Watts,Total net heat extraction rate along borehole segment(s)
+Q_f,Watts,Total net heat extraction rate of a fluid circuit (i.e. from inlet to outlet of a borehole pipe or network)
+Q_t,Watts,Total net heat extraction rate of a borehole or network
+R_b,m.K/W,Effective borehole thermal resistance
+R_fp,m.K/W,Fluid to outer pipe wall thermal resistance
+R_p,m.K/W,Conduction thermal resistance of a pipe wall
+T_b,degC,Effective borehole wall temprature
+T_f,degC,Fluid temperature

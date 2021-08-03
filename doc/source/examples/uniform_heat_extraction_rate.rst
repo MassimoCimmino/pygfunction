@@ -4,7 +4,7 @@
 Calculation of g-functions with uniform borehole heat extraction rates
 **********************************************************************
 
-This example demonstrates the use of the :doc:`g-function <gfunction>` module
+This example demonstrates the use of the :doc:`g-function <../modules/gfunction>` module
 to calculate *g*-functions using a boundary condition of uniform and equal 
 heat extraction rate for all boreholes, constant in time.
 
@@ -15,7 +15,7 @@ The following script generates the *g*-functions of rectangular fields of
 The script is located in: 
 `pygfunction/examples/uniform_heat_extraction_rate.py`
 
-.. literalinclude:: ../../pygfunction/examples/uniform_heat_extraction_rate.py
+.. literalinclude:: ../../../pygfunction/examples/uniform_heat_extraction_rate.py
    :language: python
    :linenos:
 

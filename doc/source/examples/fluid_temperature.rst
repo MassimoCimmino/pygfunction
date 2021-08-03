@@ -5,7 +5,7 @@ Simulation of fluid temperatures in a borehole
 **********************************************
 
 This example demonstrates the use of the
-:doc:`pipes <pipes>` module to predict the fluid temperature variations
+:doc:`pipes <../modules/pipes>` module to predict the fluid temperature variations
 in a borehole with known heat extraction rates.
 
 The g-function of a single borehole is first calculated. Then, the borehole wall
@@ -19,7 +19,7 @@ a double U-tube in series, using the model of Cimmino [4]_.
 The script is located in: 
 `pygfunction/examples/fluid_temperature.py`
 
-.. literalinclude:: ../../pygfunction/examples/fluid_temperature.py
+.. literalinclude:: ../../../pygfunction/examples/fluid_temperature.py
    :language: python
    :linenos:
 

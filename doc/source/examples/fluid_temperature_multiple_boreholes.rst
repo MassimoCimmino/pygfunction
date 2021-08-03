@@ -5,7 +5,7 @@ Simulation of fluid temperatures in a field of multiple boreholes
 *****************************************************************
 
 This example demonstrates the use of the
-:doc:`networks <networks>` module to predict the fluid temperature variations
+:doc:`networks <../modules/networks>` module to predict the fluid temperature variations
 in a bore field with known heat extraction rates.
 
 The g-function of a bore field is first calculated using the equal inlet fluid
@@ -19,7 +19,7 @@ Cimmino [4]_.
 The script is located in: 
 `pygfunction/examples/fluid_temperature.py`
 
-.. literalinclude:: ../../pygfunction/examples/fluid_temperature_multiple_boreholes.py
+.. literalinclude:: ../../../pygfunction/examples/fluid_temperature_multiple_boreholes.py
    :language: python
    :linenos:
 

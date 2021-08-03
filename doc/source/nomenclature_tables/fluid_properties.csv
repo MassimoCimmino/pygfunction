@@ -1,0 +1,9 @@
+Parameter,Units,Description
+T,degC,Temperature of the fluid
+P,Pa,Pressure of the fluid
+rho,kg/m3,Density of the fluid
+mu,Pa.s or N.s/m2,Dynamic viscosity 
+nu,m2/s,Kinematic viscosity 
+cp,J/kg.K,Specific isobaric heat capacity 
+k,W/m.K,Thermal conductivity 
+rhoCp,J/m3.K,Volumetric heat capacity

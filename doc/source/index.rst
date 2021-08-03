@@ -17,6 +17,7 @@ solutions.
    citing
    modules
    example_index
+   nomenclature
 
 
 Indices and tables

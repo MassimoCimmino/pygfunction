@@ -16,7 +16,7 @@ from 0.01 kg/s ti 1.00 kg/s.
 The script is located in: 
 `pygfunction/examples/bore_field_thermal_resistance.py`
 
-.. literalinclude:: ../../pygfunction/examples/bore_field_thermal_resistance.py
+.. literalinclude:: ../../../pygfunction/examples/bore_field_thermal_resistance.py
    :language: python
    :linenos:
 

@@ -41,7 +41,7 @@ class _BasePipe(object):
         self.nInlets = 1
         self.nOutlets = 1
 
-    def get_temperature(self, z, Tin, Tb, m_flow, cp):
+    def get_temperature(self, z, T_f_in, T_b, m_flow_borehole, cp_f):
         """
         Returns the fluid temperatures of the borehole at a depth (z).
 
@@ -49,195 +49,199 @@ class _BasePipe(object):
         ----------
         z : float or (nDepths,) array
             Depths (in meters) to evaluate the fluid temperatures.
-        Tin : float or (nInlets,) array
+        T_f_in : float or (nInlets,) array
             Inlet fluid temperatures (in Celsius).
-        Tb : float or (nSegments,) array
+        T_b : float or (nSegments,) array
             Borehole wall temperatures (in Celsius).
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rates (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rates (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
 
         Returns
         -------
-        Tf : (2*nPipes,) or (nDepths, 2*nPipes,) array
+        T_f : (2*nPipes,) or (nDepths, 2*nPipes,) array
             Fluid temperature (in Celsius) in each pipe. The returned shape
             depends on the type of the parameter `z`.
 
         """
-        Tb = np.atleast_1d(Tb)
-        nSegments = len(Tb)
+        T_b = np.atleast_1d(T_b)
+        nSegments = len(T_b)
         z_all = np.atleast_1d(z).flatten()
         AB = list(zip(*[self.coefficients_temperature(
-            zi, m_flow, cp, nSegments) for zi in z_all]))
+            zi, m_flow_borehole, cp_f, nSegments) for zi in z_all]))
         a_in = np.stack(AB[0], axis=-1)
         a_b = np.stack(AB[1], axis=-1)
-        Tf = np.einsum('ijk,j->ki', a_in, np.atleast_1d(Tin)) \
-            + np.einsum('ijk,j->ki', a_b, Tb)
+        T_f = np.einsum('ijk,j->ki', a_in, np.atleast_1d(T_f_in)) \
+            + np.einsum('ijk,j->ki', a_b, T_b)
 
         # Return 1d array if z was supplied as scalar
         if np.isscalar(z):
-            Tf = Tf.flatten()
-        return Tf
+            T_f = T_f.flatten()
+        return T_f
 
-    def get_inlet_temperature(self, Qf, Tb, m_flow, cp):
+    def get_inlet_temperature(self, Q_f, T_b, m_flow_borehole, cp_f):
         """
         Returns the outlet fluid temperatures of the borehole.
 
         Parameters
         ----------
-        Qf : float or (nInlets,) array
+        Q_f : float or (nInlets,) array
             Heat extraction from the fluid circuits (in Watts).
-        Tb : float or (nSegments,) array
+        T_b : float or (nSegments,) array
             Borehole wall temperatures (in Celsius).
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rates (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rates (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
 
         Returns
         -------
-        Tin : float or (nOutlets,) array
+        T_in : float or (nOutlets,) array
             Inlet fluid temperatures (in Celsius) into each inlet pipe. The
-            returned type corresponds to the type of the parameter `Qf`.
+            returned type corresponds to the type of the parameter `Q_f`.
 
         """
-        Tb = np.atleast_1d(Tb)
-        nSegments = len(Tb)
+        T_b = np.atleast_1d(T_b)
+        nSegments = len(T_b)
         # Build coefficient matrices
         a_qf, a_b = self.coefficients_inlet_temperature(
-            m_flow, cp, nSegments)
+            m_flow_borehole, cp_f, nSegments)
         # Evaluate outlet temperatures
-        Tin = a_qf @ np.atleast_1d(Qf) + a_b @ Tb
+        T_f_in = a_qf @ np.atleast_1d(Q_f) + a_b @ T_b
         # Return float if Qf was supplied as scalar
-        if np.isscalar(Qf) and not np.isscalar(Tin):
-            Tin = Tin.item()
-        return Tin
+        if np.isscalar(Q_f) and not np.isscalar(T_f_in):
+            T_f_in = T_f_in.item()
+        return T_f_in
 
-    def get_outlet_temperature(self, Tin, Tb, m_flow, cp):
+    def get_outlet_temperature(self, T_f_in, T_b, m_flow_borehole, cp_f):
         """
         Returns the outlet fluid temperatures of the borehole.
 
         Parameters
         ----------
-        Tin : float or (nInlets,) array
+        T_f_in : float or (nInlets,) array
             Inlet fluid temperatures (in Celsius).
-        Tb : float or (nSegments,) array
+        T_b : float or (nSegments,) array
             Borehole wall temperatures (in Celsius).
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rates (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rates (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
 
         Returns
         -------
-        Tout : float or (nOutlets,) array
+        T_f_out : float or (nOutlets,) array
             Outlet fluid temperatures (in Celsius) from each outlet pipe. The
-            returned type corresponds to the type of the parameter `Tin`.
+            returned type corresponds to the type of the parameter `T_f_in`.
 
         """
-        Tb = np.atleast_1d(Tb)
-        nSegments = len(Tb)
+        T_b = np.atleast_1d(T_b)
+        nSegments = len(T_b)
         # Build coefficient matrices
         a_in, a_b = self.coefficients_outlet_temperature(
-            m_flow, cp, nSegments)
+            m_flow_borehole, cp_f, nSegments)
         # Evaluate outlet temperatures
-        Tout = a_in @ np.atleast_1d(Tin) + a_b @ Tb
+        T_f_out = a_in @ np.atleast_1d(T_f_in) + a_b @ T_b
         # Return float if Tin was supplied as scalar
-        if np.isscalar(Tin) and not np.isscalar(Tout):
-            Tout = Tout.item()
-        return Tout
+        if np.isscalar(T_f_in) and not np.isscalar(T_f_out):
+            T_f_out = T_f_out.item()
+        return T_f_out
 
-    def get_borehole_heat_extraction_rate(self, Tin, Tb, m_flow, cp):
+    def get_borehole_heat_extraction_rate(
+            self, T_f_in, T_b, m_flow_borehole, cp_f):
         """
         Returns the heat extraction rates of the borehole.
 
         Parameters
         ----------
-        Tin : float or (nInlets,) array
+        T_f_in : float or (nInlets,) array
             Inlet fluid temperatures (in Celsius).
-        Tb : float or (nSegments,) array
+        T_b : float or (nSegments,) array
             Borehole wall temperatures (in Celsius).
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rates (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rates (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
 
         Returns
         -------
-        Qb : float or (nSegments,) array
+        Q_b : float or (nSegments,) array
             Heat extraction rates along each borehole segment (in Watts). The
-            returned type corresponds to the type of the parameter `Tb`.
+            returned type corresponds to the type of the parameter `T_b`.
 
         """
-        Tb = np.atleast_1d(Tb)
-        nSegments = len(Tb)
+        T_b = np.atleast_1d(T_b)
+        nSegments = len(T_b)
         a_in, a_b = self.coefficients_borehole_heat_extraction_rate(
-            m_flow, cp, nSegments)
-        Qb = a_in @ np.atleast_1d(Tin) + a_b @ Tb
+            m_flow_borehole, cp_f, nSegments)
+        Q_b = a_in @ np.atleast_1d(T_f_in) + a_b @ T_b
         # Return float if Tb was supplied as scalar
-        if np.isscalar(Tb) and not np.isscalar(Qb):
-            Qb = Qb.item()
-        return Qb
+        if np.isscalar(T_b) and not np.isscalar(Q_b):
+            Q_b = Q_b.item()
+        return Q_b
 
-    def get_fluid_heat_extraction_rate(self, Tin, Tb, m_flow, cp):
+    def get_fluid_heat_extraction_rate(
+            self, T_f_in, T_b, m_flow_borehole, cp_f):
         """
         Returns the heat extraction rates of the borehole.
 
         Parameters
         ----------
-        Tin : float or (nInlets,) array
+        T_f_in : float or (nInlets,) array
             Inlet fluid temperatures (in Celsius).
-        Tb : float or (nSegments,) array
+        T_b : float or (nSegments,) array
             Borehole wall temperatures (in Celsius).
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rates (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rates (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
 
         Returns
         -------
-        Qf : float or (nOutlets,) array
+        Q_f : float or (nOutlets,) array
             Heat extraction rates from each fluid circuit (in Watts). The
-            returned type corresponds to the type of the parameter `Tin`.
+            returned type corresponds to the type of the parameter `T_f_in`.
 
         """
-        Tb = np.atleast_1d(Tb)
-        nSegments = len(Tb)
+        T_b = np.atleast_1d(T_b)
+        nSegments = len(T_b)
         a_in, a_b = self.coefficients_fluid_heat_extraction_rate(
-            m_flow, cp, nSegments)
-        Qf = a_in @ np.atleast_1d(Tin) + a_b @ Tb
+            m_flow_borehole, cp_f, nSegments)
+        Q_f = a_in @ np.atleast_1d(T_f_in) + a_b @ T_b
         # Return float if Tb was supplied as scalar
-        if np.isscalar(Tin) and not np.isscalar(Qf):
-            Qf = Qf.item()
-        return Qf
+        if np.isscalar(T_f_in) and not np.isscalar(Q_f):
+            Q_f = Q_f.item()
+        return Q_f
 
-    def get_total_heat_extraction_rate(self, Tin, Tb, m_flow, cp):
+    def get_total_heat_extraction_rate(
+            self, T_f_in, T_b, m_flow_borehole, cp_f):
         """
         Returns the total heat extraction rate of the borehole.
 
         Parameters
         ----------
-        Tin : float or (nInlets,) array
+        T_f_in : float or (nInlets,) array
             Inlet fluid temperatures (in Celsius).
-        Tb : float or (nSegments,) array
+        T_b : float or (nSegments,) array
             Borehole wall temperatures (in Celsius).
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rates (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rates (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
 
         Returns
         -------
-        Q : float
+        Q_t : float
             Total net heat extraction rate of the borehole (in Watts).
 
         """
-        Qf = self.get_fluid_heat_extraction_rate(Tin, Tb, m_flow, cp)
-        Q = np.sum(Qf)
-        return Q
+        Q_f = self.get_fluid_heat_extraction_rate(
+            T_f_in, T_b, m_flow_borehole, cp_f)
+        Q_t = np.sum(Q_f)
+        return Q_t
 
-    def coefficients_inlet_temperature(self, m_flow, cp, nSegments):
+    def coefficients_inlet_temperature(self, m_flow_borehole, cp_f, nSegments):
         """
         Build coefficient matrices to evaluate outlet fluid temperature.
 
@@ -250,9 +254,9 @@ class _BasePipe(object):
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rates (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rates (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
@@ -268,13 +272,14 @@ class _BasePipe(object):
         # method_id for coefficients_inlet_temperature is 3
         method_id = 3
         # Check if stored coefficients are available
-        if self._check_coefficients(m_flow, cp, nSegments, method_id):
+        if self._check_coefficients(
+                m_flow_borehole, cp_f, nSegments, method_id):
             a_qf, a_b = self._get_stored_coefficients(method_id)
         else:
             # Coefficient matrices for fluid heat extraction rates:
             # [Q_{f}] = [b_in]*[T_{f,in}] + [b_b]*[T_{b}]
             b_in, b_b = self.coefficients_fluid_heat_extraction_rate(
-                m_flow, cp, nSegments)
+                m_flow_borehole, cp_f, nSegments)
             b_in_m1 = np.linalg.inv(b_in)
 
             # Matrices for fluid heat extraction rates:
@@ -283,12 +288,13 @@ class _BasePipe(object):
             a_b = -b_in_m1 @ b_b
 
             # Store coefficients
-            self._set_stored_coefficients(m_flow, cp, nSegments, (a_qf, a_b),
-                                          method_id)
+            self._set_stored_coefficients(
+                m_flow_borehole, cp_f, nSegments, (a_qf, a_b), method_id)
 
         return a_qf, a_b
 
-    def coefficients_outlet_temperature(self, m_flow, cp, nSegments):
+    def coefficients_outlet_temperature(
+            self, m_flow_borehole, cp_f, nSegments):
         """
         Build coefficient matrices to evaluate outlet fluid temperature.
 
@@ -301,9 +307,9 @@ class _BasePipe(object):
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rates (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rates (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
@@ -319,22 +325,23 @@ class _BasePipe(object):
         # method_id for coefficients_outlet_temperature is 4
         method_id = 4
         # Check if stored coefficients are available
-        if self._check_coefficients(m_flow, cp, nSegments, method_id):
+        if self._check_coefficients(
+                m_flow_borehole, cp_f, nSegments, method_id):
             a_in, a_b = self._get_stored_coefficients(method_id)
         else:
             # Check if _continuity_condition_base need to be called
             # method_id for _continuity_condition_base is 0
-            if self._check_coefficients(m_flow, cp, nSegments, 0):
+            if self._check_coefficients(m_flow_borehole, cp_f, nSegments, 0):
                 b_in, b_out, b_b = self._get_stored_coefficients(0)
             else:
                 # Coefficient matrices from continuity condition:
                 # [b_out]*[T_{f,out}] = [b_in]*[T_{f,in}] + [b_b]*[T_b]
                 b_in, b_out, b_b = self._continuity_condition_base(
-                    m_flow, cp, nSegments)
+                    m_flow_borehole, cp_f, nSegments)
 
                 # Store coefficients
                 self._set_stored_coefficients(
-                    m_flow, cp, nSegments, (b_in, b_out, b_b), 0)
+                    m_flow_borehole, cp_f, nSegments, (b_in, b_out, b_b), 0)
 
             # Final coefficient matrices for outlet temperatures:
             # [T_{f,out}] = [a_in]*[T_{f,in}] + [a_b]*[T_b]
@@ -344,11 +351,11 @@ class _BasePipe(object):
 
             # Store coefficients
             self._set_stored_coefficients(
-                m_flow, cp, nSegments, (a_in, a_b), method_id)
+                m_flow_borehole, cp_f, nSegments, (a_in, a_b), method_id)
 
         return a_in, a_b
 
-    def coefficients_temperature(self, z, m_flow, cp, nSegments):
+    def coefficients_temperature(self, z, m_flow_borehole, cp_f, nSegments):
         """
         Build coefficient matrices to evaluate fluid temperatures at a depth
         (z).
@@ -364,9 +371,9 @@ class _BasePipe(object):
         ----------
         z : float
             Depth (in meters) to evaluate the fluid temperature coefficients.
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rate (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
@@ -384,26 +391,27 @@ class _BasePipe(object):
 
         # Coefficient matrices for outlet temperatures:
         # [T_{f,out}] = [b_in]*[T_{f,in}] + [b_b]*[T_b]
-        b_in, b_b = self.coefficients_outlet_temperature(m_flow, cp, nSegments)
+        b_in, b_b = self.coefficients_outlet_temperature(
+            m_flow_borehole, cp_f, nSegments)
 
         # Check if _continuity_condition_head need to be called
         # method_id for _continuity_condition_head is 1
-        if self._check_coefficients(m_flow, cp, nSegments, 1):
+        if self._check_coefficients(m_flow_borehole, cp_f, nSegments, 1):
             c_in, c_out, c_b = self._get_stored_coefficients(1)
         else:
             # Coefficient matrices for temperatures at depth (z = 0):
             # [T_f](0) = [c_in]*[T_{f,in}] + [c_out]*[T_{f,out}]
             #                              + [c_b]*[T_b]
             c_in, c_out, c_b = self._continuity_condition_head(
-                m_flow, cp, nSegments)
+                m_flow_borehole, cp_f, nSegments)
 
             # Store coefficients
             self._set_stored_coefficients(
-                m_flow, cp, nSegments, (c_in, c_out, c_b), 1)
+                m_flow_borehole, cp_f, nSegments, (c_in, c_out, c_b), 1)
 
         # Coefficient matrices from general solution:
         # [T_f](z) = [d_f0]*[T_f](0) + [d_b]*[T_b]
-        d_f0, d_b = self._general_solution(z, m_flow, cp, nSegments)
+        d_f0, d_b = self._general_solution(z, m_flow_borehole, cp_f, nSegments)
 
         # Final coefficient matrices for temperatures at depth (z):
         # [T_f](z) = [a_in]*[T_{f,in}] + [a_b]*[T_b]
@@ -412,8 +420,8 @@ class _BasePipe(object):
 
         return a_in, a_b
 
-    def coefficients_borehole_heat_extraction_rate(self,
-                                                   m_flow, cp, nSegments):
+    def coefficients_borehole_heat_extraction_rate(
+            self, m_flow_borehole, cp_f, nSegments):
         """
         Build coefficient matrices to evaluate heat extraction rates.
 
@@ -426,9 +434,9 @@ class _BasePipe(object):
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rate (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
@@ -446,11 +454,11 @@ class _BasePipe(object):
 
         nPipes = self.nPipes
         # Check if stored coefficients are available
-        if self._check_coefficients(m_flow, cp, nSegments, method_id):
+        if self._check_coefficients(m_flow_borehole, cp_f, nSegments, method_id):
             a_in, a_b = self._get_stored_coefficients(method_id)
         else:
             # Update input variables
-            self._format_inputs(m_flow, cp, nSegments)
+            self._format_inputs(m_flow_borehole, cp_f, nSegments)
             m_flow_pipe = self._m_flow_pipe
             cp_pipe = self._cp_pipe
             mcp = np.hstack((-m_flow_pipe[0:nPipes],
@@ -463,22 +471,23 @@ class _BasePipe(object):
             # borehole segment.
             z1 = 0.
             aTf1, bTf1 = self.coefficients_temperature(
-                z1, m_flow, cp, nSegments)
+                z1, m_flow_borehole, cp_f, nSegments)
             for i in range(nSegments):
                 z2 = (i + 1) * self.b.H / nSegments
                 aTf2, bTf2 = self.coefficients_temperature(
-                    z2, m_flow, cp, nSegments)
+                    z2, m_flow_borehole, cp_f, nSegments)
                 a_in[i, :] = mcp @ (aTf1 - aTf2)
                 a_b[i, :] = mcp @ (bTf1 - bTf2)
                 aTf1, bTf1 = aTf2, bTf2
 
             # Store coefficients
-            self._set_stored_coefficients(m_flow, cp, nSegments, (a_in, a_b),
-                                          method_id)
+            self._set_stored_coefficients(
+                m_flow_borehole, cp_f, nSegments, (a_in, a_b), method_id)
 
         return a_in, a_b
 
-    def coefficients_fluid_heat_extraction_rate(self, m_flow, cp, nSegments):
+    def coefficients_fluid_heat_extraction_rate(
+            self, m_flow_borehole, cp_f, nSegments):
         """
         Build coefficient matrices to evaluate heat extraction rates.
 
@@ -491,9 +500,9 @@ class _BasePipe(object):
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rate (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
@@ -509,16 +518,16 @@ class _BasePipe(object):
         # method_id for coefficients_fluid_heat_extraction_rate is 7
         method_id = 7
         # Check if stored coefficients are available
-        if self._check_coefficients(m_flow, cp, nSegments, method_id):
+        if self._check_coefficients(m_flow_borehole, cp_f, nSegments, method_id):
             a_in, a_b = self._get_stored_coefficients(method_id)
         else:
             # Update input variables
-            self._format_inputs(m_flow, cp, nSegments)
+            self._format_inputs(m_flow_borehole, cp_f, nSegments)
 
             # Coefficient matrices for outlet temperatures:
             # [T_{f,out}] = [b_in]*[T_{f,in}] + [b_b]*[T_b]
             b_in, b_b = self.coefficients_outlet_temperature(
-                m_flow, cp, nSegments)
+                m_flow_borehole, cp_f, nSegments)
 
             # Intermediate matrices for fluid heat extraction rates:
             # [Q_{f}] = [c_in]*[T_{f,in}] + [c_out]*[T_{f,out}]
@@ -533,7 +542,7 @@ class _BasePipe(object):
 
             # Store coefficients
             self._set_stored_coefficients(
-                m_flow, cp, nSegments, (a_in, a_b), method_id)
+                m_flow_borehole, cp_f, nSegments, (a_in, a_b), method_id)
 
         return a_in, a_b
 
@@ -613,10 +622,10 @@ class _BasePipe(object):
         self._nSegments_model_variables = np.nan
 
 
-    def _set_stored_coefficients(self, m_flow, cp, nSegments, coefficients,
-                                 method_id):
+    def _set_stored_coefficients(
+            self, m_flow_borehole, cp_f, nSegments, coefficients, method_id):
         self._stored_coefficients[method_id] = coefficients
-        self._stored_m_flow_cp[method_id] = m_flow*cp
+        self._stored_m_flow_cp[method_id] = m_flow_borehole*cp_f
         self._stored_nSegments[method_id] = nSegments
 
     def _get_stored_coefficients(self, method_id):
@@ -624,24 +633,25 @@ class _BasePipe(object):
 
         return coefficients
 
-    def _check_model_variables(self, m_flow, cp, nSegments, tol=1e-6):
+    def _check_model_variables(self, m_flow_borehole, cp_f, nSegments, tol=1e-6):
         stored_m_flow_cp = self._m_flow_cp_model_variables
         stored_nSegments = self._nSegments_model_variables
-        if (np.all(np.abs(m_flow*cp - stored_m_flow_cp) < np.abs(stored_m_flow_cp)*tol)
+        if (np.all(np.abs(m_flow_borehole*cp_f - stored_m_flow_cp) < np.abs(stored_m_flow_cp)*tol)
             and nSegments == stored_nSegments):
             check = True
         else:
-            self._update_model_variables(m_flow, cp, nSegments)
-            self._m_flow_cp_model_variables = m_flow*cp
+            self._update_model_variables(m_flow_borehole, cp_f, nSegments)
+            self._m_flow_cp_model_variables = m_flow_borehole*cp_f
             self._nSegments_model_variables = nSegments
             check = False
 
         return check
 
-    def _check_coefficients(self, m_flow, cp, nSegments, method_id, tol=1e-6):
+    def _check_coefficients(
+            self, m_flow_borehole, cp_f, nSegments, method_id, tol=1e-6):
         stored_m_flow_cp = self._stored_m_flow_cp[method_id]
         stored_nSegments = self._stored_nSegments[method_id]
-        if (np.all(np.abs(m_flow*cp - stored_m_flow_cp) < np.abs(stored_m_flow_cp)*tol)
+        if (np.all(np.abs(m_flow_borehole*cp_f - stored_m_flow_cp) < np.abs(stored_m_flow_cp)*tol)
             and nSegments == stored_nSegments):
             check = True
         else:
@@ -710,7 +720,7 @@ class _BasePipe(object):
 
         return True
 
-    def _continuity_condition_base(self, m_flow, cp, nSegments):
+    def _continuity_condition_base(self, m_flow_borehole, cp_f, nSegments):
         """ Returns coefficients for the relation
             [a_out]*[T_{f,out}] = [a_in]*[T_{f,in}] + [a_b]*[T_b]
         """
@@ -719,7 +729,7 @@ class _BasePipe(object):
             'this method should return matrices for the relation: '
             '[a_out]*[T_{f,out}] = [a_in]*[T_{f,in}] + [a_b]*[T_b]')
 
-    def _continuity_condition_head(self, m_flow, cp, nSegments):
+    def _continuity_condition_head(self, m_flow_borehole, cp_f, nSegments):
         """ Returns coefficients for the relation
             [T_f](z=0) = [a_in]*[T_{f,in}] + [a_out]*[T_{f,out}] + [a_b]*[T_b]
         """
@@ -729,7 +739,7 @@ class _BasePipe(object):
             '[T_f](z=0) = [a_in]*[T_{f,in}] + [a_out]*[T_{f,out}] '
             '+ [a_b]*[T_b]')
 
-    def _general_solution(self, z, m_flow, cp, nSegments):
+    def _general_solution(self, z, m_flow_borehole, cp_f, nSegments):
         """ Returns coefficients for the relation
             [T_f](z) = [a_f0]*[T_f](0) + [a_b]*[T_b]
         """
@@ -738,7 +748,7 @@ class _BasePipe(object):
             'this method should return matrices for the relation: '
             '[T_f](z) = [a_f0]*[T_f](0) + [a_b]*[T_b]')
 
-    def _update_model_variables(self, m_flow, cp, nSegments):
+    def _update_model_variables(self, m_flow_borehole, cp_f, nSegments):
         """
         Evaluate common coefficients needed in other class methods.
         """
@@ -747,7 +757,7 @@ class _BasePipe(object):
             'this method should evaluate common coefficients needed in other '
             'class methods.')
 
-    def _format_inputs(self, m_flow, cp, nSegments):
+    def _format_inputs(self, m_flow_borehole, cp_f, nSegments):
         """
         Format arrays of mass flow rates and heat capacity.
         """
@@ -832,7 +842,7 @@ class SingleUTube(_BasePipe):
         # Initialize stored_coefficients
         self._initialize_stored_coefficients()
 
-    def _continuity_condition_base(self, m_flow, cp, nSegments):
+    def _continuity_condition_base(self, m_flow_borehole, cp_f, nSegments):
         """
         Equation that satisfies equal fluid temperatures in both legs of
         each U-tube pipe at depth (z = H).
@@ -847,9 +857,9 @@ class SingleUTube(_BasePipe):
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rate (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
@@ -865,7 +875,7 @@ class SingleUTube(_BasePipe):
 
         """
         # Check if model variables need to be updated
-        self._check_model_variables(m_flow, cp, nSegments)
+        self._check_model_variables(m_flow_borehole, cp_f, nSegments)
 
         # Evaluate coefficient matrices from Hellstrom (1991):
         a_in = ((self._f1(self.b.H) + self._f2(self.b.H))
@@ -884,7 +894,7 @@ class SingleUTube(_BasePipe):
 
         return a_in, a_out, a_b
 
-    def _continuity_condition_head(self, m_flow, cp, nSegments):
+    def _continuity_condition_head(self, m_flow_borehole, cp_f, nSegments):
         """
         Build coefficient matrices to evaluate fluid temperatures at depth
         (z = 0). These coefficients take into account connections between
@@ -900,9 +910,9 @@ class SingleUTube(_BasePipe):
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rate (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
@@ -918,7 +928,7 @@ class SingleUTube(_BasePipe):
 
         """
         # Check if model variables need to be updated
-        self._check_model_variables(m_flow, cp, nSegments)
+        self._check_model_variables(m_flow_borehole, cp_f, nSegments)
 
         # There is only one pipe
         a_in = np.array([[1.0], [0.0]])
@@ -927,7 +937,7 @@ class SingleUTube(_BasePipe):
 
         return a_in, a_out, a_b
 
-    def _general_solution(self, z, m_flow, cp, nSegments):
+    def _general_solution(self, z, m_flow_borehole, cp_f, nSegments):
         """
         General solution for fluid temperatures at a depth (z).
 
@@ -942,9 +952,9 @@ class SingleUTube(_BasePipe):
         ----------
         z : float
             Depth (in meters) to evaluate the fluid temperature coefficients.
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rate (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
@@ -958,7 +968,7 @@ class SingleUTube(_BasePipe):
 
         """
         # Check if model variables need to be updated
-        self._check_model_variables(m_flow, cp, nSegments)
+        self._check_model_variables(m_flow_borehole, cp_f, nSegments)
 
         a_f0 = np.array([[self._f1(z), self._f2(z)],
                         [-self._f2(z), self._f3(z)]])
@@ -975,22 +985,22 @@ class SingleUTube(_BasePipe):
 
         return a_f0, a_b
 
-    def _update_model_variables(self, m_flow, cp, nSegments):
+    def _update_model_variables(self, m_flow_borehole, cp_f, nSegments):
         """
         Evaluate dimensionless resistances for Hellstrom (1991) solution.
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rate (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
         """
 
         # Format mass flow rate and heat capacity inputs
-        self._format_inputs(m_flow, cp, nSegments)
+        self._format_inputs(m_flow_borehole, cp_f, nSegments)
         m_flow_in = self._m_flow_in
         cp_in = self._cp_in
 
@@ -1005,39 +1015,39 @@ class SingleUTube(_BasePipe):
         self._delta = 1./self._gamma \
             * (self._beta12 + 0.5*(self._beta1+self._beta2))
 
-    def _format_inputs(self, m_flow, cp, nSegments):
+    def _format_inputs(self, m_flow_borehole, cp_f, nSegments):
         """
         Format mass flow rate and heat capacity inputs.
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rate (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
         """
 
         # Format mass flow rate inputs
-        if np.isscalar(m_flow):
+        if np.isscalar(m_flow_borehole):
             # Mass flow rate in each fluid circuit
-            m_flow_in = m_flow*np.ones(self.nInlets)
+            m_flow_in = m_flow_borehole*np.ones(self.nInlets)
         else:
             # Mass flow rate in each fluid circuit
-            m_flow_in = m_flow
+            m_flow_in = m_flow_borehole
         self._m_flow_in = m_flow_in
         # Mass flow rate in pipes
         m_flow_pipe = np.tile(m_flow_in, 2*self.nPipes)
         self._m_flow_pipe = m_flow_pipe
 
         # Format heat capacity inputs
-        if np.isscalar(cp):
+        if np.isscalar(cp_f):
             # Heat capacity in each fluid circuit
-            cp_in = cp*np.ones(self.nInlets)
+            cp_in = cp_f*np.ones(self.nInlets)
         else:
             # Heat capacity in each fluid circuit
-            cp_in = cp
+            cp_in = cp_f
         self._cp_in = cp_in
         # Heat capacity in pipes
         cp_pipe = np.tile(cp_in, 2*self.nPipes)
@@ -1231,7 +1241,7 @@ class MultipleUTube(_BasePipe):
         # Initialize stored_coefficients
         self._initialize_stored_coefficients()
 
-    def _continuity_condition_base(self, m_flow, cp, nSegments):
+    def _continuity_condition_base(self, m_flow_borehole, cp_f, nSegments):
         """
         Equation that satisfies equal fluid temperatures in both legs of
         each U-tube pipe at depth (z = H).
@@ -1245,9 +1255,9 @@ class MultipleUTube(_BasePipe):
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rate (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
@@ -1263,11 +1273,12 @@ class MultipleUTube(_BasePipe):
 
         """
         # Check if model variables need to be updated
-        self._check_model_variables(m_flow, cp, nSegments)
+        self._check_model_variables(m_flow_borehole, cp_f, nSegments)
 
         # Coefficient matrices from continuity condition:
         # [b_u]*[T_{f,u}](z=0) = [b_d]*[T_{f,d}](z=0) + [b_b]*[T_b]
-        b_d, b_u, b_b = self._continuity_condition(m_flow, cp, nSegments)
+        b_d, b_u, b_b = self._continuity_condition(
+            m_flow_borehole, cp_f, nSegments)
         b_u_m1 = np.linalg.inv(b_u)
 
         if self.config == 'parallel':
@@ -1313,7 +1324,7 @@ class MultipleUTube(_BasePipe):
 
         return a_in, a_out, a_b
 
-    def _continuity_condition_head(self, m_flow, cp, nSegments):
+    def _continuity_condition_head(self, m_flow_borehole, cp_f, nSegments):
         """
         Build coefficient matrices to evaluate fluid temperatures at depth
         (z = 0). These coefficients take into account connections between
@@ -1329,9 +1340,9 @@ class MultipleUTube(_BasePipe):
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rate (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
@@ -1347,7 +1358,7 @@ class MultipleUTube(_BasePipe):
 
         """
         # Check if model variables need to be updated
-        self._check_model_variables(m_flow, cp, nSegments)
+        self._check_model_variables(m_flow_borehole, cp_f, nSegments)
 
         if self.config == 'parallel':
             a_in = np.vstack((np.ones((self.nPipes, self.nInlets)),
@@ -1359,7 +1370,8 @@ class MultipleUTube(_BasePipe):
         elif self.config == 'series':
             # Coefficient matrices from continuity condition:
             # [b_u]*[T_{f,u}](z=0) = [b_d]*[T_{f,d}](z=0) + [b_b]*[T_b]
-            b_d, b_u, b_b = self._continuity_condition(m_flow, cp, nSegments)
+            b_d, b_u, b_b = self._continuity_condition(
+                m_flow_borehole, cp_f, nSegments)
 
             # Intermediate coefficient matrices:
             # [T_{f,d}](z=0) = [c_in]*[T_{f,in}] + [c_u]*[T_{f,u}](z=0)
@@ -1388,7 +1400,7 @@ class MultipleUTube(_BasePipe):
 
         return a_in, a_out, a_b
 
-    def _continuity_condition(self, m_flow, cp, nSegments):
+    def _continuity_condition(self, m_flow_borehole, cp_f, nSegments):
         """
         Build coefficient matrices to evaluate fluid temperatures in downward
         and upward flowing pipes at depth (z = 0).
@@ -1403,9 +1415,9 @@ class MultipleUTube(_BasePipe):
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rate (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
@@ -1453,7 +1465,7 @@ class MultipleUTube(_BasePipe):
 
         return a_d, a_u, a_b
 
-    def _general_solution(self, z, m_flow, cp, nSegments):
+    def _general_solution(self, z, m_flow_borehole, cp_f, nSegments):
         """
         General solution for fluid temperatures at a depth (z).
 
@@ -1468,9 +1480,9 @@ class MultipleUTube(_BasePipe):
         ----------
         z : float
             Depth (in meters) to evaluate the fluid temperature coefficients.
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rate (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
@@ -1484,7 +1496,7 @@ class MultipleUTube(_BasePipe):
 
         """
         # Check if model variables need to be updated
-        self._check_model_variables(m_flow, cp, nSegments)
+        self._check_model_variables(m_flow_borehole, cp_f, nSegments)
 
         # Load coefficients
         A = self._A
@@ -1508,16 +1520,16 @@ class MultipleUTube(_BasePipe):
 
         return a_f0, a_b
 
-    def _update_model_variables(self, m_flow, cp, nSegments):
+    def _update_model_variables(self, m_flow_borehole, cp_f, nSegments):
         """
         Evaluate eigenvalues and eigenvectors for the system of differential
         equations.
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rate (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
@@ -1525,7 +1537,7 @@ class MultipleUTube(_BasePipe):
 
         nPipes = self.nPipes
         # Format mass flow rate and heat capacity inputs
-        self._format_inputs(m_flow, cp, nSegments)
+        self._format_inputs(m_flow_borehole, cp_f, nSegments)
         m_flow_pipe = self._m_flow_pipe
         cp_pipe = self._cp_pipe
 
@@ -1544,15 +1556,15 @@ class MultipleUTube(_BasePipe):
         self._D = np.diag(self._L)
         self._Dm1 = np.diag(1./self._L)
 
-    def _format_inputs(self, m_flow, cp, nSegments):
+    def _format_inputs(self, m_flow_borehole, cp_f, nSegments):
         """
         Format mass flow rate and heat capacity inputs.
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rate (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
@@ -1562,17 +1574,17 @@ class MultipleUTube(_BasePipe):
         # Format mass flow rate inputs
         # Mass flow rate in pipes
         if self.config.lower() == 'parallel':
-            m_flow_pipe = np.tile(m_flow/nPipes, 2*self.nPipes)
+            m_flow_pipe = np.tile(m_flow_borehole/nPipes, 2*self.nPipes)
         elif self.config.lower() == 'series':
-            m_flow_pipe = np.tile(m_flow, 2*self.nPipes)
+            m_flow_pipe = np.tile(m_flow_borehole, 2*self.nPipes)
         self._m_flow_pipe = m_flow_pipe
         # Mass flow rate in each fluid circuit
-        m_flow_in = np.atleast_1d(m_flow)
+        m_flow_in = np.atleast_1d(m_flow_borehole)
         self._m_flow_in = m_flow_in
 
         # Format heat capacity inputs
         # Heat capacity in each fluid circuit
-        cp_in = np.atleast_1d(cp)
+        cp_in = np.atleast_1d(cp_f)
         self._cp_in = cp_in
         # Heat capacity in pipes
         cp_pipe = np.tile(cp_in, 2*self.nPipes)
@@ -1653,7 +1665,7 @@ class IndependentMultipleUTube(MultipleUTube):
         # Initialize stored_coefficients
         self._initialize_stored_coefficients()
 
-    def _continuity_condition_base(self, m_flow, cp, nSegments):
+    def _continuity_condition_base(self, m_flow_borehole, cp_f, nSegments):
         """
         Equation that satisfies equal fluid temperatures in both legs of
         each U-tube pipe at depth (z = H).
@@ -1667,9 +1679,9 @@ class IndependentMultipleUTube(MultipleUTube):
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rate (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
@@ -1685,15 +1697,16 @@ class IndependentMultipleUTube(MultipleUTube):
 
         """
         # Check if model variables need to be updated
-        self._check_model_variables(m_flow, cp, nSegments)
+        self._check_model_variables(m_flow_borehole, cp_f, nSegments)
 
         # Coefficient matrices from continuity condition:
         # [b_u]*[T_{f,u}](z=0) = [b_d]*[T_{f,d}](z=0) + [b_b]*[T_b]
-        a_in, a_out, a_b = self._continuity_condition(m_flow, cp, nSegments)
+        a_in, a_out, a_b = self._continuity_condition(
+            m_flow_borehole, cp_f, nSegments)
 
         return a_in, a_out, a_b
 
-    def _continuity_condition_head(self, m_flow, cp, nSegments):
+    def _continuity_condition_head(self, m_flow_borehole, cp, nSegments):
         """
         Build coefficient matrices to evaluate fluid temperatures at depth
         (z = 0). These coefficients take into account connections between
@@ -1709,9 +1722,9 @@ class IndependentMultipleUTube(MultipleUTube):
 
         Parameters
         ----------
-        m_flow : float or (nInlets,) array
-            Inlet mass flow rate (in kg/s).
-        cp : float or (nInlets,) array
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
             Fluid specific isobaric heat capacity (in J/kg.degC).
         nSegments : int
             Number of borehole segments.
@@ -1727,7 +1740,7 @@ class IndependentMultipleUTube(MultipleUTube):
 
         """
         # Check if model variables need to be updated
-        self._check_model_variables(m_flow, cp, nSegments)
+        self._check_model_variables(m_flow_borehole, cp, nSegments)
 
         a_in = np.eye(2*self.nPipes, M=self.nPipes, k=0)
         a_out = np.eye(2*self.nPipes, M=self.nPipes, k=-self.nPipes)
@@ -1735,13 +1748,13 @@ class IndependentMultipleUTube(MultipleUTube):
 
         return a_in, a_out, a_b
 
-    def _format_inputs(self, m_flow, cp, nSegments):
+    def _format_inputs(self, m_flow_borehole, cp_f, nSegments):
         """
         Format mass flow rate and heat capacity inputs.
         """
         # Format mass flow rate inputs
         # Mass flow rate in each fluid circuit
-        m_flow_in = np.atleast_1d(m_flow)
+        m_flow_in = np.atleast_1d(m_flow_borehole)
         if not len(m_flow_in) == self.nInlets:
             raise ValueError(
                 'Incorrect length of mass flow vector.')
@@ -1752,9 +1765,9 @@ class IndependentMultipleUTube(MultipleUTube):
 
         # Format heat capacity inputs
         # Heat capacity in each fluid circuit
-        cp_in = np.atleast_1d(cp)
+        cp_in = np.atleast_1d(cp_f)
         if len(cp_in) == 1:
-            cp_in = np.tile(cp, self.nInlets)
+            cp_in = np.tile(cp_f, self.nInlets)
         elif not len(cp_in) == self.nInlets:
             raise ValueError(
                 'Incorrect length of heat capacity vector.')
@@ -1764,7 +1777,7 @@ class IndependentMultipleUTube(MultipleUTube):
         self._cp_pipe = cp_pipe
 
 
-def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, J=2):
+def thermal_resistances(pos, r_out, r_b, k_s, k_g, R_fp, J=2):
     """
     Evaluate thermal resistances and delta-circuit thermal resistances.
 
@@ -1772,15 +1785,15 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, J=2):
     resistances between pipes in a borehole using the multipole method
     [#Claesson2011]_. Thermal resistances are defined by:
 
-    .. math:: \\mathbf{T_f} - T_b = \\mathbf{R} \\cdot \\mathbf{Q_{pipes}}
+    .. math:: \\mathbf{T_f} - T_b = \\mathbf{R} \\cdot \\mathbf{Q_{p}}
 
     Delta-circuit thermal resistances are defined by:
 
     .. math::
 
-        Q_{i,j} = \\frac{T_{f,i} - T_{f,j}}{R^\\Delta_{i,j}}
+        q_{p,i,j} = \\frac{T_{f,i} - T_{f,j}}{R^\\Delta_{i,j}}
 
-        Q_{i,i} = \\frac{T_{f,i} - T_b}{R^\\Delta_{i,i}}
+        q_{p,i,i} = \\frac{T_{f,i} - T_b}{R^\\Delta_{i,i}}
 
     Parameters
     ----------
@@ -1795,7 +1808,7 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, J=2):
         Soil thermal conductivity (in W/m-K).
     k_g : float
         Grout thermal conductivity (in W/m-K).
-    Rfp : float or array
+    R_fp : float or array
         Fluid-to-outer-pipe-wall thermal resistance (in m-K/W).
     J : int, optional
         Number of multipoles per pipe to evaluate the thermal resistances.
@@ -1835,8 +1848,8 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, J=2):
     # If r_out and/or Rfp are supplied as float, build arrays of size n_p
     if np.isscalar(r_out):
         r_out = np.ones(n_p)*r_out
-    if np.isscalar(Rfp):
-        Rfp = np.ones(n_p)*Rfp
+    if np.isscalar(R_fp):
+        R_fp = np.ones(n_p)*R_fp
 
     R = np.zeros((n_p, n_p))
     if J == 0:
@@ -1851,7 +1864,7 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, J=2):
                 if i == j:
                     # Same-pipe thermal resistance
                     r = np.sqrt(xi**2 + yi**2)
-                    R[i, j] = Rfp[i] + 1./(2.*pi*k_g) \
+                    R[i, j] = R_fp[i] + 1./(2.*pi*k_g) \
                         *(np.log(r_b/r_out[i]) - sigma*np.log(1 - r**2/r_b**2))
                 else:
                     # Pipe to pipe thermal resistance
@@ -1869,7 +1882,7 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, J=2):
             Q_p = np.zeros(n_p)
             Q_p[m] = 1.0
             (T_f, T, it, eps_max) = multipole(pos, r_out, r_b, k_s, k_g,
-                                              Rfp, 0., Q_p, J)
+                                              R_fp, 0., Q_p, J)
             R[:,m] = T_f
 
     # Delta-circuit thermal resistances
@@ -1882,7 +1895,7 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, Rfp, J=2):
     return R, Rd
 
 
-def borehole_thermal_resistance(pipe, m_flow, cp):
+def borehole_thermal_resistance(pipe, m_flow_borehole, cp_f):
     """
     Evaluate the effective borehole thermal resistance.
 
@@ -1890,45 +1903,45 @@ def borehole_thermal_resistance(pipe, m_flow, cp):
     ----------
     pipe : pipe object
         Model for pipes inside the borehole.
-    m_flow : float
-        Fluid mass flow rate (in kg/s).
-    cp : float
+    m_flow_borehole : float
+        Fluid mass flow rate (in kg/s) into the borehole.
+    cp_f : float
         Fluid specific isobaric heat capacity (in J/kg.K)
 
     Returns
     -------
-    Rb : float
+    R_b : float
         Effective borehole thermal resistance (m.K/W).
 
     """
     # Coefficient for T_{f,out} = a_out*T_{f,in} + [b_out]*[T_b]
     a_out = pipe.coefficients_outlet_temperature(
-        m_flow, cp, nSegments=1)[0].item()
+        m_flow_borehole, cp_f, nSegments=1)[0].item()
     # Coefficient for Q_b = [a_Q]*T{f,in} + [b_Q]*[T_b]
     a_Q = pipe.coefficients_borehole_heat_extraction_rate(
-            m_flow, cp, nSegments=1)[0].item()
+            m_flow_borehole, cp_f, nSegments=1)[0].item()
     # Borehole length
     H = pipe.b.H
     # Effective borehole thermal resistance
-    Rb = -0.5*H*(1. + a_out)/a_Q
+    R_b = -0.5*H*(1. + a_out)/a_Q
 
-    return Rb
+    return R_b
 
 
-def fluid_friction_factor_circular_pipe(m_flow, r_in, visc, den, epsilon,
-                                        tol=1.0e-6):
+def fluid_friction_factor_circular_pipe(
+        m_flow_pipe, r_in, mu_f, rho_f, epsilon, tol=1.0e-6):
     """
     Evaluate the Darcy-Weisbach friction factor.
 
     Parameters
     ----------
-    m_flow : float
-        Fluid mass flow rate (in kg/s).
+    m_flow_pipe : float
+        Fluid mass flow rate (in kg/s) into the pipe.
     r_in : float
         Inner radius of the pipes (in meters).
-    visc : float
+    mu_f : float
         Fluid dynamic viscosity (in kg/m-s).
-    den : float
+    rho_f : float
         Fluid density (in kg/m3).
     epsilon : float
         Pipe roughness (in meters).
@@ -1950,11 +1963,11 @@ def fluid_friction_factor_circular_pipe(m_flow, r_in, visc, den, epsilon,
     # Relative roughness
     E = epsilon / D
     # Fluid velocity
-    V_flow = m_flow / den
+    V_flow = m_flow_pipe / rho_f
     A_cs = pi * r_in**2
     V = V_flow / A_cs
     # Reynolds number
-    Re = den * V * D / visc
+    Re = rho_f * V * D / mu_f
 
     if Re < 2.3e3:
         # Darcy friction factor for laminar flow
@@ -1973,24 +1986,24 @@ def fluid_friction_factor_circular_pipe(m_flow, r_in, visc, den, epsilon,
     return fDarcy
 
 
-def convective_heat_transfer_coefficient_circular_pipe(m_flow, r_in, visc, den,
-                                                       k, cp, epsilon):
+def convective_heat_transfer_coefficient_circular_pipe(
+        m_flow_pipe, r_in, mu_f, rho_f, k_f, cp_f, epsilon):
     """
     Evaluate the convective heat transfer coefficient for circular pipes.
 
     Parameters
     ----------
-    m_flow : float
-        Fluid mass flow rate (in kg/s).
+    m_flow_pipe : float
+        Fluid mass flow rate (in kg/s) into the pipe.
     r_in : float
         Inner radius of the pipes (in meters).
-    visc : float
+    mu_f : float
         Fluid dynamic viscosity (in kg/m-s).
-    den : float
+    rho_f : float
         Fluid density (in kg/m3).
-    k : float
+    k_f : float
         Fluid thermal conductivity (in W/m-K).
-    cp : float
+    cp_f : float
         Fluid specific heat capacity (in J/kg-K).
     epsilon : float
         Pipe roughness (in meters).
@@ -2007,28 +2020,28 @@ def convective_heat_transfer_coefficient_circular_pipe(m_flow, r_in, visc, den,
     # Hydraulic diameter
     D = 2.*r_in
     # Fluid velocity
-    V_flow = m_flow / den
+    V_flow = m_flow_pipe / rho_f
     A_cs = pi * r_in**2
     V = V_flow / A_cs
     # Reynolds number
-    Re = den * V * D / visc
+    Re = rho_f * V * D / mu_f
     # Prandtl number
-    Pr = cp * visc / k
+    Pr = cp_f * mu_f / k_f
     # Darcy friction factor
-    fDarcy = fluid_friction_factor_circular_pipe(m_flow, r_in, visc, den,
-                                                 epsilon)
+    fDarcy = fluid_friction_factor_circular_pipe(
+        m_flow_pipe, r_in, mu_f, rho_f, epsilon)
     if Re > 2300.:
         # Nusselt number from Gnielinski
         Nu = 0.125*fDarcy * (Re - 1.0e3) * Pr / \
             (1.0 + 12.7 * np.sqrt(0.125*fDarcy) * (Pr**(2.0/3.0) - 1.0))
     else:
         Nu = 3.66
-    h_fluid = k * Nu / D
+    h_fluid = k_f * Nu / D
 
     return h_fluid
 
 
-def conduction_thermal_resistance_circular_pipe(r_in, r_out, k):
+def conduction_thermal_resistance_circular_pipe(r_in, r_out, k_f):
     """
     Evaluate the conduction thermal resistance for circular pipes.
 
@@ -2038,24 +2051,24 @@ def conduction_thermal_resistance_circular_pipe(r_in, r_out, k):
         Inner radius of the pipes (in meters).
     r_out : float
         Outer radius of the pipes (in meters).
-    k : float
+    k_p : float
         Pipe thermal conductivity (in W/m-K).
 
     Returns
     -------
-    R_pipe : float
+    R_p : float
         Conduction thermal resistance (in m-K/W).
 
     Examples
     --------
 
     """
-    R_pipe = np.log(r_out/r_in)/(2*pi*k)
+    R_p = np.log(r_out/r_in)/(2*pi*k_f)
 
-    return R_pipe
+    return R_p
 
 
-def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
+def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
               x_T=np.empty(0), y_T=np.empty(0),
               eps=1e-5, it_max=100):
     """
@@ -2069,7 +2082,7 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
     pos : list
         List of positions (x,y) (in meters) of pipes around the center
         of the borehole.
-    r_p : float or array
+    r_out : float or array
         Outer radius of the pipes (in meters).
     r_b : float
         Borehole radius (in meters).
@@ -2077,13 +2090,13 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
         Soil thermal conductivity (in W/m-K).
     k_g : float
         Grout thermal conductivity (in W/m-K).
-    Rfp : float or array
+    R_fp : float or array
         Fluid-to-outer-pipe-wall thermal resistance (in m-K/W).
     J : int
         Number of multipoles per pipe to evaluate the thermal resistances.
         J=1 or J=2 usually gives sufficient accuracy. J=0 corresponds to the
         line source approximation.
-    Q_p : array
+    q_p : array
         Thermal energy flows (in W/m) from pipes.
     T_b : float
         Average borehole wall temperature (in degC).
@@ -2122,21 +2135,21 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
     n_p = len(pos)
     z_p = np.array([pos[i][0] + 1.j*pos[i][1] for i in range(n_p)])
     # If r_out and/or Rfp are supplied as float, build arrays of size n_p
-    if np.isscalar(r_p):
-        r_p = np.ones(n_p)*r_p
-    if np.isscalar(Rfp):
-        Rfp = np.ones(n_p)*Rfp
+    if np.isscalar(r_out):
+        r_out = np.ones(n_p)*r_out
+    if np.isscalar(R_fp):
+        R_fp = np.ones(n_p)*R_fp
 
     # -------------------------------------
     # Thermal resistance matrix R0 (EQ. 33)
     # -------------------------------------
     pikg = 1.0 / (2.0*pi*k_g)
     sigma = (k_g - k_s)/(k_g + k_s)
-    beta_p = 2*pi*k_g*Rfp
+    beta_p = 2*pi*k_g*R_fp
     R0 = np.zeros((n_p, n_p))
     for i in range(n_p):
         rbm = r_b**2/(r_b**2 - np.abs(z_p[i])**2)
-        R0[i, i] = pikg*(np.log(r_b/r_p[i]) + beta_p[i] + sigma*np.log(rbm))
+        R0[i, i] = pikg*(np.log(r_b/r_out[i]) + beta_p[i] + sigma*np.log(rbm))
         for j in range(n_p):
             if i != j:
                 dz = np.abs(z_p[i] - z_p[j])
@@ -2156,7 +2169,7 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
         while eps_max > eps and it < it_max:
             it += 1
             eps_max = 0.
-            F = _F_mk(Q_p, P, n_p, J, r_b, r_p, z_p, pikg, sigma)
+            F = _F_mk(q_p, P, n_p, J, r_b, r_out, z_p, pikg, sigma)
             P_new = coeff*np.conj(F)
             if it == 1:
                 diff0 = np.max(np.abs(P_new-P)) - np.min(np.abs(P_new-P))
@@ -2169,7 +2182,7 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
     # --------------------------
     # Fluid temperatures(EQ. 32)
     # --------------------------
-    T_f = T_b + R0 @ Q_p
+    T_f = T_b + R0 @ q_p
     if J > 0:
         for m in range(n_p):
             dTfm = 0. + 0.j
@@ -2177,9 +2190,9 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
                 for j in range(J):
                     # Second term
                     if n != m:
-                        dTfm += P[n,j]*(r_p[n]/(z_p[m]-z_p[n]))**(j+1)
+                        dTfm += P[n,j]*(r_out[n]/(z_p[m]-z_p[n]))**(j+1)
                     # Third term
-                    dTfm += sigma*P[n,j]*(r_p[n]*np.conj(z_p[m]) \
+                    dTfm += sigma*P[n,j]*(r_out[n]*np.conj(z_p[m]) \
                                    /(r_b**2 - z_p[n]*np.conj(z_p[m])))**(j+1)
             T_f[m] += np.real(dTfm)
 
@@ -2193,7 +2206,7 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
         dT0 = 0. + 0.j
         dTJ = 0. + 0.j
         for n in range(n_p):
-            if np.abs(z_T - z_p[n])/r_p[n] < 1.0:
+            if np.abs(z_T - z_p[n])/r_out[n] < 1.0:
                 # Coordinate inside pipe
                 T[i] = T_f[n]
                 break
@@ -2206,17 +2219,17 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
                 # Coordinate outside borehole
                 W0 = (1. + sigma)*np.log(r_b/(z_T - z_p[n])) \
                         + sigma*(1. + sigma)/(1. - sigma)*np.log(r_b/z_T)
-            dT0 += Q_p[n]*pikg*W0
+            dT0 += q_p[n]*pikg*W0
             # Multipoles
             for j in range(J):
                 if np.abs(z_T) <= r_b:
                     # Coordinate inside borehole
-                    WJ = (r_p[n]/(z_T - z_p[n]))**(j+1) \
-                            + sigma*((r_p[n]*np.conj(z_T))
+                    WJ = (r_out[n]/(z_T - z_p[n]))**(j+1) \
+                            + sigma*((r_out[n]*np.conj(z_T))
                                      /(r_b**2 - z_p[n]*np.conj(z_T)))**(j+1)
                 else:
                     # Coordinate outside borehole
-                    WJ = (1. + sigma)*(r_p[n]/(z_T - z_p[n]))**(j+1)
+                    WJ = (1. + sigma)*(r_out[n]/(z_T - z_p[n]))**(j+1)
                 dTJ += P[n,j]*WJ
         else:
             T[i] += T_b + np.real(dT0 + dTJ)
@@ -2224,13 +2237,13 @@ def multipole(pos, r_p, r_b, k_s, k_g, Rfp, T_b, Q_p, J,
     return T_f, T, it, eps_max
 
 
-def _F_mk(Q_p, P, n_p, J, r_b, r_p, z, pikg, sigma):
+def _F_mk(q_p, P, n_p, J, r_b, r_out, z, pikg, sigma):
     """
     Complex matrix F_mk from Claesson and Hellstrom (2011), EQ. 34.
 
     Parameters
     ----------
-    Q_p : array
+    q_p : array
         Thermal energy flows (in W/m) from pipes.
     P : array
         Multipoles.
@@ -2242,7 +2255,7 @@ def _F_mk(Q_p, P, n_p, J, r_b, r_p, z, pikg, sigma):
         line source approximation.
     r_b : float
         Borehole radius (in meters).
-    r_p : float or array
+    r_out : float or array
         Outer radius of the pipes (in meters).
     z : array
         Array of pipe coordinates in complex notation (x + 1.j*y). 
@@ -2265,22 +2278,22 @@ def _F_mk(Q_p, P, n_p, J, r_b, r_p, z, pikg, sigma):
             for n in range(n_p):
                 # First term
                 if m != n:
-                    fmk += Q_p[n]*pikg/(k+1)*(r_p[m]/(z[n] - z[m]))**(k+1)
+                    fmk += q_p[n]*pikg/(k+1)*(r_out[m]/(z[n] - z[m]))**(k+1)
                 # Second term
-                fmk += sigma*Q_p[n]*pikg/(k+1)*(r_p[m]*np.conj(z[n])/(
+                fmk += sigma*q_p[n]*pikg/(k+1)*(r_out[m]*np.conj(z[n])/(
                         r_b**2 - z[m]*np.conj(z[n])))**(k+1)
                 for j in range(J):
                     # Third term
                     if m != n:
                         fmk += P[n,j]*binom(j+k+1, j) \
-                                *r_p[n]**(j+1)*(-r_p[m])**(k+1) \
+                                *r_out[n]**(j+1)*(-r_out[m])**(k+1) \
                                 /(z[m] - z[n])**(j+k+2)
                     # Fourth term
                     j_pend = np.min((k, j)) + 2
                     for jp in range(j_pend):
                         fmk += sigma*np.conj(P[n,j])*binom(j+1, jp) \
-                                *binom(j+k-jp+1, j)*r_p[n]**(j+1) \
-                                *r_p[m]**(k+1)*z[m]**(j+1-jp) \
+                                *binom(j+k-jp+1, j)*r_out[n]**(j+1) \
+                                *r_out[m]**(k+1)*z[m]**(j+1-jp) \
                                 *np.conj(z[n])**(k+1-jp) \
                                 /(r_b**2 - z[m]*np.conj(z[n]))**(k+j+2-jp)
             F[m,k] = fmk

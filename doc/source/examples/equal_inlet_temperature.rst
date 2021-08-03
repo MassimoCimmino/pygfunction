@@ -4,8 +4,8 @@
 Calculation of g-functions with equal inlet fluid temperature
 *************************************************************
 
-This example demonstrates the use of the :doc:`g-function <gfunction>` module
-and the :doc:`pipes <pipes>` module to calculate *g*-functions using a boundary
+This example demonstrates the use of the :doc:`g-function <../modules/gfunction>` module
+and the :doc:`pipes <../modules/pipes>` module to calculate *g*-functions using a boundary
 condition of equal inlet fluid temperature into all boreholes, based on the
 method of Cimmino [1]_. The total rate of heat extraction in the bore field is
 constant.
@@ -19,7 +19,7 @@ temperature.
 The script is located in: 
 `pygfunction/examples/equal_inlet_temperature.py`
 
-.. literalinclude:: ../../pygfunction/examples/equal_inlet_temperature.py
+.. literalinclude:: ../../../pygfunction/examples/equal_inlet_temperature.py
    :language: python
    :linenos:
 
