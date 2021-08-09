@@ -1486,10 +1486,9 @@ class _BaseSolver(object):
         # self.nSegments can now be an int or list
         assert type(self.nSegments) is int and self.nSegments >= 1 or \
                type(self.nSegments) is list and len(self.nSegments) == \
-               len(self.boreholes), "The number of segments 'nSegments' " \
-                                    "should be a positive int or a list of " \
-                                    "equal length to the number of boreholes " \
-                                    "in the field."
+               len(self.boreholes) and min(self.nSegments) >= 1, \
+            "The number of segments 'nSegments' should be a positive int or a" \
+            " list of equal length to the number of boreholes in the field."
         acceptable_boundary_conditions = ['UHTR', 'UBWT', 'MIFT']
         assert type(self.boundary_condition) is str and self.boundary_condition in acceptable_boundary_conditions, \
             "Boundary condition \'{}\' is not an acceptable boundary " \
