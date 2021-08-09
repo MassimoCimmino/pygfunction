@@ -1521,7 +1521,6 @@ class _BaseSolver(object):
             "Data type \'{}\' is not an acceptable data type. \n" \
             "Please provide one of the following inputs : {}".format(
                 self.dtype, acceptable_dtypes)
-        # TODO: Add segment lengths initialzation
         if self.segmentLengths is not None:
             for i in range(len(self.segmentLengths)):
                 total_length_i = sum(self.segmentLengths[i])
