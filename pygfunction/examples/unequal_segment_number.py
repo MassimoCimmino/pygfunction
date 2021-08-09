@@ -3,7 +3,7 @@
     uniform and equal borehole wall temperatures.
 
     The g-functions of a field of 6x4 boreholes is calculated with unequal
-    segment lengths.
+    number of segments.
 
 """
 import matplotlib.pyplot as plt
@@ -59,7 +59,6 @@ def main():
         boreField, alpha, time=time, options=options)
 
     print(gfunc.gFunc)
-
 
     return
 
