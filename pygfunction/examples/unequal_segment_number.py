@@ -71,6 +71,15 @@ def main():
 
     print(gfunc.gFunc)
 
+    # Define number of segments for each borehole as integer, but define the
+    # segment lengths as a list
+    options = {'nSegments': nSegments, 'segmentLengths': segmentLengths,
+               'disp': True}
+    gfunc = gt.gfunction.gFunction(
+        boreField, alpha, time=time, options=options)
+
+    print(gfunc.gFunc)
+
     return
 
 
