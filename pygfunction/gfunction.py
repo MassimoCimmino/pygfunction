@@ -1140,7 +1140,7 @@ class _BaseSolver(object):
 
     """
     def __init__(self, boreholes, network, time, boundary_condition,
-                 nSegments=12, disp=False, profiles=False,
+                 nSegments=12, segmentLengths=None, disp=False, profiles=False,
                  kind='linear', dtype=np.double, **other_options):
         self.boreholes = boreholes
         self.network = network
@@ -1148,6 +1148,7 @@ class _BaseSolver(object):
         self.time = np.atleast_1d(time).flatten()
         self.boundary_condition = boundary_condition
         self.nSegments = nSegments
+        self.segmentLengths = segmentLengths
         self.disp = disp
         self.profiles = profiles
         self.kind = kind
@@ -1352,7 +1353,11 @@ class _BaseSolver(object):
 
         """
         # Borehole lengths
-        H_b = np.array([b.H for b in self.boreSegments], dtype=self.dtype)
+        if self.segmentLengths is None:
+            H_b = np.array([b.H for b in self.boreSegments], dtype=self.dtype)
+        else:
+            H_b = np.array([lq for tmp in self.segmentLengths for lq in tmp],
+                           dtype=self.dtype)
         return H_b
 
     def borehole_segments(self):
@@ -1377,12 +1382,21 @@ class _BaseSolver(object):
                 nq_j = self.nSegments[j]
             for i in range(nq_j):
                 b = self.boreholes[j]
-                # Divide borehole into segments of equal length
-                H_b = b.H / nq_j
-                # Buried depth of the i-th segment
-                D = b.D + i * b.H / nq_j
+                if self.segmentLengths is None:
+                    # Divide borehole into segments of equal length
+                    H_b = b.H / nq_j
+                    # Buried depth of the i-th segment
+                    D = b.D + i * b.H / nq_j
+                else:
+                    # 1D list of bh segment lengths
+                    lq_b = self.segmentLengths[j]
+                    # the current borehole segment length
+                    H_b = lq_b[i]
+                    # burial depth of borehole plus previous segment lengths
+                    D = b.D + sum(lq_b[0:i])
                 # Add to list of segments
                 boreSegments.append(Borehole(H_b, D, b.r_b, b.x, b.y))
+
         return boreSegments
 
     def temporal_superposition(self, h_ij, Q_reconstructed):
@@ -1507,6 +1521,13 @@ class _BaseSolver(object):
             "Data type \'{}\' is not an acceptable data type. \n" \
             "Please provide one of the following inputs : {}".format(
                 self.dtype, acceptable_dtypes)
+        # TODO: Add segment lengths initialzation
+        if self.segmentLengths is not None:
+            for i in range(len(self.segmentLengths)):
+                total_length_i = sum(self.segmentLengths[i])
+                assert abs(total_length_i - self.boreholes[i].H) <= 0.1, \
+                "Defined segment lengths must add up to within a tenth of a " \
+                "meter of the total borehole length"
         return
 
 
@@ -2213,9 +2234,18 @@ class _Similarities(_BaseSolver):
         if type(self.nSegments) == int:
             nq_i = self.nSegments
             nq_j = self.nSegments
+            lq_i = None
+            lq_j = None
         else:
             nq_i = self.nSegments[i]  # number of sources in borehole i
             nq_j = self.nSegments[j]  # number of sources in borehole j
+            if type(self.segmentLengths) == list:
+                lq_i = self.segmentLengths[i]
+                lq_j = self.segmentLengths[j]
+            else:
+                lq_i = None
+                lq_j = None
+
         assert reaSource or imgSource, \
             "At least one of reaSource and imgSource must be True."
         if reaSource and imgSource:
@@ -2228,8 +2258,8 @@ class _Similarities(_BaseSolver):
             # Find segment pairs for the image FLS solution
             compare_pairs = self._compare_image_pairs
         # Dive both boreholes into segments
-        segments1 = borehole1.segments(nq_i)
-        segments2 = borehole2.segments(nq_j)
+        segments1 = borehole1.segments(nq_i, lq_i)
+        segments2 = borehole2.segments(nq_j, lq_j)
         # Segments have equal lengths
         H1 = segments1[0].H
         H2 = segments2[0].H

@@ -102,7 +102,7 @@ class Borehole(object):
         pos = (self.x, self.y)
         return pos
 
-    def segments(self, nSegments):
+    def segments(self, nSegments, segmentLengths=None):
         """
         Split a borehole into segments.
 
@@ -122,16 +122,18 @@ class Borehole(object):
         >>> b1.segments(5)
 
         """
+        if segmentLengths is None:
+            segmentLengths = [self.H / nSegments for _ in range(nSegments)]
         boreSegments = []
         for i in range(nSegments):
             # Divide borehole into segments of equal length
-            H = self.H / nSegments
+            H = segmentLengths[i]
             # Buried depth of the i-th segment
-            D = self.D + i * self.H / nSegments * np.cos(self.tilt)
+            D = self.D + sum(segmentLengths[0:i]) * np.cos(self.tilt)
             # x-position
-            x = self.x + i * self.H / nSegments * np.sin(self.tilt) * np.cos(self.orientation)
+            x = self.x + sum(segmentLengths[0:i]) * np.sin(self.tilt) * np.cos(self.orientation)
             # y-position
-            y = self.y + i * self.H / nSegments * np.sin(self.tilt) * np.sin(self.orientation)
+            y = self.y + sum(segmentLengths[0:i]) * np.sin(self.tilt) * np.sin(self.orientation)
             # Add to list of segments
             boreSegments.append(
                 Borehole(H, D, self.r_b, x, y,

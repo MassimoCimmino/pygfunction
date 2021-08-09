@@ -46,15 +46,26 @@ def main():
     # Evaluate g-functions with different segment options
     # -------------------------------------------------------------------------
 
+    nSegments = 12  # number of segments toggle
     # g-Function calculation option for uniform borehole heights
-    options = {'nSegments': 12, 'disp': True, 'profiles': True}
+    options = {'nSegments': nSegments, 'disp': True, 'profiles': True}
     gfunc = gt.gfunction.gFunction(
         boreField, alpha, time=time, options=options)
 
     print(gfunc.gFunc)
 
     # define number of segments as a list
-    options = {'nSegments': [12] * len(boreField), 'disp': True}
+    options = {'nSegments': [nSegments] * len(boreField), 'disp': True}
+    gfunc = gt.gfunction.gFunction(
+        boreField, alpha, time=time, options=options)
+
+    print(gfunc.gFunc)
+
+    # Define segment lengths for each borehole (all uniform)
+    # the segment lengths are defined top to bottom left to right
+    segmentLengths = [[12.5] * nSegments] * len(boreField)
+    options = {'nSegments': [nSegments] * len(boreField),
+               'segmentLengths': segmentLengths, 'disp': True}
     gfunc = gt.gfunction.gFunction(
         boreField, alpha, time=time, options=options)
 
