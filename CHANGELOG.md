@@ -2,6 +2,10 @@
 
 ## Current version
 
+### New features
+
+* [Issue 135](https://github.com/MassimoCimmino/pygfunction/issues/135) - Adds unequal segment length functionality.
+
 ### Enhancements
 
 * [Issue 118](https://github.com/MassimoCimmino/pygfunction/issues/118) - Refactored checks for stored `_BasePipe` and `Network` coefficicients to use `numpy.all()`. This decreases calculation time.
