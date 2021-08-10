@@ -487,8 +487,14 @@ class gFunction(object):
             else:
                 # For other boundary conditions, evaluate the average
                 # heat extraction rate.
-                i0 = i*self.solver.nSegments
-                i1 = i0 + self.solver.nSegments
+                if type(self.solver.nSegments) == int:
+                    i0 = i*self.solver.nSegments
+                    i1 = i0 + self.solver.nSegments
+                else:
+                    # sum all previous segments up to borehole i
+                    i0 = sum(self.solver.nSegments[0:i])
+                    # add the number of segments in borehole i
+                    i1 = i0 + self.solver.nSegments[i]
                 Q_t.append(np.mean(self.solver.Q_b[i0:i1,:], axis=0))
         return Q_t
 
@@ -527,8 +533,16 @@ class gFunction(object):
                               self.boreholes[i].D + self.boreholes[i].H]))
                 Q_b.append(np.array(2*[self.solver.Q_b]))
             else:
-                i0 = i*self.solver.nSegments
-                i1 = i0 + self.solver.nSegments
+                if type(self.solver.nSegments) == int:
+                    i0 = i * self.solver.nSegments
+                    i1 = i0 + self.solver.nSegments
+                    nq_i = self.solver.nSegments
+                else:
+                    # sum all previous segments up to borehole i
+                    i0 = sum(self.solver.nSegments[0:i])
+                    # add the number of segments in borehole i
+                    i1 = i0 + self.solver.nSegments[i]
+                    nq_i = self.solver.nSegments[i]
                 if time is None:
                     # If time is None, heat extraction rates are extracted at
                     # the last time step.
@@ -539,11 +553,10 @@ class gFunction(object):
                                     kind='linear',
                                     copy=False,
                                     axis=1)(time).flatten()
-                if self.solver.nSegments > 1:
+                if nq_i > 1:
                     # Borehole length ratio at the mid-depth of each segment
-                    z_ratio = np.linspace(start=0.5/self.solver.nSegments,
-                                          stop=1-0.5/self.solver.nSegments,
-                                          num=self.solver.nSegments)
+                    z_ratio = np.linspace(
+                        start=0.5/nq_i, stop=1-0.5/nq_i, num=nq_i)
                     z.append(self.boreholes[i].D + self.boreholes[i].H*z_ratio)
                     Q_b.append(Q_bi)
                 else:
@@ -581,8 +594,14 @@ class gFunction(object):
             else:
                 # For other boundary conditions, evaluate the average
                 # borehole wall temperature.
-                i0 = i*self.solver.nSegments
-                i1 = i0 + self.solver.nSegments
+                if type(self.solver.nSegments) == int:
+                    i0 = i * self.solver.nSegments
+                    i1 = i0 + self.solver.nSegments
+                else:
+                    # sum all previous segments up to borehole i
+                    i0 = sum(self.solver.nSegments[0:i])
+                    # add the number of segments in borehole i
+                    i1 = i0 + self.solver.nSegments[i]
                 T_b.append(np.mean(self.solver.T_b[i0:i1,:], axis=0))
         return T_b
 
@@ -631,8 +650,16 @@ class gFunction(object):
                                  copy=False)(time))
                 T_b.append(np.array(2*[T_bi]))
             else:
-                i0 = i*self.solver.nSegments
-                i1 = i0 + self.solver.nSegments
+                if type(self.solver.nSegments) == int:
+                    i0 = i * self.solver.nSegments
+                    i1 = i0 + self.solver.nSegments
+                    nq_i = self.solver.nSegments
+                else:
+                    # sum all previous segments up to borehole i
+                    i0 = sum(self.solver.nSegments[0:i])
+                    # add the number of segments in borehole i
+                    i1 = i0 + self.solver.nSegments[i]
+                    nq_i = self.solver.nSegments[i]
                 if time is None:
                     # If time is None, temperatures are extracted at the last
                     # time step.
@@ -646,9 +673,9 @@ class gFunction(object):
                                     axis=1)(time).flatten()
                 if self.solver.nSegments > 1:
                     # Borehole length ratio at the mid-depth of each segment
-                    z_ratio = np.linspace(start=0.5/self.solver.nSegments,
-                                          stop=1-0.5/self.solver.nSegments,
-                                          num=self.solver.nSegments)
+                    z_ratio = np.linspace(start=0.5/nq_i,
+                                          stop=1-0.5/nq_i,
+                                          num=nq_i)
                     z.append(self.boreholes[i].D + self.boreholes[i].H*z_ratio)
                     T_b.append(T_bi)
                 else:
@@ -1369,13 +1396,19 @@ class _BaseSolver(object):
             List of borehole segments.
 
         """
-        boreSegments = []
-        for b in self.boreholes:
-            for i in range(self.nSegments):
+        boreSegments = []  # list for storage of boreSegments
+        for j in range(len(self.boreholes)):
+            if type(self.nSegments) == int:
+                # the number of segments for all boreholes are the same
+                nq_j = self.nSegments
+            else:
+                nq_j = self.nSegments[j]
+            for i in range(nq_j):
+                b = self.boreholes[j]
                 # Divide borehole into segments of equal length
-                H_b = b.H / self.nSegments
+                H_b = b.H / nq_j
                 # Buried depth of the i-th segment
-                D = b.D + i * b.H / self.nSegments
+                D = b.D + i * b.H / nq_j
                 # Add to list of segments
                 boreSegments.append(Borehole(H_b, D, b.r_b, b.x, b.y))
         return boreSegments
@@ -1478,9 +1511,12 @@ class _BaseSolver(object):
             "provided at the instanciation of the 'Network' object."
         assert type(self.time) is np.ndarray or isinstance(self.time, (float, np.floating)) or self.time is None, \
             "Time should be a float or an array."
-        assert type(self.nSegments) is int and self.nSegments >= 1, \
-            "The number of segments 'nSegments' should be a positive int " \
-            "(>= 1)."
+        # self.nSegments can now be an int or list
+        assert type(self.nSegments) is int and self.nSegments >= 1 or \
+               type(self.nSegments) is list and len(self.nSegments) == \
+               len(self.boreholes) and min(self.nSegments) >= 1, \
+            "The number of segments 'nSegments' should be a positive int or a" \
+            " list of equal length to the number of boreholes in the field."
         acceptable_boundary_conditions = ['UHTR', 'UBWT', 'MIFT']
         assert type(self.boundary_condition) is str and self.boundary_condition in acceptable_boundary_conditions, \
             "Boundary condition \'{}\' is not an acceptable boundary " \
@@ -1629,16 +1665,26 @@ class _Detailed(_BaseSolver):
 
         for i in range(nBoreholes):
             # Segments of the receiving borehole
-            b2 = self.boreholes[i].segments(self.nSegments)
+            if type(self.nSegments) == int:
+                nq_i = self.nSegments
+            else:
+                nq_i = self.nSegments[i]
+            b2 = self.boreholes[i].segments(nq_i)
             # -----------------------------------------------------------------
             # Segment-to-segment thermal response factors for same-borehole
             # thermal interactions
             # -----------------------------------------------------------------
+            if type(self.nSegments) == int:
+                i0 = i * nq_i
+                i1 = i0 + nq_i
+            else:
+                # sum all previous segments up to borehole i
+                i0 = sum(self.nSegments[0:i])
+                # add the number of segments in borehole i
+                i1 = i0 + nq_i
             b1 = b2
             h = finite_line_source(time, alpha, b1, b2)
             # Broadcast values to h_ij matrix
-            i0 = i*self.nSegments
-            i1 = i0 + self.nSegments
             h_ij[i0:i1, i0:i1, 1:] = h
 
             # -----------------------------------------------------------------
@@ -1647,14 +1693,25 @@ class _Detailed(_BaseSolver):
             # -----------------------------------------------------------------
             if i+1 < nBoreholes:
                 # Segments of the emitting borehole
-                b1 = [seg
-                      for b in self.boreholes[i+1:]
-                      for seg in b.segments(self.nSegments)]
+                b1 = []
+                for b_i in range(i+1, nBoreholes):
+                    nq_b_i = self.nSegments[b_i]
+                    b1.extend(self.boreholes[b_i].segments(nq_b_i))
                 h = finite_line_source(time, alpha, b1, b2)
                 # Broadcast values to h_ij matrix
                 for j in range(i+1, nBoreholes):
-                    j0 = j*self.nSegments
-                    j1 = j0 + self.nSegments
+                    if type(self.nSegments) == int:
+                        nq_j = self.nSegments
+                    else:
+                        nq_j = self.nSegments[j]
+                    if type(self.nSegments) == int:
+                        j0 = j * nq_j
+                        j1 = j0 + nq_j
+                    else:
+                        # sum all previous segments up to borehole i
+                        j0 = sum(self.nSegments[0:j])
+                        # add the number of segments in borehole i
+                        j1 = j0 + nq_j
                     h_ij[i0:i1, j0:j1, 1:] = h[:, j0-i1:j1-i1, :]
                     if j > i:
                         H_ratio = segment_lengths[:, i0:i1] / \
@@ -1832,8 +1889,7 @@ class _Similarities(_BaseSolver):
             i = group[0]
             # Find segment-to-segment similarities
             H1, D1, H2, D2, i_pair, j_pair, k_pair = \
-                self._map_axial_segment_pairs(
-                    self.boreholes[i], self.boreholes[i])
+                self._map_axial_segment_pairs(i, i)
             # Locate thermal response factors in the h_ij matrix
             i_segment, j_segment, k_segment, l_segment = \
                 self._map_segment_pairs(
@@ -1855,8 +1911,7 @@ class _Similarities(_BaseSolver):
             i, j = self.borehole_to_borehole[n][0]
             # Find segment-to-segment similarities
             H1, D1, H2, D2, i_pair, j_pair, k_pair = \
-                self._map_axial_segment_pairs(
-                    self.boreholes[i], self.boreholes[j])
+                self._map_axial_segment_pairs(i, j)
             # Locate thermal response factors in the h_ij matrix
             i_segment, j_segment, k_segment, l_segment = \
                 self._map_segment_pairs(
@@ -1902,6 +1957,7 @@ class _Similarities(_BaseSolver):
         tic = tim.time()
 
         # Find similar pairs of boreholes
+        # Boreholes can only be similar if their segments are similar
         self.borehole_to_self, self.borehole_to_borehole = \
             self._find_axial_borehole_pairs(self.boreholes)
         # Find distances for each similar pairs
@@ -2167,7 +2223,7 @@ class _Similarities(_BaseSolver):
                 nDis += 1
         return borehole_to_borehole_distances, borehole_to_borehole_indices
 
-    def _map_axial_segment_pairs(self, borehole1, borehole2,
+    def _map_axial_segment_pairs(self, i, j,
                                  reaSource=True, imgSource=True):
         """
         Find axial (i.e. disregarding the radial distance) similarities between
@@ -2203,6 +2259,15 @@ class _Similarities(_BaseSolver):
             corresponding to all pairs in (i_pair, j_pair).
 
         """
+        # Initialize local variables
+        borehole1 = self.boreholes[i]
+        borehole2 = self.boreholes[j]
+        if type(self.nSegments) == int:
+            nq_i = self.nSegments
+            nq_j = self.nSegments
+        else:
+            nq_i = self.nSegments[i]  # number of sources in borehole i
+            nq_j = self.nSegments[j]  # number of sources in borehole j
         assert reaSource or imgSource, \
             "At least one of reaSource and imgSource must be True."
         if reaSource and imgSource:
@@ -2215,8 +2280,8 @@ class _Similarities(_BaseSolver):
             # Find segment pairs for the image FLS solution
             compare_pairs = self._compare_image_pairs
         # Dive both boreholes into segments
-        segments1 = borehole1.segments(self.nSegments)
-        segments2 = borehole2.segments(self.nSegments)
+        segments1 = borehole1.segments(nq_i)
+        segments2 = borehole2.segments(nq_j)
         # Segments have equal lengths
         H1 = segments1[0].H
         H2 = segments2[0].H
@@ -2225,19 +2290,19 @@ class _Similarities(_BaseSolver):
         D2 = []
         # All possible pairs (i, j) of indices between segments
         i_pair = np.array(
-            [i for i in range(self.nSegments) for j in range(self.nSegments)],
+            [i for i in range(nq_i) for j in range(nq_j)],
             dtype=np.uint)
         j_pair = np.array(
-            [j for i in range(self.nSegments) for j in range(self.nSegments)],
+            [j for i in range(nq_i) for j in range(nq_j)],
             dtype=np.uint)
         # Empty list of indices for unique pairs
-        k_pair = np.empty(self.nSegments**2, dtype=np.uint)
+        k_pair = np.empty(nq_i * nq_j, dtype=np.uint)
         unique_pairs = []
         nPairs = 0
 
         p = 0
-        for i in range(self.nSegments):
-            for j in range(self.nSegments):
+        for i in range(nq_i):
+            for j in range(nq_j):
                 pair = (segments1[i], segments2[j])
                 # Compare the segment pairs to all known unique pairs
                 for k in range(nPairs):
@@ -2298,10 +2363,22 @@ class _Similarities(_BaseSolver):
             in the bore field.
 
         """
-        i_segment = np.concatenate(
-            [i_pair + i*self.nSegments for (i, j) in borehole_to_borehole])
-        j_segment = np.concatenate(
-            [j_pair + j*self.nSegments for (i, j) in borehole_to_borehole])
+        i_segment = []
+        j_segment = []
+        for (i, j) in borehole_to_borehole:
+            if type(self.nSegments) == int:
+                nq_i = self.nSegments
+                nq_j = self.nSegments
+                i_sum = i * nq_i
+                j_sum = j * nq_j
+            else:
+                i_sum = sum(self.nSegments[0:i])
+                j_sum = sum(self.nSegments[0:j])
+            i_segment.append(i_pair + i_sum)
+            j_segment.append(j_pair + j_sum)
+        i_segment = np.concatenate(i_segment)
+        j_segment = np.concatenate(j_segment)
+
         k_segment = np.concatenate(
             [k_pair for (i, j) in borehole_to_borehole])
         l_segment = np.concatenate(

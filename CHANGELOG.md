@@ -6,6 +6,7 @@
 
 * [Issue 118](https://github.com/MassimoCimmino/pygfunction/issues/118) - Refactored checks for stored `_BasePipe` and `Network` coefficicients to use `numpy.all()`. This decreases calculation time.
 * [Issue 119](https://github.com/MassimoCimmino/pygfunction/issues/119) - Refactored `Network` class to change how coefficient matrices are calculated. This decreases calculation time.
+* [Issue 133](https://github.com/MassimoCimmino/pygfunction/issues/133) - The `nSegments` argument is now able to take in the number of segments for each borehole as a list. Each borehole must be split into at least 1 segment, and the length of the segment list must be equal to the number of boreholes.
 
 ### Other changes
 * [Issue 93](https://github.com/MassimoCimmino/pygfunction/issues/93) - Reformatted `pipes` and `networks` modules to use the `@` matrix product operator introduced in [PEP465](https://www.python.org/dev/peps/pep-0465/). This improves readability of the code.

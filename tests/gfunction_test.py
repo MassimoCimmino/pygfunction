@@ -162,6 +162,42 @@ class TestUniformTemperature(unittest.TestCase):
                         msg='Incorrect values of the g-function of three by '
                             'two field for uniform temperature (12 segments).')
 
+    def test_unequal_segments(self):
+        from pygfunction.gfunction import gFunction
+        from pygfunction.boreholes import rectangle_field
+        from pygfunction.utilities import time_geometric
+        # Calculation of the g-function at the same time values
+        N_1 = 3
+        N_2 = 2
+        boreField = rectangle_field(N_1, N_2, self.B, self.B,
+                                    self.H, self.D, self.r_b)
+
+        # Geometrically expanding time vector.
+        dt = 100 * 3600.  # Time step
+        tmax = 3000. * 8760. * 3600.  # Maximum time
+        Nt = 50  # Number of time steps
+        time = time_geometric(dt, tmax, Nt)
+
+        nSegments = 12
+
+        # g-Function calculation option for uniform borehole segment lengths
+        # in the field by defining nSegments as an integer >= 1
+        options = {'nSegments': nSegments}
+        gfunc = gFunction(boreField, self.alpha, time=time, options=options)
+        g_ref = gfunc.gFunc
+
+        # g-Function calculation with nSegments passed as list, where the list
+        # is of the same length as boreField and each borehole is defined to
+        # have >= 1 segment
+        # Note: nSegments[i] pertains to boreField[i]
+        options = {'nSegments': [nSegments] * len(boreField)}
+        gfunc = gFunction(boreField, self.alpha, time=time, options=options)
+
+        self.assertEqual(g_ref, gfunc.gFunc)
+
+
+        a = 1
+
 
 class TestEqualInletTemperature(unittest.TestCase):
     """ Test cases for calculation of g-functions using equal inlet fluid
