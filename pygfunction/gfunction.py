@@ -487,8 +487,14 @@ class gFunction(object):
             else:
                 # For other boundary conditions, evaluate the average
                 # heat extraction rate.
-                i0 = i*self.solver.nSegments
-                i1 = i0 + self.solver.nSegments
+                if type(self.solver.nSegments) == int:
+                    i0 = i*self.solver.nSegments
+                    i1 = i0 + self.solver.nSegments
+                else:
+                    # sum all previous segments up to borehole i
+                    i0 = sum(self.solver.nSegments[0:i])
+                    # add the number of segments in borehole i
+                    i1 = i0 + self.solver.nSegments[i]
                 Q_t.append(np.mean(self.solver.Q_b[i0:i1,:], axis=0))
         return Q_t
 
