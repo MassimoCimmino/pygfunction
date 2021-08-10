@@ -1353,6 +1353,7 @@ class _BaseSolver(object):
         """
         # Borehole lengths
         H_b = np.array([b.H for b in self.boreSegments], dtype=self.dtype)
+        H_b = H_b[np.newaxis, :]
         return H_b
 
     def borehole_segments(self):
@@ -1624,6 +1625,7 @@ class _Detailed(_BaseSolver):
         # Initialize segment-to-segment response factors
         h_ij = np.zeros((self.nSources, self.nSources, nt+1), dtype=self.dtype)
         nBoreholes = len(self.boreholes)
+        segment_lengths = self.segment_lengths()
 
         for i in range(nBoreholes):
             # Segments of the receiving borehole
@@ -1655,9 +1657,10 @@ class _Detailed(_BaseSolver):
                     j1 = j0 + self.nSegments
                     h_ij[i0:i1, j0:j1, 1:] = h[:, j0-i1:j1-i1, :]
                     if j > i:
-                        H_ratio = self.boreholes[i].H/self.boreholes[j].H
+                        H_ratio = segment_lengths[:, i0:i1] / \
+                                  segment_lengths[:, j0:j1]
                         h_ij[j0:j1, i0:i1, 1:] = np.transpose(
-                            h[:, j0-i1:j1-i1, :]*H_ratio, (1, 0, 2))
+                            h[:, j0-i1:j1-i1, :]*H_ratio.T, (1, 0, 2))
 
         # Return 2d array if time is a scalar
         if np.isscalar(time):
