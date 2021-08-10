@@ -1663,16 +1663,26 @@ class _Detailed(_BaseSolver):
 
         for i in range(nBoreholes):
             # Segments of the receiving borehole
-            b2 = self.boreholes[i].segments(self.nSegments)
+            if type(self.nSegments) == int:
+                nq_i = self.nSegments
+            else:
+                nq_i = self.nSegments[i]
+            b2 = self.boreholes[i].segments(nq_i)
             # -----------------------------------------------------------------
             # Segment-to-segment thermal response factors for same-borehole
             # thermal interactions
             # -----------------------------------------------------------------
+            if type(self.nSegments) == int:
+                i0 = i * nq_i
+                i1 = i0 + nq_i
+            else:
+                # sum all previous segments up to borehole i
+                i0 = sum(self.nSegments[0:i])
+                # add the number of segments in borehole i
+                i1 = i0 + nq_i
             b1 = b2
             h = finite_line_source(time, alpha, b1, b2)
             # Broadcast values to h_ij matrix
-            i0 = i*self.nSegments
-            i1 = i0 + self.nSegments
             h_ij[i0:i1, i0:i1, 1:] = h
 
             # -----------------------------------------------------------------
@@ -1681,16 +1691,28 @@ class _Detailed(_BaseSolver):
             # -----------------------------------------------------------------
             if i+1 < nBoreholes:
                 # Segments of the emitting borehole
-                b1 = [seg
-                      for b in self.boreholes[i+1:]
-                      for seg in b.segments(self.nSegments)]
+                b1 = []
+                for b_i in range(i+1, nBoreholes):
+                    nq_b_i = self.nSegments[b_i]
+                    b1.extend(self.boreholes[b_i].segments(nq_b_i))
                 h = finite_line_source(time, alpha, b1, b2)
                 # Broadcast values to h_ij matrix
                 for j in range(i+1, nBoreholes):
-                    j0 = j*self.nSegments
-                    j1 = j0 + self.nSegments
+                    if type(self.nSegments) == int:
+                        nq_j = self.nSegments
+                    else:
+                        nq_j = self.nSegments[j]
+                    if type(self.nSegments) == int:
+                        j0 = j * nq_j
+                        j1 = j0 + nq_j
+                    else:
+                        # sum all previous segments up to borehole i
+                        j0 = sum(self.nSegments[0:j])
+                        # add the number of segments in borehole i
+                        j1 = j0 + nq_j
                     h_ij[i0:i1, j0:j1, 1:] = h[:, j0-i1:j1-i1, :]
                     if j > i:
+                        # TODO: Resolve segment length scaling for reciprocal response
                         H_ratio = self.boreholes[i].H/self.boreholes[j].H
                         h_ij[j0:j1, i0:i1, 1:] = np.transpose(
                             h[:, j0-i1:j1-i1, :]*H_ratio, (1, 0, 2))
@@ -1933,6 +1955,7 @@ class _Similarities(_BaseSolver):
         tic = tim.time()
 
         # Find similar pairs of boreholes
+        # Boreholes can only be similar if their segments are similar
         self.borehole_to_self, self.borehole_to_borehole = \
             self._find_axial_borehole_pairs(self.boreholes)
         # Find distances for each similar pairs
