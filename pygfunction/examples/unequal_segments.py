@@ -47,7 +47,7 @@ def main():
 
     # g-Function calculation option for uniform borehole segment lengths
     # in the field by defining nSegments as an integer >= 1
-    options = {'nSegments': nSegments, 'disp': True, 'profiles': True}
+    options = {'nSegments': nSegments, 'disp': True}
     gfunc = gt.gfunction.gFunction(
         boreField, alpha, time=time, options=options)
 
@@ -57,11 +57,19 @@ def main():
     # of the same length as boreField and each borehole is defined to have
     # >= 1 segment
     # Note: nSegments[i] pertains to boreField[i]
-    options = {'nSegments': [nSegments] * len(boreField), 'disp': True}
+    options = {'nSegments': [nSegments] * len(boreField), 'disp': True,
+               'profiles': True}
     gfunc = gt.gfunction.gFunction(
         boreField, alpha, time=time, options=options)
 
     print(gfunc.gFunc)
+
+    gfunc.visualize_heat_extraction_rates(iBoreholes=[18, 12, 14])
+    gfunc.visualize_heat_extraction_rate_profiles(iBoreholes=[14])
+
+    # TODO: Possibly add UIFT calculation since UBHWT has equal bh wall temps
+    gfunc.visualize_temperatures(iBoreholes=[18, 12, 14])
+    gfunc.visualize_temperature_profiles(iBoreholes=[14])
 
     return
 
