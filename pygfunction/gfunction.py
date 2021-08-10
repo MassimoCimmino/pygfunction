@@ -2344,11 +2344,13 @@ class _Similarities(_BaseSolver):
             if type(self.nSegments) == int:
                 nq_i = self.nSegments
                 nq_j = self.nSegments
+                i_sum = i * nq_i
+                j_sum = j * nq_j
             else:
-                nq_i = self.nSegments[i]  # number of sources in borehole i
-                nq_j = self.nSegments[j]  # number of sources in borehole j
-            i_segment.append(i_pair + i * nq_i)
-            j_segment.append(j_pair + j * nq_j)
+                i_sum = sum(self.nSegments[0:i])
+                j_sum = sum(self.nSegments[0:j])
+            i_segment.append(i_pair + i_sum)
+            j_segment.append(j_pair + j_sum)
         i_segment = np.concatenate(i_segment)
         j_segment = np.concatenate(j_segment)
 
