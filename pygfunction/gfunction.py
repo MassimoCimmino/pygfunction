@@ -1712,8 +1712,8 @@ class _Detailed(_BaseSolver):
                         j1 = j0 + nq_j
                     h_ij[i0:i1, j0:j1, 1:] = h[:, j0-i1:j1-i1, :]
                     if j > i:
-                        # TODO: Resolve segment length scaling for reciprocal response
-                        H_ratio = self.boreholes[i].H/self.boreholes[j].H
+                        H_ratio = (self.boreholes[i].H / nq_i) / \
+                                  (self.boreholes[j].H / nq_j)
                         h_ij[j0:j1, i0:i1, 1:] = np.transpose(
                             h[:, j0-i1:j1-i1, :]*H_ratio, (1, 0, 2))
 
