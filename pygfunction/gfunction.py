@@ -533,8 +533,16 @@ class gFunction(object):
                               self.boreholes[i].D + self.boreholes[i].H]))
                 Q_b.append(np.array(2*[self.solver.Q_b]))
             else:
-                i0 = i*self.solver.nSegments
-                i1 = i0 + self.solver.nSegments
+                if type(self.solver.nSegments) == int:
+                    i0 = i * self.solver.nSegments
+                    i1 = i0 + self.solver.nSegments
+                    nq_i = self.solver.nSegments
+                else:
+                    # sum all previous segments up to borehole i
+                    i0 = sum(self.solver.nSegments[0:i])
+                    # add the number of segments in borehole i
+                    i1 = i0 + self.solver.nSegments[i]
+                    nq_i = self.solver.nSegments[i]
                 if time is None:
                     # If time is None, heat extraction rates are extracted at
                     # the last time step.
@@ -545,11 +553,10 @@ class gFunction(object):
                                     kind='linear',
                                     copy=False,
                                     axis=1)(time).flatten()
-                if self.solver.nSegments > 1:
+                if nq_i > 1:
                     # Borehole length ratio at the mid-depth of each segment
-                    z_ratio = np.linspace(start=0.5/self.solver.nSegments,
-                                          stop=1-0.5/self.solver.nSegments,
-                                          num=self.solver.nSegments)
+                    z_ratio = np.linspace(
+                        start=0.5/nq_i, stop=1-0.5/nq_i, num=nq_i)
                     z.append(self.boreholes[i].D + self.boreholes[i].H*z_ratio)
                     Q_b.append(Q_bi)
                 else:
@@ -587,8 +594,14 @@ class gFunction(object):
             else:
                 # For other boundary conditions, evaluate the average
                 # borehole wall temperature.
-                i0 = i*self.solver.nSegments
-                i1 = i0 + self.solver.nSegments
+                if type(self.solver.nSegments) == int:
+                    i0 = i * self.solver.nSegments
+                    i1 = i0 + self.solver.nSegments
+                else:
+                    # sum all previous segments up to borehole i
+                    i0 = sum(self.solver.nSegments[0:i])
+                    # add the number of segments in borehole i
+                    i1 = i0 + self.solver.nSegments[i]
                 T_b.append(np.mean(self.solver.T_b[i0:i1,:], axis=0))
         return T_b
 
@@ -637,8 +650,16 @@ class gFunction(object):
                                  copy=False)(time))
                 T_b.append(np.array(2*[T_bi]))
             else:
-                i0 = i*self.solver.nSegments
-                i1 = i0 + self.solver.nSegments
+                if type(self.solver.nSegments) == int:
+                    i0 = i * self.solver.nSegments
+                    i1 = i0 + self.solver.nSegments
+                    nq_i = self.solver.nSegments
+                else:
+                    # sum all previous segments up to borehole i
+                    i0 = sum(self.solver.nSegments[0:i])
+                    # add the number of segments in borehole i
+                    i1 = i0 + self.solver.nSegments[i]
+                    nq_i = self.solver.nSegments[i]
                 if time is None:
                     # If time is None, temperatures are extracted at the last
                     # time step.
@@ -652,9 +673,9 @@ class gFunction(object):
                                     axis=1)(time).flatten()
                 if self.solver.nSegments > 1:
                     # Borehole length ratio at the mid-depth of each segment
-                    z_ratio = np.linspace(start=0.5/self.solver.nSegments,
-                                          stop=1-0.5/self.solver.nSegments,
-                                          num=self.solver.nSegments)
+                    z_ratio = np.linspace(start=0.5/nq_i,
+                                          stop=1-0.5/nq_i,
+                                          num=nq_i)
                     z.append(self.boreholes[i].D + self.boreholes[i].H*z_ratio)
                     T_b.append(T_bi)
                 else:
