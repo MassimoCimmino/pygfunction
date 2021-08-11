@@ -1714,7 +1714,7 @@ class _Detailed(_BaseSolver):
                         j1 = j0 + nq_j
                     h_ij[i0:i1, j0:j1, 1:] = h[:, j0-i1:j1-i1, :]
                     if j > i:
-                        H_ratio = segment_lengths[:, i0:i1] / \
+                        H_ratio = segment_lengths[:, i0:i0+(j1-j0)] / \
                                   segment_lengths[:, j0:j1]
                         h_ij[j0:j1, i0:i1, 1:] = np.transpose(
                             h[:, j0-i1:j1-i1, :]*H_ratio.T, (1, 0, 2))
