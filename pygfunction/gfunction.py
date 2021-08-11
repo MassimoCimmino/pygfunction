@@ -1148,13 +1148,12 @@ class _BaseSolver(object):
         # Convert time to a 1d array
         self.time = np.atleast_1d(time).flatten()
         self.boundary_condition = boundary_condition
-        self.nSegments = nSegments
         # Find indices of first and last segments along boreholes
         nBoreholes = len(self.boreholes)
-        if type(self.nSegments) is int:
-            self.nBoreSegments = [self.nSegments] * nBoreholes
+        if type(nSegments) is int:
+            self.nBoreSegments = [nSegments] * nBoreholes
         else:
-            self.nBoreSegments = self.nSegments
+            self.nBoreSegments = nSegments
         self._i0Segments = [sum(self.nBoreSegments[0:i])
                             for i in range(nBoreholes)]
         self._i1Segments = [sum(self.nBoreSegments[0:(i + 1)])
@@ -1490,11 +1489,12 @@ class _BaseSolver(object):
         assert type(self.time) is np.ndarray or isinstance(self.time, (float, np.floating)) or self.time is None, \
             "Time should be a float or an array."
         # self.nSegments can now be an int or list
-        assert type(self.nSegments) is int and self.nSegments >= 1 or \
-               type(self.nSegments) is list and len(self.nSegments) == \
-               len(self.boreholes) and min(self.nSegments) >= 1, \
-            "The number of segments 'nSegments' should be a positive int or a" \
-            " list of equal length to the number of boreholes in the field."
+        assert type(self.nBoreSegments) is list and len(self.nBoreSegments) == \
+               len(self.nBoreSegments) and min(self.nBoreSegments) >= 1, \
+            "The argument for number of segments `nSegments` should be " \
+            "of type int or a list of integers. If passed as a list, the " \
+            "length of the list should be equal to the number of boreholes" \
+            "in the borefield. nSegments >= 1 is/are required."
         acceptable_boundary_conditions = ['UHTR', 'UBWT', 'MIFT']
         assert type(self.boundary_condition) is str and self.boundary_condition in acceptable_boundary_conditions, \
             "Boundary condition \'{}\' is not an acceptable boundary " \
