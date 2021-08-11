@@ -1306,7 +1306,7 @@ class _BaseSolver(object):
                     # Energy conservation: sum([Q_b*H_b]) = sum([H_b])
                     # ---------------------------------------------------------
                     a_in, a_b = self.network.coefficients_borehole_heat_extraction_rate(
-                            self.network.m_flow_network, self.network.cp_f, self.nSegments)
+                            self.network.m_flow_network, self.network.cp_f, self.nBoreSegments)
                     k_s = self.network.p[0].k_s
                     A = np.block(
                         [[h_dt,
