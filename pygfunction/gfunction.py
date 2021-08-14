@@ -72,8 +72,9 @@ class gFunction(object):
         A dictionary of solver options. All methods accept the following
         generic options:
 
-            nSegments : int, optional
-                Number of line segments used per borehole.
+            nSegments : int or list, optional
+                Number of line segments used per borehole, or list of number of
+                line segments used for each borehole.
                 Default is 12.
             disp : bool, optional
                 Set to true to print progression messages.
@@ -824,8 +825,9 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, kind='linear',
         Values of time (in seconds) for which the g-function is evaluated.
     alpha : float
         Soil thermal diffusivity (in m2/s).
-    nSegments : int, optional
-        Number of line segments used per borehole.
+    nSegments : int or list, optional
+        Number of line segments used per borehole, or list of number of
+        line segments used for each borehole.
         Default is 12.
     kind : string, optional
         Interpolation method used for segment-to-segment thermal response
@@ -921,8 +923,9 @@ def equal_inlet_temperature(
         Values of time (in seconds) for which the g-function is evaluated.
     alpha : float
         Soil thermal diffusivity (in m2/s).
-    nSegments : int, optional
-        Number of line segments used per borehole.
+    nSegments : int or list, optional
+        Number of line segments used per borehole, or list of number of
+        line segments used for each borehole.
         Default is 12.
     kind : string, optional
         Interpolation method used for segment-to-segment thermal response
@@ -1013,8 +1016,9 @@ def mixed_inlet_temperature(network, m_flow_network, cp_f,
         Values of time (in seconds) for which the g-function is evaluated.
     alpha : float
         Soil thermal diffusivity (in m2/s).
-    nSegments : int, optional
-        Number of line segments used per borehole.
+    nSegments : int or list, optional
+        Number of line segments used per borehole, or list of number of
+        line segments used for each borehole.
         Default is 12.
     kind : string, optional
         Interpolation method used for segment-to-segment thermal response
@@ -1120,8 +1124,9 @@ class _BaseSolver(object):
             - 'MIFT' :
                 Mixed inlet fluid temperatures.
 
-    nSegments : int, optional
-        Number of line segments used per borehole.
+    nSegments : int or list, optional
+        Number of line segments used per borehole, or list of number of
+        line segments used for each borehole.
         Default is 12.
     disp : bool, optional
         Set to true to print progression messages.
@@ -1551,8 +1556,9 @@ class _Detailed(_BaseSolver):
                 parallel-connected boreholes and extended to mixed
                 configurations by Cimmino (2019) [#Detailed-Cimmin2019]_.
 
-    nSegments : int, optional
-        Number of line segments used per borehole.
+    nSegments : int or list, optional
+        Number of line segments used per borehole, or list of number of
+        line segments used for each borehole.
         Default is 12.
     disp : bool, optional
         Set to true to print progression messages.
@@ -1727,8 +1733,9 @@ class _Similarities(_BaseSolver):
                 parallel-connected boreholes and extended to mixed
                 configurations by Cimmino (2019) [#Similarities-Cimmin2019]_.
 
-    nSegments : int, optional
-        Number of line segments used per borehole.
+    nSegments : int or list, optional
+        Number of line segments used per borehole, or list of number of
+        line segments used for each borehole.
         Default is 12.
     disp : bool, optional
         Set to true to print progression messages.
@@ -2199,10 +2206,10 @@ class _Similarities(_BaseSolver):
 
         Parameters
         ----------
-        borehole1 : Borehole object
-            First borehole.
-        borehole2 : Borehole object
-            Second borehole.
+        i : int
+            Index of the first borehole.
+        j : int
+            Index of the second borehole.
 
         Returns
         -------
