@@ -648,9 +648,10 @@ class gFunction(object):
                                     axis=1)(time).flatten()
                 if self.solver.nBoreSegments[i] > 1:
                     # Borehole length ratio at the mid-depth of each segment
-                    z_ratio = np.linspace(start=0.5/self.solver.nBoreSegments[i],
-                                          stop=1-0.5/self.solver.nBoreSegments[i],
-                                          num=self.solver.nBoreSegments[i])
+                    z_ratio = np.linspace(
+                        start=0.5/self.solver.nBoreSegments[i],
+                        stop=1-0.5/self.solver.nBoreSegments[i],
+                        num=self.solver.nBoreSegments[i])
                     z.append(self.boreholes[i].D + self.boreholes[i].H*z_ratio)
                     T_b.append(T_bi)
                 else:
@@ -1311,7 +1312,9 @@ class _BaseSolver(object):
                     # Energy conservation: sum([Q_b*H_b]) = sum([H_b])
                     # ---------------------------------------------------------
                     a_in, a_b = self.network.coefficients_borehole_heat_extraction_rate(
-                            self.network.m_flow_network, self.network.cp_f, self.nBoreSegments)
+                            self.network.m_flow_network,
+                            self.network.cp_f,
+                            self.nBoreSegments)
                     k_s = self.network.p[0].k_s
                     A = np.block(
                         [[h_dt,
