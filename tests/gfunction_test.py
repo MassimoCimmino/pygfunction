@@ -162,7 +162,7 @@ class TestUniformTemperature(unittest.TestCase):
                         msg='Incorrect values of the g-function of three by '
                             'two field for uniform temperature (12 segments).')
 
-    def test_unequal_segments(self):
+    def test_unequal_segments(self, rel_tol=1.0e-3):
         from pygfunction.gfunction import gFunction
         from pygfunction.boreholes import rectangle_field
         from pygfunction.utilities import time_geometric
@@ -175,14 +175,14 @@ class TestUniformTemperature(unittest.TestCase):
         # Geometrically expanding time vector.
         dt = 100 * 3600.  # Time step
         tmax = 3000. * 8760. * 3600.  # Maximum time
-        Nt = 50  # Number of time steps
+        Nt = 10  # Number of time steps
         time = time_geometric(dt, tmax, Nt)
 
-        nSegments = 12
+        nSegments = [12, 11, 13, 12, 11, 13]
 
         # g-Function calculation option for uniform borehole segment lengths
         # in the field by defining nSegments as an integer >= 1
-        options = {'nSegments': nSegments}
+        options = {'nSegments': nSegments[0]}
         gfunc = gFunction(boreField, self.alpha, time=time, options=options)
         g_ref = gfunc.gFunc
 
@@ -190,13 +190,13 @@ class TestUniformTemperature(unittest.TestCase):
         # is of the same length as boreField and each borehole is defined to
         # have >= 1 segment
         # Note: nSegments[i] pertains to boreField[i]
-        options = {'nSegments': [nSegments] * len(boreField)}
-        gfunc = gFunction(boreField, self.alpha, time=time, options=options)
+        options = {'nSegments':nSegments}
+        g = gFunction(boreField, self.alpha, time=time, options=options).gFunc
 
-        self.assertEqual(g_ref, gfunc.gFunc)
-
-
-        a = 1
+        self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-6),
+                        msg='Incorrect values of the g-function of six '
+                            'boreholes for uniform temperature and '
+                            'unequal numbers of segments.')
 
 
 class TestEqualInletTemperature(unittest.TestCase):
