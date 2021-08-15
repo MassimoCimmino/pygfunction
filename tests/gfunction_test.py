@@ -74,14 +74,6 @@ class TestUniformTemperature(unittest.TestCase):
         self.r_b = 0.075        # Borehole radius [m]
         self.B = 7.5            # Borehole spacing [m]
         self.alpha = 1.0e-6     # Ground thermal diffusivity [m2/s]
-        self.k_s = 2.0          # Ground thermal conductivity [W/m.K]
-        self.k_g = 1.0          # Grout thermal conductivity [W/m.K]
-        self.k_p = 0.4  # Pipe thermal conductivity [W/m.K]
-        self.r_out = 0.02       # Pipe outer radius [m]
-        self.r_in = 0.015       # Pipe inner radius [m]
-        self.D_s = 0.05         # Shank spacing [m]
-        self.epsilon = 1.0e-06  # Pipe roughness [m]
-        self.m_flow_network = 0.25      # Fluid mass flor rate in network [kg/s]
 
     def test_one_borehole_one_segment(self, rel_tol=1.0e-4):
         """ Tests the value of the g-function of one borehole.
@@ -174,6 +166,66 @@ class TestUniformTemperature(unittest.TestCase):
         from pygfunction.gfunction import gFunction
         from pygfunction.boreholes import rectangle_field
         from pygfunction.utilities import time_geometric
+        # Calculation of the g-function at the same time values
+        N_1 = 3
+        N_2 = 2
+        boreField = rectangle_field(N_1, N_2, self.B, self.B,
+                                    self.H, self.D, self.r_b)
+
+        # Geometrically expanding time vector.
+        dt = 100 * 3600.  # Time step
+        tmax = 3000. * 8760. * 3600.  # Maximum time
+        Nt = 10  # Number of time steps
+        time = time_geometric(dt, tmax, Nt)
+
+        nSegments = [12, 11, 13, 12, 11, 13]
+
+        # g-Function calculation option for uniform borehole segment lengths
+        # in the field by defining nSegments as an integer >= 1
+        options = {'nSegments': nSegments[0]}
+        gfunc = gFunction(boreField, self.alpha, time=time, options=options)
+        g_ref = gfunc.gFunc
+
+        # g-Function calculation with nSegments passed as list, where the list
+        # is of the same length as boreField and each borehole is defined to
+        # have >= 1 segment
+        # Note: nSegments[i] pertains to boreField[i]
+        options = {'nSegments':nSegments}
+        g = gFunction(boreField, self.alpha, time=time, options=options).gFunc
+
+        self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-6),
+                        msg='Incorrect values of the g-function of six '
+                            'boreholes for uniform temperature and '
+                            'unequal numbers of segments.')
+
+
+class TestMixedInletTemperature(unittest.TestCase):
+    """ Test cases for calculation of g-functions using mixed inlet fluid
+        temperature boundary condition.
+    """
+
+    def setUp(self):
+        self.H = 150.           # Borehole length [m]
+        self.D = 4.             # Borehole buried depth [m]
+        self.r_b = 0.075        # Borehole radius [m]
+        self.B = 7.5            # Borehole spacing [m]
+        self.alpha = 1.0e-6     # Ground thermal diffusivity [m2/s]
+        self.k_s = 2.0          # Ground thermal conductivity [W/m.K]
+        self.k_g = 1.0          # Grout thermal conductivity [W/m.K]
+        self.k_p = 0.4          # Pipe thermal conductivity [W/m.K]
+        self.r_out = 0.02       # Pipe outer radius [m]
+        self.r_in = 0.015       # Pipe inner radius [m]
+        self.D_s = 0.05         # Shank spacing [m]
+        self.epsilon = 1.0e-06  # Pipe roughness [m]
+        self.m_flow_network = 0.25  # Fluid mass flor rate in network [kg/s]
+
+    def test_unequal_segments(self, rel_tol=1.0e-3):
+        """ Tests the value of the g-function of six boreholes in series with
+            unequal numbers of segments.
+        """
+        from pygfunction.gfunction import gFunction
+        from pygfunction.boreholes import rectangle_field
+        from pygfunction.utilities import time_geometric
         from pygfunction.pipes import \
             conduction_thermal_resistance_circular_pipe, \
             convective_heat_transfer_coefficient_circular_pipe, \
@@ -222,7 +274,7 @@ class TestUniformTemperature(unittest.TestCase):
         # g-Function calculation option for uniform borehole segment lengths
         # in the field by defining nSegments as an integer >= 1
         options = {'nSegments': nSegments[0]}
-        gfunc = gFunction(boreField, self.alpha, time=time, options=options)
+        gfunc = gFunction(network, self.alpha, time=time, options=options)
         g_ref = gfunc.gFunc
 
         # g-Function calculation with nSegments passed as list, where the list
@@ -230,23 +282,12 @@ class TestUniformTemperature(unittest.TestCase):
         # have >= 1 segment
         # Note: nSegments[i] pertains to boreField[i]
         options = {'nSegments':nSegments}
-        g = gFunction(boreField, self.alpha, time=time, options=options).gFunc
+        g = gFunction(network, self.alpha, time=time, options=options).gFunc
 
         self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-6),
                         msg='Incorrect values of the g-function of six '
-                            'boreholes for uniform temperature and '
+                            'boreholes for mixed inlet temperature and '
                             'unequal numbers of segments.')
-
-        g_MIFT_ref = np.array([0.85365196, 1.34211165, 1.89130839, 3.11378764,
-                               5.51325292, 8.42720948, 10.91029798, 12.34649771,
-                               12.80598544, 12.89280731])
-
-        g_MIFT = gFunction(
-            network, alpha=self.alpha, time=time, boundary_condition='MIFT',
-            options=options)
-
-        self.assertTrue(np.allclose(g_MIFT_ref, g_MIFT.gFunc, rtol=rel_tol,
-                                    atol=1e-6), msg='None')
 
 
 class TestEqualInletTemperature(unittest.TestCase):
