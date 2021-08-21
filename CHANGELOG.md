@@ -7,6 +7,7 @@
 * [Issue 118](https://github.com/MassimoCimmino/pygfunction/issues/118) - Refactored checks for stored `_BasePipe` and `Network` coefficicients to use `numpy.all()`. This decreases calculation time.
 * [Issue 119](https://github.com/MassimoCimmino/pygfunction/issues/119) - Refactored `Network` class to change how coefficient matrices are calculated. This decreases calculation time.
 * [Issue 133](https://github.com/MassimoCimmino/pygfunction/issues/133) - The `nSegments` argument is now able to take in the number of segments for each borehole as a list. Each borehole must be split into at least 1 segment, and the length of the segment list must be equal to the number of boreholes.
+* [Issue 141](https://github.com/MassimoCimmino/pygfunction/issues/141) - Changed the calculation of the convective heat transfer coefficient in the transition region (`2300. < Re < 4000.`) by `convective_heat_transfer_coefficient_circular_pipe()`. The Nusselt number is now interpolated between the laminar value (at `Re = 2300.`) and the turbulent value (at `Re = 4000.`). This avoids any discontinuities in the values of the convective heat transfer coefficient near `Re = 2300.`.
 
 ### Other changes
 * [Issue 93](https://github.com/MassimoCimmino/pygfunction/issues/93) - Reformatted `pipes` and `networks` modules to use the `@` matrix product operator introduced in [PEP465](https://www.python.org/dev/peps/pep-0465/). This improves readability of the code.
