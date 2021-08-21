@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.constants import pi
 from scipy.special import binom
+import warnings
 
 from .utilities import _initialize_figure, _format_axes
 
@@ -1992,13 +1993,16 @@ def convective_heat_transfer_coefficient_circular_pipe(
     Evaluate the convective heat transfer coefficient for circular pipes.
 
     The Nusselt number must first be determined to find the convection
-    coefficient.
-    Determination of the Nusselt number in turbulent flow is done by calling
-    :func:`Gnielinski`. An analytical solution for constant borehole wall
-    surface temperature is used for laminar flow. As noted by
-    :func:`Gnielinski`, there is a gap in applicability from 2300 < Re < 3000.
-    This can become an issue in the design process. To over come this,
-    a linear interpolation is used over the range 2300 < Re < 4000.
+    coefficient. Determination of the Nusselt number in turbulent flow is done
+    by calling :func:`_Nusselt_number_turbulent_flow`. An analytical solution
+    for constant pipe wall surface temperature is used for laminar flow.
+
+    Since :func:`_Nusselt_number_turbulent_flow` is only valid for Re > 3000.
+    and to avoid dicontinuities in the values of the convective heat transfer
+    coefficient near the onset of the turbulence region (approximately
+    Re = 2300.), linear interpolation is used over the range 2300 < Re < 4000
+    for the evaluation of the Nusselt number.
+
     This approach was verified by Gnielinski (2013)
     [#Gnielinksi2013]_.
 
@@ -2007,7 +2011,7 @@ def convective_heat_transfer_coefficient_circular_pipe(
     m_flow_pipe : float
         Fluid mass flow rate (in kg/s) into the pipe.
     r_in : float
-        Inner radius of the pipes (in meters).
+        Inner radius of the pipe (in meters).
     mu_f : float
         Fluid dynamic viscosity (in kg/m-s).
     rho_f : float
@@ -2049,27 +2053,28 @@ def convective_heat_transfer_coefficient_circular_pipe(
         m_flow_pipe, r_in, mu_f, rho_f, epsilon)
 
     # To ensure there are no dramatic jumps in the equation, an interpolation
-    # in a transition region of 2300 <= Re <= 4000 will be used
+    # in a transition region of 2300 <= Re <= 4000 will be used.
     # Cengel and Ghajar (2015, pg. 476) state that Re> 4000 is a conservative
-    # value to consider the flow to be turbulent in piping networks
+    # value to consider the flow to be turbulent in piping networks.
 
-    critical_lower = 2300.
-    critical_upper = 4000.
+    Re_crit_lower = 2300.
+    Re_crit_upper = 4000.
 
-    if Re >= critical_upper:
+    if Re >= Re_crit_upper:
         # Nusselt number from Gnielinski
-        Nu = Gnielinski(Re, Pr, fDarcy)
-    elif critical_lower < Re < critical_upper:
+        Nu = _Nusselt_number_turbulent_flow(Re, Pr, fDarcy)
+    elif Re_crit_lower < Re:
         Nu_lam = 3.66  # constant surface temperature laminar Nusselt number
         # Nusselt number at the upper bound of the "transition" region between
         # laminar value and Gnielinski correlation (Re = 4000.)
-        Nu_turb = Gnielinski(critical_upper, Pr, fDarcy)
-        # Equation (16) from Gnielinski (2013)
-        gamma = (Re - critical_lower) / (critical_upper - critical_lower)
-        # Equation (17) from Gnielinski (2013)
+        Nu_turb = _Nusselt_number_turbulent_flow(Re_crit_upper, Pr, fDarcy)
+        # Interpolate between the laminar (Re = 2300.) and turbulent
+        # (Re = 4000.) values. Equations (16)-(17) from Gnielinski (2013).
+        gamma = (Re - Re_crit_lower) / (Re_crit_upper - Re_crit_lower)
         Nu = (1 - gamma) * Nu_lam + gamma * Nu_turb
     else:
         Nu = 3.66
+
     h_fluid = k_f * Nu / D
 
     return h_fluid
@@ -2100,68 +2105,6 @@ def conduction_thermal_resistance_circular_pipe(r_in, r_out, k_f):
     R_p = np.log(r_out/r_in)/(2*pi*k_f)
 
     return R_p
-
-
-def Gnielinski(Re, Pr, fDarcy):
-    """
-    An empirical equation developed by Volker Gnielinski (1975)
-    [#Gnielinski1975]_ based on experimental data for turbulent flow in pipes.
-    Cengel and Ghajar (2015, pg. 497) [#CengelGhajar2015]_ say that the
-    Gnielinski equation should be considered the preferred equation for
-    determining the Nusselt number in the transition and turbulent region.
-    .. math::
-        	\\text{Nu} = \\dfrac{(f/8)(\\text{Re}-1000)\\text{Pr}}
-        	{1 + 12.7(f/8)^{0.5} (\\text{Pr}^{2/3}-1)} \\;\\;\\;
-        	\\bigg(
-            \\begin{array}{c}
-                0.5 \leq \\text{Pr} \leq 2000 \\\\
-                3 \\times 10^5 <  \\text{Re} < 5 \\times 10^6
-            \\end{array}
-            \\bigg)
-    .. note::
-        This equation does not apply to 2300 < Re < 3000.
-    Parameters
-    ----------
-    Re : float
-        Reynolds number
-    Pr : float
-        Prandlt Number
-    fDarcy : float
-        Darcy friction factor found with
-        :func:`fluid_friction_factor_circular_pipe`
-    Returns
-    -------
-    Nu : float
-        The Nusselt number
-    References
-    ------------
-    .. [#Gnielinski1975] Gnielinski, V. (1975). Neue Gleichungen für
-        den Wärme- und den Stoffübergang in turbulent durchströmten Rohren und
-        Kanälen. Forschung im Ingenieurwesen, 41(1), 8–16.
-        https://doi.org/10.1007/BF02559682
-    .. [#CengelGhajar2015] Çengel, Y.A., & Ghajar, A.J. (2015). Heat and mass
-        transfer: fundamentals & applications (Fifth edition.). McGraw-Hill.
-    """
-    import warnings
-
-    # Warn the user if the Reynolds number is out of bounds, but don't break
-    if 3.0E03 < Re < 5.0E06:
-        pass
-    else:
-        warnings.warn('This Nusselt calculation is only valid for Reynolds '
-                      'number in the range of 3.0E03 < Re < 5.0E06, your value'
-                      ' falls outside of the range at Re={0:.4f}'.format(Re))
-    # Warn the user if the Prandlt number is out of bounds
-    if 0.5 <= Pr <= 2000.:
-        pass
-    else:
-        warnings.warn('This Nusselt calculation is only valid for Prandlt '
-                      'numbers in the range of 0.5 <= Pr <= 2000, your value '
-                      'falls outside of the range at Pr={0:.4f}'.format(Pr))
-
-    Nu = 0.125*fDarcy * (Re - 1.0e3) * Pr / \
-         (1.0 + 12.7 * np.sqrt(0.125*fDarcy) * (Pr**(2.0/3.0) - 1.0))
-    return Nu
 
 
 def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
@@ -2395,3 +2338,66 @@ def _F_mk(q_p, P, n_p, J, r_b, r_out, z, pikg, sigma):
             F[m,k] = fmk
 
     return F
+
+
+def _Nusselt_number_turbulent_flow(Re, Pr, fDarcy):
+    """
+    An empirical equation developed by Volker Gnielinski (1975)
+    [#Gnielinski1975]_ based on experimental data for turbulent flow in pipes.
+    Cengel and Ghajar (2015, pg. 497) [#CengelGhajar2015]_ say that the
+    Gnielinski equation should be preferred for determining the Nusselt number
+    in the transition and turbulent region.
+
+    .. math::
+        	\\text{Nu} = \\dfrac{(f/8)(\\text{Re}-1000)\\text{Pr}}
+        	{1 + 12.7(f/8)^{0.5} (\\text{Pr}^{2/3}-1)} \\;\\;\\;
+        	\\bigg(
+            \\begin{array}{c}
+                0.5 \leq \\text{Pr} \leq 2000 \\\\
+                3 \\times 10^5 <  \\text{Re} < 5 \\times 10^6
+            \\end{array}
+            \\bigg)
+
+    .. note::
+        This equation does not apply to Re < 3000.
+
+    Parameters
+    ----------
+    Re : float
+        Reynolds number.
+    Pr : float
+        Prandlt Number.
+    fDarcy : float
+        Darcy friction factor.
+
+    Returns
+    -------
+    Nu : float
+        The Nusselt number
+
+    References
+    ------------
+    .. [#Gnielinski1975] Gnielinski, V. (1975). Neue Gleichungen für
+        den Wärme- und den Stoffübergang in turbulent durchströmten Rohren und
+        Kanälen. Forschung im Ingenieurwesen, 41(1), 8–16.
+        https://doi.org/10.1007/BF02559682
+    .. [#CengelGhajar2015] Çengel, Y.A., & Ghajar, A.J. (2015). Heat and mass
+        transfer: fundamentals & applications (Fifth edition.). McGraw-Hill.
+
+    """
+
+    # Warn the user if the Reynolds number is out of bounds, but don't break
+    if not 3.0E03 < Re < 5.0E06:
+        warnings.warn('This Nusselt calculation is only valid for Reynolds '
+                      'number in the range of 3.0E03 < Re < 5.0E06, your value'
+                      ' falls outside of the range at Re={0:.4f}'.format(Re))
+
+    # Warn the user if the Prandlt number is out of bounds
+    if not 0.5 <= Pr <= 2000.:
+        warnings.warn('This Nusselt calculation is only valid for Prandlt '
+                      'numbers in the range of 0.5 <= Pr <= 2000, your value '
+                      'falls outside of the range at Pr={0:.4f}'.format(Pr))
+
+    Nu = 0.125 * fDarcy * (Re - 1.0e3) * Pr / \
+        (1.0 + 12.7 * np.sqrt(0.125*fDarcy) * (Pr**(2.0/3.0) - 1.0))
+    return Nu
