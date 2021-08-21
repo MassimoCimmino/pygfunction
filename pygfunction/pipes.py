@@ -1443,7 +1443,7 @@ class MultipleUTube(_BasePipe):
 
         # Matrix exponential at depth (z = H)
         H = self.b.H
-        E = V @ np.diag(np.exp(L*H)) @ Vm1
+        E = np.real(V @ np.diag(np.exp(L*H)) @ Vm1)
 
         # Coefficient matrix for borehole wall temperatures
         IIm1 = np.hstack((np.eye(self.nPipes), -np.eye(self.nPipes)))
@@ -1453,7 +1453,8 @@ class MultipleUTube(_BasePipe):
             z1 = H - v*H/nSegments
             z2 = H - (v + 1)*H/nSegments
             dE = np.diag(np.exp(L*z1) - np.exp(L*z2))
-            a_b[:, v:v+1] = IIm1 @ V @ Dm1 @ dE @ Vm1 @ A @ Ones
+            a_b[:, v:v+1] = np.real(IIm1 @ V @ Dm1 @ dE @ Vm1 @ A @ Ones)
+            
 
         # Configuration-specific inlet and outlet coefficient matrices
         IZER = np.vstack((np.eye(self.nPipes),
@@ -1506,7 +1507,7 @@ class MultipleUTube(_BasePipe):
         Dm1 = self._Dm1
 
         # Matrix exponential at depth (z)
-        a_f0 = V @ np.diag(np.exp(L*z)) @ Vm1
+        a_f0 = np.real(V @ np.diag(np.exp(L*z)) @ Vm1)
 
         # Coefficient matrix for borehole wall temperatures
         a_b = np.zeros((2*self.nPipes, nSegments))
@@ -1516,7 +1517,7 @@ class MultipleUTube(_BasePipe):
             dz2 = z - min(z, (v + 1)*self.b.H/nSegments)
             E1 = np.diag(np.exp(L*dz1))
             E2 = np.diag(np.exp(L*dz2))
-            a_b[:,v:v+1] = V @ Dm1 @ (E2 - E1) @ Vm1 @ A @ Ones
+            a_b[:,v:v+1] = np.real(V @ Dm1 @ (E2 - E1) @ Vm1 @ A @ Ones)
 
         return a_f0, a_b
 
