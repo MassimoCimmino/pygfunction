@@ -1781,9 +1781,35 @@ class IndependentMultipleUTube(MultipleUTube):
 
 class Coaxial(SingleUTube):
     def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_ff, R_fp, J=2):
-        R = np.array([R_ff, R_fp])
-        SingleUTube.__init__(self, pos, r_in, r_out, borehole, k_s, k_g, R, J=J)
-        a = 1
+        self.pos = pos
+        self.r_in = r_in
+        self.r_out = r_out
+        self.b = borehole
+        self.k_s = k_s
+        self.k_g = k_g
+        self.R_ff = R_ff
+        self.R_fp = R_fp
+        self.J = J
+        self.nPipes = 1
+        self.nInlets = 1
+        self.nOutlets = 1
+        self._check_geometry()
+
+        # Determine the indexes of the inner and outer pipes
+        iInner = r_out.argmin()
+        iOuter = r_out.argmax()
+        # Outer pipe to borehole wall thermal resistance
+        R_fg = thermal_resistances([pos], r_out[iOuter], borehole.r_b, k_s,
+                                   k_g, self.R_fp, J=self.J)[1][0]
+        # Delta-circuit thermal resistances
+        self._Rd = np.zeros((2*self.nPipes, 2*self.nPipes))
+        self._Rd[iInner, iInner] = np.inf
+        self._Rd[iInner, iOuter] = R_ff
+        self._Rd[iOuter, iInner] = R_ff
+        self._Rd[iOuter, iOuter] = R_fg
+
+        # Initialize stored_coefficients
+        self._initialize_stored_coefficients()
 
 
 def thermal_resistances(pos, r_out, r_b, k_s, k_g, R_fp, J=2):
@@ -2320,7 +2346,7 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
             if it == 1:
                 diff0 = np.max(np.abs(P_new-P)) - np.min(np.abs(P_new-P))
             diff = np.max(np.abs(P_new-P)) - np.min(np.abs(P_new-P))
-            eps_max = diff / diff0
+            eps_max = diff / (diff0 + 1e-30)
             P = P_new
     else:
         P = np.zeros((n_p, 0))
