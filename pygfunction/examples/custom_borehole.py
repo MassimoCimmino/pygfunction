@@ -5,6 +5,7 @@
 """
 import pygfunction as gt
 from numpy import pi
+import numpy as np
 
 
 def main():
@@ -53,32 +54,44 @@ def main():
     R_f = 1.0 / (h_f * 2 * pi * r_in)
 
     SingleUTube = gt.pipes.SingleUTube(
-        pos, r_in, r_out, borehole, k_s, k_g, R_f + R_p)
+        pos_single, r_in, r_out, borehole, k_s, k_g, R_f + R_p)
 
     R_b = gt.pipes.borehole_thermal_resistance(
         SingleUTube, m_flow_borehole, cp_f)
 
     print('Borehole thermal resistance: {0:.4f} m.K/W'.format(R_b))
 
+    # Coaxial pipe
+    # Note: Is a coaxial pipe typically set as far as the spacing between the
+    #       inner and outer tubes go?
+    pos = (0., 0.)  # Coordinates of the coaxial pipe axis
+    # Pipe dimensions
+    r_inner = np.array([44.2 / 1000. / 2., 50. / 1000. / 2.])  # Inner pipe radii (m)
+    r_outer = np.array([97.4 / 1000. / 2., 110. / 1000. / 2.])  # Outer pip radii (m)
+    epsilon = [1.0e-6, 1.0e-6]  # Pipe roughness (m)
+
+    # Thermal properties
+    k_p = [0.4, 0.4]  # Inner and outer pipe thermal conductivity (W/m.K)
+
     # Check the geometry to make sure it is physically possible
     #
     # This class method is automatically called at the instanciation of the
     # pipe object and raises an error if the pipe geometry is invalid. It is
     # manually called here for demosntration.
-    check_single = SingleUTube._check_geometry()
-    print('The geometry of the borehole is valid (realistic/possible): '
-          + str(check_single))
-    check_double = DoubleUTube_ser._check_geometry()
-    print('The geometry of the borehole is valid (realistic/possible): '
-          + str(check_double))
-
-    # Create a borehole top view
-    fig_single = SingleUTube.visualize_pipes()
-    fig_double = DoubleUTube_ser.visualize_pipes()
-
-    # Save the figure as a pdf
-    fig_single.savefig('singe-u-tube-borehole-top-view.pdf')
-    fig_double.savefig('double-u-tube-borehole-top-view.pdf')
+    # check_single = SingleUTube._check_geometry()
+    # print('The geometry of the borehole is valid (realistic/possible): '
+    #       + str(check_single))
+    # check_double = DoubleUTube_ser._check_geometry()
+    # print('The geometry of the borehole is valid (realistic/possible): '
+    #       + str(check_double))
+    #
+    # # Create a borehole top view
+    # fig_single = SingleUTube.visualize_pipes()
+    # fig_double = DoubleUTube_ser.visualize_pipes()
+    #
+    # # Save the figure as a pdf
+    # fig_single.savefig('singe-u-tube-borehole-top-view.pdf')
+    # fig_double.savefig('double-u-tube-borehole-top-view.pdf')
 
 
 if __name__ == '__main__':
