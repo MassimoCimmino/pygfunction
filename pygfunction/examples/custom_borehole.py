@@ -67,8 +67,8 @@ def main():
     r_in_out = 50. / 1000. / 2.  # inside pipe outer radius (m)
     r_out_in = 97.4 / 1000. / 2.  # outer pipe inside radius (m)
     r_out_out = 110. / 1000. / 2.  # outer pipe outside radius (m)
-    r_inner = np.array([r_in_in, r_in_out])  # Inner pipe radii (m)
-    r_outer = np.array([r_out_in, r_out_out])  # Outer pip radii (m)
+    r_inner = np.array([r_in_in, r_out_in])  # Inner pipe radii (m)
+    r_outer = np.array([r_in_out, r_out_out])  # Outer pip radii (m)
     epsilon = 1.0e-6  # Pipe roughness (m)
 
     # Thermal properties
