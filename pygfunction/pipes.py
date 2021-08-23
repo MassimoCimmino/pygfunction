@@ -1435,7 +1435,7 @@ class MultipleUTube(_BasePipe):
 
         """
         # Load coefficients
-        A = self._A
+        sumA = self._sumA
         V = self._V
         Vm1 = self._Vm1
         L = self._L
@@ -1447,14 +1447,11 @@ class MultipleUTube(_BasePipe):
 
         # Coefficient matrix for borehole wall temperatures
         IIm1 = np.hstack((np.eye(self.nPipes), -np.eye(self.nPipes)))
-        Ones = np.ones((2*self.nPipes, 1))
         a_b = np.zeros((self.nPipes, nSegments))
-        for v in range(nSegments):
-            z1 = H - v*H/nSegments
-            z2 = H - (v + 1)*H/nSegments
-            dE = np.diag(np.exp(L*z1) - np.exp(L*z2))
-            a_b[:, v:v+1] = np.real(IIm1 @ V @ Dm1 @ dE @ Vm1 @ A @ Ones)
-            
+        z = H - np.arange(nSegments + 1) * H / nSegments
+        exp_Lz = np.exp(np.atleast_2d(L).T*np.atleast_2d(z))
+        dexp_Lz = exp_Lz[:,:-1] - exp_Lz[:,1:]
+        a_b = np.real(((IIm1 @ V @ Dm1) * (Vm1 @ sumA)) @ dexp_Lz)
 
         # Configuration-specific inlet and outlet coefficient matrices
         IZER = np.vstack((np.eye(self.nPipes),
@@ -1500,7 +1497,7 @@ class MultipleUTube(_BasePipe):
         self._check_model_variables(m_flow_borehole, cp_f, nSegments)
 
         # Load coefficients
-        A = self._A
+        sumA = self._sumA
         V = self._V
         Vm1 = self._Vm1
         L = self._L
@@ -1511,13 +1508,10 @@ class MultipleUTube(_BasePipe):
 
         # Coefficient matrix for borehole wall temperatures
         a_b = np.zeros((2*self.nPipes, nSegments))
-        Ones = np.ones((2*self.nPipes, 1))
-        for v in range(nSegments):
-            dz1 = z - min(z, v*self.b.H/nSegments)
-            dz2 = z - min(z, (v + 1)*self.b.H/nSegments)
-            E1 = np.diag(np.exp(L*dz1))
-            E2 = np.diag(np.exp(L*dz2))
-            a_b[:,v:v+1] = np.real(V @ Dm1 @ (E2 - E1) @ Vm1 @ A @ Ones)
+        dz = z - np.minimum(z, np.arange(nSegments+1)*self.b.H/nSegments)
+        exp_Lz = np.exp(np.atleast_2d(L).T*np.atleast_2d(dz))
+        dexp_Lz = exp_Lz[:,1:] - exp_Lz[:,:-1]
+        a_b = np.real(((V @ Dm1) * (Vm1 @ sumA)) @ dexp_Lz)
 
         return a_f0, a_b
 
@@ -1549,6 +1543,7 @@ class MultipleUTube(_BasePipe):
                 [self._A[i, j] for j in range(2*nPipes) if not i == j])
         for i in range(nPipes, 2*nPipes):
             self._A[i, :] = - self._A[i, :]
+        self._sumA = np.sum(self._A, axis=1)
         # Eigenvalues and eigenvectors of A
         self._L, self._V = np.linalg.eig(self._A)
         # Inverse of eigenvector matrix
