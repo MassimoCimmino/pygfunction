@@ -1777,6 +1777,12 @@ class IndependentMultipleUTube(MultipleUTube):
         self._cp_pipe = cp_pipe
 
 
+class Coaxial(SingleUTube):
+    def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_ff, R_fp, J=2):
+        SingleUTube.__init__()
+        a = 1
+
+
 def thermal_resistances(pos, r_out, r_b, k_s, k_g, R_fp, J=2):
     """
     Evaluate thermal resistances and delta-circuit thermal resistances.
@@ -2039,6 +2045,109 @@ def convective_heat_transfer_coefficient_circular_pipe(
     h_fluid = k_f * Nu / D
 
     return h_fluid
+
+def convective_heat_transfer_coefficient_concentric_annulus(m_flow,
+                                                            r_a_in,
+                                                            r_a_out,
+                                                            visc, den,
+                                                            k, cp,
+                                                            epsilon):
+    """
+    Evaluate the inner and outer convective heat transfer coefficient for the
+    annulus region of a concentric pipe.
+    Grundman (2007) referenced Hellström (1991) [#Hellstrom1991b]_ in the
+    discussion about inner and outer convection coefficients in an annulus
+    region of a concentric pipe arrangement.
+    The following is valid for :math:`Re < 2300` and
+    :math:`0.1 \leq Pr \leq 1000`
+    .. math::
+        \\text{Nu}_{ai} = 3.66 + 1.2(r^*)^{-0.8}
+    .. math::
+        \\text{Nu}_{ao} = 3.66 + 1.2(r^*)^{0.5}
+    Where :math:`r^* = r_{a,in} / r_{a,out}` is the ratio of the inner over
+    the outer annulus radius. Çengel and Ghajar (2015, pg. 476)
+    [#CengelGhajar2015]_ state that inner and outer Nusselt numbers are
+    approximately equivalent for turbulent flow. They additionally state that
+    Gnielinski :func:`Gnielinski` can be used for turbulent flow. The linear
+    interpolation from Gnielinski (2013) [#Gnielinksi2013]_ is used.
+    Parameters
+    ----------
+    m_flow: float
+        Mass flow rate of the fluid (in kg/s).
+    r_a_in: float
+        Pipe annulus inner radius (in meters).
+    r_a_out: float
+        Pipe annulus outer radius (in meters).
+    visc : float
+        Fluid dynamic viscosity (in kg/m-s).
+    den : float
+        Fluid density (in kg/m3).
+    k : float
+        Fluid thermal conductivity (in W/m-K).
+    cp : float
+        Fluid specific heat capacity (in J/kg-K).
+    epsilon : float
+        Pipe roughness (in meters).
+    Returns
+    -------
+    h_fluid_a_in: float
+        The convection heat transfer coefficient of the inner pipe annulus
+        region (in W/m2-K).
+    h_fluid_o_in: float
+        The convection heat transfer coefficient of the outer pipe annulus
+        region (in W/m2-K).
+    References
+    -----------
+    .. [#Grundman2007] Grundman, R. (2007) Improved design methods for ground
+        heat exchangers. Oklahoma State University, M.S. Thesis.
+    """
+    # Hydraulic diameter for concentric tube annulus region
+    D_h = 2 * (r_a_out - r_a_in)
+    A_c = pi * (
+            r_a_out ** 2 - r_a_in ** 2)  # annulus cross sectional area
+    V_dot = m_flow / den
+    V = V_dot / A_c  # average velocity
+    Re = den * V * D_h / visc
+    Pr = cp * visc / k  # Prandlt number
+    r_star = r_a_in / r_a_out  # Grundman (2007)
+    r_in = D_h / 2  # Hydraulic radius
+    # Darcy-Wiesbach friction factor
+    fDarcy = fluid_friction_factor_circular_pipe(m_flow, r_in, visc,
+                                                 den,
+                                                 epsilon)
+    # Define a region which is "critical" or not fully turbulent
+    critical_lower = 2300.
+    critical_upper = 4000.
+
+    # compute the Nusselt number based on the region the Reynolds number falls
+    if Re >= critical_upper:
+        # Ghajar (2015, pg. 500-501) states that Gnielinski can be used for
+        # fully turbulent, and the inner and outer Nusselt numbers can be
+        # considered equivalent
+        Nu = Gnielinski(Re, Pr, fDarcy)
+        Nu_a_in = Nu
+        Nu_a_out = Nu
+    elif critical_lower < Re < critical_upper:
+        Nu_a_in_lam = 3.66 + 1.2 * r_star ** (
+            -0.8)  # Inner Nusselt laminar
+        Nu_a_out_lam = 3.66 + 1.2 * r_star ** 0.5  # Outer Nusselt laminar
+        Nu_turb = Gnielinski(critical_upper, Pr,
+                             fDarcy)  # In & Out turbulent
+        # Equation (16) from Gnielinski (2013)
+        gamma = (Re - critical_lower) / (
+                critical_upper - critical_lower)
+        # Linear interpolation for inner and outer Nusselt numbers
+        # Equation (17) from Gnielinski (2013)
+        Nu_a_in = (1 - gamma) * Nu_a_in_lam + gamma * Nu_turb
+        Nu_a_out = (1 - gamma) * Nu_a_out_lam + gamma * Nu_turb
+    else:
+        Nu_a_in = 3.66 + 1.2 * r_star ** (-0.8)
+        Nu_a_out = 3.66 + 1.2 * r_star ** 0.5
+
+    h_fluid_a_in = k * Nu_a_in / D_h
+    h_fluid_a_out = k * Nu_a_out / D_h
+
+    return h_fluid_a_in, h_fluid_a_out, Re
 
 
 def conduction_thermal_resistance_circular_pipe(r_in, r_out, k_f):
