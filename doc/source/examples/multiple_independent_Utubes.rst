@@ -4,7 +4,7 @@
 Calculation of fluid temperature profiles in a borehole with independent U-tubes
 ********************************************************************************
 
-This example demonstrates the use of the :doc:`pipes <pipes>` module to
+This example demonstrates the use of the :doc:`pipes <../modules/pipes>` module to
 calculate the fluid temperature profiles in a borehole with independent U-tubes,
 based on the method of Cimmino [1]_. The borehole wall temperature is uniform
 in this example.
@@ -17,7 +17,7 @@ against the fluid temeprature profiles presented by Cimmino [1]_.
 The script is located in: 
 `pygfunction/examples/multiple_independent_Utubes.py`
 
-.. literalinclude:: ../../pygfunction/examples/multiple_independent_Utubes.py
+.. literalinclude:: ../../../pygfunction/examples/multiple_independent_Utubes.py
    :language: python
    :linenos:
 

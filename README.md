@@ -1,6 +1,7 @@
 # pygfunction: A g-function calculator for Python
 
-[![Build Status](https://travis-ci.org/MassimoCimmino/pygfunction.svg?branch=master)](https://travis-ci.org/MassimoCimmino/pygfunction) [![DOI](https://zenodo.org/badge/100305705.svg)](https://zenodo.org/badge/latestdoi/100305705)
+[![Build Status](https://travis-ci.org/MassimoCimmino/pygfunction.svg?branch=master)](https://travis-ci.org/MassimoCimmino/pygfunction)
+[![DOI](https://zenodo.org/badge/100305705.svg)](https://zenodo.org/badge/latestdoi/100305705)
 
 
 ## What is *pygfunction*?
@@ -25,9 +26,12 @@ the *g*-function of a 10 x 10 square array of boreholes (100 boreholes
 total):
 
 ```python
-time = [(i+1)*3600. for i in range(24)] # Calculate hourly for one day
+import pygfunction as gt
+import numpy as np
+time = np.array([(i+1)*3600. for i in range(24)]) # Calculate hourly for one day
 boreField = gt.boreholes.rectangle_field(N_1=10, N_2=10, B_1=7.5, B_2=7.5, H=150., D=4., r_b=0.075)
-gFunc = gt.gfunction.uniform_temperature(boreField, time, alpha=1.0e-6)
+gFunc = gt.gfunction.gFunction(boreField, alpha=1.0e-6, time=time)
+gFunc.visualize_g_function()
 ```
 
 Once the *g*-function is evaluated, *pygfunction* provides tools to predict
@@ -37,16 +41,17 @@ fluid temperatures in the boreholes for several U-tube pipe configurations.
 
 ## Requirements
 
-*pygfunction* was developed and tested using Python 2.7 and supports Python 3.6. In addition, the
+*pygfunction* was developed and tested using Python 3.6. In addition, the
 following packages are needed to run *pygfunction* and its examples:
-- matplotlib (>= 1.5.3), required for the examples
-- numpy (>= 1.11.3)
-- scipy (>= 1.0.0)
+- Coolprop (>=6.4.1)
+- matplotlib (>= 3.3.4),
+- numpy (>= 1.19.2)
+- scipy (>= 1.6.2)
 
 The documentation is generated using [Sphinx](http://www.sphinx-doc.org). The
 following packages are needed to build the documentation:
-- sphinx (>= 1.5.1)
-- numpydoc (>= 0.6.0)
+- sphinx (>= 3.5.4)
+- numpydoc (>= 1.1.0)
 
 
 ## Quick start
@@ -81,6 +86,12 @@ working properly by running the examples in `pygfunction/examples/`.
 [ReadTheDocs](https://pygfunction.readthedocs.io).
 
 
+## License
+
+*pygfunction* is licensed under the terms of the 3-clause BSD-license.
+See [pygfunction license](LICENSE.md).
+
+
 ## Contributing to *pygfunction*
 
 You can report bugs and propose enhancements on the
@@ -90,7 +101,25 @@ To contribute code to *pygfunction*, follow the
 [contribution workflow](CONTRIBUTING.md).
 
 
-## License
+## Contributors
 
-*pygfunction* is licensed under the terms of the 3-clause BSD-license.
-See [pygfunction license](LICENSE.md).
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tr>
+    <td align="center"><a href="https://www.polymtl.ca/expertises/en/cimmino-massimo"><img src="https://avatars.githubusercontent.com/u/23085996?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Massimo Cimmino</b></sub></a><br /><a href="https://github.com/MassimoCimmino/pygfunction/commits?author=MassimoCimmino" title="Code">💻</a> <a href="https://github.com/MassimoCimmino/pygfunction/commits?author=MassimoCimmino" title="Documentation">📖</a> <a href="#example-MassimoCimmino" title="Examples">💡</a> <a href="http://www.ibpsa.org/proceedings/eSimPapers/2018/2-3-A-4.pdf" title="Founder">:rocket:</a> <a href="#ideas-MassimoCimmino" title="Ideas, Planning, & Feedback">🤔</a> <a href="#maintenance-MassimoCimmino" title="Maintenance">🚧</a> <a href="https://github.com/MassimoCimmino/pygfunction/pulls?q=is%3Apr+reviewed-by%3AMassimoCimmino" title="Reviewed Pull Requests">👀</a></td>
+    <td align="center"><a href="https://github.com/j-c-cook"><img src="https://avatars.githubusercontent.com/u/39248734?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Jack Cook</b></sub></a><br /><a href="https://github.com/MassimoCimmino/pygfunction/commits?author=j-c-cook" title="Code">💻</a> <a href="#example-j-c-cook" title="Examples">💡</a> <a href="#ideas-j-c-cook" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/MassimoCimmino/pygfunction/commits?author=j-c-cook" title="Documentation">📖</a></td>
+  </tr>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!

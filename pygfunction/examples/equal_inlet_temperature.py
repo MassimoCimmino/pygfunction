@@ -7,8 +7,6 @@
     boreholes, and (c) equal inlet fluid temperature into all boreholes.
 
 """
-from __future__ import absolute_import, division, print_function
-
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import AutoMinorLocator
@@ -29,8 +27,8 @@ def main():
     B = 7.5             # Borehole spacing (m)
 
     # Pipe dimensions
-    rp_out = 0.0211     # Pipe outer radius (m)
-    rp_in = 0.0147      # Pipe inner radius (m)
+    r_out = 0.0211      # Pipe outer radius (m)
+    r_in = 0.0147       # Pipe inner radius (m)
     D_s = 0.052         # Shank spacing (m)
     epsilon = 1.0e-6    # Pipe roughness (m)
 
@@ -49,16 +47,17 @@ def main():
     k_p = 0.4           # Pipe thermal conductivity (W/m.K)
 
     # Fluid properties
-    m_flow = 0.25       # Total fluid mass flow rate per borehole (kg/s)
+    m_flow_borehole = 0.25  # Total fluid mass flow rate per borehole (kg/s)
     # The fluid is propylene-glycol (20 %) at 20 degC
     fluid = gt.media.Fluid('MPG', 20.)
     cp_f = fluid.cp     # Fluid specific isobaric heat capacity (J/kg.K)
-    den_f = fluid.rho   # Fluid density (kg/m3)
-    visc_f = fluid.mu   # Fluid dynamic viscosity (kg/m.s)
+    rho_f = fluid.rho   # Fluid density (kg/m3)
+    mu_f = fluid.mu     # Fluid dynamic viscosity (kg/m.s)
     k_f = fluid.k       # Fluid thermal conductivity (W/m.K)
 
-    # Number of segments per borehole
+    # g-Function calculation options
     nSegments = 12
+    options = {'nSegments':nSegments, 'disp':True}
 
     # Geometrically expanding time vector.
     dt = 100*3600.                  # Time step
@@ -75,74 +74,58 @@ def main():
     N_1 = 6
     N_2 = 4
     boreField = gt.boreholes.rectangle_field(N_1, N_2, B, B, H, D, r_b)
+    nBoreholes = len(boreField)
 
     # -------------------------------------------------------------------------
     # Initialize pipe model
     # -------------------------------------------------------------------------
 
     # Pipe thermal resistance
-    R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(rp_in,
-                                                               rp_out,
-                                                               k_p)
+    R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(
+        r_in, r_out, k_p)
     # Fluid to inner pipe wall thermal resistance (Single U-tube)
-    h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(m_flow,
-                                                                      rp_in,
-                                                                      visc_f,
-                                                                      den_f,
-                                                                      k_f,
-                                                                      cp_f,
-                                                                      epsilon)
-    R_f = 1.0/(h_f*2*pi*rp_in)
+    m_flow_pipe = m_flow_borehole
+    h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
+        m_flow_pipe, r_in, mu_f, rho_f, k_f, cp_f, epsilon)
+    R_f = 1.0/(h_f*2*pi*r_in)
 
     # Single U-tube, same for all boreholes in the bore field
     UTubes = []
     for borehole in boreField:
-        SingleUTube = gt.pipes.SingleUTube(pos_pipes, rp_in, rp_out,
+        SingleUTube = gt.pipes.SingleUTube(pos_pipes, r_in, r_out,
                                            borehole, k_s, k_g, R_f + R_p)
         UTubes.append(SingleUTube)
+    m_flow_network = m_flow_borehole*nBoreholes
+    network = gt.networks.Network(
+        boreField, UTubes, m_flow_network=m_flow_network, cp_f=cp_f,
+        nSegments=nSegments)
 
     # -------------------------------------------------------------------------
     # Evaluate the g-functions for the borefield
     # -------------------------------------------------------------------------
 
     # Calculate the g-function for uniform heat extraction rate
-    gfunc_uniform_Q = gt.gfunction.uniform_heat_extraction(
-            boreField, time, alpha, disp=True)
+    gfunc_uniform_Q = gt.gfunction.gFunction(
+        boreField, alpha, time=time, boundary_condition='UHTR', options=options)
 
     # Calculate the g-function for uniform borehole wall temperature
-    gfunc_uniform_T = gt.gfunction.uniform_temperature(
-            boreField, time, alpha, nSegments=nSegments, disp=True)
+    gfunc_uniform_T = gt.gfunction.gFunction(
+        boreField, alpha, time=time, boundary_condition='UBWT', options=options)
 
     # Calculate the g-function for equal inlet fluid temperature
-    gfunc_equal_Tf_in = gt.gfunction.equal_inlet_temperature(
-            boreField, UTubes, m_flow, cp_f, time, alpha,
-            nSegments=nSegments, disp=True)
+    gfunc_equal_Tf_in = gt.gfunction.gFunction(
+        network, alpha, time=time, boundary_condition='MIFT', options=options)
 
     # -------------------------------------------------------------------------
     # Plot g-functions
     # -------------------------------------------------------------------------
 
-    plt.rc('figure')
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111)
-    # g-functions
-    ax1.plot(np.log(time/ts), gfunc_uniform_Q,
-             'k-', lw=1.5, label='Uniform heat extraction rate')
-    ax1.plot(np.log(time/ts), gfunc_uniform_T,
-             'b--', lw=1.5, label='Uniform borehole wall temperature')
-    ax1.plot(np.log(time/ts), gfunc_equal_Tf_in,
-             'r-.', lw=1.5, label='Equal inlet temperature')
-    ax1.legend()
-    # Axis labels
-    ax1.set_xlabel(r'$ln(t/t_s)$')
-    ax1.set_ylabel(r'$g(t/t_s)$')
-    # Axis limits
-    ax1.set_xlim([-10.0, 5.0])
-    ax1.set_ylim([0., 50.])
-    # Show minor ticks
-    ax1.xaxis.set_minor_locator(AutoMinorLocator())
-    ax1.yaxis.set_minor_locator(AutoMinorLocator())
-    # Adjust to plot window
+    ax = gfunc_uniform_Q.visualize_g_function().axes[0]
+    ax.plot(np.log(time/ts), gfunc_uniform_T.gFunc, 'k--')
+    ax.plot(np.log(time/ts), gfunc_equal_Tf_in.gFunc, 'r-.')
+    ax.legend(['Uniform heat extraction rate',
+               'Uniform borehole wall temperature',
+               'Equal inlet temperature'])
     plt.tight_layout()
 
     return

@@ -14,8 +14,10 @@ solutions.
    :maxdepth: 2
    
    install
+   citing
    modules
    example_index
+   nomenclature
 
 
 Indices and tables

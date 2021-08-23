@@ -6,8 +6,6 @@
     equal for all boreholes.
 
 """
-from __future__ import absolute_import, division, print_function
-
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
 import numpy as np
@@ -32,6 +30,13 @@ def main():
 
     # Path to validation data
     filePath = './data/CiBe14_uniform_heat_extraction_rate.txt'
+
+    # g-Function calculation options
+    # The second field is evaluated with more segments to draw the
+    # temperature profiles
+    options = [{'nSegments':1, 'disp':True, 'profiles':True},
+               {'nSegments':12, 'disp':True, 'profiles':True},
+               {'nSegments':1, 'disp':True, 'profiles':True}]
 
     # Geometrically expanding time vector.
     dt = 100*3600.                  # Time step
@@ -60,51 +65,31 @@ def main():
     boreField3 = gt.boreholes.rectangle_field(N_1, N_2, B, B, H, D, r_b)
 
     # -------------------------------------------------------------------------
-    # Initialize figure
+    # Load data from Cimmino and Bernier (2014)
     # -------------------------------------------------------------------------
-
-    plt.rc('figure')
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111)
-    # Axis labels
-    ax1.set_xlabel(r'$ln(t/t_s)$')
-    ax1.set_ylabel(r'$g(t/t_s)$')
-    # Axis limits
-    ax1.set_xlim([-10.0, 5.0])
-    ax1.set_ylim([0., 100.])
-    # Show minor ticks
-    ax1.xaxis.set_minor_locator(AutoMinorLocator())
-    ax1.yaxis.set_minor_locator(AutoMinorLocator())
-    # Adjust to plot window
-    plt.tight_layout()
+    data = np.loadtxt(filePath, skiprows=55)
 
     # -------------------------------------------------------------------------
     # Evaluate g-functions for all fields
     # -------------------------------------------------------------------------
+    i = 0
     for field in [boreField1, boreField2, boreField3]:
-        # Calculate g-function
-        gfunc = gt.gfunction.uniform_heat_extraction(field, time, alpha,
-                                                     disp=True)
+        gfunc = gt.gfunction.gFunction(
+            field, alpha, time=time, boundary_condition='UHTR',
+            options=options[i])
         # Draw g-function
-        ax1.plot(np.log(time/ts), gfunc, 'k-', lw=1.5)
-    calculated = mlines.Line2D([], [],
-                               color='black',
-                               lw=1.5,
-                               label='pygfunction')
+        ax = gfunc.visualize_g_function().axes[0]
+        # Draw reference g-function
+        ax.plot(data[:,0], data[:,i+1], 'bx')
+        ax.legend(['pygfunction', 'Cimmino and Bernier (2014)'])
+        ax.set_title('Field of {} boreholes'.format(len(field)))
+        plt.tight_layout()
+        i += 1
 
-    # -------------------------------------------------------------------------
-    # Load data from Cimmino and Bernier (2014)
-    # -------------------------------------------------------------------------
-    data = np.loadtxt(filePath, skiprows=55)
-    for i in range(3):
-        ax1.plot(data[:,0], data[:,i+1], 'bx', lw=1.5)
-    reference = mlines.Line2D([], [],
-                              color='blue',
-                              ls='None',
-                              lw=1.5,
-                              marker='x',
-                              label='Cimmino and Bernier (2014)')
-    ax1.legend(handles=[calculated, reference], loc='upper left')
+        # For the second borefield, draw the evolution of heat extraction rates
+        if i == 2:
+            gfunc.visualize_temperatures(iBoreholes=[18, 12, 14])
+            gfunc.visualize_temperature_profiles(iBoreholes=[14])
 
     return
 

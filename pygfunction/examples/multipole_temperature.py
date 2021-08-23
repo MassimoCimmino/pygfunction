@@ -10,8 +10,6 @@
     against the results of Claesson and Hellstrom (2011).
 
 """
-from __future__ import absolute_import, division, print_function
-
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import AutoMinorLocator
@@ -96,25 +94,25 @@ def main():
     # Load validation data
     data = np.loadtxt(filePath, skiprows=1)
 
-    # Plot temperatures
-    plt.rc('figure', figsize=(80.0/25.4, 80.0/25.4))
-    fig = plt.figure()
+    # Configure figure and axes
+    fig = gt.utilities._initialize_figure()
+
     ax1 = fig.add_subplot(111)
-    ax1.plot(x, T, 'b-', lw=1.5, label='pygfunction')
-    ax1.plot(data[:,0], data[:,1], 'ko', lw=1.5,
-             label='Claesson and Hellstrom (2011)')
-    ax1.legend(loc='upper left')
     # Axis labels
     ax1.set_xlabel(r'x (m)')
     ax1.set_ylabel(r'$T(x,0)$')
     # Axis limits
     ax1.set_xlim([-0.1, 0.1])
     ax1.set_ylim([-0.2, 1.2])
-    # Show minor ticks
-    ax1.xaxis.set_minor_locator(AutoMinorLocator())
-    ax1.yaxis.set_minor_locator(AutoMinorLocator())
     # Show grid
     ax1.grid()
+    gt.utilities._format_axes(ax1)
+
+    ax1.plot(x, T, label='pygfunction')
+    ax1.plot(data[:,0], data[:,1], 'ko',
+             label='Claesson and Hellstrom (2011)')
+    ax1.legend(loc='upper left')
+
     # Adjust to plot window
     plt.tight_layout()
 
@@ -134,10 +132,18 @@ def main():
                                                x_T=X.flatten(),
                                                y_T=Y.flatten())
 
-    # Plot temperatures
-    plt.rc('figure', figsize=(80.0/25.4, 80.0/25.4))
-    fig = plt.figure()
+    # Configure figure and axes
+    fig = gt.utilities._initialize_figure()
+
     ax1 = fig.add_subplot(111)
+    # Axis labels
+    ax1.set_xlabel('x (m)')
+    ax1.set_ylabel('y (m)')
+    # Axis limits
+    plt.axis([-0.1, 0.1, -0.1, 0.1])
+    plt.gca().set_aspect('equal', adjustable='box')
+    gt.utilities._format_axes(ax1)
+
     # Borehole wall outline
     borewall = plt.Circle((0., 0.), radius=r_b,
                           fill=False, linestyle='--', linewidth=2.)
@@ -151,15 +157,7 @@ def main():
     CS = ax1.contour(X, Y, T.reshape((N_xy, N_xy)),
                      np.linspace(-0.2, 1.0, num=7))
     plt.clabel(CS, inline=1, fontsize=10)
-    # Axis labels
-    ax1.set_xlabel('x (m)')
-    ax1.set_ylabel('y (m)')
-    # Axis limits
-    plt.axis([-0.1, 0.1, -0.1, 0.1])
-    plt.gca().set_aspect('equal', adjustable='box')
-    # Show minor ticks
-    ax1.xaxis.set_minor_locator(AutoMinorLocator())
-    ax1.yaxis.set_minor_locator(AutoMinorLocator())
+
     # Adjust to plot window
     plt.tight_layout()
 

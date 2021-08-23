@@ -9,11 +9,8 @@
     evaluated.
 
 """
-from __future__ import absolute_import, division, print_function
-
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.ticker import AutoMinorLocator
 from scipy.constants import pi
 
 import pygfunction as gt
@@ -35,8 +32,8 @@ def main():
     B = 7.5             # Borehole spacing, in both directions (m)
 
     # Pipe dimensions
-    rp_out = 0.0211     # Pipe outer radius (m)
-    rp_in = 0.0147      # Pipe inner radius (m)
+    r_out = 0.0211      # Pipe outer radius (m)
+    r_in = 0.0147       # Pipe inner radius (m)
     D_s = 0.052         # Shank spacing (m)
     epsilon = 1.0e-6    # Pipe roughness (m)
 
@@ -58,21 +55,22 @@ def main():
 
     # Fluid properties
     m_flow_borehole = 0.25      # Total fluid mass flow rate per borehole (kg/s)
-    m_flow = m_flow_borehole*N_1*N_2    # Total fluid mass flow rate (kg/s)
+    m_flow_network = m_flow_borehole*N_1*N_2    # Total fluid mass flow rate (kg/s)
     # The fluid is propylene-glycol (20 %) at 20 degC
     fluid = gt.media.Fluid('MPG', 20.)
     cp_f = fluid.cp     # Fluid specific isobaric heat capacity (J/kg.K)
-    den_f = fluid.rho   # Fluid density (kg/m3)
-    visc_f = fluid.mu   # Fluid dynamic viscosity (kg/m.s)
+    rho_f = fluid.rho   # Fluid density (kg/m3)
+    mu_f = fluid.mu     # Fluid dynamic viscosity (kg/m.s)
     k_f = fluid.k       # Fluid thermal conductivity (W/m.K)
 
-    # Number of segments per borehole
-    nSegments = 12
+    # g-Function calculation options
+    options = {'nSegments':12, 'disp':True}
 
     # Simulation parameters
     dt = 3600.                  # Time step (s)
     tmax = 1.*8760. * 3600.     # Maximum time (s)
     Nt = int(np.ceil(tmax/dt))  # Number of time steps
+    time = dt * np.arange(1, Nt+1)
 
     # Load aggregation scheme
     LoadAgg = gt.load_aggregation.ClaessonJaved(dt, tmax)
@@ -87,22 +85,24 @@ def main():
 
     # Pipe thermal resistance
     R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(
-            rp_in, rp_out, k_p)
+            r_in, r_out, k_p)
 
     # Fluid to inner pipe wall thermal resistance (Double U-tube in parallel)
+    m_flow_pipe = m_flow_borehole/2
     h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
-            m_flow_borehole/2, rp_in, visc_f, den_f, k_f, cp_f, epsilon)
-    R_f = 1.0/(h_f*2*pi*rp_in)
+            m_flow_pipe, r_in, mu_f, rho_f, k_f, cp_f, epsilon)
+    R_f = 1.0/(h_f*2*pi*r_in)
 
     # Double U-tube (parallel), same for all boreholes in the bore field
     UTubes = []
     for borehole in boreField:
         UTube = gt.pipes.MultipleUTube(
-            pos, rp_in, rp_out, borehole, k_s, k_g, R_f + R_p,
+            pos, r_in, r_out, borehole, k_s, k_g, R_f + R_p,
             nPipes=2, config='parallel')
         UTubes.append(UTube)
     # Build a network object from the list of UTubes
-    network = gt.networks.Network(boreField, UTubes)
+    network = gt.networks.Network(
+        boreField, UTubes, m_flow_network=m_flow_network, cp_f=cp_f)
 
     # -------------------------------------------------------------------------
     # Calculate g-function
@@ -111,30 +111,25 @@ def main():
     # Get time values needed for g-function evaluation
     time_req = LoadAgg.get_times_for_simulation()
     # Calculate g-function
-    gFunc = gt.gfunction.mixed_inlet_temperature(
-            network, m_flow, cp_f, time_req, alpha,
-            nSegments=nSegments, disp=True)
+    gFunc = gt.gfunction.gFunction(
+        network, alpha, time=time_req, boundary_condition='MIFT',
+        options=options)
     # Initialize load aggregation scheme
-    LoadAgg.initialize(gFunc/(2*pi*k_s))
+    LoadAgg.initialize(gFunc.gFunc/(2*pi*k_s))
 
     # -------------------------------------------------------------------------
     # Simulation
     # -------------------------------------------------------------------------
 
-    time = 0.
-    i = -1
+    # Evaluate heat extraction rate
+    Q_tot = nBoreholes*synthetic_load(time/3600.)
+
     T_b = np.zeros(Nt)
-    Q_tot = np.zeros(Nt)
     T_f_in = np.zeros(Nt)
     T_f_out = np.zeros(Nt)
-    while time < tmax:
+    for i in range(Nt):
         # Increment time step by (1)
-        time += dt
-        i += 1
-        LoadAgg.next_time_step(time)
-
-        # Evaluate heat extraction rate
-        Q_tot[i] = nBoreholes*synthetic_load(time/3600.)
+        LoadAgg.next_time_step(time[i])
 
         # Apply current load (in watts per meter of borehole)
         Q_b = Q_tot[i]/nBoreholes
@@ -146,42 +141,41 @@ def main():
 
         # Evaluate inlet fluid temperature (all boreholes are the same)
         T_f_in[i] = network.get_network_inlet_temperature(
-                Q_tot[i], T_b[i], m_flow, cp_f, nSegments=1)
+                Q_tot[i], T_b[i], m_flow_network, cp_f, nSegments=1)
 
         # Evaluate outlet fluid temperature
         T_f_out[i] = network.get_network_outlet_temperature(
-                T_f_in[i],  T_b[i], m_flow, cp_f, nSegments=1)
+                T_f_in[i],  T_b[i], m_flow_network, cp_f, nSegments=1)
 
     # -------------------------------------------------------------------------
     # Plot hourly heat extraction rates and temperatures
     # -------------------------------------------------------------------------
 
-    plt.rc('figure')
-    fig = plt.figure()
+    # Configure figure and axes
+    fig = gt.utilities._initialize_figure()
 
     ax1 = fig.add_subplot(211)
     # Axis labels
-    ax1.set_xlabel(r'Time (hours)')
-    ax1.set_ylabel(r'Total heat extraction rate (W)')
-    hours = np.array([(j+1)*dt/3600. for j in range(Nt)])
+    ax1.set_xlabel(r'Time [hours]')
+    ax1.set_ylabel(r'Total heat extraction rate [W]')
+    gt.utilities._format_axes(ax1)
+
     # Plot heat extraction rates
-    ax1.plot(hours, Q_tot, 'b-', lw=1.5)
+    hours = np.array([(j+1)*dt/3600. for j in range(Nt)])
+    ax1.plot(hours, Q_tot)
 
     ax2 = fig.add_subplot(212)
     # Axis labels
-    ax2.set_xlabel(r'Time (hours)')
-    ax2.set_ylabel(r'Temperature (degC)')
+    ax2.set_xlabel(r'Time [hours]')
+    ax2.set_ylabel(r'Temperature [degC]')
+    gt.utilities._format_axes(ax2)
+
     # Plot temperatures
-    ax2.plot(hours, T_b, 'k-', lw=1.5, label='Borehole wall')
-    ax2.plot(hours, T_f_out, 'r-.', lw=1.5,
+    ax2.plot(hours, T_b, label='Borehole wall')
+    ax2.plot(hours, T_f_out, '-.',
              label='Outlet, double U-tube (parallel)')
     ax2.legend()
 
-    # Show minor ticks
-    ax1.xaxis.set_minor_locator(AutoMinorLocator())
-    ax1.yaxis.set_minor_locator(AutoMinorLocator())
-    ax2.xaxis.set_minor_locator(AutoMinorLocator())
-    ax2.yaxis.set_minor_locator(AutoMinorLocator())
     # Adjust to plot window
     plt.tight_layout()
 
@@ -197,22 +191,22 @@ def main():
     T_f = UTubes[0].get_temperature(
         z, T_f_in[it], T_b[it], m_flow_borehole, cp_f)
 
-    plt.rc('figure')
-    fig = plt.figure()
+
+    # Configure figure and axes
+    fig = gt.utilities._initialize_figure()
 
     ax3 = fig.add_subplot(111)
     # Axis labels
-    ax3.set_xlabel(r'Temperature (degC)')
-    ax3.set_ylabel(r'Depth from borehole head (m)')
+    ax3.set_xlabel(r'Temperature [degC]')
+    ax3.set_ylabel(r'Depth from borehole head [m]')
+    gt.utilities._format_axes(ax3)
+
     # Plot temperatures
-    pltFlu = ax3.plot(T_f, z, 'b-', lw=1.5, label='Fluid')
+    pltFlu = ax3.plot(T_f, z, 'b-', label='Fluid')
     pltWal = ax3.plot(np.array([T_b[it], T_b[it]]), np.array([0., H]),
-                      'k--', lw=1.5, label='Borehole wall')
+                      'k--', label='Borehole wall')
     ax3.legend(handles=[pltFlu[0]]+pltWal)
 
-    # Show minor ticks
-    ax3.xaxis.set_minor_locator(AutoMinorLocator())
-    ax3.yaxis.set_minor_locator(AutoMinorLocator())
     # Reverse y-axes
     ax3.set_ylim(ax3.get_ylim()[::-1])
     # Adjust to plot window

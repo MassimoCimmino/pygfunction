@@ -2,8 +2,6 @@
 """ Example of definition of a bore field using pre-defined configurations.
 
 """
-from __future__ import absolute_import, division, print_function
-
 import pygfunction as gt
 
 

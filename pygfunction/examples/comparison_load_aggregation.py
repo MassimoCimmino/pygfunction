@@ -12,13 +12,10 @@
     Default parameters are used for each of the aggregation schemes.
 
 """
-from __future__ import absolute_import, division, print_function
-
 import time as tim
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.ticker import AutoMinorLocator
 from scipy.constants import pi
 from scipy.interpolate import interp1d
 from scipy.signal import fftconvolve
@@ -41,13 +38,17 @@ def main():
     k_s = 2.0           # Ground thermal conductivity (W/m.K)
     T_g = 10.0          # Undisturbed ground temperature (degC)
 
-    # Number of segments per borehole
-    nSegments = 12
+    # g-Function calculation options
+    options = {'nSegments':12, 'disp':True}
 
     # Simulation parameters
     dt = 3600.                  # Time step (s)
     tmax = 20.*8760. * 3600.    # Maximum time (s)
     Nt = int(np.ceil(tmax/dt))  # Number of time steps
+    time = dt * np.arange(1, Nt+1)
+
+    # Evaluate heat extraction rate
+    Q_b = synthetic_load(time/3600.)
 
     # Load aggregation schemes
     ClaessonJaved = gt.load_aggregation.ClaessonJaved(dt, tmax)
@@ -66,16 +67,15 @@ def main():
     # Evaluate the g-function on a geometrically expanding time grid
     time_gFunc = gt.utilities.time_geometric(dt, tmax, 50)
     # Calculate g-function
-    print('Calculation of the g-function ...')
-    gFunc = gt.gfunction.uniform_temperature(boreField, time_gFunc, alpha,
-                                             nSegments=nSegments)
+    gFunc = gt.gfunction.gFunction(
+        boreField, alpha, time=time_gFunc, options=options)
 
     # -------------------------------------------------------------------------
     # Simulation
     # -------------------------------------------------------------------------
     nLoadAgg = len(LoadAggSchemes)
     T_b = np.zeros((nLoadAgg, Nt))
-    Q = np.zeros(Nt)
+
     t_calc = np.zeros(nLoadAgg)
     for n in range(nLoadAgg):
         print('Simulation using {} ...'.format(loadAgg_labels[n]))
@@ -84,27 +84,20 @@ def main():
         # Interpolate g-function at required times
         time_req = LoadAgg.get_times_for_simulation()
         gFunc_int = interp1d(np.hstack([0., time_gFunc]),
-                             np.hstack([0., gFunc]),
+                             np.hstack([0., gFunc.gFunc]),
                              kind='cubic',
                              bounds_error=False,
-                             fill_value=(0., gFunc[-1]))(time_req)
+                             fill_value=(0., gFunc.gFunc[-1]))(time_req)
         # Initialize load aggregation scheme
         LoadAgg.initialize(gFunc_int/(2*pi*k_s))
 
         tic = tim.time()
-        time = 0.
-        i = -1
-        while time < tmax:
+        for i in range(Nt):
             # Increment time step by (1)
-            time += dt
-            i += 1
-            LoadAgg.next_time_step(time)
-
-            # Evaluate heat extraction rate
-            Q[i] = synthetic_load(time/3600.)
+            LoadAgg.next_time_step(time[i])
 
             # Apply current load
-            LoadAgg.set_current_load(Q[i]/H)
+            LoadAgg.set_current_load(Q_b[i]/H)
 
             # Evaluate borehole wall temeprature
             deltaT_b = LoadAgg.temporal_superposition()
@@ -118,12 +111,11 @@ def main():
 
     # Heat extraction rate increment
     dQ = np.zeros(Nt)
-    dQ[0] = Q[0]
+    dQ[0] = Q_b[0]
     # Interpolated g-function
-    time = np.array([(j+1)*dt for j in range(Nt)])
-    g = interp1d(time_gFunc, gFunc)(time)
+    g = interp1d(time_gFunc, gFunc.gFunc)(time)
     for i in range(1, Nt):
-        dQ[i] = Q[i] - Q[i-1]
+        dQ[i] = Q_b[i] - Q_b[i-1]
 
     # Convolution in Fourier domain
     T_b_exact = T_g - fftconvolve(dQ, g/(2.0*pi*k_s*H), mode='full')[0:Nt]
@@ -132,40 +124,36 @@ def main():
     # plot results
     # -------------------------------------------------------------------------
 
-    plt.rc('figure')
-    fig = plt.figure()
+    # Configure figure and axes
+    fig = gt.utilities._initialize_figure()
 
     ax1 = fig.add_subplot(311)
     # Axis labels
-    ax1.set_xlabel(r'$t$ (hours)')
-    ax1.set_ylabel(r'$Q$ (W)')
+    ax1.set_xlabel(r'$t$ [hours]')
+    ax1.set_ylabel(r'$Q_b$ [W]')
+    gt.utilities._format_axes(ax1)
     hours = np.array([(j+1)*dt/3600. for j in range(Nt)])
-    ax1.plot(hours, Q, 'b-', lw=1.5)
+    ax1.plot(hours, Q_b)
 
     ax2 = fig.add_subplot(312)
     # Axis labels
-    ax2.set_xlabel(r'$t$ (hours)')
-    ax2.set_ylabel(r'$T_b$ (degC)')
+    ax2.set_xlabel(r'$t$ [hours]')
+    ax2.set_ylabel(r'$T_b$ [degC]')
+    gt.utilities._format_axes(ax2)
     for n in range(nLoadAgg):
         ax2.plot(hours, T_b[n,:],
-                 loadAgg_lines[n], lw=1.5, label=loadAgg_labels[n])
-    ax2.plot(hours, T_b_exact, 'k.', lw=1.5, label='exact')
+                 loadAgg_lines[n], label=loadAgg_labels[n])
+    ax2.plot(hours, T_b_exact, 'k.', label='exact')
     ax2.legend()
 
     ax3 = fig.add_subplot(313)
     # Axis labels
-    ax3.set_xlabel(r'$t$ (hours)')
-    ax3.set_ylabel(r'Error (degC)')
+    ax3.set_xlabel(r'$t$ [hours]')
+    ax3.set_ylabel(r'Error [degC]')
+    gt.utilities._format_axes(ax3)
     for n in range(nLoadAgg):
         ax3.plot(hours, T_b[n,:] - T_b_exact,
-                 loadAgg_lines[n], lw=1.5, label=loadAgg_labels[n])
-    # Show minor ticks
-    ax1.xaxis.set_minor_locator(AutoMinorLocator())
-    ax1.yaxis.set_minor_locator(AutoMinorLocator())
-    ax2.xaxis.set_minor_locator(AutoMinorLocator())
-    ax2.yaxis.set_minor_locator(AutoMinorLocator())
-    ax3.xaxis.set_minor_locator(AutoMinorLocator())
-    ax3.yaxis.set_minor_locator(AutoMinorLocator())
+                 loadAgg_lines[n], label=loadAgg_labels[n])
     # Adjust to plot window
     plt.tight_layout()
 
@@ -178,15 +166,11 @@ def main():
                          for n in range(nLoadAgg)])
     # Print results
     print('Simulation results')
-    horizontalLine = '-'*66
     for n in range(nLoadAgg):
-        print(horizontalLine)
-        print(loadAgg_labels[n])
         print()
-        print('Maximum absolute error : {} degC'.format(maxError[n]))
-        print('Calculation time : {} seconds'.format(t_calc[n]))
-        print()
-    print(horizontalLine)
+        print((' ' + loadAgg_labels[n] + ' ').center(60, '-'))
+        print('Maximum absolute error : {:.3f} degC'.format(maxError[n]))
+        print('Calculation time : {:.3f} sec'.format(t_calc[n]))
 
     return
 
@@ -215,7 +199,7 @@ def synthetic_load(x):
     y = func + (-1.0)**np.floor(D/8760.0*(x - B))*abs(func) \
         + E*(-1.0)**np.floor(D/8760.0*(x - B)) \
         /np.sign(np.cos(D*pi/4380.0*(x - F)) + G)
-    return -np.array([y])
+    return -y
 
 
 # Main function

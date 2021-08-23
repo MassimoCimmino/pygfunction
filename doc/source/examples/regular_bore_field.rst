@@ -4,7 +4,7 @@
 Definition of a bore field using pre-defined configurations
 ***********************************************************
 
-This example demonstrates the use of the :doc:`borehole <boreholes>` module
+This example demonstrates the use of the :doc:`borehole <../modules/boreholes>` module
 to define the positions of the boreholes within a bore field using pre-define
 bore field configurations.
 
@@ -15,6 +15,6 @@ boreholes. Each field is then plotted on a separate figure.
 The script is located in: 
 `pygfunction/examples/regular_bore_field.py`
 
-.. literalinclude:: ../../pygfunction/examples/regular_bore_field.py
+.. literalinclude:: ../../../pygfunction/examples/regular_bore_field.py
    :language: python
    :linenos:

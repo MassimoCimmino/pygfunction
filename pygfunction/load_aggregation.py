@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 
 from . import utilities
@@ -113,21 +111,7 @@ class ClaessonJaved(_LoadAggregation):
             Current value of time (in seconds).
 
         """
-        for i in range(len(self._time)-2, -1, -1):
-            # If the current time is greater than the time of cell (i+1),
-            # remove one unit from cell (i+1) and add one unit of cell (i)
-            # into cell (i+1).
-            if time > self._time[i+1]:
-                self.Q[:,i+1] = ((self._width[i+1] - 1)*self.Q[:,i+1]
-                                 + self.Q[:,i])/self._width[i+1]
-            # If the current time is greater than the time of cell (i) but less
-            # than the time of cell (i+1), add one unit of cell (i) into cell
-            # (i+1).
-            elif time > self._time[i]:
-                self.Q[:,i+1] = (self._width[i+1]*self.Q[:,i+1] + self.Q[:,i])\
-                            /self._width[i+1]
-        # Set the aggregated load of cell (0) to zero.
-        self.Q[:,0:1] = 0.
+        self.q_b = self.q_b @ self.A
 
     def get_thermal_response_factor_increment(self):
         """
@@ -166,18 +150,18 @@ class ClaessonJaved(_LoadAggregation):
         """
         return self._time
 
-    def set_current_load(self, Q):
+    def set_current_load(self, q_b):
         """
         Set the load at the current time step.
 
         Parameters
         ----------
-        Q : array
+        q_b : float or array
             Current value of heat extraction rates per unit borehole length
             (in watts per meter).
 
         """
-        self.Q[:,0:1] = Q
+        self.q_b[:,0] = q_b
 
     def temporal_superposition(self):
         """
@@ -197,10 +181,14 @@ class ClaessonJaved(_LoadAggregation):
            :math:`T_b = T_g - \Delta T_b`.
 
         """
-        deltaT = self.dg[:,:,0].dot(self.Q[:,0])
-        for i in range(1, len(self._time)):
-            deltaT += (self.dg[:,:,i]).dot(self.Q[:,i])
-        return np.reshape(deltaT, (self.nSources, 1))
+        # Use numpy.einsum for spatial and temporal superposition
+        # This is equivalent to :
+        #    deltaT = self.dg[:,:,0].dot(self.q_b[:,0])
+        #    for i in range(1, len(self._time)):
+        #        deltaT += (self.dg[:,:,i]).dot(self.q_b[:,i])
+
+        deltaT = np.einsum('ijk,jk', self.dg, self.q_b)
+        return deltaT
 
     def _build_cells(self, dt, tmax, nSources, cells_per_level):
         """
@@ -224,7 +212,13 @@ class ClaessonJaved(_LoadAggregation):
         self._width = np.hstack((1,
                                  (self._time[1:] - self._time[:-1])/dt))
         # Initialize aggregated loads
-        self.Q = np.zeros((nSources, len(self._time)))
+        nt = len(self._time)
+        self.q_b = np.zeros((nSources, nt))
+        # Matrix for time shifting of aggregated loads. For two consecutive
+        # time steps : Q(t+1) = Q(t) @ A
+        self.A = (1. - 1./self._width) * np.eye(nt) \
+            + np.diag(1./self._width[1:], k=1)
+        
 
 
 class MLAA(_LoadAggregation):
@@ -311,7 +305,7 @@ class MLAA(_LoadAggregation):
         else:
             self._n0 = self.N0
         # The non-aggregated loads are the n0 latest loads
-        self.Q0[:, -self._n0:] = self.Q[:, self._nt-self._n0:self._nt]
+        self.Q0[:, -self._n0:] = self.q_b[:, self._nt-self._n0:self._nt]
 
         # Once the number of time steps reaches (N0 + N1), the first load
         # aggregation cell is created
@@ -320,7 +314,7 @@ class MLAA(_LoadAggregation):
             # Averaged loads in first cell
             start = self._nt - (self._n0 + self._n1)
             end = self._nt - self._n0
-            self.Q1 = np.mean(self.Q[:, start:end], axis=1)
+            self.Q1 = np.mean(self.q_b[:, start:end], axis=1)
         else:
             self._n1 = 0
 
@@ -331,7 +325,7 @@ class MLAA(_LoadAggregation):
             # Averaged loads in second cell
             start = self._nt - (self._n0 + self._n1 + self._n2)
             end = self._nt - (self._n0 + self._n1)
-            self.Q2 = np.mean(self.Q[:, start:end], axis=1)
+            self.Q2 = np.mean(self.q_b[:, start:end], axis=1)
         else:
             self._n2 = 0
 
@@ -342,7 +336,7 @@ class MLAA(_LoadAggregation):
             # Averaged loads in third cell
             start = self._nt - (self._n0 + self._n1 + self._n2 + self._n3)
             end = self._nt - (self._n0 + self._n1 + self._n2)
-            self.Q3 = np.mean(self.Q[:, start:end], axis=1)
+            self.Q3 = np.mean(self.q_b[:, start:end], axis=1)
         else:
             self._n3 = 0
 
@@ -353,7 +347,7 @@ class MLAA(_LoadAggregation):
         if self._n4 > 0:
             start = 0
             end = self._n4
-            self.Q4 = np.mean(self.Q[:, start:end], axis=1)
+            self.Q4 = np.mean(self.q_b[:, start:end], axis=1)
 
     def get_times_for_simulation(self):
         """
@@ -369,19 +363,19 @@ class MLAA(_LoadAggregation):
         """
         return np.array([(i+1)*self.dt for i in range(self.Nt)])
 
-    def set_current_load(self, Q):
+    def set_current_load(self, q_b):
         """
         Set the load at the current time step.
 
         Parameters
         ----------
-        Q : array
+        q_b : array
             Current value of heat extraction rates per unit borehole length
             (in watts per meter).
 
         """
-        self.Q[:,self._nt-1] = Q
-        self.Q0[:,-1] = Q
+        self.q_b[:,self._nt-1] = q_b
+        self.Q0[:,-1] = q_b
 
     def temporal_superposition(self):
         """
@@ -462,7 +456,7 @@ class MLAA(_LoadAggregation):
         self.N2 = N2
         self.N3 = N3
         # Initialize non-aggregated loads
-        self.Q = np.zeros((nSources, self.Nt))
+        self.q_b = np.zeros((nSources, self.Nt))
         self.Q0 = np.zeros((nSources, self.N0))
         # Initialize aggregated loads
         self.Q1 = np.zeros(nSources)
@@ -617,18 +611,18 @@ class Liu(_LoadAggregation):
         """
         return np.array([(i+1)*self.dt for i in range(self.Nt)])
 
-    def set_current_load(self, Q):
+    def set_current_load(self, q_b):
         """
         Set the load at the current time step.
 
         Parameters
         ----------
-        Q : array
+        q_b : array
             Current value of heat extraction rates per unit borehole length
             (in watts per meter).
 
         """
-        self.Q0[:,0] = Q
+        self.Q0[:,0] = q_b
 
     def temporal_superposition(self):
         """

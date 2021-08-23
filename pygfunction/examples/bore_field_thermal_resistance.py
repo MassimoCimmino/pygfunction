@@ -6,8 +6,6 @@
     rates.
 
 """
-from __future__ import absolute_import, division, print_function
-
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import AutoMinorLocator
@@ -31,8 +29,8 @@ def main():
     B = 7.5             # Borehole spacing (m)
 
     # Pipe dimensions
-    rp_out = 0.02       # Pipe outer radius (m)
-    rp_in = 0.015       # Pipe inner radius (m)
+    r_out = 0.02        # Pipe outer radius (m)
+    r_in = 0.015        # Pipe inner radius (m)
     D_s = 0.05          # Shank spacing (m)
     epsilon = 1.0e-6    # Pipe roughness (m)
 
@@ -51,12 +49,12 @@ def main():
 
     # Fluid properties
     # Total fluid mass flow rate per borehole (kg/s), from 0.01 kg/s to 1 kg/s
-    m_flow_boreholes = 10**np.arange(-2, 0.001, 0.05)
+    m_flow_network = 10**np.arange(-2, 0.001, 0.05)
     # The fluid is propylene-glycol (20 %) at 20 degC
     fluid = gt.media.Fluid('MPG', 20.)
     cp_f = fluid.cp     # Fluid specific isobaric heat capacity (J/kg.K)
-    den_f = fluid.rho   # Fluid density (kg/m3)
-    visc_f = fluid.mu   # Fluid dynamic viscosity (kg/m.s)
+    rho_f = fluid.rho   # Fluid density (kg/m3)
+    mu_f = fluid.mu     # Fluid dynamic viscosity (kg/m.s)
     k_f = fluid.k       # Fluid thermal conductivity (W/m.K)
 
     # -------------------------------------------------------------------------
@@ -78,25 +76,28 @@ def main():
     # -------------------------------------------------------------------------
 
     # Initialize result array
-    R = np.zeros((nBoreholes, len(m_flow_boreholes)))
+    R = np.zeros((nBoreholes, len(m_flow_network)))
     for i in range(nBoreholes):
-        for j in range(len(m_flow_boreholes)):
+        for j in range(len(m_flow_network)):
             nBoreholes = i + 1
-            m_flow = m_flow_boreholes[j]
+            # Boreholes are connected in series
+            m_flow_borehole = m_flow_network[j]
+            # Boreholes are single U-tube
+            m_flow_pipe = m_flow_borehole
 
             # Pipe thermal resistance
             R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(
-                    rp_in, rp_out, k_p)
+                    r_in, r_out, k_p)
             # Fluid to inner pipe wall thermal resistance (Single U-tube)
             h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
-                    m_flow, rp_in, visc_f, den_f, k_f, cp_f, epsilon)
-            R_f = 1.0/(h_f*2*pi*rp_in)
+                    m_flow_pipe, r_in, mu_f, rho_f, k_f, cp_f, epsilon)
+            R_f = 1.0/(h_f*2*pi*r_in)
 
             # Single U-tube, same for all boreholes in the bore field
             UTubes = []
             for borehole in boreField:
-                SingleUTube = gt.pipes.SingleUTube(pos_pipes, rp_in, rp_out,
-                                                   borehole, k_s, k_g, R_f + R_p)
+                SingleUTube = gt.pipes.SingleUTube(
+                    pos_pipes, r_in, r_out, borehole, k_s, k_g, R_f + R_p)
                 UTubes.append(SingleUTube)
             network = gt.networks.Network(
                 boreField[:nBoreholes],
@@ -105,7 +106,7 @@ def main():
 
             # Effective bore field thermal resistance
             R_field = gt.networks.network_thermal_resistance(
-                network, m_flow, cp_f)
+                network, m_flow_network[j], cp_f)
             # Add to result array
             R[i,j] = R_field
 
@@ -113,23 +114,24 @@ def main():
     # Plot bore field thermal resistances
     # -------------------------------------------------------------------------
 
-    plt.rc('figure')
-    fig = plt.figure()
+    # Configure figure and axes
+    fig = gt.utilities._initialize_figure()
+
     ax1 = fig.add_subplot(111)
-    # Bore field thermal resistances
-    ax1.plot(m_flow_boreholes, R[0,:], 'k-', lw=1.5, label='1 borehole')
-    ax1.plot(m_flow_boreholes, R[2,:], 'r--', lw=1.5, label='3 boreholes')
-    ax1.plot(m_flow_boreholes, R[4,:], 'b-.', lw=1.5, label='5 boreholes')
-    ax1.legend()
     # Axis labels
     ax1.set_xlabel(r'$\dot{m}$ [kg/s]')
     ax1.set_ylabel(r'$R^*_{field}$ [m.K/W]')
     # Axis limits
     ax1.set_xlim([0., 1.])
     ax1.set_ylim([0., 1.])
-    # Show minor ticks
-    ax1.xaxis.set_minor_locator(AutoMinorLocator())
-    ax1.yaxis.set_minor_locator(AutoMinorLocator())
+
+    gt.utilities._format_axes(ax1)
+
+    # Bore field thermal resistances
+    ax1.plot(m_flow_network, R[0,:], '-', label='1 borehole')
+    ax1.plot(m_flow_network, R[2,:], '--', label='3 boreholes')
+    ax1.plot(m_flow_network, R[4,:], '-.', label='5 boreholes')
+    ax1.legend()
     # Adjust to plot window
     plt.tight_layout()
 

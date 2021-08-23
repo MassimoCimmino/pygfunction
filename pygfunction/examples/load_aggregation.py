@@ -7,11 +7,8 @@
     are simulated using the aggregation method of Claesson and Javed (2012).
 
 """
-from __future__ import absolute_import, division, print_function
-
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.ticker import AutoMinorLocator
 from scipy.constants import pi
 from scipy.interpolate import interp1d
 from scipy.signal import fftconvolve
@@ -41,6 +38,10 @@ def main():
     dt = 3600.                  # Time step (s)
     tmax = 20.*8760. * 3600.    # Maximum time (s)
     Nt = int(np.ceil(tmax/dt))  # Number of time steps
+    time = dt * np.arange(1, Nt+1)
+
+    # Evaluate heat extraction rate
+    Q_b = synthetic_load(time/3600.)
 
     # Load aggregation scheme
     LoadAgg = gt.load_aggregation.ClaessonJaved(dt, tmax)
@@ -63,21 +64,13 @@ def main():
     # Simulation
     # -------------------------------------------------------------------------
 
-    time = 0.
-    i = -1
     T_b = np.zeros(Nt)
-    Q = np.zeros(Nt)
-    while time < tmax:
+    for i in range(Nt):
         # Increment time step by (1)
-        time += dt
-        i += 1
-        LoadAgg.next_time_step(time)
-
-        # Evaluate heat extraction rate
-        Q[i] = synthetic_load(time/3600.)
+        LoadAgg.next_time_step(time[i])
 
         # Apply current load
-        LoadAgg.set_current_load(Q[i]/H)
+        LoadAgg.set_current_load(Q_b[i]/H)
 
         # Evaluate borehole wall temeprature
         deltaT_b = LoadAgg.temporal_superposition()
@@ -89,12 +82,11 @@ def main():
 
     # Heat extraction rate increment
     dQ = np.zeros(Nt)
-    dQ[0] = Q[0]
+    dQ[0] = Q_b[0]
     # Interpolated g-function
-    time = np.array([(j+1)*dt for j in range(Nt)])
     g = interp1d(time_req, gFunc)(time)
     for i in range(1, Nt):
-        dQ[i] = Q[i] - Q[i-1]
+        dQ[i] = Q_b[i] - Q_b[i-1]
 
     # Convolution in Fourier domain
     T_b_exact = T_g - fftconvolve(dQ, g/(2.0*pi*k_s*H), mode='full')[0:Nt]
@@ -103,35 +95,36 @@ def main():
     # plot results
     # -------------------------------------------------------------------------
 
-    plt.rc('figure')
-    fig = plt.figure()
+    # Configure figure and axes
+    fig = gt.utilities._initialize_figure()
 
     ax1 = fig.add_subplot(311)
     # Axis labels
-    ax1.set_xlabel(r'$t$ (hours)')
-    ax1.set_ylabel(r'$Q$ (W)')
+    ax1.set_xlabel(r'$t$ [hours]')
+    ax1.set_ylabel(r'$Q_b$ [W]')
+    gt.utilities._format_axes(ax1)
+
+
     hours = np.array([(j+1)*dt/3600. for j in range(Nt)])
-    ax1.plot(hours, Q, 'b-', lw=1.5)
+    ax1.plot(hours, Q_b)
 
     ax2 = fig.add_subplot(312)
     # Axis labels
-    ax2.set_xlabel(r'$t$ (hours)')
-    ax2.set_ylabel(r'$T_b$ (degC)')
-    ax2.plot(hours, T_b, 'b-', lw=1.5)
-    ax2.plot(hours, T_b_exact, 'k.', lw=1.5)
+    ax2.set_xlabel(r'$t$ [hours]')
+    ax2.set_ylabel(r'$T_b$ [degC]')
+    gt.utilities._format_axes(ax2)
+
+    ax2.plot(hours, T_b)
+    ax2.plot(hours, T_b_exact, 'k.')
 
     ax3 = fig.add_subplot(313)
     # Axis labels
-    ax3.set_xlabel(r'$t$ (hours)')
-    ax3.set_ylabel(r'Error (degC)')
-    ax3.plot(hours, T_b - T_b_exact, 'b-', lw=1.5)
-    # Show minor ticks
-    ax1.xaxis.set_minor_locator(AutoMinorLocator())
-    ax1.yaxis.set_minor_locator(AutoMinorLocator())
-    ax2.xaxis.set_minor_locator(AutoMinorLocator())
-    ax2.yaxis.set_minor_locator(AutoMinorLocator())
-    ax3.xaxis.set_minor_locator(AutoMinorLocator())
-    ax3.yaxis.set_minor_locator(AutoMinorLocator())
+    ax3.set_xlabel(r'$t$ [hours]')
+    ax3.set_ylabel(r'Error [degC]')
+    gt.utilities._format_axes(ax3)
+
+    ax3.plot(hours, T_b - T_b_exact)
+
     # Adjust to plot window
     plt.tight_layout()
 
@@ -161,7 +154,7 @@ def synthetic_load(x):
 
     y = func + (-1.0)**np.floor(D/8760.0*(x-B))*abs(func) \
       + E*(-1.0)**np.floor(D/8760.0*(x-B))/np.sign(np.cos(D*pi/4380.0*(x-F))+G)
-    return -np.array([y])
+    return -y
 
 
 # Main function

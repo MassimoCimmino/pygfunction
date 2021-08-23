@@ -3,8 +3,6 @@
     created and the borehole resistance is computed.
 
 """
-from __future__ import absolute_import, division, print_function
-
 import pygfunction as gt
 from numpy import pi
 
@@ -16,10 +14,10 @@ def main():
     r_b = 0.0875    # Borehole radius (m)
 
     # Pipe dimensions
-    rp_out = 0.0133     # Pipe outer radius (m)
-    rp_in = 0.0108      # Pipe inner radius (m)
+    r_out = 0.0133      # Pipe outer radius (m)
+    r_in = 0.0108       # Pipe inner radius (m)
     D_s = 0.029445      # Shank spacing (m)
-    epsilon = 1.0e-6  # Pipe roughness (m)
+    epsilon = 1.0e-6    # Pipe roughness (m)
 
     # Pipe positions
     # Single U-tube [(x_in, y_in), (x_out, y_out)]
@@ -39,72 +37,29 @@ def main():
     k_g = 1.0     # Grout thermal conductivity (W/m.K)
 
     # Fluid properties
-    m_flow = 0.25  # Total fluid mass flow rate per borehole (kg/s)
-    mixer = 'MPG'  # Propylene glycol/water mixture
-    percent = 20.  # 20% of the mixture of propylene glycol
-    T = 20.  # Temperature of fluid (degrees C)
-    P = 101325.  # Gage pressure of the fluid (Pa)
-    fluid = gt.media.Fluid(mixer=mixer, percent=percent, T=T, P=P)
+    m_flow_borehole = 0.25  # Total fluid mass flow rate per borehole (kg/s)
+    cp_f = 3977.            # Fluid specific isobaric heat capacity (J/kg.K)
+    rho_f = 1015.           # Fluid density (kg/m3)
+    mu_f = 0.00203          # Fluid dynamic viscosity (kg/m.s)
+    k_f = 0.492             # Fluid thermal conductivity (W/m.K)
 
-    cp_f = fluid.cp  # Fluid specific isobaric heat capacity (J/kg.K)
-    den_f = fluid.rho  # Fluid density (kg/m3)
-    visc_f = fluid.mu  # Fluid dynamic viscosity (kg/m.s)
-    k_f = fluid.k  # Fluid thermal conductivity (W/m.K)
-
-    # Thermal resistances
     # Pipe thermal resistance
-    R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(rp_in,
-                                                               rp_out,
-                                                               k_p)
-    # Fluid to inner pipe wall thermal resistance (Single U-tube and double
-    # U-tube in series)
-    h_f_ser = gt.pipes.\
-        convective_heat_transfer_coefficient_circular_pipe(m_flow,
-                                                           rp_in,
-                                                           visc_f,
-                                                           den_f,
-                                                           k_f,
-                                                           cp_f,
-                                                           epsilon)
-    R_f_ser = 1.0 / (h_f_ser * 2 * pi * rp_in)
-    # Fluid to inner pipe wall thermal resistance (Double U-tube in parallel)
-    h_f_par = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
-        m_flow / 2, rp_in, visc_f, den_f, k_f, cp_f, epsilon)
-    R_f_par = 1.0 / (h_f_par * 2 * pi * rp_in)
+    R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(
+        r_in, r_out, k_p)
+    # Fluid to inner pipe wall thermal resistance (Single U-tube)
+    m_flow_pipe = m_flow_borehole
+    h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
+        m_flow_pipe, r_in, mu_f, rho_f, k_f, cp_f, epsilon)
+    R_f = 1.0 / (h_f * 2 * pi * r_in)
 
-    # U-Tube definitions
-    # Single U-tube (series)
     SingleUTube = gt.pipes.SingleUTube(
-        pos_single, rp_in, rp_out, borehole, k_s, k_g, R_f_ser + R_p)
+        pos, r_in, r_out, borehole, k_s, k_g, R_f + R_p)
 
-    # Double U-tube (series)
-    DoubleUTube_ser = gt.pipes.MultipleUTube(pos_double, rp_in, rp_out,
-                                             borehole, k_s, k_g, R_f_ser + R_p,
-                                             nPipes=2, config='series')
+    R_b = gt.pipes.borehole_thermal_resistance(
+        SingleUTube, m_flow_borehole, cp_f)
 
-    # Double U-tube (parallel)
-    DoubleUTube_par = gt.pipes.MultipleUTube(pos_double, rp_in, rp_out,
-                                             borehole, k_s, k_g, R_f_par + R_p,
-                                             nPipes=2, config='parallel')
+    print('Borehole thermal resistance: {0:.4f} m.K/W'.format(R_b))
 
-    # Effective borehole resistances
-    # Single U-tube (series) effective borehole resistance
-    Rb_single = gt.pipes.borehole_thermal_resistance(SingleUTube, m_flow, cp_f)
-
-    # Double U-tube (series) effective borehole resistance
-    Rb_double_ser = gt.pipes.borehole_thermal_resistance(DoubleUTube_ser,
-                                                         m_flow, cp_f)
-
-    # Double U-tube (parallel) effective borehole resistance
-    Rb_double_par = gt.pipes.borehole_thermal_resistance(DoubleUTube_par,
-                                                         m_flow / 2, cp_f)
-
-    print('Single U-tube (series) effective borehole resistance: {0:.4f} m.K/W'
-          .format(Rb_single))
-    print('Double U-tube (series) effective borehole resistance: {0:.4f} m.K/W'
-          .format(Rb_double_ser))
-    print('Double U-tube (parallel) effective borehole resistance: {0:.4f} '
-          'm.K/W'.format(Rb_double_par))
     # Check the geometry to make sure it is physically possible
     #
     # This class method is automatically called at the instanciation of the

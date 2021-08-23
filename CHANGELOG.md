@@ -2,10 +2,49 @@
 
 ## Current version
 
+### Enhancements
+
+* [Issue 118](https://github.com/MassimoCimmino/pygfunction/issues/118) - Refactored checks for stored `_BasePipe` and `Network` coefficicients to use `numpy.all()`. This decreases calculation time.
+* [Issue 119](https://github.com/MassimoCimmino/pygfunction/issues/119) - Refactored `Network` class to change how coefficient matrices are calculated. This decreases calculation time.
+* [Issue 133](https://github.com/MassimoCimmino/pygfunction/issues/133) - The `nSegments` argument is now able to take in the number of segments for each borehole as a list. Each borehole must be split into at least 1 segment, and the length of the segment list must be equal to the number of boreholes.
+
+### Other changes
+* [Issue 93](https://github.com/MassimoCimmino/pygfunction/issues/93) - Reformatted `pipes` and `networks` modules to use the `@` matrix product operator introduced in [PEP465](https://www.python.org/dev/peps/pep-0465/). This improves readability of the code.
+* [Issue 100](https://github.com/MassimoCimmino/pygfunction/issues/100) - Replaced calls to `numpy.asscalar()` with calls to `array.item()`. `numpy.asscalar()` is deprecated as of `numpy` version `1.16`.
+* [Issue 124](https://github.com/MassimoCimmino/pygfunction/issues/124) - Reformatted `pipes`and `networks` modules to clarify the expected values for `m_flow` parameters. These are replaced by any of `m_flow_pipe`, `m_flow_borehole` or `m_flow_network` depending on the function or class method. Added a nomenclature of commonly used variables to the documentation.
+* [Issue 125](https://github.com/MassimoCimmino/pygfunction/issues/125) - Refactored class methods and docstrings in `Pipe` and `Network` objects to better represent the expected shapes of array inputs and outputs.
+
+### Bug fixes
+
+* [Issue 130](https://github.com/MassimoCimmino/pygfunction/issues/130) - Fix incorrect initialization of variables `_mix_out` and `_mixing_m_flow` in `Network`.
+
+## Version 2.0.0 (2021-05-22)
+
 ### New features
 
+* [Issue 33](https://github.com/MassimoCimmino/pygfunction/issues/33), [Issue 54](https://github.com/MassimoCimmino/pygfunction/issues/54), [Issue 85](https://github.com/MassimoCimmino/pygfunction/issues/85) - New class `gFunction` for the calculation of g-functions. The new class is a common interface to all boundary conditions and calculation methods. The new implementation of the solver reduces the memory requirements of pygfunction. The new class implements visualization features for the g-function and for heat extraction rates and borehole wall temperatures (both as a function of time and for the profiles along the borehole lengths).
 * [Issue 75](https://github.com/MassimoCimmino/pygfunction/issues/75) - New module `media` with properties of brine mixtures.
 * [Issue 81](https://github.com/MassimoCimmino/pygfunction/issues/81) - Added functions to find a remove duplicate boreholes.
+
+### Enhancements
+
+* [Issue 78](https://github.com/MassimoCimmino/pygfunction/issues/78), [Issue 109](https://github.com/MassimoCimmino/pygfunction/issues/109) - Optimization of solvers for the calculation of g-functions. The finite line source (FLS) solution is now calculated using `scipy.integrate.quad_vec` which significantly improves calculation time over `scipy.integrate.quad`. The identification of similarities in the 'similarities' solver has also been refactored to identify similarities between boreholes as an intermediate step before identifying similarities between segments. The calculation time for the identification of similarities is significantly decreased.
+* [Issue 94](https://github.com/MassimoCimmino/pygfunction/issues/94) - Refactor visualization functions and methods to uniformize figure styles across modules.
+* [Issue 108](https://github.com/MassimoCimmino/pygfunction/issues/108) - Optimize the load aggregation algorithm of Claesson and Javed using `numpy.einsum()`.
+* [Issue 112](https://github.com/MassimoCimmino/pygfunction/issues/112) - Optimization of `_BaseSolver.temporal_superposition()`. The computationally expensive for loop is replaced by a call to `numpy.einsum()`. This decreases the calculation time of large bore fields.
+* [Issue 114](https://github.com/MassimoCimmino/pygfunction/issues/114) - Optimization of `_finite_line_source_integrand()`. The call to `_erfint()` is now vectorized. This decreases the number of calls by a factor 8 during integration. The calculation time of g-functions is decreased, especially for smaller bore fields.
+
+### Bug fixes
+
+* [Issue 86](https://github.com/MassimoCimmino/pygfunction/issues/86) - Documentation is now built using Python 3 to support Python 3 features in the code.
+* [Issue 103](https://github.com/MassimoCimmino/pygfunction/issues/103) - Fixed `gFunction` class to allow both builtin `float` and `numpy.floating` inputs.
+* [Issue 104](https://github.com/MassimoCimmino/pygfunction/issues/104) - Raise an error if g-function is calculated with inclined boreholes. This will be supported in a later version of *pygfunction*.
+
+### Other changes
+
+* [Issue 72](https://github.com/MassimoCimmino/pygfunction/issues/72) - Added a list of contributors to the front page. The list is managed using [all-contributors](https://github.com/all-contributors/all-contributors).
+* [Issue 87](https://github.com/MassimoCimmino/pygfunction/issues/87) - Drop support for Python 2. All package requirements are updated to the latest conda version.
+* [Issue 96](https://github.com/MassimoCimmino/pygfunction/issues/96) - Added a reference to the conference paper introducing pygfunction in the documentation.
 
 ## Version 1.1.2 (2021-01-21)
 
@@ -13,10 +52,6 @@
 
 * [Issue 47](https://github.com/MassimoCimmino/pygfunction/issues/47) - Added verification of the validity of pipe geometry to pipe classes. Extended visualization of the borehole cross-section.
 * [Issue 66](https://github.com/MassimoCimmino/pygfunction/issues/66) - Added a class method to the Claesson & Javed load aggregation method to retrieve the thermal response factor increment.
-
-### Bug fixes
-
-* [Issue 86](https://github.com/MassimoCimmino/pygfunction/issues/86) - Documentation is now built using Python 3 to support Python 3 features in the code.
 
 ### Enhancements
 

@@ -9,8 +9,6 @@
     Cimmino (2016).
 
 """
-from __future__ import absolute_import, division, print_function
-
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
 import numpy as np
@@ -31,8 +29,8 @@ def main():
     r_b = 0.075         # Borehole radius (m)
 
     # Pipe dimensions
-    rp_out = 0.010      # Pipe outer radius (m)
-    rp_in = 0.008       # Pipe inner radius (m)
+    r_out = 0.010       # Pipe outer radius (m)
+    r_in = 0.008        # Pipe inner radius (m)
     D_s = 0.060         # Shank spacing (m)
 
     # Pipe positions
@@ -46,14 +44,14 @@ def main():
     k_g = 1.0           # Grout thermal conductivity (W/m.K)
 
     # Fluid properties
-    R_fp = 0.0          # Fluid to outer pipe wall thermal resistance (m.K/W)
+    R_fp = 1e-30        # Fluid to outer pipe wall thermal resistance (m.K/W)
     # Fluid specific isobaric heat capacity per U-tube (J/kg.K)
-    cp = 4000.*np.ones(nPipes)
+    cp_f = 4000.*np.ones(nPipes)
 
     # Borehole wall temperature (degC)
     T_b = 2.0
     # Total fluid mass flow rate per U-tube (kg/s)
-    m_flow_in = np.array([0.40, 0.35, 0.30, 0.25])
+    m_flow_borehole = np.array([0.40, 0.35, 0.30, 0.25])
     # Inlet fluid temperatures per U-tube (degC)
     T_f_in = np.array([6.0, -6.0, 5.0, -5.0])
 
@@ -68,60 +66,55 @@ def main():
     borehole = gt.boreholes.Borehole(H, D, r_b, 0., 0.)
     # Multiple independent U-tubes
     MultipleUTube = gt.pipes.IndependentMultipleUTube(
-            pos_pipes, rp_in, rp_out, borehole, k_s, k_g, R_fp, nPipes, J=0)
+            pos_pipes, r_in, r_out, borehole, k_s, k_g, R_fp, nPipes, J=0)
 
     # -------------------------------------------------------------------------
     # Evaluate the outlet fluid temperatures and fluid temperature profiles
     # -------------------------------------------------------------------------
 
     # Calculate the outlet fluid temperatures
-    T_f_out = MultipleUTube.get_outlet_temperature(T_f_in, T_b, m_flow_in, cp)
+    T_f_out = MultipleUTube.get_outlet_temperature(
+        T_f_in, T_b, m_flow_borehole, cp_f)
 
     # Evaluate temperatures at nz evenly spaced depths along the borehole
     nz = 20
     z = np.linspace(0., H, num=nz)
-    T_f = MultipleUTube.get_temperature(z, T_f_in, T_b, m_flow_in, cp)
+    T_f = MultipleUTube.get_temperature(z, T_f_in, T_b, m_flow_borehole, cp_f)
 
     # -------------------------------------------------------------------------
     # Plot fluid temperature profiles
     # -------------------------------------------------------------------------
 
-    plt.rc('figure')
-    fig = plt.figure()
+    # Configure figure and axes
+    fig = gt.utilities._initialize_figure()
+
     ax1 = fig.add_subplot(111)
     # Axis labels
-    ax1.set_xlabel(r'Temperature (degC)')
-    ax1.set_ylabel(r'Depth from borehole head (m)')
+    ax1.set_xlabel(r'Temperature [degC]')
+    ax1.set_ylabel(r'Depth from borehole head [m]')
+    gt.utilities._format_axes(ax1)
+
     # Plot temperatures
-    ax1.plot(T_f, z, 'k.', lw=1.5)
-    ax1.plot(np.array([T_b, T_b]), np.array([0., H]), 'k--', lw=1.5)
+    ax1.plot(T_f, z, 'k.')
+    ax1.plot(np.array([T_b, T_b]), np.array([0., H]), 'k--')
     # Labels
     calculated = mlines.Line2D([], [],
                                color='black',
                                ls='None',
-                               lw=1.5,
                                marker='.',
                                label='Fluid')
     borehole_temp = mlines.Line2D([], [],
                                   color='black',
                                   ls='--',
-                                  lw=1.5,
                                   marker='None',
                                   label='Borehole wall')
-
-    # Show minor ticks
-    ax1.xaxis.set_minor_locator(AutoMinorLocator())
-    ax1.yaxis.set_minor_locator(AutoMinorLocator())
-    # Reverse y-axis
-    ax1.set_ylim(ax1.get_ylim()[::-1])
-    # Adjust to plot window
     plt.tight_layout()
 
     # -------------------------------------------------------------------------
     # Load data from Cimmino (2016)
     # -------------------------------------------------------------------------
     data = np.loadtxt(filePath, skiprows=1)
-    ax1.plot(data[:,2:], data[:,0], 'b-', lw=1.5)
+    ax1.plot(data[:,2:], data[:,0], 'b-',)
     reference = mlines.Line2D([], [],
                               color='blue',
                               ls='-',
@@ -130,6 +123,10 @@ def main():
                               label='Cimmino (2016)')
     ax1.legend(handles=[borehole_temp, calculated, reference],
                loc='upper left')
+
+    # Reverse y-axis
+    ax1.set_ylim(ax1.get_ylim()[::-1])
+    # Adjust to plot window
 
     return
 
