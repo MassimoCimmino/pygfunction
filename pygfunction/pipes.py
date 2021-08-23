@@ -673,25 +673,25 @@ class _BasePipe(object):
             raise ValueError(
                 'The grout thermal conductivity must be greater than zero. '
                 'A value of {} was provided.'.format(self.k_g))
-        if not self.R_fp > 0.:
+        if not np.all(self.R_fp) > 0.:
             raise ValueError(
                 'The fluid to outer pipe wall thermal resistance must be'
                 'greater than zero. '
                 'A value of {} was provided.'.format(self.R_fp))
 
         # Verify that the pipe radius is greater than zero.
-        if not self.r_in > 0.:
+        if not np.all(self.r_in) > 0.:
             raise ValueError(
                 'The pipe inner radius must be greater than zero. '
                 'A value of {} was provided.'.format(self.r_in))
 
         # Verify that the outer pipe radius is greater than the inner pipe
         # radius.
-        if not self.r_out > self.r_in:
-            raise ValueError(
-                'The pipe outer radius must be greater than the pipe inner'
-                ' radius. '
-                'A value of {} was provided.'.format(self.r_out))
+        # if not self.r_out > self.r_in:
+        #     raise ValueError(
+        #         'The pipe outer radius must be greater than the pipe inner'
+        #         ' radius. '
+        #         'A value of {} was provided.'.format(self.r_out))
 
         # Verify that the number of multipoles is zero or greater.
         if not self.J >= 0:
@@ -701,24 +701,24 @@ class _BasePipe(object):
                 'A value of {} was provided.'.format(self.J))
 
         # Verify that the pipes are contained within the borehole.
-        for i in range(2*self.nPipes):
-            r_pipe = np.sqrt(self.pos[i][0]**2 + self.pos[i][1]**2)
-            if not r_pipe + self.r_out <= self.b.r_b:
-                raise ValueError(
-                    'Pipes must be entirely contained within the borehole. '
-                    'Pipe {} is partly or entirely outside the '
-                    'borehole.'.format(i))
-
-        # Verify that the pipes do not collide to one another.
-        for i in range(2*self.nPipes):
-            for j in range(i+1, 2*self.nPipes):
-                dx = self.pos[i][0] - self.pos[j][0]
-                dy = self.pos[i][1] - self.pos[j][1]
-                dis = np.sqrt(dx**2 + dy**2)
-                if not dis >= 2*self.r_out:
-                    raise ValueError(
-                        'Pipes {} and {} are overlapping.'.format(i, j))
-
+        # for i in range(2*self.nPipes):
+        #     r_pipe = np.sqrt(self.pos[i][0]**2 + self.pos[i][1]**2)
+        #     if not r_pipe + self.r_out <= self.b.r_b:
+        #         raise ValueError(
+        #             'Pipes must be entirely contained within the borehole. '
+        #             'Pipe {} is partly or entirely outside the '
+        #             'borehole.'.format(i))
+        #
+        # # Verify that the pipes do not collide to one another.
+        # for i in range(2*self.nPipes):
+        #     for j in range(i+1, 2*self.nPipes):
+        #         dx = self.pos[i][0] - self.pos[j][0]
+        #         dy = self.pos[i][1] - self.pos[j][1]
+        #         dis = np.sqrt(dx**2 + dy**2)
+        #         if not dis >= 2*self.r_out:
+        #             raise ValueError(
+        #                 'Pipes {} and {} are overlapping.'.format(i, j))
+        #
         return True
 
     def _continuity_condition_base(self, m_flow_borehole, cp_f, nSegments):
@@ -1781,7 +1781,8 @@ class IndependentMultipleUTube(MultipleUTube):
 
 class Coaxial(SingleUTube):
     def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_ff, R_fp, J=2):
-        SingleUTube.__init__()
+        R = np.array([R_ff, R_fp])
+        SingleUTube.__init__(self, pos, r_in, r_out, borehole, k_s, k_g, R, J=J)
         a = 1
 
 
@@ -2086,12 +2087,9 @@ def convective_heat_transfer_coefficient_circular_pipe(
 
     return h_fluid
 
-def convective_heat_transfer_coefficient_concentric_annulus(m_flow,
-                                                            r_a_in,
-                                                            r_a_out,
-                                                            visc, den,
-                                                            k, cp,
-                                                            epsilon):
+
+def convective_heat_transfer_coefficient_concentric_annulus(
+        m_flow, r_a_in, r_a_out, visc, den, k, cp, epsilon):
     """
     Evaluate the inner and outer convective heat transfer coefficient for the
     annulus region of a concentric pipe.
@@ -2144,7 +2142,7 @@ def convective_heat_transfer_coefficient_concentric_annulus(m_flow,
     # Hydraulic diameter for concentric tube annulus region
     D_h = 2 * (r_a_out - r_a_in)
     A_c = pi * (
-            r_a_out ** 2 - r_a_in ** 2)  # annulus cross sectional area
+        (r_a_out ** 2) - (r_a_in ** 2))  # annulus cross sectional area
     V_dot = m_flow / den
     V = V_dot / A_c  # average velocity
     Re = den * V * D_h / visc
@@ -2152,9 +2150,8 @@ def convective_heat_transfer_coefficient_concentric_annulus(m_flow,
     r_star = r_a_in / r_a_out  # Grundman (2007)
     r_in = D_h / 2  # Hydraulic radius
     # Darcy-Wiesbach friction factor
-    fDarcy = fluid_friction_factor_circular_pipe(m_flow, r_in, visc,
-                                                 den,
-                                                 epsilon)
+    fDarcy = fluid_friction_factor_circular_pipe(
+        m_flow, r_in, visc, den, epsilon)
     # Define a region which is "critical" or not fully turbulent
     critical_lower = 2300.
     critical_upper = 4000.
@@ -2164,15 +2161,15 @@ def convective_heat_transfer_coefficient_concentric_annulus(m_flow,
         # Ghajar (2015, pg. 500-501) states that Gnielinski can be used for
         # fully turbulent, and the inner and outer Nusselt numbers can be
         # considered equivalent
-        Nu = Gnielinski(Re, Pr, fDarcy)
+        Nu = _Nusselt_number_turbulent_flow(Re, Pr, fDarcy)
         Nu_a_in = Nu
         Nu_a_out = Nu
     elif critical_lower < Re < critical_upper:
         Nu_a_in_lam = 3.66 + 1.2 * r_star ** (
             -0.8)  # Inner Nusselt laminar
         Nu_a_out_lam = 3.66 + 1.2 * r_star ** 0.5  # Outer Nusselt laminar
-        Nu_turb = Gnielinski(critical_upper, Pr,
-                             fDarcy)  # In & Out turbulent
+        Nu_turb = _Nusselt_number_turbulent_flow(
+            critical_upper, Pr, fDarcy)  # In & Out turbulent
         # Equation (16) from Gnielinski (2013)
         gamma = (Re - critical_lower) / (
                 critical_upper - critical_lower)
@@ -2190,7 +2187,7 @@ def convective_heat_transfer_coefficient_concentric_annulus(m_flow,
     return h_fluid_a_in, h_fluid_a_out, Re
 
 
-def conduction_thermal_resistance_circular_pipe(r_in, r_out, k_f):
+def conduction_thermal_resistance_circular_pipe(r_in, r_out, k_p):
     """
     Evaluate the conduction thermal resistance for circular pipes.
 
@@ -2212,7 +2209,7 @@ def conduction_thermal_resistance_circular_pipe(r_in, r_out, k_f):
     --------
 
     """
-    R_p = np.log(r_out/r_in)/(2*pi*k_f)
+    R_p = np.log(r_out/r_in)/(2*pi*k_p)
 
     return R_p
 
