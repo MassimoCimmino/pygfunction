@@ -886,12 +886,12 @@ class SingleUTube(_BasePipe):
         a_out = np.array([[1.0]])
 
         a_b = np.zeros((self.nOutlets, nSegments))
-        for i in range(nSegments):
-            z1 = (nSegments - i - 1) * self.b.H / nSegments
-            z2 = (nSegments - i) * self.b.H / nSegments
-            dF4 = self._F4(z2) - self._F4(z1)
-            dF5 = self._F5(z2) - self._F5(z1)
-            a_b[0, i] = (dF4 + dF5) / (self._f3(self.b.H) - self._f2(self.b.H))
+        z = (nSegments - np.arange(nSegments + 1)) * self.b.H / nSegments
+        F4 = self._F4(z)
+        dF4 = F4[:-1] - F4[1:]
+        F5 = self._F5(z)
+        dF5 = F5[:-1] - F5[1:]
+        a_b[0, :] = (dF4 + dF5) / (self._f3(self.b.H) - self._f2(self.b.H))
 
         return a_in, a_out, a_b
 
@@ -976,13 +976,12 @@ class SingleUTube(_BasePipe):
 
         a_b = np.zeros((2*self.nPipes, nSegments))
         N = int(np.ceil(z/self.b.H*nSegments))
-        for i in range(N):
-            z1 = z - min((i+1)*self.b.H/nSegments, z)
-            z2 = z - i * self.b.H / nSegments
-            dF4 = self._F4(z2) - self._F4(z1)
-            dF5 = self._F5(z2) - self._F5(z1)
-            a_b[0, i] = dF4
-            a_b[1, i] = -dF5
+        z1 = z - np.minimum(np.arange(1, N+1)*self.b.H/nSegments, z)
+        z2 = z - np.arange(N) * self.b.H / nSegments
+        dF4 = self._F4(z2) - self._F4(z1)
+        dF5 = self._F5(z2) - self._F5(z1)
+        a_b[0, :N] = dF4
+        a_b[1, :N] = -dF5
 
         return a_f0, a_b
 
