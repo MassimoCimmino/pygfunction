@@ -2,6 +2,10 @@
 
 ## Current version
 
+### New features 
+
+* [Issue 36](https://github.com/MassimoCimmino/pygfunction/issues/36) - Added a Coaxial object to `gt.pipes` that has access to all `SingleUTube` functions. The delta resistance network is applied to the Concentric tube to compute the effective borehole thermal resistance.  
+
 ### Enhancements
 
 * [Issue 118](https://github.com/MassimoCimmino/pygfunction/issues/118) - Refactored checks for stored `_BasePipe` and `Network` coefficicients to use `numpy.all()`. This decreases calculation time.
