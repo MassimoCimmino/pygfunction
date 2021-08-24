@@ -56,11 +56,30 @@ def main():
     R_b = gt.pipes.borehole_thermal_resistance(
         SingleUTube, m_flow_borehole, fluid.cp)
 
-    print('Borehole thermal resistance: {0:.4f} m.K/W'.format(R_b))
+    print('Single U-tube Borehole thermal resistance: '
+          '{0:.4f} m.K/W'.format(R_b))
+
+    # Check the geometry to make sure it is physically possible
+    #
+    # This class method is automatically called at the instanciation of the
+    # pipe object and raises an error if the pipe geometry is invalid. It is
+    # manually called here for demosntration.
+    check_single = SingleUTube._check_geometry()
+    print('The geometry of the borehole is valid (realistic/possible): '
+          + str(check_single))
+    # check_double = DoubleUTube_ser._check_geometry()
+    # print('The geometry of the borehole is valid (realistic/possible): '
+    #       + str(check_double))
+
+    # Create a borehole top view
+    fig_single = SingleUTube.visualize_pipes()
+    # fig_double = DoubleUTube_ser.visualize_pipes()
+
+    # Save the figure as a pdf
+    fig_single.savefig('singe-u-tube-borehole-top-view.pdf')
+    # fig_double.savefig('double-u-tube-borehole-top-view.pdf')
 
     # Coaxial pipe
-    # Note: Is a coaxial pipe typically set as far as the spacing between the
-    #       inner and outer tubes go?
     pos = (0., 0.)  # Coordinates of the coaxial pipe axis
     # Pipe dimensions
     r_in_in = 44.2 / 1000. / 2.  # inside pipe inner radius (m)
@@ -102,29 +121,10 @@ def main():
     Coaxial = gt.pipes.Coaxial(
         pos, r_inner, r_outer, borehole, k_s, k_g, R_ff, R_fp, J=2)
 
-    Rb = gt.pipes.borehole_thermal_resistance(
+    R_b = gt.pipes.borehole_thermal_resistance(
         Coaxial, m_flow_borehole, fluid.cp)
-    print(Rb)
 
-    # Check the geometry to make sure it is physically possible
-    #
-    # This class method is automatically called at the instanciation of the
-    # pipe object and raises an error if the pipe geometry is invalid. It is
-    # manually called here for demosntration.
-    # check_single = SingleUTube._check_geometry()
-    # print('The geometry of the borehole is valid (realistic/possible): '
-    #       + str(check_single))
-    # check_double = DoubleUTube_ser._check_geometry()
-    # print('The geometry of the borehole is valid (realistic/possible): '
-    #       + str(check_double))
-    #
-    # # Create a borehole top view
-    # fig_single = SingleUTube.visualize_pipes()
-    # fig_double = DoubleUTube_ser.visualize_pipes()
-    #
-    # # Save the figure as a pdf
-    # fig_single.savefig('singe-u-tube-borehole-top-view.pdf')
-    # fig_double.savefig('double-u-tube-borehole-top-view.pdf')
+    print('Coaxial tube Borehole thermal resistance: {0:.4f} m.K/W'.format(R_b))
 
 
 if __name__ == '__main__':
