@@ -40,10 +40,9 @@ def main():
 
     # Fluid properties
     fluid = gt.media.Fluid(mixer='MEG', percent=0.)
-    V_flow_rates = [1., .9, .8, .7, .6, .5, .4, .3, .29, .28, .27, .26]
-    V_flow_borehole = 1.0
+    V_flow_borehole = 1.
+    # Total fluid mass flow rate per borehole (kg/s)
     m_flow_borehole = V_flow_borehole / 1000 * fluid.rho
-    # m_flow_borehole = 0.25  # Total fluid mass flow rate per borehole (kg/s)
 
     # Pipe thermal resistance
     R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(
@@ -84,7 +83,7 @@ def main():
     # fig_double.savefig('double-u-tube-borehole-top-view.pdf')
 
     # Coaxial pipe
-    pos = (0., 0.)  # Coordinates of the coaxial pipe axis
+    pos = [(0., 0.), (0., 0.)]  # Coordinates of the coaxial pipe axis
     # Pipe dimensions
     r_in_in = 44.2 / 1000. / 2.  # inside pipe inner radius (m)
     r_in_out = 50. / 1000. / 2.  # inside pipe outer radius (m)
@@ -97,10 +96,8 @@ def main():
     # Thermal properties
     k_p = [0.4, 0.4]  # Inner and outer pipe thermal conductivity (W/m.K)
 
-    # for V_flow_rate in V_flow_rates:
-    #     m_flow_borehole = V_flow_rate / 1000. * fluid.rho
-        # Fluid-to-fluid thermal resistance
-        # inner fluid thermal resistance
+    # Fluid-to-fluid thermal resistance
+    # inner fluid thermal resistance
     h_fluid_in = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
         m_flow_borehole, r_in_in, fluid.mu, fluid.rho, fluid.k, fluid.cp,
         epsilon)
@@ -130,41 +127,9 @@ def main():
     R_b = gt.pipes.borehole_thermal_resistance(
         Coaxial, m_flow_borehole, fluid.cp)
 
-    # GLHEDT UBWT effective borehole resistance calculation
-    # Grout thermal resistance
-    R_grout = gt.pipes.conduction_thermal_resistance_circular_pipe(
-        r_out_out, borehole.r_b, k_g)
-    Ra = R_conv_1 + R_cyl_1 + R_conv_2
-    Rb = R_conv_3 + R_cyl_2 + R_grout
-    R_12 = Ra
-    eta = H / (fluid.rho * fluid.cp * V_flow_borehole) * 1 / (2 * Rb) * \
-          np.sqrt(1 + 4 * Rb / R_12)  # eq. (3.69)
-    Rb_star_UBH = Rb * eta * (1 / np.tanh(eta))  # eq. (3.68)
-
-    Rb_ = Coaxial._Rd[1, 1]  # Local borehole thermal resistance
-    print('Local borehole resistance: {}'.format(Rb_))
-    assert Rb_ == Rb
-    assert R_ff == Ra
-
-    print(R_conv_1)
-
-    def func(_Rd_i):
-        Coaxial._Rd[0, 0] = _Rd_i
-        Coaxial._initialize_stored_coefficients()
-        Rb_calc = gt.pipes.borehole_thermal_resistance(Coaxial, m_flow_borehole, fluid.cp)
-        return Rb_star_UBH - Rb_calc
-
-    val = brentq(func, 0.1, 5.)
-    print('The value we want: {}'.format(val))
-
-    print('Reynolds: {}'.format(Re))
     print('Coaxial tube Borehole thermal resistance: {0:.4f} m.K/W'.format(R_b))
-    print('Effective borehole resistance m.K/W(GLHEDT): {0:4f}'.format(Rb_star_UBH))
 
-    Coaxial._Rd[0, 0] = R_b
-    Coaxial._initialize_stored_coefficients()
-    R_b_recalculated = gt.pipes.borehole_thermal_resistance(Coaxial, m_flow_borehole, fluid.cp)
-    print('Coaxial tube resistance recalculated: {}'.format(R_b_recalculated))
+    # fig = Coaxial.visualize_pipes()
 
 
 if __name__ == '__main__':
