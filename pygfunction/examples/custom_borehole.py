@@ -6,7 +6,6 @@
 import pygfunction as gt
 from numpy import pi
 import numpy as np
-from scipy.optimize import brentq
 
 
 def main():
@@ -47,10 +46,8 @@ def main():
     # Pipe thermal resistance
     R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(
         r_in, r_out, k_p)
-    # Fluid to inner pipe wall thermal resistance (Single U-tube)
-    m_flow_pipe = m_flow_borehole
     h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
-        m_flow_pipe, r_in, fluid.mu, fluid.rho, fluid.k, fluid.cp, epsilon)
+        m_flow_borehole, r_in, fluid.mu, fluid.rho, fluid.k, fluid.cp, epsilon)
     R_f = 1.0 / (h_f * 2 * pi * r_in)
 
     # Single U-tube GHE in borehole
@@ -80,9 +77,42 @@ def main():
     fig_single.savefig('singe-u-tube-borehole-top-view.png')
 
     # Double U-tube GHE in borehole
-    # DoubleUTube_series = gt.pipes.MultipleUTube()
+    m_flow_pipe_series = m_flow_borehole  # Pipe flow rate for series (kg/s)
+    # Pipe flow rate for parallel (kg/s)
+    m_flow_pipe_parallel = m_flow_borehole / 2
 
-    # fig_double.savefig('double-u-tube-borehole-top-view.pdf')
+    # Convection coefficients for series and parallel flow
+    h_f_series = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
+        m_flow_pipe_series, r_in, fluid.mu, fluid.rho, fluid.k, fluid.cp,
+        epsilon)
+    h_f_parallel = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
+        m_flow_pipe_parallel, r_in, fluid.mu, fluid.rho, fluid.k, fluid.cp,
+        epsilon)
+
+    # Fluid thermal resistance for series and parallel flow
+    R_f_series = 1.0 / (h_f_series * 2 * pi * r_in)
+    R_f_parallel = 1.0 / (h_f_parallel * 2 * pi * r_in)
+
+    DoubleUTube_series = gt.pipes.MultipleUTube(
+        pos_double, r_in, r_out, borehole, k_s, k_g, R_p + R_f_series, 2,
+        config='series')
+    DoubleUTube_parallel = gt.pipes.MultipleUTube(
+        pos_double, r_in, r_out, borehole, k_s, k_g, R_p + R_f_parallel, 2,
+        config='parallel')
+
+    print('Double U-tube (series) Borehole thermal resistance: {0:.4f} m.K/W'.
+          format(gt.pipes.borehole_thermal_resistance(DoubleUTube_series,
+                                                      m_flow_pipe_series,
+                                                      fluid.cp)))
+    print('Double U-tube (parallel) Borehole thermal resistance: {0:.4f} m.K/W'.
+          format(gt.pipes.borehole_thermal_resistance(DoubleUTube_parallel,
+                                                      m_flow_pipe_parallel,
+                                                      fluid.cp)))
+    # Visualize double U-tube GHE top view
+    # Note: top view is the same for parallel and series double U-tube
+    fig = DoubleUTube_series.visualize_pipes()
+    # Save the figure to a png
+    fig.savefig('double-u-tube-borehole-top-view.png')
 
     # Coaxial pipe
     pos = [(0., 0.), (0., 0.)]  # Coordinates of the coaxial pipe axis
@@ -131,10 +161,11 @@ def main():
 
     print('Coaxial tube Borehole thermal resistance: {0:.4f} m.K/W'.format(R_b))
 
-    # Figure
+    # Coaxial GHE figure
     fig = Coaxial.visualize_pipes()
 
-    fig.savefig('coaxial_borehole_top_view.png')
+    # Save coaxial top view as png
+    fig.savefig('coaxial-borehole-top-view.png')
 
 
 if __name__ == '__main__':
