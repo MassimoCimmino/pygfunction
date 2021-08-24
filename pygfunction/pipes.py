@@ -687,11 +687,11 @@ class _BasePipe(object):
 
         # Verify that the outer pipe radius is greater than the inner pipe
         # radius.
-        # if not self.r_out > self.r_in:
-        #     raise ValueError(
-        #         'The pipe outer radius must be greater than the pipe inner'
-        #         ' radius. '
-        #         'A value of {} was provided.'.format(self.r_out))
+        if not np.all(np.greater(self.r_out, self.r_in)):
+            raise ValueError(
+                'The pipe outer radius must be greater than the pipe inner'
+                ' radius. '
+                'A value of {} was provided.'.format(self.r_out))
 
         # Verify that the number of multipoles is zero or greater.
         if not self.J >= 0:
@@ -700,25 +700,33 @@ class _BasePipe(object):
                 ' or greater. '
                 'A value of {} was provided.'.format(self.J))
 
+        # Note: It is not possible with the current implementation of Coaxial
+        #       for the pipes to collide. This check is only done for U-tubes.
+        if type(self.pos) == list:
+            # # Verify that the pipes do not collide to one another.
+            for i in range(2 * self.nPipes):
+                for j in range(i + 1, 2 * self.nPipes):
+                    dx = self.pos[i][0] - self.pos[j][0]
+                    dy = self.pos[i][1] - self.pos[j][1]
+                    dis = np.sqrt(dx ** 2 + dy ** 2)
+                    if not dis >= 2 * self.r_out:
+                        raise ValueError(
+                            'Pipes {} and {} are overlapping.'.format(i, j))
+
         # Verify that the pipes are contained within the borehole.
-        # for i in range(2*self.nPipes):
-        #     r_pipe = np.sqrt(self.pos[i][0]**2 + self.pos[i][1]**2)
-        #     if not r_pipe + self.r_out <= self.b.r_b:
-        #         raise ValueError(
-        #             'Pipes must be entirely contained within the borehole. '
-        #             'Pipe {} is partly or entirely outside the '
-        #             'borehole.'.format(i))
-        #
-        # # Verify that the pipes do not collide to one another.
-        # for i in range(2*self.nPipes):
-        #     for j in range(i+1, 2*self.nPipes):
-        #         dx = self.pos[i][0] - self.pos[j][0]
-        #         dy = self.pos[i][1] - self.pos[j][1]
-        #         dis = np.sqrt(dx**2 + dy**2)
-        #         if not dis >= 2*self.r_out:
-        #             raise ValueError(
-        #                 'Pipes {} and {} are overlapping.'.format(i, j))
-        #
+        if type(self.pos) != list:
+            pos = [self.pos]
+        else:
+            pos = self.pos
+        for i in range(len(pos)):
+            r_pipe = np.sqrt(pos[i][0]**2 + pos[i][1]**2)
+            radii = r_pipe + self.r_out
+            if not np.any(np.greater_equal(self.b.r_b, radii)):
+                raise ValueError(
+                    'Pipes must be entirely contained within the borehole. '
+                    'Pipe {} is partly or entirely outside the '
+                    'borehole.'.format(i))
+
         return True
 
     def _continuity_condition_base(self, m_flow_borehole, cp_f, nSegments):
