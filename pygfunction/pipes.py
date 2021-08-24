@@ -702,30 +702,27 @@ class _BasePipe(object):
 
         # Note: It is not possible with the current implementation of Coaxial
         #       for the pipes to collide. This check is only done for U-tubes.
-        if type(self.pos) == list:
-            # # Verify that the pipes do not collide to one another.
-            for i in range(2 * self.nPipes):
-                for j in range(i + 1, 2 * self.nPipes):
-                    dx = self.pos[i][0] - self.pos[j][0]
-                    dy = self.pos[i][1] - self.pos[j][1]
-                    dis = np.sqrt(dx ** 2 + dy ** 2)
-                    if not dis >= 2 * self.r_out:
-                        raise ValueError(
-                            'Pipes {} and {} are overlapping.'.format(i, j))
+        # if type(self.pos) == list:
 
         # Verify that the pipes are contained within the borehole.
-        if type(self.pos) != list:
-            pos = [self.pos]
-        else:
-            pos = self.pos
-        for i in range(len(pos)):
-            r_pipe = np.sqrt(pos[i][0]**2 + pos[i][1]**2)
+        for i in range(len(self.pos)):
+            r_pipe = np.sqrt(self.pos[i][0]**2 + self.pos[i][1]**2)
             radii = r_pipe + self.r_out
             if not np.any(np.greater_equal(self.b.r_b, radii)):
                 raise ValueError(
                     'Pipes must be entirely contained within the borehole. '
                     'Pipe {} is partly or entirely outside the '
                     'borehole.'.format(i))
+
+        # Verify that the pipes do not collide to one another.
+        for i in range(len(self.pos)):
+            for j in range(i + 1, len(self.pos)):
+                dx = self.pos[i][0] - self.pos[j][0]
+                dy = self.pos[i][1] - self.pos[j][1]
+                dis = np.sqrt(dx ** 2 + dy ** 2)
+                if np.all(np.less_equal(dis, 2 * self.r_out)) and dis > 1.0e-6:
+                    raise ValueError(
+                        'Pipes {} and {} are overlapping.'.format(i, j))
 
         return True
 
@@ -1807,14 +1804,14 @@ class Coaxial(SingleUTube):
         iInner = r_out.argmin()
         iOuter = r_out.argmax()
         # Outer pipe to borehole wall thermal resistance
-        R_fg = thermal_resistances([pos], r_out[iOuter], borehole.r_b, k_s,
+        R_fg = thermal_resistances(pos[0:1], r_out[iOuter], borehole.r_b, k_s,
                                    k_g, self.R_fp, J=self.J)[1][0]
         # Delta-circuit thermal resistances
         self._Rd = np.zeros((2*self.nPipes, 2*self.nPipes))
-        self._Rd[iInner, iInner] = np.inf
+        self._Rd[iInner, iInner] = R_fg
         self._Rd[iInner, iOuter] = R_ff
         self._Rd[iOuter, iInner] = R_ff
-        self._Rd[iOuter, iOuter] = R_fg
+        self._Rd[iOuter, iOuter] = np.inf
 
         # Initialize stored_coefficients
         self._initialize_stored_coefficients()
