@@ -38,8 +38,11 @@ def main():
     k_g = 1.0     # Grout thermal conductivity (W/m.K)
 
     # Fluid properties
-    m_flow_borehole = 0.25  # Total fluid mass flow rate per borehole (kg/s)
     fluid = gt.media.Fluid(mixer='MEG', percent=0.)
+    V_flow_rates = [1., .9, .8, .7, .6, .5, .4, .3, .29, .28, .27, .26]
+    V_flow_borehole = 1.0
+    m_flow_borehole = V_flow_borehole / 1000 * fluid.rho
+    # m_flow_borehole = 0.25  # Total fluid mass flow rate per borehole (kg/s)
 
     # Pipe thermal resistance
     R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(
@@ -93,8 +96,10 @@ def main():
     # Thermal properties
     k_p = [0.4, 0.4]  # Inner and outer pipe thermal conductivity (W/m.K)
 
-    # Fluid-to-fluid thermal resistance
-    # inner fluid thermal resistance
+    # for V_flow_rate in V_flow_rates:
+    #     m_flow_borehole = V_flow_rate / 1000. * fluid.rho
+        # Fluid-to-fluid thermal resistance
+        # inner fluid thermal resistance
     h_fluid_in = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
         m_flow_borehole, r_in_in, fluid.mu, fluid.rho, fluid.k, fluid.cp,
         epsilon)
@@ -124,7 +129,25 @@ def main():
     R_b = gt.pipes.borehole_thermal_resistance(
         Coaxial, m_flow_borehole, fluid.cp)
 
+    # GLHEDT UBWT effective borehole resistance calculation
+    # Grout thermal resistance
+    R_grout = gt.pipes.conduction_thermal_resistance_circular_pipe(
+        r_out_out, borehole.r_b, k_g)
+    Ra = R_conv_1 + R_cyl_1 + R_conv_2
+    Rb = R_conv_3 + R_cyl_2 + R_grout
+    R_12 = Ra
+    eta = H / (fluid.rho * fluid.cp * V_flow_borehole) * 1 / (2 * Rb) * \
+          np.sqrt(1 + 4 * Rb / R_12)  # eq. (3.69)
+    Rb_star_UBH = Rb * eta * (1 / np.tanh(eta))  # eq. (3.68)
+
+    Rb_ = Coaxial._Rd[1, 1]  # Local borehole thermal resistance
+    assert Rb_ == Rb
+    assert R_ff == Ra
+
+    print('Reynolds: {}'.format(Re))
     print('Coaxial tube Borehole thermal resistance: {0:.4f} m.K/W'.format(R_b))
+    print('Effective borehole resistance m.K/W(GLHEDT): {0:4f}'.format(Rb_star_UBH))
+        # print('{}\t{}'.format(V_flow_rate, R_b))
 
 
 if __name__ == '__main__':
