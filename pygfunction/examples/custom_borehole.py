@@ -6,6 +6,7 @@
 import pygfunction as gt
 from numpy import pi
 import numpy as np
+from scipy.optimize import brentq
 
 
 def main():
@@ -141,13 +142,29 @@ def main():
     Rb_star_UBH = Rb * eta * (1 / np.tanh(eta))  # eq. (3.68)
 
     Rb_ = Coaxial._Rd[1, 1]  # Local borehole thermal resistance
+    print('Local borehole resistance: {}'.format(Rb_))
     assert Rb_ == Rb
     assert R_ff == Ra
+
+    print(R_conv_1)
+
+    def func(_Rd_i):
+        Coaxial._Rd[0, 0] = _Rd_i
+        Coaxial._initialize_stored_coefficients()
+        Rb_calc = gt.pipes.borehole_thermal_resistance(Coaxial, m_flow_borehole, fluid.cp)
+        return Rb_star_UBH - Rb_calc
+
+    val = brentq(func, 0.1, 5.)
+    print('The value we want: {}'.format(val))
 
     print('Reynolds: {}'.format(Re))
     print('Coaxial tube Borehole thermal resistance: {0:.4f} m.K/W'.format(R_b))
     print('Effective borehole resistance m.K/W(GLHEDT): {0:4f}'.format(Rb_star_UBH))
-        # print('{}\t{}'.format(V_flow_rate, R_b))
+
+    Coaxial._Rd[0, 0] = R_b
+    Coaxial._initialize_stored_coefficients()
+    R_b_recalculated = gt.pipes.borehole_thermal_resistance(Coaxial, m_flow_borehole, fluid.cp)
+    print('Coaxial tube resistance recalculated: {}'.format(R_b_recalculated))
 
 
 if __name__ == '__main__':
