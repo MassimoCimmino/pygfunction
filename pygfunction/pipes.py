@@ -579,6 +579,16 @@ class _BasePipe(object):
             color='k', linestyle='--', lw=lw)
         ax.add_patch(borewall)
 
+        u_tube = False
+
+        if type(self.r_in) == float:
+            u_tube = True
+            pipe_radii_1 = np.array([[self.r_in, self.r_out]] * self.nPipes)
+            pipe_radii_2 = np.array([[self.r_in, self.r_out]] * self.nPipes)
+        else:
+            pipe_radii_1 = [self.r_in] * self.nPipes
+            pipe_radii_2 = [self.r_out] * self.nPipes
+
         # Pipes
         for i in range(self.nPipes):
             # Coordinates of pipes
@@ -587,22 +597,24 @@ class _BasePipe(object):
 
             # Pipe outline (inlet)
             pipe_in_in = plt.Circle(
-                (x_in, y_in), radius=self.r_in,
+                (x_in, y_in), radius=pipe_radii_1[i][0],
                 fill=False, linestyle='-', color=colors[i], lw=lw)
             pipe_in_out = plt.Circle(
-                (x_in, y_in), radius=self.r_out,
+                (x_in, y_in), radius=pipe_radii_1[i][1],
                 fill=False, linestyle='-', color=colors[i], lw=lw)
-            ax.text(x_in, y_in, i, ha="center", va="center")
+            if u_tube:
+                ax.text(x_in, y_in, i, ha="center", va="center")
 
             # Pipe outline (outlet)
             pipe_out_in = plt.Circle(
-                (x_out, y_out), radius=self.r_in,
+                (x_out, y_out), radius=pipe_radii_2[i][0],
                 fill=False, linestyle='-', color=colors[i], lw=lw)
             pipe_out_out = plt.Circle(
-                (x_out, y_out), radius=self.r_out,
+                (x_out, y_out), radius=pipe_radii_2[i][1],
                 fill=False, linestyle='-', color=colors[i], lw=lw)
-            ax.text(x_out, y_out, i + self.nPipes,
-                    ha="center", va="center")
+            if u_tube:
+                ax.text(x_out, y_out, i + self.nPipes,
+                        ha="center", va="center")
 
             ax.add_patch(pipe_in_in)
             ax.add_patch(pipe_in_out)
