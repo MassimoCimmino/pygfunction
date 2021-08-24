@@ -53,6 +53,7 @@ def main():
         m_flow_pipe, r_in, fluid.mu, fluid.rho, fluid.k, fluid.cp, epsilon)
     R_f = 1.0 / (h_f * 2 * pi * r_in)
 
+    # Single U-tube GHE in borehole
     SingleUTube = gt.pipes.SingleUTube(
         pos_single, r_in, r_out, borehole, k_s, k_g, R_f + R_p)
 
@@ -70,16 +71,17 @@ def main():
     check_single = SingleUTube._check_geometry()
     print('The geometry of the borehole is valid (realistic/possible): '
           + str(check_single))
-    # check_double = DoubleUTube_ser._check_geometry()
-    # print('The geometry of the borehole is valid (realistic/possible): '
-    #       + str(check_double))
 
     # Create a borehole top view
     fig_single = SingleUTube.visualize_pipes()
     # fig_double = DoubleUTube_ser.visualize_pipes()
 
     # Save the figure as a pdf
-    fig_single.savefig('singe-u-tube-borehole-top-view.pdf')
+    fig_single.savefig('singe-u-tube-borehole-top-view.png')
+
+    # Double U-tube GHE in borehole
+    # DoubleUTube_series = gt.pipes.MultipleUTube()
+
     # fig_double.savefig('double-u-tube-borehole-top-view.pdf')
 
     # Coaxial pipe
@@ -129,7 +131,10 @@ def main():
 
     print('Coaxial tube Borehole thermal resistance: {0:.4f} m.K/W'.format(R_b))
 
-    # fig = Coaxial.visualize_pipes()
+    # Figure
+    fig = Coaxial.visualize_pipes()
+
+    fig.savefig('coaxial_borehole_top_view.png')
 
 
 if __name__ == '__main__':
