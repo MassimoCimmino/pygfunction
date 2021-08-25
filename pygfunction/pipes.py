@@ -1797,7 +1797,66 @@ class IndependentMultipleUTube(MultipleUTube):
 
 
 class Coaxial(SingleUTube):
+    """
+    Class for coaxial boreholes.
+
+    Contains information regarding the physical dimensions and thermal
+    characteristics of the pipes and the grout material, as well as methods to
+    evaluate fluid temperatures and heat extraction rates based on the work of
+    Hellstrom [#Hellstrom1991]_.
+
+    Attributes
+    ----------
+    pos : tuple
+        Position (x, y) (in meters) of the pipes inside the borehole.
+    r_in : (2,) array
+        Inner radii (in meters) of the coaxial pipes. The first element of the
+        array corresponds to the inlet pipe.
+    r_out : (2,) array
+        Outer radii (in meters) of the coaxial pipes. The first element of the
+        array corresponds to the inlet pipe.
+    borehole : Borehole object
+        Borehole class object of the borehole containing the U-Tube.
+    k_s : float
+        Soil thermal conductivity (in W/m-K).
+    k_g : float
+        Grout thermal conductivity (in W/m-K).
+    R_ff : float
+        Fluid to fluid thermal resistance of the inner pipe to the outer pipe
+        (in m-K/W).
+    R_fp : float
+        Fluid to outer pipe wall thermal resistance of the outer pipe in
+        contact with the grout (in m-K/W).
+    J : int, optional
+        Number of multipoles per pipe to evaluate the thermal resistances.
+        Default is 2.
+    nPipes : int
+        Number of U-Tubes, equals to 1.
+    nInlets : int
+        Total number of pipe inlets, equals to 1.
+    nOutlets : int
+        Total number of pipe outlets, equals to 1.
+
+    Notes
+    -----
+    The expected array shapes of input parameters and outputs are documented
+    for each class method. `nInlets` and `nOutlets` are the number of inlets
+    and outlets to the borehole, and both are equal to 1 for a coaxial
+    borehole. `nSegments` is the number of discretized segments along the
+    borehole. `nPipes` is the number of pipes (i.e. the number of U-tubes) in
+    the borehole, equal to 1. `nDepths` is the number of depths at which
+    temperatures are evaluated.
+
+    References
+    ----------
+    .. [#Hellstrom1991] Hellstrom, G. (1991). Ground heat storage. Thermal
+       Analyses of Duct Storage Systems I: Theory. PhD Thesis. University of
+       Lund, Department of Mathematical Physics. Lund, Sweden.
+
+    """
     def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_ff, R_fp, J=2):
+        if isinstance(pos, tuple):
+            pos = [pos]
         self.pos = pos
         self.r_in = r_in
         self.r_out = r_out
@@ -1816,7 +1875,7 @@ class Coaxial(SingleUTube):
         iInner = r_out.argmin()
         iOuter = r_out.argmax()
         # Outer pipe to borehole wall thermal resistance
-        R_fg = thermal_resistances(pos[0:1], r_out[iOuter], borehole.r_b, k_s,
+        R_fg = thermal_resistances(pos, r_out[iOuter], borehole.r_b, k_s,
                                    k_g, self.R_fp, J=self.J)[1][0]
         # Delta-circuit thermal resistances
         self._Rd = np.zeros((2*self.nPipes, 2*self.nPipes))

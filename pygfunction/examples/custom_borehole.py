@@ -115,7 +115,7 @@ def main():
     fig.savefig('double-u-tube-borehole-top-view.png')
 
     # Coaxial pipe
-    pos = [(0., 0.), (0., 0.)]  # Coordinates of the coaxial pipe axis
+    pos = (0., 0.)  # Coordinates of the coaxial pipe axis
     # Pipe dimensions
     r_in_in = 44.2 / 1000. / 2.  # inside pipe inner radius (m)
     r_in_out = 50. / 1000. / 2.  # inside pipe outer radius (m)
