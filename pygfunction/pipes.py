@@ -579,16 +579,6 @@ class _BasePipe(object):
             color='k', linestyle='--', lw=lw)
         ax.add_patch(borewall)
 
-        u_tube = False
-
-        if type(self.r_in) == float:
-            u_tube = True
-            pipe_radii_1 = np.array([[self.r_in, self.r_out]] * self.nPipes)
-            pipe_radii_2 = np.array([[self.r_in, self.r_out]] * self.nPipes)
-        else:
-            pipe_radii_1 = [self.r_in] * self.nPipes
-            pipe_radii_2 = [self.r_out] * self.nPipes
-
         # Pipes
         for i in range(self.nPipes):
             # Coordinates of pipes
@@ -597,24 +587,22 @@ class _BasePipe(object):
 
             # Pipe outline (inlet)
             pipe_in_in = plt.Circle(
-                (x_in, y_in), radius=pipe_radii_1[i][0],
+                (x_in, y_in), radius=self.r_in,
                 fill=False, linestyle='-', color=colors[i], lw=lw)
             pipe_in_out = plt.Circle(
-                (x_in, y_in), radius=pipe_radii_1[i][1],
+                (x_in, y_in), radius=self.r_out,
                 fill=False, linestyle='-', color=colors[i], lw=lw)
-            if u_tube:
-                ax.text(x_in, y_in, i, ha="center", va="center")
+            ax.text(x_in, y_in, i, ha="center", va="center")
 
             # Pipe outline (outlet)
             pipe_out_in = plt.Circle(
-                (x_out, y_out), radius=pipe_radii_2[i][0],
+                (x_out, y_out), radius=self.r_in,
                 fill=False, linestyle='-', color=colors[i], lw=lw)
             pipe_out_out = plt.Circle(
-                (x_out, y_out), radius=pipe_radii_2[i][1],
+                (x_out, y_out), radius=self.r_out,
                 fill=False, linestyle='-', color=colors[i], lw=lw)
-            if u_tube:
-                ax.text(x_out, y_out, i + self.nPipes,
-                        ha="center", va="center")
+            ax.text(x_out, y_out, i + self.nPipes,
+                    ha="center", va="center")
 
             ax.add_patch(pipe_in_in)
             ax.add_patch(pipe_in_out)
@@ -1887,6 +1875,83 @@ class Coaxial(SingleUTube):
         # Initialize stored_coefficients
         self._initialize_stored_coefficients()
 
+    def visualize_pipes(self):
+        """
+        Plot the cross-section view of the borehole.
+
+        Returns
+        -------
+        fig : figure
+            Figure object (matplotlib).
+
+        """
+        # Determine the indexes of the inner and outer pipes
+        iInner = self.r_out.argmin()
+        iOuter = self.r_out.argmax()
+
+        # Configure figure and axes
+        fig = _initialize_figure()
+        ax = fig.add_subplot(111)
+        ax.set_xlabel(r'$x$ [m]')
+        ax.set_ylabel(r'$y$ [m]')
+        ax.axis('equal')
+        _format_axes(ax)
+
+        # Color cycle
+        prop_cycle = plt.rcParams['axes.prop_cycle']
+        colors = prop_cycle.by_key()['color']
+        lw = plt.rcParams['lines.linewidth']
+
+        # Borehole wall outline
+        ax.plot([-self.b.r_b, 0., self.b.r_b, 0.],
+                [0., self.b.r_b, 0., -self.b.r_b],
+                'k.', alpha=0.)
+        borewall = plt.Circle(
+            (0., 0.), radius=self.b.r_b, fill=False,
+            color='k', linestyle='--', lw=lw)
+        ax.add_patch(borewall)
+
+        # Pipes
+        for i in range(self.nPipes):
+            # Coordinates of pipes
+            (x_in, y_in) = self.pos[i]
+            (x_out, y_out) = self.pos[i]
+
+            # Pipe outline (inlet)
+            pipe_in_in = plt.Circle(
+                (x_in, y_in), radius=self.r_in[0],
+                fill=False, linestyle='-', color=colors[i], lw=lw)
+            pipe_in_out = plt.Circle(
+                (x_in, y_in), radius=self.r_out[0],
+                fill=False, linestyle='-', color=colors[i], lw=lw)
+            if iInner == 0:
+                ax.text(x_in, y_in, i, ha="center", va="center")
+            else:
+                ax.text(x_in + 0.5 * (self.r_out[0] + self.r_in[1]), y_in, i,
+                        ha="center", va="center")
+
+            # Pipe outline (outlet)
+            pipe_out_in = plt.Circle(
+                (x_out, y_out), radius=self.r_in[1],
+                fill=False, linestyle='-', color=colors[i], lw=lw)
+            pipe_out_out = plt.Circle(
+                (x_out, y_out), radius=self.r_out[1],
+                fill=False, linestyle='-', color=colors[i], lw=lw)
+            if iInner == 1:
+                ax.text(x_out, y_out, i + self.nPipes, ha="center", va="center")
+            else:
+                ax.text(x_out + 0.5 * (self.r_out[0] + self.r_in[1]), y_out,
+                        i + self.nPipes, ha="center", va="center")
+
+            ax.add_patch(pipe_in_in)
+            ax.add_patch(pipe_in_out)
+            ax.add_patch(pipe_out_in)
+            ax.add_patch(pipe_out_out)
+
+        plt.tight_layout()
+
+        return fig
+    
 
 def thermal_resistances(pos, r_out, r_b, k_s, k_g, R_fp, J=2):
     """
