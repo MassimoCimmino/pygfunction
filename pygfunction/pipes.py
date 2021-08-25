@@ -1879,10 +1879,10 @@ class Coaxial(SingleUTube):
                                    k_g, self.R_fp, J=self.J)[1][0]
         # Delta-circuit thermal resistances
         self._Rd = np.zeros((2*self.nPipes, 2*self.nPipes))
-        self._Rd[iInner, iInner] = R_fg
+        self._Rd[iInner, iInner] = np.inf
         self._Rd[iInner, iOuter] = R_ff
         self._Rd[iOuter, iInner] = R_ff
-        self._Rd[iOuter, iOuter] = np.inf
+        self._Rd[iOuter, iOuter] = R_fg
 
         # Initialize stored_coefficients
         self._initialize_stored_coefficients()
