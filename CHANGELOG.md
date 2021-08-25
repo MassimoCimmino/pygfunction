@@ -4,7 +4,7 @@
 
 ### New features 
 
-* [Issue 36](https://github.com/MassimoCimmino/pygfunction/issues/36) - Added a Coaxial object to `gt.pipes` that has access to all `SingleUTube` functions. The delta resistance network is applied to the Concentric tube to compute the effective borehole thermal resistance.  
+* [Issue 36](https://github.com/MassimoCimmino/pygfunction/issues/36) - Added a `Coaxial` class to the `pipes` module to model boreholes with coaxial pipes.
 
 ### Enhancements
 
