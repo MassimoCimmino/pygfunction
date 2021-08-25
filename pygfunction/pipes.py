@@ -777,7 +777,7 @@ class SingleUTube(_BasePipe):
     Contains information regarding the physical dimensions and thermal
     characteristics of the pipes and the grout material, as well as methods to
     evaluate fluid temperatures and heat extraction rates based on the work of
-    Hellstrom [#Hellstrom1991]_.
+    Hellstrom [#Single-Hellstrom1991]_.
 
     Attributes
     ----------
@@ -817,9 +817,9 @@ class SingleUTube(_BasePipe):
 
     References
     ----------
-    .. [#Hellstrom1991] Hellstrom, G. (1991). Ground heat storage. Thermal
-       Analyses of Duct Storage Systems I: Theory. PhD Thesis. University of
-       Lund, Department of Mathematical Physics. Lund, Sweden.
+    .. [#Single-Hellstrom1991] Hellstrom, G. (1991). Ground heat storage.
+       Thermal Analyses of Duct Storage Systems I: Theory. PhD Thesis.
+       University of Lund, Department of Mathematical Physics. Lund, Sweden.
 
     """
     def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_fp, J=2):
@@ -1786,7 +1786,7 @@ class Coaxial(SingleUTube):
     Contains information regarding the physical dimensions and thermal
     characteristics of the pipes and the grout material, as well as methods to
     evaluate fluid temperatures and heat extraction rates based on the work of
-    Hellstrom [#Hellstrom1991]_.
+    Hellstrom [#Coaxial-Hellstrom1991]_.
 
     Attributes
     ----------
@@ -1832,9 +1832,9 @@ class Coaxial(SingleUTube):
 
     References
     ----------
-    .. [#Hellstrom1991] Hellstrom, G. (1991). Ground heat storage. Thermal
-       Analyses of Duct Storage Systems I: Theory. PhD Thesis. University of
-       Lund, Department of Mathematical Physics. Lund, Sweden.
+    .. [#Coaxial-Hellstrom1991] Hellstrom, G. (1991). Ground heat storage.
+       Thermal Analyses of Duct Storage Systems I: Theory. PhD Thesis.
+       University of Lund, Department of Mathematical Physics. Lund, Sweden.
 
     """
     def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_ff, R_fp, J=2):
