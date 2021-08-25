@@ -2319,100 +2319,121 @@ def convective_heat_transfer_coefficient_circular_pipe(
 
 
 def convective_heat_transfer_coefficient_concentric_annulus(
-        m_flow, r_a_in, r_a_out, visc, den, k, cp, epsilon):
+        m_flow_pipe, r_a_in, r_a_out, mu_f, rho_f, k_f, cp_f, epsilon):
     """
     Evaluate the inner and outer convective heat transfer coefficient for the
     annulus region of a concentric pipe.
+
     Grundman (2007) referenced Hellström (1991) [#Hellstrom1991b]_ in the
     discussion about inner and outer convection coefficients in an annulus
     region of a concentric pipe arrangement.
+
     The following is valid for :math:`Re < 2300` and
-    :math:`0.1 \leq Pr \leq 1000`
-    .. math::
-        \\text{Nu}_{ai} = 3.66 + 1.2(r^*)^{-0.8}
-    .. math::
-        \\text{Nu}_{ao} = 3.66 + 1.2(r^*)^{0.5}
-    Where :math:`r^* = r_{a,in} / r_{a,out}` is the ratio of the inner over
+    :math:`0.1 \leq Pr \leq 1000` :
+
+        .. math::
+            \\text{Nu}_{a,in} = 3.66 + 1.2(r^*)^{-0.8}
+
+        .. math::
+            \\text{Nu}_{a,out} = 3.66 + 1.2(r^*)^{0.5}
+
+    where :math:`r^* = r_{a,in} / r_{a,out}` is the ratio of the inner over
     the outer annulus radius. Çengel and Ghajar (2015, pg. 476)
-    [#CengelGhajar2015]_ state that inner and outer Nusselt numbers are
-    approximately equivalent for turbulent flow. They additionally state that
-    Gnielinski :func:`Gnielinski` can be used for turbulent flow. The linear
-    interpolation from Gnielinski (2013) [#Gnielinksi2013]_ is used.
+
+    Cengel and Ghajar (2015) [#ConvCoeff-CengelGhajar2015]_ state that inner
+    and outer Nusselt numbers are approximately equivalent for turbulent flow.
+    They additionally state that Gnielinski :func:`Gnielinski` can be used for
+    turbulent flow. Linear interpolation is used over the range
+    2300 < Re < 4000 for the evaluation of the Nusselt number, as proposed by
+    Gnielinski (2013) [#Gnielinksi2013]_.
+
     Parameters
     ----------
-    m_flow: float
-        Mass flow rate of the fluid (in kg/s).
+    m_flow_pipe: float
+        Fluid mass flow rate (in kg/s) into the pipe.
     r_a_in: float
         Pipe annulus inner radius (in meters).
     r_a_out: float
         Pipe annulus outer radius (in meters).
-    visc : float
+    mu_f : float
         Fluid dynamic viscosity (in kg/m-s).
-    den : float
+    rho_f : float
         Fluid density (in kg/m3).
-    k : float
+    k_f : float
         Fluid thermal conductivity (in W/m-K).
-    cp : float
+    cp_f : float
         Fluid specific heat capacity (in J/kg-K).
     epsilon : float
         Pipe roughness (in meters).
+
     Returns
     -------
     h_fluid_a_in: float
-        The convection heat transfer coefficient of the inner pipe annulus
+        Convective heat transfer coefficient of the inner pipe annulus
         region (in W/m2-K).
-    h_fluid_o_in: float
-        The convection heat transfer coefficient of the outer pipe annulus
+    h_fluid_a_out: float
+        Convective heat transfer coefficient of the outer pipe annulus
         region (in W/m2-K).
+
     References
     -----------
     .. [#Grundman2007] Grundman, R. (2007) Improved design methods for ground
         heat exchangers. Oklahoma State University, M.S. Thesis.
+    .. [#ConvCoeff-CengelGhajar2015] Çengel, Y.A., & Ghajar, A.J. (2015). Heat
+        and mass transfer: fundamentals & applications (Fifth edition.).
+        McGraw-Hill.
+
     """
-    # Hydraulic diameter for concentric tube annulus region
+    # Hydraulic diameter and radius for concentric tube annulus region
     D_h = 2 * (r_a_out - r_a_in)
-    A_c = pi * (
-        (r_a_out ** 2) - (r_a_in ** 2))  # annulus cross sectional area
-    V_dot = m_flow / den
-    V = V_dot / A_c  # average velocity
-    Re = den * V * D_h / visc
-    Pr = cp * visc / k  # Prandlt number
-    r_star = r_a_in / r_a_out  # Grundman (2007)
-    r_in = D_h / 2  # Hydraulic radius
+    r_h = D_h / 2
+    # Cross-sectional area of the annulus region
+    A_c = pi * ((r_a_out ** 2) - (r_a_in ** 2))
+    # Volume flow rate
+    V_dot = m_flow_pipe / rho_f
+    # Average velocity
+    V = V_dot / A_c
+    # Reynolds number
+    Re = rho_f * V * D_h / mu_f
+    # Prandtl number
+    Pr = cp_f * mu_f / k_f
+    # Ratio of radii (Grundman, 2007)
+    r_star = r_a_in / r_a_out
     # Darcy-Wiesbach friction factor
     fDarcy = fluid_friction_factor_circular_pipe(
-        m_flow, r_in, visc, den, epsilon)
-    # Define a region which is "critical" or not fully turbulent
-    critical_lower = 2300.
-    critical_upper = 4000.
+        m_flow_pipe, r_h, mu_f, rho_f, epsilon)
 
-    # compute the Nusselt number based on the region the Reynolds number falls
-    if Re >= critical_upper:
-        # Ghajar (2015, pg. 500-501) states that Gnielinski can be used for
-        # fully turbulent, and the inner and outer Nusselt numbers can be
-        # considered equivalent
+    # To ensure there are no dramatic jumps in the equation, an interpolation
+    # in a transition region of 2300 <= Re <= 4000 will be used.
+
+    Re_crit_lower = 2300.
+    Re_crit_upper = 4000.
+
+    if Re >= Re_crit_upper:
+        # Nusselt number from Gnielinski, applied to both surfaces if the
+        # flow is turbulent
         Nu = _Nusselt_number_turbulent_flow(Re, Pr, fDarcy)
         Nu_a_in = Nu
         Nu_a_out = Nu
-    elif critical_lower < Re < critical_upper:
-        Nu_a_in_lam = 3.66 + 1.2 * r_star ** (
-            -0.8)  # Inner Nusselt laminar
-        Nu_a_out_lam = 3.66 + 1.2 * r_star ** 0.5  # Outer Nusselt laminar
-        Nu_turb = _Nusselt_number_turbulent_flow(
-            critical_upper, Pr, fDarcy)  # In & Out turbulent
-        # Equation (16) from Gnielinski (2013)
-        gamma = (Re - critical_lower) / (
-                critical_upper - critical_lower)
-        # Linear interpolation for inner and outer Nusselt numbers
-        # Equation (17) from Gnielinski (2013)
+    elif Re_crit_lower < Re:
+        # Inner and outer surfaces Nusselt numbers in the laminar region
+        Nu_a_in_lam = 3.66 + 1.2 * r_star**(-0.8)
+        Nu_a_out_lam = 3.66 + 1.2 * r_star**0.5
+        # Nusselt number at the upper bound of the "transition" region between
+        # laminar value and Gnielinski correlation (Re = 4000.)
+        Nu_turb = _Nusselt_number_turbulent_flow(Re_crit_upper, Pr, fDarcy)
+        # Interpolate between the laminar (Re = 2300.) and turbulent
+        # (Re = 4000.) values. Equations (16)-(17) from Gnielinski (2013).
+        gamma = (Re - Re_crit_lower) / (Re_crit_upper - Re_crit_lower)
         Nu_a_in = (1 - gamma) * Nu_a_in_lam + gamma * Nu_turb
         Nu_a_out = (1 - gamma) * Nu_a_out_lam + gamma * Nu_turb
     else:
-        Nu_a_in = 3.66 + 1.2 * r_star ** (-0.8)
-        Nu_a_out = 3.66 + 1.2 * r_star ** 0.5
+        # Inner and outer surfaces Nusselt numbers in the laminar region
+        Nu_a_in = 3.66 + 1.2 * r_star**(-0.8)
+        Nu_a_out = 3.66 + 1.2 * r_star**0.5
 
-    h_fluid_a_in = k * Nu_a_in / D_h
-    h_fluid_a_out = k * Nu_a_out / D_h
+    h_fluid_a_in = k_f * Nu_a_in / D_h
+    h_fluid_a_out = k_f * Nu_a_out / D_h
 
     return h_fluid_a_in, h_fluid_a_out, Re
 
@@ -2681,7 +2702,7 @@ def _Nusselt_number_turbulent_flow(Re, Pr, fDarcy):
     """
     An empirical equation developed by Volker Gnielinski (1975)
     [#Gnielinski1975]_ based on experimental data for turbulent flow in pipes.
-    Cengel and Ghajar (2015, pg. 497) [#CengelGhajar2015]_ say that the
+    Cengel and Ghajar (2015, pg. 497) [#Nusselt-CengelGhajar2015]_ say that the
     Gnielinski equation should be preferred for determining the Nusselt number
     in the transition and turbulent region.
 
@@ -2718,8 +2739,9 @@ def _Nusselt_number_turbulent_flow(Re, Pr, fDarcy):
         den Wärme- und den Stoffübergang in turbulent durchströmten Rohren und
         Kanälen. Forschung im Ingenieurwesen, 41(1), 8–16.
         https://doi.org/10.1007/BF02559682
-    .. [#CengelGhajar2015] Çengel, Y.A., & Ghajar, A.J. (2015). Heat and mass
-        transfer: fundamentals & applications (Fifth edition.). McGraw-Hill.
+    .. [#Nusselt-CengelGhajar2015] Çengel, Y.A., & Ghajar, A.J. (2015). Heat
+        and mass transfer: fundamentals & applications (Fifth edition.).
+        McGraw-Hill.
 
     """
 
