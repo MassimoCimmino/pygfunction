@@ -2435,7 +2435,7 @@ def convective_heat_transfer_coefficient_concentric_annulus(
     h_fluid_a_in = k_f * Nu_a_in / D_h
     h_fluid_a_out = k_f * Nu_a_out / D_h
 
-    return h_fluid_a_in, h_fluid_a_out, Re
+    return h_fluid_a_in, h_fluid_a_out
 
 
 def conduction_thermal_resistance_circular_pipe(r_in, r_out, k_p):
