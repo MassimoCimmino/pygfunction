@@ -104,7 +104,10 @@ def finite_line_source(
             dis, H1, D1, H2, D2, reaSource, imgSource)
 
         # Evaluate integral
-        if isinstance(time, (np.floating, float)):
+        if time == np.inf:
+            h = _finite_line_source_steady_state(
+                dis, H1, D1, H2, D2, reaSource, imgSource)
+        elif isinstance(time, (np.floating, float)):
             # Lower bound of integration
             a = 1.0 / np.sqrt(4.0*alpha*time)
             h = quad(f, a, np.inf)[0]
@@ -116,17 +119,25 @@ def finite_line_source(
         # Unpack parameters
         if isinstance(borehole1, Borehole): borehole1 = [borehole1]
         if isinstance(borehole2, Borehole): borehole2 = [borehole2]
-        dis = np.array(
-            [[b1.distance(b2) for b1 in borehole1] for b2 in borehole2])
+        x1 = np.array([b.x for b in borehole1])
+        y1 = np.array([b.y for b in borehole1])
+        x2 = np.array([b.x for b in borehole2])
+        y2 = np.array([b.y for b in borehole2])
+        r_b = np.array([b.r_b for b in borehole1])
+        dis = np.maximum(np.sqrt(np.add.outer(x2, -x1)**2 + np.add.outer(y2, -y1)**2), r_b)
         D1 = np.array([b.D for b in borehole1]).reshape(1, -1)
         H1 = np.array([b.H for b in borehole1]).reshape(1, -1)
         D2 = np.array([b.D for b in borehole2]).reshape(-1, 1)
         H2 = np.array([b.H for b in borehole2]).reshape(-1, 1)
 
-        # Evaluate integral
-        h = finite_line_source_vectorized(
-            time, alpha, dis, H1, D1, H2, D2,
-            reaSource=reaSource, imgSource=imgSource)
+        if time == np.inf:
+            h = _finite_line_source_steady_state(
+                dis, H1, D1, H2, D2, reaSource, imgSource)
+        else:
+            # Evaluate integral
+            h = finite_line_source_vectorized(
+                time, alpha, dis, H1, D1, H2, D2,
+                reaSource=reaSource, imgSource=imgSource)
     return h
 
 
@@ -320,3 +331,75 @@ def _finite_line_source_integrand(dis, H1, D1, H2, D2, reaSource, imgSource):
         # No heat source
         f = lambda s: 0.
     return f
+
+
+def _finite_line_source_steady_state(dis, H1, D1, H2, D2, reaSource, imgSource):
+    """
+    Integrand of the finite line source solution.
+
+    Parameters
+    ----------
+    dis : float or array
+        Radial distances to evaluate the FLS solution.
+    H1 : float or array
+        Lengths of the emitting heat sources.
+    D1 : float or array
+        Buried depths of the emitting heat sources.
+    H2 : float or array
+        Lengths of the receiving heat sources.
+    D2 : float or array
+        Buried depths of the receiving heat sources.
+    reaSource : bool
+        True if the real part of the FLS solution is to be included.
+    imgSource : bool
+        True if the image part of the FLS solution is to be included.
+
+    Returns
+    -------
+    h : Steady-state finite line source solution.
+
+    Notes
+    -----
+    All arrays (dis, H1, D1, H2, D2) must follow numpy array broadcasting
+    rules.
+
+    """
+    # Steady-state solution
+    if reaSource and imgSource:
+        # Full (real + image) FLS solution
+        p = np.array([1, -1, 1, -1, 1, -1, 1, -1])
+        q = np.stack([D2 - D1 + H2,
+                      D2 - D1,
+                      D2 - D1 - H1,
+                      D2 - D1 + H2 - H1,
+                      D2 + D1 + H2,
+                      D2 + D1,
+                      D2 + D1 + H1,
+                      D2 + D1 + H2 + H1],
+                      axis=-1)
+        dis = np.expand_dims(dis, axis=-1)
+        h = 0.5 / H2 * np.inner(p, q * np.log((q + np.sqrt(q**2 + dis**2)) / dis) - np.sqrt(q**2 + dis**2))
+    elif reaSource:
+        # Real FLS solution
+        p = np.array([1, -1, 1, -1])
+        q = np.stack([D2 - D1 + H2,
+                      D2 - D1,
+                      D2 - D1 - H1,
+                      D2 - D1 + H2 - H1,],
+                      axis=-1)
+        dis = np.expand_dims(dis, axis=-1)
+        h = 0.5 / H2 * np.inner(p, q * np.log((q + np.sqrt(q**2 + dis**2)) / dis) - np.sqrt(q**2 + dis**2))
+    elif imgSource:
+        # Image FLS solution
+        p = np.array([1, -1, 1, -1])
+        q = np.stack([D2 + D1 + H2,
+                      D2 + D1,
+                      D2 + D1 + H1,
+                      D2 + D1 + H2 + H1],
+                      axis=-1)
+        dis = np.expand_dims(dis, axis=-1)
+        h = 0.5 / H2 * np.inner(p, q * np.log((q + np.sqrt(q**2 + dis**2)) / dis) - np.sqrt(q**2 + dis**2))
+    else:
+        # No heat source
+        h = 0.
+    return h
