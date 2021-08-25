@@ -673,21 +673,21 @@ class _BasePipe(object):
             raise ValueError(
                 'The grout thermal conductivity must be greater than zero. '
                 'A value of {} was provided.'.format(self.k_g))
-        if not np.all(self.R_fp) > 0.:
+        if not self.R_fp > 0.:
             raise ValueError(
                 'The fluid to outer pipe wall thermal resistance must be'
                 'greater than zero. '
                 'A value of {} was provided.'.format(self.R_fp))
 
         # Verify that the pipe radius is greater than zero.
-        if not np.all(self.r_in) > 0.:
+        if not self.r_in > 0.:
             raise ValueError(
                 'The pipe inner radius must be greater than zero. '
                 'A value of {} was provided.'.format(self.r_in))
 
         # Verify that the outer pipe radius is greater than the inner pipe
         # radius.
-        if not np.all(np.greater(self.r_out, self.r_in)):
+        if not self.r_out > self.r_in:
             raise ValueError(
                 'The pipe outer radius must be greater than the pipe inner'
                 ' radius. '
@@ -700,27 +700,22 @@ class _BasePipe(object):
                 ' or greater. '
                 'A value of {} was provided.'.format(self.J))
 
-        # Note: It is not possible with the current implementation of Coaxial
-        #       for the pipes to collide. This check is only done for U-tubes.
-        # if type(self.pos) == list:
-
         # Verify that the pipes are contained within the borehole.
-        for i in range(len(self.pos)):
+        for i in range(2*self.nPipes):
             r_pipe = np.sqrt(self.pos[i][0]**2 + self.pos[i][1]**2)
-            radii = r_pipe + self.r_out
-            if not np.any(np.greater_equal(self.b.r_b, radii)):
+            if not r_pipe + self.r_out <= self.b.r_b:
                 raise ValueError(
                     'Pipes must be entirely contained within the borehole. '
                     'Pipe {} is partly or entirely outside the '
                     'borehole.'.format(i))
 
         # Verify that the pipes do not collide to one another.
-        for i in range(len(self.pos)):
-            for j in range(i + 1, len(self.pos)):
+        for i in range(2*self.nPipes):
+            for j in range(i+1, 2*self.nPipes):
                 dx = self.pos[i][0] - self.pos[j][0]
                 dy = self.pos[i][1] - self.pos[j][1]
-                dis = np.sqrt(dx ** 2 + dy ** 2)
-                if np.all(np.less_equal(dis, 2 * self.r_out)) and dis > 1.0e-6:
+                dis = np.sqrt(dx**2 + dy**2)
+                if not dis >= 2*self.r_out:
                     raise ValueError(
                         'Pipes {} and {} are overlapping.'.format(i, j))
 
@@ -1952,6 +1947,74 @@ class Coaxial(SingleUTube):
 
         return fig
     
+    def _check_geometry(self):
+        """ Verifies the inputs to the pipe object and raises an error if
+            the geometry is not valid.
+        """
+        # Determine the indexes of the inner and outer pipes
+        iInner = self.r_out.argmin()
+        iOuter = self.r_out.argmax()
+
+        # Verify that thermal properties are greater than 0.
+        if not self.k_s > 0.:
+            raise ValueError(
+                'The ground thermal conductivity must be greater than zero. '
+                'A value of {} was provided.'.format(self.k_s))
+        if not self.k_g > 0.:
+            raise ValueError(
+                'The grout thermal conductivity must be greater than zero. '
+                'A value of {} was provided.'.format(self.k_g))
+        if not np.all(self.R_ff) >= 0.:
+            raise ValueError(
+                'The fluid to fluid thermal resistance must be'
+                'greater or equal to zero. '
+                'A value of {} was provided.'.format(self.R_ff))
+        if not np.all(self.R_fp) > 0.:
+            raise ValueError(
+                'The fluid to outer pipe wall thermal resistance must be'
+                'greater than zero. '
+                'A value of {} was provided.'.format(self.R_fp))
+
+        # Verify that the pipe radius is greater than zero.
+        if not np.all(self.r_in) > 0.:
+            raise ValueError(
+                'The pipe inner radius must be greater than zero. '
+                'A value of {} was provided.'.format(self.r_in))
+
+        # Verify that the outer pipe radius is greater than the inner pipe
+        # radius.
+        if not np.all(np.greater(self.r_out, self.r_in)):
+            raise ValueError(
+                'The pipe outer radius must be greater than the pipe inner'
+                ' radius. '
+                'A value of {} was provided.'.format(self.r_out))
+
+        # Verify that the inner radius of the outer pipe is greater than the
+        # outer radius of the inner pipe.
+        if not np.greater(self.r_in[iOuter], self.r_out[iInner]):
+            raise ValueError(
+                'The inner radius of the outer pipe must be greater than the'
+                ' outer radius of the inner pipe.')
+
+        # Verify that the number of multipoles is zero or greater.
+        if not self.J >= 0:
+            raise ValueError(
+                'The number of terms in the multipole expansion must be zero'
+                ' or greater. '
+                'A value of {} was provided.'.format(self.J))
+
+        # Verify that the pipes are contained within the borehole.
+        for i in range(len(self.pos)):
+            r_pipe = np.sqrt(self.pos[i][0]**2 + self.pos[i][1]**2)
+            radii = r_pipe + self.r_out
+            if not np.any(np.greater_equal(self.b.r_b, radii)):
+                raise ValueError(
+                    'Pipes must be entirely contained within the borehole. '
+                    'Pipe {} is partly or entirely outside the '
+                    'borehole.'.format(i))
+
+        return True
+
 
 def thermal_resistances(pos, r_out, r_b, k_s, k_g, R_fp, J=2):
     """
