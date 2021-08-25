@@ -246,6 +246,28 @@ def finite_line_source_vectorized(
     return h
 
 
+def finite_line_source_equivalent_boreholes_vectorized(
+        time, alpha, dis, wDis, H1, D1, H2, D2, N2, reaSource=True, imgSource=True):
+    """
+
+    """
+    # Integrand of the finite line source solution
+    f = _finite_line_source_equivalent_boreholes_integrand(
+        dis, wDis, H1, D1, H2, D2, N2, reaSource, imgSource)
+
+    # Evaluate integral
+    if isinstance(time, (np.floating, float)):
+        # Lower bound of integration
+        a = 1.0 / np.sqrt(4.0*alpha*time)
+        h = quad_vec(f, a, np.inf)[0]
+    else:
+        h = np.stack(
+            [quad_vec(f, 1.0 / np.sqrt(4.0*alpha*t), np.inf)[0]
+             for t in time],
+            axis=-1)
+    return h
+
+
 def _erfint(x):
     """
     Integral of the error function.
@@ -327,6 +349,77 @@ def _finite_line_source_integrand(dis, H1, D1, H2, D2, reaSource, imgSource):
                       D2 + D1 + H2 + H1],
                      axis=-1)
         f = lambda s: 0.5 / (H2*s**2) * np.exp(-dis**2*s**2) * np.inner(p, _erfint(q*s))
+    else:
+        # No heat source
+        f = lambda s: 0.
+    return f
+
+
+def _finite_line_source_equivalent_boreholes_integrand(dis, wDis, H1, D1, H2, D2, N2, reaSource, imgSource):
+    """
+    Integrand of the finite line source solution.
+
+    Parameters
+    ----------
+    dis : float or array
+        Radial distances to evaluate the FLS solution.
+    wdis :
+    H1 : float or array
+        Lengths of the emitting heat sources.
+    D1 : float or array
+        Buried depths of the emitting heat sources.
+    H2 : float or array
+        Lengths of the receiving heat sources.
+    D2 : float or array
+        Buried depths of the receiving heat sources.
+    N2 :
+    reaSource : bool
+        True if the real part of the FLS solution is to be included.
+    imgSource : bool
+        True if the image part of the FLS solution is to be included.
+
+    Returns
+    -------
+    f : callable
+        Integrand of the finite line source solution. Can be vector-valued.
+
+    Notes
+    -----
+    All arrays (dis, H1, D1, H2, D2) must follow numpy array broadcasting
+    rules.
+
+    """
+    if reaSource and imgSource:
+        # Full (real + image) FLS solution
+        p = np.array([1, -1, 1, -1, 1, -1, 1, -1])
+        q = np.stack([D2 - D1 + H2,
+                      D2 - D1,
+                      D2 - D1 - H1,
+                      D2 - D1 + H2 - H1,
+                      D2 + D1 + H2,
+                      D2 + D1,
+                      D2 + D1 + H1,
+                      D2 + D1 + H2 + H1],
+                     axis=-1)
+        f = lambda s: 0.5 / (N2*H2*s**2) * (np.exp(-dis**2*s**2) @ wDis).T * np.inner(p, _erfint(q*s))
+    elif reaSource:
+        # Real FLS solution
+        p = np.array([1, -1, 1, -1])
+        q = np.stack([D2 - D1 + H2,
+                      D2 - D1,
+                      D2 - D1 - H1,
+                      D2 - D1 + H2 - H1],
+                     axis=-1)
+        f = lambda s: 0.5 / (N2*H2*s**2) * (np.exp(-dis**2*s**2) @ wDis).T * np.inner(p, _erfint(q*s))
+    elif imgSource:
+        # Image FLS solution
+        p = np.array([1, -1, 1, -1])
+        q = np.stack([D2 + D1 + H2,
+                      D2 + D1,
+                      D2 + D1 + H1,
+                      D2 + D1 + H2 + H1],
+                     axis=-1)
+        f = lambda s: 0.5 / (N2*H2*s**2) * (np.exp(-dis**2*s**2) @ wDis).T * np.inner(p, _erfint(q*s))
     else:
         # No heat source
         f = lambda s: 0.
