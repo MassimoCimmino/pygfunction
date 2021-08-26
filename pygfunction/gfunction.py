@@ -2530,6 +2530,9 @@ class _Equivalent(_BaseSolver):
             Number of heat sources in the bore field.
 
         """
+        # TODO : Case were there is only one borehole in a group
+        # TODO : Do not increase the number of clusters if the dissimilarity
+        #        is zero (e.g. case of 2 boreholes).
         if self.disp: print('Identifying equivalent boreholes ...', end='')
         # Initialize chrono
         tic = tim.time()
