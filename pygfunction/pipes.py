@@ -2338,14 +2338,15 @@ def convective_heat_transfer_coefficient_concentric_annulus(
             \\text{Nu}_{a,out} = 3.66 + 1.2(r^*)^{0.5}
 
     where :math:`r^* = r_{a,in} / r_{a,out}` is the ratio of the inner over
-    the outer annulus radius. Çengel and Ghajar (2015, pg. 476)
+    the outer annulus radius (Çengel and Ghajar 2015, pg. 476).
 
     Cengel and Ghajar (2015) [#ConvCoeff-CengelGhajar2015]_ state that inner
     and outer Nusselt numbers are approximately equivalent for turbulent flow.
-    They additionally state that Gnielinski :func:`Gnielinski` can be used for
-    turbulent flow. Linear interpolation is used over the range
-    2300 < Re < 4000 for the evaluation of the Nusselt number, as proposed by
-    Gnielinski (2013) [#Gnielinksi2013]_.
+    They additionally state that Gnielinski
+    :func:`_Nusselt_number_turbulent_flow` can be used for turbulent flow.
+    Linear interpolation is used over the range 2300 < Re < 4000 for the
+    evaluation of the Nusselt number, as proposed by Gnielinski (2013)
+    [#Gnielinksi2013]_.
 
     Parameters
     ----------
