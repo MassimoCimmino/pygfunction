@@ -10,7 +10,7 @@ from scipy.interpolate import interp1d as interp1d
 from .boreholes import Borehole, _EquivalentBorehole, find_duplicates
 from .heat_transfer import finite_line_source, finite_line_source_vectorized, \
     finite_line_source_equivalent_boreholes_vectorized
-from .networks import Network, network_thermal_resistance
+from .networks import Network, _EquivalentNetwork, network_thermal_resistance
 from .utilities import _initialize_figure, _format_axes
 
 
@@ -1248,6 +1248,8 @@ class _BaseSolver(object):
         h_ij = self.thermal_response_factors(time, alpha, kind=self.kind)
         # Segment lengths
         H_b = self.segment_lengths()
+        if self.boundary_condition == 'MIFT':
+            Hb_individual = np.array([b.H/nSegments for (b, nSegments) in zip(self.boreholes, self.nBoreSegments) for i in range(nSegments)])
         H_tot = np.sum(H_b)
         if self.disp: print('Building and solving the system of equations ...',
                             end='')
@@ -1335,8 +1337,8 @@ class _BaseSolver(object):
                           -np.eye(self.nSources, dtype=self.dtype),
                           np.zeros((self.nSources, 1), dtype=self.dtype)],
                          [np.eye(self.nSources, dtype=self.dtype),
-                          a_b/(2.0*pi*k_s*np.atleast_2d(H_b).T),
-                          a_in/(2.0*pi*k_s*np.atleast_2d(H_b).T)],
+                          a_b/(2.0*pi*k_s*np.atleast_2d(Hb_individual).T),
+                          a_in/(2.0*pi*k_s*np.atleast_2d(Hb_individual).T)],
                          [H_b, np.zeros(self.nSources + 1, dtype=self.dtype)]])
                     B = np.hstack(
                         (-T_b0,
@@ -2592,7 +2594,14 @@ class _Equivalent(_BaseSolver):
         # Store unique distances in the bore field
         self.dis = eqField.unique_distance(eqField, self.disTol)[0][1:]
 
-        # TODO : _EquivalentNetwork for MIFT boundary condition
+        if self.boundary_condition == 'MIFT':
+            pipes = [self.network.p[self.clusters.index(i)] for i in range(self.nEqBoreholes)]
+            self.network = _EquivalentNetwork(
+                self.boreholes,
+                pipes,
+                m_flow_network=self.network.m_flow_network,
+                cp_f=self.network.cp_f,
+                nSegments=self.nBoreSegments[0])
 
         # Stop chrono
         toc = tim.time()
@@ -2997,6 +3006,10 @@ class _Equivalent(_BaseSolver):
             "The relative tolerance 'tol' should be a positive float."
         assert type(self.kClusters) is int and self.kClusters >= 0, \
             "The precision increment 'kClusters' should be a positive int."
-        # TODO : 'MIFT' limited to parallel boreholes
-        # TODO : Variable number of segments is not supported
+        if self.boundary_condition == 'MIFT':
+            assert np.all(np.array(self.network.c, dtype=np.int) == -1), \
+                "Solver 'equivalent' is only valid for parallel-connected " \
+                "boreholes."
+        assert np.all(np.array(self.nBoreSegments, dtype=np.uint) == self.nBoreSegments[0]), \
+            "Solver 'equivalent' can only handle equal numbers of segments."
         return
