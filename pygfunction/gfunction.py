@@ -2419,7 +2419,7 @@ class _Equivalent(_BaseSolver):
         obtain thermal response factors at any intermediate time by
         h_ij(t)[:nSources,:nSources].
 
-        Attributes
+        Parameters
         ----------
         time : float or array
             Values of time (in seconds) for which the g-function is evaluated.
@@ -2513,7 +2513,7 @@ class _Equivalent(_BaseSolver):
 
         return h_ij
 
-    def find_groups(self):
+    def find_groups(self, tol=1e-6):
         """
         Identify groups of boreholes that can be represented by a single
         equivalent borehole for the calculation of the g-function.
@@ -2526,15 +2526,19 @@ class _Equivalent(_BaseSolver):
         branch and incrementing the number of intercepted branches by the value
         of the kClusters parameter.
 
+        Parameters
+        ----------
+        tol : float
+            Tolerance on the temperature to identify the maxiumum number of
+            equivalent boreholes.
+            Default is 1e-6.
+
         Returns
         -------
         nSources : int
             Number of heat sources in the bore field.
 
         """
-        # TODO : Case were there is only one borehole in a group
-        # TODO : Do not increase the number of clusters if the dissimilarity
-        #        is zero (e.g. case of 2 boreholes).
         if self.disp: print('Identifying equivalent boreholes ...', end='')
         # Initialize chrono
         tic = tim.time()
@@ -2543,43 +2547,49 @@ class _Equivalent(_BaseSolver):
         self.nBoreholes = len(self.boreholes)
         # Equivalent field formed by all boreholes
         eqField = _EquivalentBorehole(self.boreholes)
-        if self.nBoreholes > 2:
+        if self.nBoreholes > 1:
             # Spatial superposition of the steady-state FLS solution
             data = np.sum(finite_line_source(np.inf, 1., self.boreholes, self.boreholes), axis=1).reshape(-1,1)
             # Split boreholes into groups of same dimensions
             unique_boreholes = self._find_unique_boreholes(self.boreholes)
-            nGroups = len(unique_boreholes)
-            # Hierarchical agglomerative clustering based on temperatures
-            clusterization = [linkage(data[indices], method='complete')
-                              for indices in unique_boreholes]
-            dcoord = [np.array(dendrogram(cluster, no_plot=True)['dcoord'])
-                      for cluster in clusterization]
-            # Height to cut each tree to obtain the minimum number of clusters
-            height = np.zeros(len(dcoord))
-            for k in range(nGroups):
-                d = dcoord[k]
-                disLeft = d[:,1] - d[:,0]
-                disRight = d[:,2] - d[:,3]
-                if np.max(disLeft) >= np.max(disRight):
-                    i = disLeft.argmax()
-                    height[k] = 0.5*(d[i,1] + d[i,0])
+            # Initialize empty list of clusters
+            self.clusters = []
+            self.nEqBoreholes = 0
+            for group in unique_boreholes:
+                if len(group) > 1:
+                    # Maximum temperature
+                    maxTemp = np.max(data[group])
+                    # Hierarchical agglomerative clustering based on temperatures
+                    clusterization = linkage(data[group], method='complete')
+                    dcoord = np.array(
+                        dendrogram(clusterization, no_plot=True)['dcoord'])
+                    # Maximum number of clusters
+                    # Height to cut each tree to obtain the minimum number of clusters
+                    disLeft = dcoord[:,1] - dcoord[:,0]
+                    disRight = dcoord[:,2] - dcoord[:,3]
+                    if np.max(disLeft) >= np.max(disRight):
+                        i = disLeft.argmax()
+                        height = 0.5*(dcoord[i,1] + dcoord[i,0])
+                    else:
+                        i = disRight.argmax()
+                        height = 0.5*(dcoord[i,2] + dcoord[i,3])
+                    # Find the number of clusters and increment by kClusters
+                    # Maximum number of clusters
+                    nClustersMax = min(np.sum(dcoord[:,1] > tol*maxTemp) + 1,
+                                       len(group))
+                    # Optimal number of cluster
+                    nClusters = np.max(
+                        cut_tree(clusterization, height=height)) + 1
+                    nClusters = min(nClusters + self.kClusters, nClustersMax)
+                    # Cut the tree to find the borehole groups
+                    clusters = cut_tree(
+                        clusterization, n_clusters=nClusters)
+                    self.clusters = self.clusters + \
+                        [label + self.nEqBoreholes for label in clusters]
                 else:
-                    i = disRight.argmax()
-                    height[k] = 0.5*(d[i,2] + d[i,3])
-            # Find the number of clusters and increment by kClusters
-            nClusters = [np.max(cut_tree(clusterization[k],
-                                         height=height[k])) + 1
-                         for k in range(nGroups)]
-            nClusters = [min(nClusters[k] + self.kClusters,
-                             len(unique_boreholes[k]))
-                         for k in range(nGroups)]
-            self.nEqBoreholes = sum(nClusters)
-            # Cut the tree to find the borehole groups
-            self.clusters = [cut_tree(clusterization[k],
-                                 n_clusters=nClusters[k])
-                        for k in range(nGroups)]
-            self.clusters = [label + sum(nClusters[:k])
-                        for k in range(nGroups) for label in self.clusters[k]]
+                    nClusters = 1
+                    self.clusters.append(self.nEqBoreholes)
+                self.nEqBoreholes += nClusters
         else:
             self.nEqBoreholes = self.nBoreholes
             self.clusters = range(self.nBoreholes)
@@ -2817,7 +2827,7 @@ class _Equivalent(_BaseSolver):
         else:
             # Outputs for a single borehole
             borehole_to_self = [[0]]
-            borehole_to_borehole = []
+            borehole_to_borehole = [[(0, 0)]]
         return borehole_to_self, borehole_to_borehole
 
     def _find_unique_boreholes(self, boreholes):
