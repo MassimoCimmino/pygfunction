@@ -3016,10 +3016,21 @@ class _Equivalent(_BaseSolver):
             "The relative tolerance 'tol' should be a positive float."
         assert type(self.kClusters) is int and self.kClusters >= 0, \
             "The precision increment 'kClusters' should be a positive int."
+        assert np.all(np.array(self.nBoreSegments, dtype=np.uint) == self.nBoreSegments[0]), \
+            "Solver 'equivalent' can only handle equal numbers of segments."
         if self.boundary_condition == 'MIFT':
             assert np.all(np.array(self.network.c, dtype=np.int) == -1), \
                 "Solver 'equivalent' is only valid for parallel-connected " \
                 "boreholes."
-        assert np.all(np.array(self.nBoreSegments, dtype=np.uint) == self.nBoreSegments[0]), \
-            "Solver 'equivalent' can only handle equal numbers of segments."
+            assert type(self.network.m_flow_network) is float \
+                or (type(self.network.m_flow_network) is np.ndarray
+                    and np.allclose(self.network.m_flow_network, self.network.m_flow_network[0])), \
+                "Mass flow rates into the network must be equal for all " \
+                "boreholes."
+            # Verify that all boreholes have the same piping configuration
+            # This is best done by comparing the matrix of thermal resistances.
+            assert np.all(
+                [np.allclose(self.network.p[0]._Rd, pipe._Rd)
+                 for pipe in self.network.p]), \
+                "All boreholes must have the same piping configuration."
         return
