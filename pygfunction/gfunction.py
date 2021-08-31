@@ -48,6 +48,14 @@ class gFunction(object):
                 The classical superposition of the FLS solution. The FLS
                 solution is evaluated for all pairs of segments in the bore
                 field.
+            - 'equivalent' :
+                The equivalent borehole method of Prieto and Cimmino (2021)
+                [#gFunction-PriCim2021]_. Boreholes are assembled into groups
+                of boreholes that share similar borehole wall temperatures and
+                heat extraction rates. Each group is represented by an
+                equivalent borehole and the group-to-group thermal interactions
+                are calculated by the FLS solution. This is an approximation of
+                the 'similarities' method.
 
         Default is 'similarities'.
     boundary_condition : str, optional
@@ -110,6 +118,28 @@ class gFunction(object):
                 abs(H1 - H2)/H2 < tol.
                 Default is 1.0e-6.
 
+        The 'equivalent' solver accepts the following method-specific
+        options:
+
+            disTol : float, optional
+                Relative tolerance on radial distance. Two distances
+                (d1, d2) between two pairs of boreholes are considered equal if
+                the difference between the two distances (abs(d1-d2)) is below
+                tolerance.
+                Default is 0.01.
+            tol : float, optional
+                Relative tolerance on length and depth. Two lengths H1, H2
+                (or depths D1, D2) are considered equal if
+                abs(H1 - H2)/H2 < tol.
+                Default is 1.0e-6.
+            kClusters : int, optional
+                Increment on the minimum number of equivalent boreholes
+                determined by cutting the dendrogram of the bore field given
+                by the hierarchical agglomerative clustering method. Increasing
+                the value of this parameter increases the accuracy of the
+                method.
+                Default is 1.
+
     References
     ----------
     .. [#gFunction-CimBer2014] Cimmino, M., & Bernier, M. (2014). A
@@ -127,6 +157,10 @@ class gFunction(object):
        g-function calculation of bore fields with series- and
        parallel-connected boreholes. Science and Technology for the Built
        Environment, 25 (8), 1007-1022.
+    .. [#gFunction-PriCim2021] Cimmino, M. (2021). Prieto, C. & Cimmino, M.
+       (2021). Thermal interactions in large irregular fields of geothermal
+       boreholes: the method of equivalent borehole. Journal of Building
+       Performance Simulation, 14 (4), 446-460.
 
     """
     def __init__(self, boreholes_or_network, alpha, time=None,
@@ -2377,7 +2411,95 @@ class _Similarities(_BaseSolver):
 
 class _Equivalent(_BaseSolver):
     """
-    Equivalent boreholes solver for the evaluation of the g-function.
+    Equivalent solver for the evaluation of the g-function.
+
+    This solver uses hierarchical agglomerative clustering to identify groups
+    of boreholes that are expected to have similar borehole wall temperatures
+    and heat extraction rates, as proposed by Prieto and Cimmino (2021)
+    [#Equivalent-PriCim2021]_. Each group of boreholes is represented by a
+    single equivalent borehole. The FLS solution is adapted to evaluate
+    thermal interactions between groups of boreholes. This greatly reduces
+    the number of evaluations of the FLS solution and the size of the system of
+    equations to evaluate the g-function.
+
+    Parameters
+    ----------
+    boreholes : list of Borehole objects
+        List of boreholes included in the bore field.
+    network : network object
+        Model of the network.
+    time : float or array
+        Values of time (in seconds) for which the g-function is evaluated.
+    boundary_condition : str
+        Boundary condition for the evaluation of the g-function. Should be one
+        of
+
+            - 'UHTR' :
+                **Uniform heat transfer rate**. This is corresponds to boundary
+                condition *BC-I* as defined by Cimmino and Bernier (2014)
+                [#Equivalent-CimBer2014]_.
+            - 'UBWT' :
+                **Uniform borehole wall temperature**. This is corresponds to
+                boundary condition *BC-III* as defined by Cimmino and Bernier
+                (2014) [#Equivalent-CimBer2014]_.
+            - 'MIFT' :
+                **Mixed inlet fluid temperatures**. This boundary condition was
+                introduced by Cimmino (2015) [#Equivalent-Cimmin2015]_ for
+                parallel-connected boreholes and extended to mixed
+                configurations by Cimmino (2019) [#Equivalent-Cimmin2019]_.
+
+    nSegments : int or list, optional
+        Number of line segments used per borehole, or list of number of
+        line segments used for each borehole.
+        Default is 12.
+    disp : bool, optional
+        Set to true to print progression messages.
+        Default is False.
+    profiles : bool, optional
+        Set to true to keep in memory the temperatures and heat extraction
+        rates.
+        Default is False.
+    kind : string, optional
+        Interpolation method used for segment-to-segment thermal response
+        factors. See documentation for scipy.interpolate.interp1d.
+        Default is 'linear'.
+    dtype : numpy dtype, optional
+        numpy data type used for matrices and vectors. Should be one of
+        numpy.single or numpy.double.
+        Default is numpy.double.
+    disTol : float, optional
+        Relative tolerance on radial distance. Two distances
+        (d1, d2) between two pairs of boreholes are considered equal if the
+        difference between the two distances (abs(d1-d2)) is below tolerance.
+        Default is 0.01.
+    tol : float, optional
+        Relative tolerance on length and depth. Two lengths H1, H2
+        (or depths D1, D2) are considered equal if abs(H1 - H2)/H2 < tol.
+        Default is 1.0e-6.
+    kClusters : int, optional
+        Increment on the minimum number of equivalent boreholes determined by
+        cutting the dendrogram of the bore field given by the hierarchical
+        agglomerative clustering method. Increasing the value of this parameter
+        increases the accuracy of the method.
+        Default is 1.
+
+    References
+    ----------
+    .. [#Equivalent-CimBer2014] Cimmino, M., & Bernier, M. (2014). A
+       semi-analytical method to generate g-functions for geothermal bore
+       fields. International Journal of Heat and Mass Transfer, 70, 641-650.
+    .. [#Equivalent-Cimmin2015] Cimmino, M. (2015). The effects of borehole
+       thermal resistances and fluid flow rate on the g-functions of geothermal
+       bore fields. International Journal of Heat and Mass Transfer, 91,
+       1119-1127.
+    .. [#Equivalent-Cimmin2018] Cimmino, M. (2018). Fast calculation of the
+       g-functions of geothermal borehole fields using similarities in the
+       evaluation of the finite line source solution. Journal of Building
+       Performance Simulation, 11 (6), 655-668.
+    .. [#Equivalent-PriCim2021] Cimmino, M. (2021). Prieto, C. & Cimmino, M.
+       (2021). Thermal interactions in large irregular fields of geothermal
+       boreholes: the method of equivalent borehole. Journal of Building
+       Performance Simulation, 14 (4), 446-460.
 
     """
     def initialize(self, disTol=0.01, tol=1.0e-6, kClusters=1, **kwargs):
