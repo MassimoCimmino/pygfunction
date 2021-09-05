@@ -1161,9 +1161,13 @@ class _BaseSolver(object):
         else:
             self.nBoreSegments = nSegments
         if type(segmentLengths) is list:
-            self.segmentLengths = segmentLengths
+            # Flatten the list for use inside of the solver
+            self.segmentLengths = [Lq for sub in segmentLengths for Lq in sub]
         else:
-            self.segmentLengths = None
+            # Segment lengths will be equal for borehole i
+            self.segmentLengths = [boreholes[i].H / self.nBoreSegments[i]
+                                   for i in range(len(boreholes))
+                                   for j in range(self.nBoreSegments[i])]
         self._i0Segments = [sum(self.nBoreSegments[0:i])
                             for i in range(nBoreholes)]
         self._i1Segments = [sum(self.nBoreSegments[0:(i + 1)])
@@ -1374,7 +1378,7 @@ class _BaseSolver(object):
 
         """
         # Borehole lengths
-        H_b = np.array([b.H for b in self.boreSegments], dtype=self.dtype)
+        H_b = np.array(self.segmentLengths, dtype=self.dtype)
         return H_b
 
     def borehole_segments(self):
@@ -1392,21 +1396,16 @@ class _BaseSolver(object):
         """
         boreSegments = []  # list for storage of boreSegments
         for j in range(len(self.boreholes)):
-            if self.segmentLengths is None:
-                for i in range(self.nBoreSegments[j]):
-                    b = self.boreholes[j]
-                    # Divide borehole into segments of equal length
-                    H_b = b.H / self.nBoreSegments[j]
-                    # Buried depth of the i-th segment
-                    D = b.D + i * b.H / self.nBoreSegments[j]
-                    # Add to list of segments
-                    boreSegments.append(Borehole(H_b, D, b.r_b, b.x, b.y))
-            else:
-                for k in range(len(self.segmentLengths[j])):
-                    b = self.boreholes[j]
-                    H_b = self.segmentLengths[j][k]
-                    D = b.D + sum(self.segmentLengths[j][0:k])
-                    boreSegments.append(Borehole(H_b, D, b.r_b, b.x, b.y))
+            for k in range(self.nBoreSegments[j]):
+                # Get index for current bore-segment
+                idx = sum(self.nBoreSegments[0:j]) + k
+                # Current borehole j
+                b = self.boreholes[j]
+                # Segment length, could be equal or unequal
+                H_b = self.segmentLengths[idx]
+                # Burial depth based on previous depth
+                D = b.D + sum(self.segmentLengths[0:idx])
+                boreSegments.append(Borehole(H_b, D, b.r_b, b.x, b.y))
 
         return boreSegments
 
