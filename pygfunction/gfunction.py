@@ -907,8 +907,9 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, kind='linear',
 
 def equal_inlet_temperature(
         boreholes, UTubes, m_flow_borehole, cp_f, time, alpha,
-        kind='linear', nSegments=12, use_similarities=True,
-        disTol=0.01, tol=1.0e-6, dtype=np.double, disp=False, **kwargs):
+        kind='linear', nSegments=12, segmentLengths=None,
+        use_similarities=True, disTol=0.01, tol=1.0e-6, dtype=np.double,
+        disp=False, **kwargs):
     """
     Evaluate the g-function with equal inlet fluid temperatures.
 
@@ -980,6 +981,7 @@ def equal_inlet_temperature(
     boundary_condition = 'MIFT'
     # Build options dict
     options = {'nSegments':nSegments,
+               'segmentLengths': segmentLengths,
                'disp':disp,
                'kind':kind,
                'disTol':disTol,
@@ -1001,8 +1003,9 @@ def equal_inlet_temperature(
 
 def mixed_inlet_temperature(network, m_flow_network, cp_f,
                             time, alpha, kind='linear', nSegments=12,
-                            use_similarities=True, disTol=0.01, tol=1.0e-6,
-                            dtype=np.double, disp=False, **kwargs):
+                            segmentLengths=None, use_similarities=True,
+                            disTol=0.01, tol=1.0e-6, dtype=np.double,
+                            disp=False, **kwargs):
     """
     Evaluate the g-function with mixed inlet fluid temperatures.
 
@@ -1094,6 +1097,7 @@ def mixed_inlet_temperature(network, m_flow_network, cp_f,
     boundary_condition = 'MIFT'
     # Build options dict
     options = {'nSegments':nSegments,
+               'segmentLengths': segmentLengths,
                'disp':disp,
                'kind':kind,
                'disTol':disTol,
