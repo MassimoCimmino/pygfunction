@@ -67,13 +67,29 @@ def main():
     gfunc_unequal = gt.gfunction.gFunction(
         boreField, alpha, time=time, options=options)
 
+    # Calculate g-function with unequal number of segments and predefined
+    # segment lengths
+
+    nSegments = 4
+    # Define the segment lengths for each borehole in each segment
+    # the segment lengths are defined top to bottom left to right
+    segmentLengths = [[60., 15., 15., 60.]] * len(boreField)
+    options = {'nSegments': [nSegments] * len(boreField),
+               'segmentLengths': segmentLengths, 'disp': True}
+
+    g_func_predefined = gt.gfunction.gFunction(boreField, alpha,
+                                                       time=time,
+                                                       options=options)
+
     # -------------------------------------------------------------------------
     # Plot g-functions
     # -------------------------------------------------------------------------
 
     ax = gfunc_equal.visualize_g_function().axes[0]
     ax.plot(np.log(time/ts), gfunc_unequal.gFunc, 'r-.')
-    ax.legend(['Equal number of segments', 'Unequal number of segments'])
+    ax.plot(np.log(time/ts), g_func_predefined.gFunc, 'k-.')
+    ax.legend(['Equal number of segments', 'Unequal number of segments',
+               'Predefined segment lengths'])
     plt.tight_layout()
 
     # Heat extraction rate profiles
