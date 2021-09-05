@@ -73,7 +73,7 @@ def main():
     nSegments = 4
     # Define the segment lengths for each borehole in each segment
     # the segment lengths are defined top to bottom left to right
-    segmentLengths = [[60., 15., 15., 60.]] * len(boreField)
+    segmentLengths = [[45., 30., 30., 45.]] * len(boreField)
     options = {'nSegments': [nSegments] * len(boreField),
                'segmentLengths': segmentLengths, 'disp': True}
 
