@@ -1160,6 +1160,10 @@ class _BaseSolver(object):
             self.nBoreSegments = [nSegments] * nBoreholes
         else:
             self.nBoreSegments = nSegments
+        if type(segmentLengths) is list:
+            self.segmentLengths = segmentLengths
+        else:
+            self.segmentLengths = None
         self._i0Segments = [sum(self.nBoreSegments[0:i])
                             for i in range(nBoreholes)]
         self._i1Segments = [sum(self.nBoreSegments[0:(i + 1)])
@@ -1392,14 +1396,22 @@ class _BaseSolver(object):
         """
         boreSegments = []  # list for storage of boreSegments
         for j in range(len(self.boreholes)):
-            for i in range(self.nBoreSegments[j]):
-                b = self.boreholes[j]
-                # Divide borehole into segments of equal length
-                H_b = b.H / self.nBoreSegments[j]
-                # Buried depth of the i-th segment
-                D = b.D + i * b.H / self.nBoreSegments[j]
-                # Add to list of segments
-                boreSegments.append(Borehole(H_b, D, b.r_b, b.x, b.y))
+            if self.segmentLengths is None:
+                for i in range(self.nBoreSegments[j]):
+                    b = self.boreholes[j]
+                    # Divide borehole into segments of equal length
+                    H_b = b.H / self.nBoreSegments[j]
+                    # Buried depth of the i-th segment
+                    D = b.D + i * b.H / self.nBoreSegments[j]
+                    # Add to list of segments
+                    boreSegments.append(Borehole(H_b, D, b.r_b, b.x, b.y))
+            else:
+                for i in range(len(self.segmentLengths)):
+                    for k in range(len(self.segmentLengths[i])):
+                        b = self.boreholes[j]
+                        H_b = self.segmentLengths[i][j]
+                        D = b.D + sum(self.segmentLengths[i][0:k])
+                        boreSegments.append(Borehole(H_b, D, b.r_b, b.x, b.y))
 
         return boreSegments
 
@@ -1526,12 +1538,12 @@ class _BaseSolver(object):
             "Data type \'{}\' is not an acceptable data type. \n" \
             "Please provide one of the following inputs : {}".format(
                 self.dtype, acceptable_dtypes)
-        if self.segmentLengths is not None:
-            for i in range(len(self.segmentLengths)):
-                total_length_i = sum(self.segmentLengths[i])
-                assert abs(total_length_i - self.boreholes[i].H) <= 0.1, \
-                "Defined segment lengths must add up to within a tenth of a " \
-                "meter of the total borehole length"
+        # if self.segmentLengths is not None:
+        #     for i in range(len(self.segmentLengths)):
+        #         total_length_i = sum(self.segmentLengths[i])
+        #         assert abs(total_length_i - self.boreholes[i].H) <= 0.1, \
+        #         "Defined segment lengths must add up to within a tenth of a " \
+        #         "meter of the total borehole length"
         return
 
 
