@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.constants import pi
 from scipy.special import binom
+import warnings
 
 from .utilities import _initialize_figure, _format_axes
 
@@ -776,7 +777,7 @@ class SingleUTube(_BasePipe):
     Contains information regarding the physical dimensions and thermal
     characteristics of the pipes and the grout material, as well as methods to
     evaluate fluid temperatures and heat extraction rates based on the work of
-    Hellstrom [#Hellstrom1991]_.
+    Hellstrom [#Single-Hellstrom1991]_.
 
     Attributes
     ----------
@@ -816,9 +817,9 @@ class SingleUTube(_BasePipe):
 
     References
     ----------
-    .. [#Hellstrom1991] Hellstrom, G. (1991). Ground heat storage. Thermal
-       Analyses of Duct Storage Systems I: Theory. PhD Thesis. University of
-       Lund, Department of Mathematical Physics. Lund, Sweden.
+    .. [#Single-Hellstrom1991] Hellstrom, G. (1991). Ground heat storage.
+       Thermal Analyses of Duct Storage Systems I: Theory. PhD Thesis.
+       University of Lund, Department of Mathematical Physics. Lund, Sweden.
 
     """
     def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_fp, J=2):
@@ -1443,7 +1444,7 @@ class MultipleUTube(_BasePipe):
 
         # Matrix exponential at depth (z = H)
         H = self.b.H
-        E = V @ np.diag(np.exp(L*H)) @ Vm1
+        E = np.real(V @ np.diag(np.exp(L*H)) @ Vm1)
 
         # Coefficient matrix for borehole wall temperatures
         IIm1 = np.hstack((np.eye(self.nPipes), -np.eye(self.nPipes)))
@@ -1453,7 +1454,8 @@ class MultipleUTube(_BasePipe):
             z1 = H - v*H/nSegments
             z2 = H - (v + 1)*H/nSegments
             dE = np.diag(np.exp(L*z1) - np.exp(L*z2))
-            a_b[:, v:v+1] = IIm1 @ V @ Dm1 @ dE @ Vm1 @ A @ Ones
+            a_b[:, v:v+1] = np.real(IIm1 @ V @ Dm1 @ dE @ Vm1 @ A @ Ones)
+            
 
         # Configuration-specific inlet and outlet coefficient matrices
         IZER = np.vstack((np.eye(self.nPipes),
@@ -1506,7 +1508,7 @@ class MultipleUTube(_BasePipe):
         Dm1 = self._Dm1
 
         # Matrix exponential at depth (z)
-        a_f0 = V @ np.diag(np.exp(L*z)) @ Vm1
+        a_f0 = np.real(V @ np.diag(np.exp(L*z)) @ Vm1)
 
         # Coefficient matrix for borehole wall temperatures
         a_b = np.zeros((2*self.nPipes, nSegments))
@@ -1516,7 +1518,7 @@ class MultipleUTube(_BasePipe):
             dz2 = z - min(z, (v + 1)*self.b.H/nSegments)
             E1 = np.diag(np.exp(L*dz1))
             E2 = np.diag(np.exp(L*dz2))
-            a_b[:,v:v+1] = V @ Dm1 @ (E2 - E1) @ Vm1 @ A @ Ones
+            a_b[:,v:v+1] = np.real(V @ Dm1 @ (E2 - E1) @ Vm1 @ A @ Ones)
 
         return a_f0, a_b
 
@@ -1777,6 +1779,243 @@ class IndependentMultipleUTube(MultipleUTube):
         self._cp_pipe = cp_pipe
 
 
+class Coaxial(SingleUTube):
+    """
+    Class for coaxial boreholes.
+
+    Contains information regarding the physical dimensions and thermal
+    characteristics of the pipes and the grout material, as well as methods to
+    evaluate fluid temperatures and heat extraction rates based on the work of
+    Hellstrom [#Coaxial-Hellstrom1991]_.
+
+    Attributes
+    ----------
+    pos : tuple
+        Position (x, y) (in meters) of the pipes inside the borehole.
+    r_in : (2,) array
+        Inner radii (in meters) of the coaxial pipes. The first element of the
+        array corresponds to the inlet pipe.
+    r_out : (2,) array
+        Outer radii (in meters) of the coaxial pipes. The first element of the
+        array corresponds to the inlet pipe.
+    borehole : Borehole object
+        Borehole class object of the borehole containing the U-Tube.
+    k_s : float
+        Soil thermal conductivity (in W/m-K).
+    k_g : float
+        Grout thermal conductivity (in W/m-K).
+    R_ff : float
+        Fluid to fluid thermal resistance of the inner pipe to the outer pipe
+        (in m-K/W).
+    R_fp : float
+        Fluid to outer pipe wall thermal resistance of the outer pipe in
+        contact with the grout (in m-K/W).
+    J : int, optional
+        Number of multipoles per pipe to evaluate the thermal resistances.
+        Default is 2.
+    nPipes : int
+        Number of U-Tubes, equals to 1.
+    nInlets : int
+        Total number of pipe inlets, equals to 1.
+    nOutlets : int
+        Total number of pipe outlets, equals to 1.
+
+    Notes
+    -----
+    The expected array shapes of input parameters and outputs are documented
+    for each class method. `nInlets` and `nOutlets` are the number of inlets
+    and outlets to the borehole, and both are equal to 1 for a coaxial
+    borehole. `nSegments` is the number of discretized segments along the
+    borehole. `nPipes` is the number of pipes (i.e. the number of U-tubes) in
+    the borehole, equal to 1. `nDepths` is the number of depths at which
+    temperatures are evaluated.
+
+    References
+    ----------
+    .. [#Coaxial-Hellstrom1991] Hellstrom, G. (1991). Ground heat storage.
+       Thermal Analyses of Duct Storage Systems I: Theory. PhD Thesis.
+       University of Lund, Department of Mathematical Physics. Lund, Sweden.
+
+    """
+    def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_ff, R_fp, J=2):
+        if isinstance(pos, tuple):
+            pos = [pos]
+        self.pos = pos
+        self.r_in = r_in
+        self.r_out = r_out
+        self.b = borehole
+        self.k_s = k_s
+        self.k_g = k_g
+        self.R_ff = R_ff
+        self.R_fp = R_fp
+        self.J = J
+        self.nPipes = 1
+        self.nInlets = 1
+        self.nOutlets = 1
+        self._check_geometry()
+
+        # Determine the indexes of the inner and outer pipes
+        iInner = r_out.argmin()
+        iOuter = r_out.argmax()
+        # Outer pipe to borehole wall thermal resistance
+        R_fg = thermal_resistances(pos, r_out[iOuter], borehole.r_b, k_s,
+                                   k_g, self.R_fp, J=self.J)[1][0]
+        # Delta-circuit thermal resistances
+        self._Rd = np.zeros((2*self.nPipes, 2*self.nPipes))
+        self._Rd[iInner, iInner] = np.inf
+        self._Rd[iInner, iOuter] = R_ff
+        self._Rd[iOuter, iInner] = R_ff
+        self._Rd[iOuter, iOuter] = R_fg
+
+        # Initialize stored_coefficients
+        self._initialize_stored_coefficients()
+
+    def visualize_pipes(self):
+        """
+        Plot the cross-section view of the borehole.
+
+        Returns
+        -------
+        fig : figure
+            Figure object (matplotlib).
+
+        """
+        # Determine the indexes of the inner and outer pipes
+        iInner = self.r_out.argmin()
+        iOuter = self.r_out.argmax()
+
+        # Configure figure and axes
+        fig = _initialize_figure()
+        ax = fig.add_subplot(111)
+        ax.set_xlabel(r'$x$ [m]')
+        ax.set_ylabel(r'$y$ [m]')
+        ax.axis('equal')
+        _format_axes(ax)
+
+        # Color cycle
+        prop_cycle = plt.rcParams['axes.prop_cycle']
+        colors = prop_cycle.by_key()['color']
+        lw = plt.rcParams['lines.linewidth']
+
+        # Borehole wall outline
+        ax.plot([-self.b.r_b, 0., self.b.r_b, 0.],
+                [0., self.b.r_b, 0., -self.b.r_b],
+                'k.', alpha=0.)
+        borewall = plt.Circle(
+            (0., 0.), radius=self.b.r_b, fill=False,
+            color='k', linestyle='--', lw=lw)
+        ax.add_patch(borewall)
+
+        # Pipes
+        for i in range(self.nPipes):
+            # Coordinates of pipes
+            (x_in, y_in) = self.pos[i]
+            (x_out, y_out) = self.pos[i]
+
+            # Pipe outline (inlet)
+            pipe_in_in = plt.Circle(
+                (x_in, y_in), radius=self.r_in[0],
+                fill=False, linestyle='-', color=colors[i], lw=lw)
+            pipe_in_out = plt.Circle(
+                (x_in, y_in), radius=self.r_out[0],
+                fill=False, linestyle='-', color=colors[i], lw=lw)
+            if iInner == 0:
+                ax.text(x_in, y_in, i, ha="center", va="center")
+            else:
+                ax.text(x_in + 0.5 * (self.r_out[0] + self.r_in[1]), y_in, i,
+                        ha="center", va="center")
+
+            # Pipe outline (outlet)
+            pipe_out_in = plt.Circle(
+                (x_out, y_out), radius=self.r_in[1],
+                fill=False, linestyle='-', color=colors[i], lw=lw)
+            pipe_out_out = plt.Circle(
+                (x_out, y_out), radius=self.r_out[1],
+                fill=False, linestyle='-', color=colors[i], lw=lw)
+            if iInner == 1:
+                ax.text(x_out, y_out, i + self.nPipes, ha="center", va="center")
+            else:
+                ax.text(x_out + 0.5 * (self.r_out[0] + self.r_in[1]), y_out,
+                        i + self.nPipes, ha="center", va="center")
+
+            ax.add_patch(pipe_in_in)
+            ax.add_patch(pipe_in_out)
+            ax.add_patch(pipe_out_in)
+            ax.add_patch(pipe_out_out)
+
+        plt.tight_layout()
+
+        return fig
+    
+    def _check_geometry(self):
+        """ Verifies the inputs to the pipe object and raises an error if
+            the geometry is not valid.
+        """
+        # Determine the indexes of the inner and outer pipes
+        iInner = self.r_out.argmin()
+        iOuter = self.r_out.argmax()
+
+        # Verify that thermal properties are greater than 0.
+        if not self.k_s > 0.:
+            raise ValueError(
+                'The ground thermal conductivity must be greater than zero. '
+                'A value of {} was provided.'.format(self.k_s))
+        if not self.k_g > 0.:
+            raise ValueError(
+                'The grout thermal conductivity must be greater than zero. '
+                'A value of {} was provided.'.format(self.k_g))
+        if not np.all(self.R_ff) >= 0.:
+            raise ValueError(
+                'The fluid to fluid thermal resistance must be'
+                'greater or equal to zero. '
+                'A value of {} was provided.'.format(self.R_ff))
+        if not np.all(self.R_fp) > 0.:
+            raise ValueError(
+                'The fluid to outer pipe wall thermal resistance must be'
+                'greater than zero. '
+                'A value of {} was provided.'.format(self.R_fp))
+
+        # Verify that the pipe radius is greater than zero.
+        if not np.all(self.r_in) > 0.:
+            raise ValueError(
+                'The pipe inner radius must be greater than zero. '
+                'A value of {} was provided.'.format(self.r_in))
+
+        # Verify that the outer pipe radius is greater than the inner pipe
+        # radius.
+        if not np.all(np.greater(self.r_out, self.r_in)):
+            raise ValueError(
+                'The pipe outer radius must be greater than the pipe inner'
+                ' radius. '
+                'A value of {} was provided.'.format(self.r_out))
+
+        # Verify that the inner radius of the outer pipe is greater than the
+        # outer radius of the inner pipe.
+        if not np.greater(self.r_in[iOuter], self.r_out[iInner]):
+            raise ValueError(
+                'The inner radius of the outer pipe must be greater than the'
+                ' outer radius of the inner pipe.')
+
+        # Verify that the number of multipoles is zero or greater.
+        if not self.J >= 0:
+            raise ValueError(
+                'The number of terms in the multipole expansion must be zero'
+                ' or greater. '
+                'A value of {} was provided.'.format(self.J))
+
+        # Verify that the pipes are contained within the borehole.
+        for i in range(len(self.pos)):
+            r_pipe = np.sqrt(self.pos[i][0]**2 + self.pos[i][1]**2)
+            radii = r_pipe + self.r_out
+            if not np.any(np.greater_equal(self.b.r_b, radii)):
+                raise ValueError(
+                    'Pipes must be entirely contained within the borehole. '
+                    'Pipe {} is partly or entirely outside the '
+                    'borehole.'.format(i))
+
+        return True
+
+
 def thermal_resistances(pos, r_out, r_b, k_s, k_g, R_fp, J=2):
     """
     Evaluate thermal resistances and delta-circuit thermal resistances.
@@ -1991,12 +2230,26 @@ def convective_heat_transfer_coefficient_circular_pipe(
     """
     Evaluate the convective heat transfer coefficient for circular pipes.
 
+    The Nusselt number must first be determined to find the convection
+    coefficient. Determination of the Nusselt number in turbulent flow is done
+    by calling :func:`_Nusselt_number_turbulent_flow`. An analytical solution
+    for constant pipe wall surface temperature is used for laminar flow.
+
+    Since :func:`_Nusselt_number_turbulent_flow` is only valid for Re > 3000.
+    and to avoid dicontinuities in the values of the convective heat transfer
+    coefficient near the onset of the turbulence region (approximately
+    Re = 2300.), linear interpolation is used over the range 2300 < Re < 4000
+    for the evaluation of the Nusselt number.
+
+    This approach was verified by Gnielinski (2013)
+    [#Gnielinksi2013]_.
+
     Parameters
     ----------
     m_flow_pipe : float
         Fluid mass flow rate (in kg/s) into the pipe.
     r_in : float
-        Inner radius of the pipes (in meters).
+        Inner radius of the pipe (in meters).
     mu_f : float
         Fluid dynamic viscosity (in kg/m-s).
     rho_f : float
@@ -2016,6 +2269,12 @@ def convective_heat_transfer_coefficient_circular_pipe(
     Examples
     --------
 
+    References
+    -----------
+    .. [#Gnielinksi2013] Gnielinski, V. (2013). On heat transfer in tubes.
+        International Journal of Heat and Mass Transfer, 63, 134–140.
+        https://doi.org/10.1016/j.ijheatmasstransfer.2013.04.015
+
     """
     # Hydraulic diameter
     D = 2.*r_in
@@ -2030,18 +2289,157 @@ def convective_heat_transfer_coefficient_circular_pipe(
     # Darcy friction factor
     fDarcy = fluid_friction_factor_circular_pipe(
         m_flow_pipe, r_in, mu_f, rho_f, epsilon)
-    if Re > 2300.:
+
+    # To ensure there are no dramatic jumps in the equation, an interpolation
+    # in a transition region of 2300 <= Re <= 4000 will be used.
+    # Cengel and Ghajar (2015, pg. 476) state that Re> 4000 is a conservative
+    # value to consider the flow to be turbulent in piping networks.
+
+    Re_crit_lower = 2300.
+    Re_crit_upper = 4000.
+
+    if Re >= Re_crit_upper:
         # Nusselt number from Gnielinski
-        Nu = 0.125*fDarcy * (Re - 1.0e3) * Pr / \
-            (1.0 + 12.7 * np.sqrt(0.125*fDarcy) * (Pr**(2.0/3.0) - 1.0))
+        Nu = _Nusselt_number_turbulent_flow(Re, Pr, fDarcy)
+    elif Re_crit_lower < Re:
+        Nu_lam = 3.66  # constant surface temperature laminar Nusselt number
+        # Nusselt number at the upper bound of the "transition" region between
+        # laminar value and Gnielinski correlation (Re = 4000.)
+        Nu_turb = _Nusselt_number_turbulent_flow(Re_crit_upper, Pr, fDarcy)
+        # Interpolate between the laminar (Re = 2300.) and turbulent
+        # (Re = 4000.) values. Equations (16)-(17) from Gnielinski (2013).
+        gamma = (Re - Re_crit_lower) / (Re_crit_upper - Re_crit_lower)
+        Nu = (1 - gamma) * Nu_lam + gamma * Nu_turb
     else:
         Nu = 3.66
+
     h_fluid = k_f * Nu / D
 
     return h_fluid
 
 
-def conduction_thermal_resistance_circular_pipe(r_in, r_out, k_f):
+def convective_heat_transfer_coefficient_concentric_annulus(
+        m_flow_pipe, r_a_in, r_a_out, mu_f, rho_f, k_f, cp_f, epsilon):
+    """
+    Evaluate the inner and outer convective heat transfer coefficient for the
+    annulus region of a concentric pipe.
+
+    Grundman (2007) referenced Hellström (1991) [#Hellstrom1991b]_ in the
+    discussion about inner and outer convection coefficients in an annulus
+    region of a concentric pipe arrangement.
+
+    The following is valid for :math:`Re < 2300` and
+    :math:`0.1 \leq Pr \leq 1000` :
+
+        .. math::
+            \\text{Nu}_{a,in} = 3.66 + 1.2(r^*)^{-0.8}
+
+        .. math::
+            \\text{Nu}_{a,out} = 3.66 + 1.2(r^*)^{0.5}
+
+    where :math:`r^* = r_{a,in} / r_{a,out}` is the ratio of the inner over
+    the outer annulus radius (Çengel and Ghajar 2015, pg. 476).
+
+    Cengel and Ghajar (2015) [#ConvCoeff-CengelGhajar2015]_ state that inner
+    and outer Nusselt numbers are approximately equivalent for turbulent flow.
+    They additionally state that Gnielinski
+    :func:`_Nusselt_number_turbulent_flow` can be used for turbulent flow.
+    Linear interpolation is used over the range 2300 < Re < 4000 for the
+    evaluation of the Nusselt number, as proposed by Gnielinski (2013)
+    [#Gnielinksi2013]_.
+
+    Parameters
+    ----------
+    m_flow_pipe: float
+        Fluid mass flow rate (in kg/s) into the pipe.
+    r_a_in: float
+        Pipe annulus inner radius (in meters).
+    r_a_out: float
+        Pipe annulus outer radius (in meters).
+    mu_f : float
+        Fluid dynamic viscosity (in kg/m-s).
+    rho_f : float
+        Fluid density (in kg/m3).
+    k_f : float
+        Fluid thermal conductivity (in W/m-K).
+    cp_f : float
+        Fluid specific heat capacity (in J/kg-K).
+    epsilon : float
+        Pipe roughness (in meters).
+
+    Returns
+    -------
+    h_fluid_a_in: float
+        Convective heat transfer coefficient of the inner pipe annulus
+        region (in W/m2-K).
+    h_fluid_a_out: float
+        Convective heat transfer coefficient of the outer pipe annulus
+        region (in W/m2-K).
+
+    References
+    -----------
+    .. [#Grundman2007] Grundman, R. (2007) Improved design methods for ground
+        heat exchangers. Oklahoma State University, M.S. Thesis.
+    .. [#ConvCoeff-CengelGhajar2015] Çengel, Y.A., & Ghajar, A.J. (2015). Heat
+        and mass transfer: fundamentals & applications (Fifth edition.).
+        McGraw-Hill.
+
+    """
+    # Hydraulic diameter and radius for concentric tube annulus region
+    D_h = 2 * (r_a_out - r_a_in)
+    r_h = D_h / 2
+    # Cross-sectional area of the annulus region
+    A_c = pi * ((r_a_out ** 2) - (r_a_in ** 2))
+    # Volume flow rate
+    V_dot = m_flow_pipe / rho_f
+    # Average velocity
+    V = V_dot / A_c
+    # Reynolds number
+    Re = rho_f * V * D_h / mu_f
+    # Prandtl number
+    Pr = cp_f * mu_f / k_f
+    # Ratio of radii (Grundman, 2007)
+    r_star = r_a_in / r_a_out
+    # Darcy-Wiesbach friction factor
+    fDarcy = fluid_friction_factor_circular_pipe(
+        m_flow_pipe, r_h, mu_f, rho_f, epsilon)
+
+    # To ensure there are no dramatic jumps in the equation, an interpolation
+    # in a transition region of 2300 <= Re <= 4000 will be used.
+
+    Re_crit_lower = 2300.
+    Re_crit_upper = 4000.
+
+    if Re >= Re_crit_upper:
+        # Nusselt number from Gnielinski, applied to both surfaces if the
+        # flow is turbulent
+        Nu = _Nusselt_number_turbulent_flow(Re, Pr, fDarcy)
+        Nu_a_in = Nu
+        Nu_a_out = Nu
+    elif Re_crit_lower < Re:
+        # Inner and outer surfaces Nusselt numbers in the laminar region
+        Nu_a_in_lam = 3.66 + 1.2 * r_star**(-0.8)
+        Nu_a_out_lam = 3.66 + 1.2 * r_star**0.5
+        # Nusselt number at the upper bound of the "transition" region between
+        # laminar value and Gnielinski correlation (Re = 4000.)
+        Nu_turb = _Nusselt_number_turbulent_flow(Re_crit_upper, Pr, fDarcy)
+        # Interpolate between the laminar (Re = 2300.) and turbulent
+        # (Re = 4000.) values. Equations (16)-(17) from Gnielinski (2013).
+        gamma = (Re - Re_crit_lower) / (Re_crit_upper - Re_crit_lower)
+        Nu_a_in = (1 - gamma) * Nu_a_in_lam + gamma * Nu_turb
+        Nu_a_out = (1 - gamma) * Nu_a_out_lam + gamma * Nu_turb
+    else:
+        # Inner and outer surfaces Nusselt numbers in the laminar region
+        Nu_a_in = 3.66 + 1.2 * r_star**(-0.8)
+        Nu_a_out = 3.66 + 1.2 * r_star**0.5
+
+    h_fluid_a_in = k_f * Nu_a_in / D_h
+    h_fluid_a_out = k_f * Nu_a_out / D_h
+
+    return h_fluid_a_in, h_fluid_a_out
+
+
+def conduction_thermal_resistance_circular_pipe(r_in, r_out, k_p):
     """
     Evaluate the conduction thermal resistance for circular pipes.
 
@@ -2063,7 +2461,7 @@ def conduction_thermal_resistance_circular_pipe(r_in, r_out, k_f):
     --------
 
     """
-    R_p = np.log(r_out/r_in)/(2*pi*k_f)
+    R_p = np.log(r_out/r_in)/(2*pi*k_p)
 
     return R_p
 
@@ -2174,7 +2572,7 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
             if it == 1:
                 diff0 = np.max(np.abs(P_new-P)) - np.min(np.abs(P_new-P))
             diff = np.max(np.abs(P_new-P)) - np.min(np.abs(P_new-P))
-            eps_max = diff / diff0
+            eps_max = diff / (diff0 + 1e-30)
             P = P_new
     else:
         P = np.zeros((n_p, 0))
@@ -2299,3 +2697,67 @@ def _F_mk(q_p, P, n_p, J, r_b, r_out, z, pikg, sigma):
             F[m,k] = fmk
 
     return F
+
+
+def _Nusselt_number_turbulent_flow(Re, Pr, fDarcy):
+    """
+    An empirical equation developed by Volker Gnielinski (1975)
+    [#Gnielinski1975]_ based on experimental data for turbulent flow in pipes.
+    Cengel and Ghajar (2015, pg. 497) [#Nusselt-CengelGhajar2015]_ say that the
+    Gnielinski equation should be preferred for determining the Nusselt number
+    in the transition and turbulent region.
+
+    .. math::
+        	\\text{Nu} = \\dfrac{(f/8)(\\text{Re}-1000)\\text{Pr}}
+        	{1 + 12.7(f/8)^{0.5} (\\text{Pr}^{2/3}-1)} \\;\\;\\;
+        	\\bigg(
+            \\begin{array}{c}
+                0.5 \leq \\text{Pr} \leq 2000 \\\\
+                3 \\times 10^5 <  \\text{Re} < 5 \\times 10^6
+            \\end{array}
+            \\bigg)
+
+    .. note::
+        This equation does not apply to Re < 3000.
+
+    Parameters
+    ----------
+    Re : float
+        Reynolds number.
+    Pr : float
+        Prandlt Number.
+    fDarcy : float
+        Darcy friction factor.
+
+    Returns
+    -------
+    Nu : float
+        The Nusselt number
+
+    References
+    ------------
+    .. [#Gnielinski1975] Gnielinski, V. (1975). Neue Gleichungen für
+        den Wärme- und den Stoffübergang in turbulent durchströmten Rohren und
+        Kanälen. Forschung im Ingenieurwesen, 41(1), 8–16.
+        https://doi.org/10.1007/BF02559682
+    .. [#Nusselt-CengelGhajar2015] Çengel, Y.A., & Ghajar, A.J. (2015). Heat
+        and mass transfer: fundamentals & applications (Fifth edition.).
+        McGraw-Hill.
+
+    """
+
+    # Warn the user if the Reynolds number is out of bounds, but don't break
+    if not 3.0E03 < Re < 5.0E06:
+        warnings.warn('This Nusselt calculation is only valid for Reynolds '
+                      'number in the range of 3.0E03 < Re < 5.0E06, your value'
+                      ' falls outside of the range at Re={0:.4f}'.format(Re))
+
+    # Warn the user if the Prandlt number is out of bounds
+    if not 0.5 <= Pr <= 2000.:
+        warnings.warn('This Nusselt calculation is only valid for Prandlt '
+                      'numbers in the range of 0.5 <= Pr <= 2000, your value '
+                      'falls outside of the range at Pr={0:.4f}'.format(Pr))
+
+    Nu = 0.125 * fDarcy * (Re - 1.0e3) * Pr / \
+        (1.0 + 12.7 * np.sqrt(0.125*fDarcy) * (Pr**(2.0/3.0) - 1.0))
+    return Nu

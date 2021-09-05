@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-""" Example of calculation of g-functions with unequal segment lengths using
-    uniform and equal borehole wall temperatures.
+""" Example of calculation of g-functions with varied declaration of segments
+    using uniform borehole wall temperature.
 
     The g-functions of a field of 6x4 boreholes is calculated with unequal
     number of segments.
-
 """
 import matplotlib.pyplot as plt
+from matplotlib.ticker import AutoMinorLocator
 import numpy as np
 
 import pygfunction as gt
@@ -37,48 +37,50 @@ def main():
     # Borehole field
     # -------------------------------------------------------------------------
 
-    # Field of 3x2 (n=6) boreholes
+    # Field of 6x4 (n=24) boreholes
     N_1 = 6
     N_2 = 4
     boreField = gt.boreholes.rectangle_field(N_1, N_2, B, B, H, D, r_b)
+    gt.boreholes.visualize_field(boreField)
 
     # -------------------------------------------------------------------------
     # Evaluate g-functions with different segment options
     # -------------------------------------------------------------------------
 
-    nSegments = 12  # number of segments toggle
-    # g-Function calculation option for uniform borehole heights
+    # Calculate g-function with equal number of segments
+    nSegments = 12
+    options = {'nSegments': nSegments, 'disp': True}
+
+    gfunc_equal = gt.gfunction.gFunction(
+        boreField, alpha, time=time, options=options)
+
+    # Calculate g-function with unequal number of segments
+
+    # Boreholes 12, 14 and 18 have more segments than the others and their
+    # heat extraction rate profiles are plotted.
+    nSegments = [12] * len(boreField)
+    nSegments[12] = 24
+    nSegments[14] = 24
+    nSegments[18] = 24
     options = {'nSegments': nSegments, 'disp': True, 'profiles': True}
-    gfunc = gt.gfunction.gFunction(
+
+    gfunc_unequal = gt.gfunction.gFunction(
         boreField, alpha, time=time, options=options)
 
-    print(gfunc.gFunc)
+    # -------------------------------------------------------------------------
+    # Plot g-functions
+    # -------------------------------------------------------------------------
 
-    # define number of segments as a list
-    options = {'nSegments': [nSegments] * len(boreField), 'disp': True}
-    gfunc = gt.gfunction.gFunction(
-        boreField, alpha, time=time, options=options)
+    ax = gfunc_equal.visualize_g_function().axes[0]
+    ax.plot(np.log(time/ts), gfunc_unequal.gFunc, 'r-.')
+    ax.legend(['Equal number of segments', 'Unequal number of segments'])
+    plt.tight_layout()
 
-    print(gfunc.gFunc)
-
-    # Define segment lengths for each borehole (all uniform)
-    # the segment lengths are defined top to bottom left to right
-    segmentLengths = [[12.5] * nSegments] * len(boreField)
-    options = {'nSegments': [nSegments] * len(boreField),
-               'segmentLengths': segmentLengths, 'disp': True}
-    gfunc = gt.gfunction.gFunction(
-        boreField, alpha, time=time, options=options)
-
-    print(gfunc.gFunc)
-
-    # Define number of segments for each borehole as integer, but define the
-    # segment lengths as a list
-    options = {'nSegments': nSegments, 'segmentLengths': segmentLengths,
-               'disp': True}
-    gfunc = gt.gfunction.gFunction(
-        boreField, alpha, time=time, options=options)
-
-    print(gfunc.gFunc)
+    # Heat extraction rate profiles
+    gfunc_unequal.visualize_heat_extraction_rates(
+        iBoreholes=[18, 12, 14])
+    gfunc_unequal.visualize_heat_extraction_rate_profiles(
+        iBoreholes=[18, 12, 14])
 
     return
 

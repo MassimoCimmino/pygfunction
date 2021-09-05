@@ -5,11 +5,11 @@ Definition and visualization of a borehole
 ******************************************
 
 This example demonstrates the use of the :doc:`borehole <../modules/boreholes>` module
-to define the positions of U-tube pipes inside a borehole and visualize the
+to define the positions of pipes inside a borehole and visualize the
 top view of a borehole.
 
-The following script generates a borehole with a single U-tube. The
-borehole cross-section is then plotted on a figure.
+The following script generates boreholes with a single U-tube, a double U-tube (in series and
+parallel configurations), and a coaxial borehole. The borehole cross-sections are then plotted.
 
 The script is located in: 
 `pygfunction/examples/custom_borehole.py`
