@@ -76,6 +76,10 @@ class gFunction(object):
                 Number of line segments used per borehole, or list of number of
                 line segments used for each borehole.
                 Default is 12.
+            segmentLengths : list, optional
+                This is a 2D list that defines the segment lengths of borehole
+                i. Each of the lists must add up to the total height of borehole
+                i.
             disp : bool, optional
                 Set to true to print progression messages.
                 Default is False.
@@ -830,6 +834,9 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, kind='linear',
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
+    segmentLengths : list, optional
+        This is a 2D list that defines the segment lengths of borehole i. Each
+        of the lists must add up to the total height of borehole i.
     kind : string, optional
         Interpolation method used for segment-to-segment thermal response
         factors. See documentation for scipy.interpolate.interp1d.
@@ -928,6 +935,9 @@ def equal_inlet_temperature(
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
+    segmentLengths : list, optional
+        This is a 2D list that defines the segment lengths of borehole i. Each
+        of the lists must add up to the total height of borehole i.
     kind : string, optional
         Interpolation method used for segment-to-segment thermal response
         factors. See documentation for scipy.interpolate.interp1d.
@@ -1021,6 +1031,9 @@ def mixed_inlet_temperature(network, m_flow_network, cp_f,
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
+    segmentLengths : list, optional
+        This is a 2D list that defines the segment lengths of borehole i. Each
+        of the lists must add up to the total height of borehole i.
     kind : string, optional
         Interpolation method used for segment-to-segment thermal response
         factors. See documentation for scipy.interpolate.interp1d.
@@ -1590,6 +1603,9 @@ class _Detailed(_BaseSolver):
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
+    segmentLengths : list, optional
+        This is a 2D list that defines the segment lengths of borehole i. Each
+        of the lists must add up to the total height of borehole i.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -1767,6 +1783,9 @@ class _Similarities(_BaseSolver):
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
+    segmentLengths : list, optional
+        This is a 2D list that defines the segment lengths of borehole i. Each
+        of the lists must add up to the total height of borehole i.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
