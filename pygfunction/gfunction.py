@@ -1129,6 +1129,9 @@ class _BaseSolver(object):
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
+    segmentLengths : list, optional
+        This is a 2D list that defines the segment lengths of borehole i. Each
+        of the lists must add up to the total height of borehole i.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -1532,12 +1535,18 @@ class _BaseSolver(object):
             "Data type \'{}\' is not an acceptable data type. \n" \
             "Please provide one of the following inputs : {}".format(
                 self.dtype, acceptable_dtypes)
-        # if self.segmentLengths is not None:
-        #     for i in range(len(self.segmentLengths)):
-        #         total_length_i = sum(self.segmentLengths[i])
-        #         assert abs(total_length_i - self.boreholes[i].H) <= 0.1, \
-        #         "Defined segment lengths must add up to within a tenth of a " \
-        #         "meter of the total borehole length"
+        if self.segmentLengths is not None:
+            for j in range(len(self.boreholes)):
+                previous_sum = sum(self.nBoreSegments[0:j])
+                total_length_j = \
+                    sum(self.segmentLengths[
+                        previous_sum:self.nBoreSegments[j] + previous_sum])
+                error = abs(total_length_j - self.boreholes[j].H)
+                assert(error < 1.0e-01), \
+                    "Defined segment lengths must add up to within a tenth " \
+                    "of a meter of the total borehole length, check borehole " \
+                    + str(j)
+            
         return
 
 
