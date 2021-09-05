@@ -1374,11 +1374,6 @@ class _BaseSolver(object):
 
         """
         # Borehole lengths
-        # if self.segmentLengths is None:
-        #     H_b = np.array([b.H for b in self.boreSegments], dtype=self.dtype)
-        # else:
-        #     H_b = np.array([lq for tmp in self.segmentLengths for lq in tmp],
-        #                    dtype=self.dtype)
         H_b = np.array([b.H for b in self.boreSegments], dtype=self.dtype)
         return H_b
 
