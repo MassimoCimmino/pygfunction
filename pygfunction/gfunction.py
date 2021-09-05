@@ -1535,18 +1535,19 @@ class _BaseSolver(object):
             "Data type \'{}\' is not an acceptable data type. \n" \
             "Please provide one of the following inputs : {}".format(
                 self.dtype, acceptable_dtypes)
-        if self.segmentLengths is not None:
-            for j in range(len(self.boreholes)):
-                previous_sum = sum(self.nBoreSegments[0:j])
-                total_length_j = \
-                    sum(self.segmentLengths[
-                        previous_sum:self.nBoreSegments[j] + previous_sum])
-                error = abs(total_length_j - self.boreholes[j].H)
-                assert(error < 1.0e-01), \
-                    "Defined segment lengths must add up to within a tenth " \
-                    "of a meter of the total borehole length, check borehole " \
-                    + str(j)
-            
+        # Check to make sure the segment lengths for each borehole add up to the
+        # total borehole length
+        for j in range(len(self.boreholes)):
+            previous_sum = sum(self.nBoreSegments[0:j])
+            total_length_j = \
+                sum(self.segmentLengths[
+                    previous_sum:self.nBoreSegments[j] + previous_sum])
+            error = abs(total_length_j - self.boreholes[j].H)
+            assert(error < 1.0e-01), \
+                "Defined segment lengths must add up to within a tenth " \
+                "of a meter of the total borehole length, check borehole " \
+                + str(j)
+
         return
 
 
