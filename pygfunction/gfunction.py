@@ -1374,11 +1374,12 @@ class _BaseSolver(object):
 
         """
         # Borehole lengths
-        if self.segmentLengths is None:
-            H_b = np.array([b.H for b in self.boreSegments], dtype=self.dtype)
-        else:
-            H_b = np.array([lq for tmp in self.segmentLengths for lq in tmp],
-                           dtype=self.dtype)
+        # if self.segmentLengths is None:
+        #     H_b = np.array([b.H for b in self.boreSegments], dtype=self.dtype)
+        # else:
+        #     H_b = np.array([lq for tmp in self.segmentLengths for lq in tmp],
+        #                    dtype=self.dtype)
+        H_b = np.array([b.H for b in self.boreSegments], dtype=self.dtype)
         return H_b
 
     def borehole_segments(self):
@@ -1406,12 +1407,11 @@ class _BaseSolver(object):
                     # Add to list of segments
                     boreSegments.append(Borehole(H_b, D, b.r_b, b.x, b.y))
             else:
-                for i in range(len(self.segmentLengths)):
-                    for k in range(len(self.segmentLengths[i])):
-                        b = self.boreholes[j]
-                        H_b = self.segmentLengths[i][k]
-                        D = b.D + sum(self.segmentLengths[i][0:k])
-                        boreSegments.append(Borehole(H_b, D, b.r_b, b.x, b.y))
+                for k in range(len(self.segmentLengths[j])):
+                    b = self.boreholes[j]
+                    H_b = self.segmentLengths[j][k]
+                    D = b.D + sum(self.segmentLengths[j][0:k])
+                    boreSegments.append(Borehole(H_b, D, b.r_b, b.x, b.y))
 
         return boreSegments
 
