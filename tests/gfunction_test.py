@@ -289,6 +289,24 @@ class TestMixedInletTemperature(unittest.TestCase):
                             'boreholes for mixed inlet temperature and '
                             'unequal numbers of segments.')
 
+        # Compute g-function with predefined segment lengths
+        nSegments = 4
+        # Define the segment lengths for each borehole in each segment
+        # the segment lengths are defined top to bottom left to right
+        segmentLengths = [[45., 30., 30., 45.]] * len(boreField)
+        options = {'nSegments': [nSegments] * len(boreField),
+                   'segmentLengths': segmentLengths, 'disp': False}
+
+        g_func_predefined = gFunction(boreField, self.alpha, time=time,
+                                      options=options)
+        g_pred = g_func_predefined.gFunc
+
+        self.assertTrue(np.allclose(g_pred, g_ref, rtol=1.0e-00, atol=1.0e-00),
+                        msg='Incorrect values of the g-function of six '
+                            'boreholes for mixed inlet temperature and '
+                            'unequal numbers of segments.'
+                        )
+
 
 class TestEqualInletTemperature(unittest.TestCase):
     """ Test cases for calculation of g-functions using equal inlet fluid
