@@ -1409,7 +1409,7 @@ class _BaseSolver(object):
                 for i in range(len(self.segmentLengths)):
                     for k in range(len(self.segmentLengths[i])):
                         b = self.boreholes[j]
-                        H_b = self.segmentLengths[i][j]
+                        H_b = self.segmentLengths[i][k]
                         D = b.D + sum(self.segmentLengths[i][0:k])
                         boreSegments.append(Borehole(H_b, D, b.r_b, b.x, b.y))
 
