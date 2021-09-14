@@ -2,6 +2,10 @@
 
 ## Current version
 
+### New features 
+
+* [Issue 36](https://github.com/MassimoCimmino/pygfunction/issues/36) - Added a `Coaxial` class to the `pipes` module to model boreholes with coaxial pipes.
+
 ### Enhancements
 
 * [Issue 118](https://github.com/MassimoCimmino/pygfunction/issues/118) - Refactored checks for stored `_BasePipe` and `Network` coefficicients to use `numpy.all()`. This decreases calculation time.
