@@ -1449,7 +1449,7 @@ class MultipleUTube(_BasePipe):
         IIm1 = np.hstack((np.eye(self.nPipes), -np.eye(self.nPipes)))
         a_b = np.zeros((self.nPipes, nSegments))
         z = H - np.arange(nSegments + 1) * H / nSegments
-        exp_Lz = np.exp(np.atleast_2d(L).T*np.atleast_2d(z))
+        exp_Lz = np.exp(np.multiply.outer(L, z))
         dexp_Lz = exp_Lz[:,:-1] - exp_Lz[:,1:]
         a_b = np.real(((IIm1 @ V @ Dm1) * (Vm1 @ sumA)) @ dexp_Lz)
 
@@ -1509,7 +1509,7 @@ class MultipleUTube(_BasePipe):
         # Coefficient matrix for borehole wall temperatures
         a_b = np.zeros((2*self.nPipes, nSegments))
         dz = z - np.minimum(z, np.arange(nSegments+1)*self.b.H/nSegments)
-        exp_Lz = np.exp(np.atleast_2d(L).T*np.atleast_2d(dz))
+        exp_Lz = np.exp(np.multiply.outer(L, dz))
         dexp_Lz = exp_Lz[:,1:] - exp_Lz[:,:-1]
         a_b = np.real(((V @ Dm1) * (Vm1 @ sumA)) @ dexp_Lz)
 
