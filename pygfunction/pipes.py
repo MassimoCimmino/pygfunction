@@ -2152,6 +2152,13 @@ def borehole_thermal_resistance(pipe, m_flow_borehole, cp_f):
     R_b : float
         Effective borehole thermal resistance (m.K/W).
 
+    References
+    ----------
+    .. [#Cimmino_2019] Massimo Cimmino (2019) Semi-Analytical Method for
+       g-Function Calculation of bore fields with series- and parallel-connected
+       boreholes, Science and Technology for the Built Environment, 25:8,
+       1007-1022, DOI: 10.1080/23744731.2019.1622937
+
     """
     # Coefficient for T_{f,out} = a_out*T_{f,in} + [b_out]*[T_b]
     a_out = pipe.coefficients_outlet_temperature(
