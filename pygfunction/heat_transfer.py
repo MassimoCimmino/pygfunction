@@ -249,6 +249,88 @@ def finite_line_source_vectorized(
 def finite_line_source_equivalent_boreholes_vectorized(
         time, alpha, dis, wDis, H1, D1, H2, D2, N2, reaSource=True, imgSource=True):
     """
+    Evaluate the equivalent Finite Line Source (FLS) solution.
+
+    This function uses a numerical quadrature to evaluate the one-integral form
+    of the FLS solution, as proposed by Prieto and Cimmino
+    [#eqFLSVec-PriCim2021]_. The equivalent FLS solution is given by:
+
+        .. math::
+            h_{1\\rightarrow2}(t) &= \\frac{1}{2 H_2 N_{b,2}}
+            \\int_{\\frac{1}{\\sqrt{4\\alpha t}}}^{\\infty}
+            \\sum_{G_1} \\sum_{G_2}
+            e^{-d_{12}^2s^2}(I_{real}(s)+I_{imag}(s))ds
+
+
+            I_{real}(s) &= erfint((D_2-D_1+H_2)s) - erfint((D_2-D_1)s)
+
+            &+ erfint((D_2-D_1-H_1)s) - erfint((D_2-D_1+H_2-H_1)s)
+
+            I_{imag}(s) &= erfint((D_2+D_1+H_2)s) - erfint((D_2+D_1)s)
+
+            &+ erfint((D_2+D_1+H_1)s) - erfint((D_2+D_1+H_2+H_1)s)
+
+
+            erfint(X) &= \\int_{0}^{X} erf(x) dx
+
+                      &= Xerf(X) - \\frac{1}{\\sqrt{\\pi}}(1-e^{-X^2})
+
+        .. Note::
+            The reciprocal thermal response factor
+            :math:`h_{2\\rightarrow1}(t)` can be conveniently calculated by:
+
+                .. math::
+                    h_{2\\rightarrow1}(t) = \\frac{H_2 N_{b,2}}{H_1 N_{b,1}}
+                    h_{1\\rightarrow2}(t)
+
+    Parameters
+    ----------
+    time : float or array, shape (K)
+        Value of time (in seconds) for which the FLS solution is evaluated.
+    alpha : float
+        Soil thermal diffusivity (in m2/s).
+    dis : array
+        Unique radial distances to evaluate the FLS solution.
+    wDis : array
+        Number of instances of each unique radial distances.
+    H1 : float or array
+        Lengths of the emitting heat sources.
+    D1 : float or array
+        Buried depths of the emitting heat sources.
+    H2 : float or array
+        Lengths of the receiving heat sources.
+    D2 : float or array
+        Buried depths of the receiving heat sources.
+    reaSource : bool
+        True if the real part of the FLS solution is to be included.
+        Default is True.
+    imgSource : bool
+        True if the image part of the FLS solution is to be included.
+        Default is True.
+
+    Returns
+    -------
+    h : float
+        Value of the FLS solution. The average (over the length) temperature
+        drop on the wall of borehole2 due to heat extracted from borehole1 is:
+
+        .. math:: \\Delta T_{b,2} = T_g - \\frac{Q_1}{2\\pi k_s H_2} h
+
+    Notes
+    -----
+    This is a vectorized version of the :func:`finite_line_source` function
+    using scipy.integrate.quad_vec to speed up calculations. All arrays
+    (dis, H1, D1, H2, D2) must follow numpy array broadcasting rules. If time
+    is an array, the integrals for different time values are stacked on the
+    last axis.
+    
+
+    References
+    ----------
+    .. [#eqFLSVec-PriCim2021] Prieto, C., & Cimmino, M.
+       (2021). Thermal interactions in large irregular fields of geothermal
+       boreholes: the method of equivalent borehole. Journal of Building
+       Performance Simulation, 14 (4), 446-460.
 
     """
     # Integrand of the finite line source solution
@@ -361,9 +443,10 @@ def _finite_line_source_equivalent_boreholes_integrand(dis, wDis, H1, D1, H2, D2
 
     Parameters
     ----------
-    dis : float or array
-        Radial distances to evaluate the FLS solution.
-    wdis :
+    dis : array
+        Unique radial distances to evaluate the FLS solution.
+    wDis : array
+        Number of instances of each unique radial distances.
     H1 : float or array
         Lengths of the emitting heat sources.
     D1 : float or array
