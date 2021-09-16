@@ -64,6 +64,7 @@ class Network(object):
     def __init__(self, boreholes, pipes, bore_connectivity=None,
                  m_flow_network=None, cp_f=None, nSegments=None):
         self.b = boreholes
+        self.H_tot = sum([b.H for b in self.b])
         self.nBoreholes = len(boreholes)
         self.p = pipes
         if bore_connectivity is None:
@@ -971,6 +972,224 @@ class Network(object):
             self.nSegments = nSegments
 
 
+class _EquivalentNetwork(Network):
+    """
+    Class for networks of equivalent boreholes with parallel connections
+    between the equivalent boreholes.
+
+    Contains information regarding the physical dimensions and thermal
+    characteristics of the pipes and the grout material in each boreholes, the
+    topology of the connections between boreholes, as well as methods to
+    evaluate fluid temperatures and heat extraction rates based on the work of
+    Cimmino (2018, 2019) [#Network-Cimmin2018]_, [#Network-Cimmin2019]_.
+
+    Attributes
+    ----------
+    boreholes : list of Borehole objects
+        List of boreholes included in the bore field.
+    pipes : list of pipe objects
+        List of pipes included in the bore field.
+    m_flow_network : float or array, optional
+        Total mass flow rate into the network or inlet mass flow rates
+        into each circuit of the network (in kg/s). If a float is supplied,
+        the total mass flow rate is split equally into all circuits. This
+        parameter is used to initialize the coefficients if it is provided.
+        Default is None.
+    cp_f : float, optional
+        Fluid specific isobaric heat capacity (in J/kg.degC). This parameter is
+        used to initialize the coefficients if it is provided.
+        Default is None.
+    nSegments : int, optional
+        Number of line segments used per borehole. This parameter is used to
+        initialize the coefficients if it is provided.
+        Default is None.
+
+    Notes
+    -----
+    The expected array shapes of input parameters and outputs are documented
+    for each class method. `nInlets` and `nOutlets` are the number of inlets
+    and outlets to the network, and both correspond to the number of parallel
+    circuits. `nTotalSegments` is the sum of the number of discretized segments
+    along every borehole. `nBoreholes` is the total number of boreholes in the
+    network.
+
+    References
+    ----------
+    .. [#Network-Cimmin2018] Cimmino, M. (2018). g-Functions for bore fields with
+       mixed parallel and series connections considering the axial fluid
+       temperature variations. Proceedings of the IGSHPA Sweden Research Track
+       2018. Stockholm, Sweden. pp. 262-270.
+    .. [#Network-Cimmin2019] Cimmino, M. (2019). Semi-analytical method for
+       g-function calculation of bore fields with series- and
+       parallel-connected boreholes. Science and Technology for the Built
+       Environment, 25 (8), 1007-1022.
+
+    """
+    def __init__(self, equivalentBoreholes, pipes, m_flow_network=None,
+                 cp_f=None, nSegments=None):
+        self.b = equivalentBoreholes
+        self.H_tot = sum([b.H*b.nBoreholes for b in self.b])
+        self.nBoreholes = len(equivalentBoreholes)
+        self.wBoreholes = np.array([[b.nBoreholes for b in equivalentBoreholes]]).T
+        self.nBoreholes_total = np.sum(self.wBoreholes)
+        self.p = pipes
+        self.c = [-1]*self.nBoreholes
+        self.m_flow_network = m_flow_network
+        self.cp_f = cp_f
+
+        # Verify that borehole connectivity is valid
+        iInlets, nInlets, iOutlets, nOutlets, iCircuit = _find_inlets_outlets(
+                self.c, self.nBoreholes)
+
+        # Number of inlets and outlets in network
+        self.nInlets = nInlets
+        self.nOutlets = nOutlets
+        # Indices of inlets and outlets in network
+        self.iInlets = iInlets
+        self.iOutlets = iOutlets
+        # Indices of circuit of each borehole in network
+        self.iCircuit = iCircuit
+
+        # Initialize stored_coefficients
+        self._initialize_coefficients_connectivity()
+        self._initialize_stored_coefficients(m_flow_network, cp_f, nSegments)
+        return
+
+    def coefficients_network_heat_extraction_rate(
+            self, m_flow_network, cp_f, nSegments):
+        """
+        Build coefficient matrices to evaluate total heat extraction rate of
+        the network.
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                \\mathbf{Q_network} =
+                \\mathbf{a_{in}} T_{f,network,in}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
+
+        Parameters
+        ----------
+        m_flow_network : float or (nInlets,) array
+            Total mass flow rate into the network or inlet mass flow rates
+            into each circuit of the network (in kg/s). If a float is supplied,
+            the total mass flow rate is split equally into all circuits.
+        cp_f : float
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+        nSegments : int or list
+            Number of borehole segments for each borehole. If an int is
+            supplied, all boreholes are considered to have the same number of
+            segments.
+
+        Returns
+        -------
+        a_in : (1, 1,) array
+            Array of coefficients for inlet fluid temperature.
+        a_b : (1, nTotalSegments,) array
+            Array of coefficients for borehole wall temperatures.
+
+        """
+        # method_id for coefficients_network_heat_extraction_rate is 6
+        method_id = 6
+        # Check if stored coefficients are available
+        if self._check_coefficients(
+                m_flow_network, cp_f, nSegments, method_id):
+            a_in, a_b = self._get_stored_coefficients(method_id)
+        else:
+            # Coefficient matrices for fluid heat extraction rates:
+            # [Q_{f}] = [b_in]*[T_{f,n,in}] + [b_b]*[T_{b}]
+            b_in, b_b = self.coefficients_fluid_heat_extraction_rate(
+                    m_flow_network, cp_f, nSegments)
+            # The total network heat extraction rate is the sum of heat
+            # extraction rates from all boreholes:
+            # [Q_{tot}] = [a_in]*[T_{f,n,in}] + [a_b]*[T_{b}]
+            a_in = np.reshape(np.sum(b_in*self.wBoreholes, axis=0), (1,-1))
+            a_b = np.reshape(np.sum(b_b*self.wBoreholes, axis=0), (1,-1))
+
+            # Store coefficients
+            self._set_stored_coefficients(
+                m_flow_network, cp_f, nSegments, (a_in, a_b), method_id)
+
+        return a_in, a_b
+
+    def _coefficients_mixing(self, m_flow_network):
+        """
+        Returns coefficients for the relation:
+
+            .. math::
+
+                T_{f,network,out} =
+                \\mathbf{a_{out}} \\mathbf{T_{f,borehole,out}}
+
+        Parameters
+        ----------
+        m_flow_network : float or (nInlets,) array
+            Total mass flow rate into the network or inlet mass flow rates
+            into each circuit of the network (in kg/s). If a float is supplied,
+            the total mass flow rate is split equally into all circuits.
+
+        Returns
+        -------
+        mix_out : (1, nOutlets,) array
+            Array of coefficients for outlet fluid temperatures of all
+            boreholes.
+
+        """
+        if not self._check_mixing_coefficients(m_flow_network):
+            self._mix_out = np.zeros((1, self.nBoreholes))
+            self._mix_out[0, self.iOutlets] = \
+                self._m_flow_in * self.wBoreholes.flatten() \
+                / np.sum(self._m_flow_in * self.wBoreholes.flatten())
+            self._mixing_m_flow = m_flow_network
+        return self._mix_out
+
+    def _format_inputs(self, m_flow_network, cp_f, nSegments):
+        """
+        Format mass flow rate and heat capacity inputs.
+        """
+        # Format mass flow rate inputs
+        # Mass flow rate in each fluid circuit
+        m_flow_in = np.atleast_1d(m_flow_network)
+        if len(m_flow_in) == 1:
+            m_flow_in = np.array(
+                [m_flow_network/self.nBoreholes_total for b in self.b])
+        elif not len(m_flow_in) == self.nInlets:
+            raise ValueError(
+                'Incorrect length of mass flow vector.')
+        self._m_flow_in = m_flow_in
+
+        # Format heat capacity inputs
+        # Heat capacity in each fluid circuit
+        cp_in = np.atleast_1d(cp_f)
+        if len(cp_in) == 1:
+            cp_in = np.tile(cp_f, self.nInlets)
+        elif not len(cp_in) == self.nInlets:
+            raise ValueError(
+                'Incorrect length of heat capacity vector.')
+        elif not np.all(cp_in == cp_in[0]):
+            raise ValueError(
+                'The heat capacity should be the same in all circuits.')
+        self._cp_in = cp_in
+
+        # Mass flow rate in boreholes
+        m_flow_borehole = np.array([m_flow_in[i] for i in self.iCircuit])
+        self._m_flow_borehole = m_flow_borehole
+        # Heat capacity in boreholes
+        cp_borehole = np.array([cp_in[i] for i in self.iCircuit])
+        self._cp_borehole = cp_borehole
+
+        # Format number of segments for each borehole
+        nSeg = np.atleast_1d(nSegments)
+        if len(nSeg) == 1:
+            self.nSegments = [nSegments for i in range(self.nBoreholes)]
+        elif not len(nSeg) == self.nBoreholes:
+            raise ValueError(
+                'Incorrect length of number of segments list.')
+        else:
+            self.nSegments = nSegments
+
+
 def network_thermal_resistance(network, m_flow_network, cp_f):
     """
     Evaluate the effective bore field thermal resistance.
@@ -999,7 +1218,7 @@ def network_thermal_resistance(network, m_flow_network, cp_f):
     nBoreholes = len(network.b)
 
     # Total borehole length
-    H_tot = sum([network.b[i].H for i in range(nBoreholes)])
+    H_tot = network.H_tot
 
 
     # Coefficients for T_{f,out} = A_out*T_{f,in} + [B_out]*[T_b], and

@@ -5,6 +5,7 @@
 ### New features 
 
 * [Issue 36](https://github.com/MassimoCimmino/pygfunction/issues/36) - Added a `Coaxial` class to the `pipes` module to model boreholes with coaxial pipes.
+* [Issue 146](https://github.com/MassimoCimmino/pygfunction/issues/146) - Added new solver `'equivalent'` to the `gFunction` class. This solver uses hierarchical agglomerative clustering to identify groups of boreholes that are expected to have similar borehole wall temperatures and heat extraction rates. Each group of boreholes is represented by a single equivalent borehole. The FLS solution is adapted to evaluate thermal interactions between groups of boreholes. This greatly reduces the number of evaluations of the FLS solution and the size of the system of equations to evaluate the g-function.
 
 ### Enhancements
 

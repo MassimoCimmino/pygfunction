@@ -140,6 +140,204 @@ class Borehole(object):
         return boreSegments
 
 
+class _EquivalentBorehole(object):
+    """
+    Contains information regarding the dimensions and position of an equivalent
+    borehole.
+
+    An equivalent borehole is meant to be representative of a group of
+    boreholes, under the assumption that boreholes in this group share similar
+    borehole wall temperatures and heat extraction rates. A methodology to
+    identify equivalent boreholes is introduced in Prieto & Cimmino (2021)
+    [#EqBorehole-PriCim2021].
+
+    Parameters
+    ----------
+    boreholes : list of Borehole objects, or tuple
+        Boreholes to be represented by the equivalent borehole. Alternatively,
+        tuple of attributes (H, D, r_b, x, y).
+
+    Attributes
+    ----------
+    H : float
+        Borehole length (in meters).
+    D : float
+        Borehole buried depth (in meters).
+    r_b : float
+        Borehole radius (in meters).
+    x : (nBoreholes,) array
+        Position (in meters) of the head of each borehole along the x-axis.
+    y : (nBoreholes,) array
+        Position (in meters) of the head of each borehole along the y-axis.
+    nBoreholes : int
+        Number of boreholes represented by the equivalent borehole.
+    
+    References
+    ----------
+    .. [#EqBorehole-PriCim2021] Prieto, C., & Cimmino, M., 2021. Thermal
+        interactions in large irregular fields of geothermal boreholes: the
+        method of equivalent borehole. Journal of Building Performance
+        Simulation, 14 (4), 446-460.
+
+    """
+    def __init__(self, boreholes):
+        if isinstance(boreholes[0], Borehole):
+            self.H = boreholes[0].H
+            self.D = boreholes[0].D
+            self.r_b = boreholes[0].r_b
+            self.x = np.array([b.x for b in boreholes])
+            self.y = np.array([b.y for b in boreholes])
+        elif isinstance(boreholes[0], _EquivalentBorehole):
+            self.H = boreholes[0].H
+            self.D = boreholes[0].D
+            self.r_b = boreholes[0].r_b
+            self.x = np.concatenate([b.x for b in boreholes])
+            self.y = np.concatenate([b.y for b in boreholes])
+        elif type(boreholes) is tuple:
+            self.H, self.D, self.r_b, self.x, self.y = boreholes
+            self.x = np.atleast_1d(self.x)
+            self.y = np.atleast_1d(self.y)
+
+        self.nBoreholes = len(self.x)
+
+    def distance(self, target):
+        """
+        Evaluate the distance between the current borehole and a target
+        borehole.
+
+        Parameters
+        ----------
+        target : _EquivalentBorehole object
+            Target borehole for which the distances are evaluated.
+
+        Returns
+        -------
+        dis : (nBoreholes_target, nBoreholes,) array
+            Distances (in meters) between the boreholes represented by the
+            equivalent borehole and the boreholes represented by another
+            equivalent borehole.
+
+        .. Note::
+           The smallest distance returned is equal to the borehole radius.
+
+        Examples
+        --------
+        >>> b1 = gt.boreholes._EquivalentBorehole((150., 4., 0.075, np.array([0., 5., 10]), np.array([0., 0., 0.])))
+        >>> b2 = gt.boreholes._EquivalentBorehole((150., 4., 0.075, np.array([0.]), np.array([5.])))
+        >>> b1.distance(b2)
+        array([[ 5., 7.07106781, 11.18033989]])
+
+        """
+        dis = np.maximum(
+            np.sqrt(
+                np.add.outer(target.x, -self.x)**2 + np.add.outer(target.y, -self.y)**2),
+            self.r_b)
+        return dis
+
+    def position(self):
+        """
+        Returns the position of the boreholes represented by the equivalent
+        borehole.
+
+        Returns
+        -------
+        pos : tuple
+            Positions (x, y) (in meters) of the borehole.
+
+        Examples
+        --------
+        >>> b1 = gt.boreholes._EquivalentBorehole((150., 4., 0.075, np.array([0., 5., 10]), np.array([0., 0., 0.])))
+        >>> b1.position()
+        (array([ 0., 5., 10.]), array([0., 0., 0.]))
+
+        """
+        return (self.x, self.y)
+
+    def segments(self, nSegments):
+        """
+        Split an equivalent borehole into segments.
+
+        Parameters
+        ----------
+        nSegments : int
+            Number of segments.
+
+        Returns
+        -------
+        boreSegments : list
+            List of borehole segments.
+
+        Examples
+        --------
+        >>> b1 = gt.boreholes._EquivalentBorehole((150., 4., 0.075, np.array([0., 5., 10]), np.array([0., 0., 0.])))
+        >>> b1.segments(5)
+
+        """
+        return [_EquivalentBorehole((self.H/nSegments, self.D+i*self.H/nSegments, self.r_b, self.x, self.y)) for i in range(nSegments)]
+
+    def unique_distance(self, target, disTol=0.01):
+        """
+        Find unique distances between pairs of boreholes for a pair of
+        equivalent boreholes.
+
+        Parameters
+        ----------
+        target : _EquivalentBorehole object
+            Target borehole for which the distances are evaluated.
+        disTol : float, optional
+            Relative tolerance on radial distance. Two distances
+            (d1, d2) between two pairs of boreholes are considered equal if the
+            difference between the two distances (abs(d1-d2)) is below tolerance.
+            Default is 0.01.
+
+        Returns
+        -------
+        dis : array
+            Unique distances (in meters) between the boreholes represented by
+            the equivalent borehole and the boreholes represented by another
+            equivalent borehole.
+        wDis : array
+            Number of instances each of the unique distances arise.
+
+        .. Note::
+           The smallest distance returned is equal to the borehole radius.
+
+        Examples
+        --------
+        >>> b1 = gt.boreholes._EquivalentBorehole((150., 4., 0.075, np.array([0., 5., 10]), np.array([0., 0., 0.])))
+        >>> b2 = gt.boreholes._EquivalentBorehole((150., 4., 0.075, np.array([0., 5.]), np.array([5., 5.])))
+        >>> b1.unique_distance(b2)
+        (array([5., 7.07106781, 11.18033989]), array([2, 3, 1], dtype=int64))
+
+        """
+        # Find all distances between the boreholes, sorted and flattened
+        all_dis = np.sort(self.distance(target).flatten())
+        nDis = len(all_dis)
+
+        # Find unique distances within tolerance
+        dis = []
+        wDis = []
+        # Start the search at the first distance
+        j0 = 0
+        j1 = 1
+        while j0 < nDis and j1 > 0:
+            # Find the index of the first distance for which the distance is
+            # outside tolerance to the current distance
+            j1 = np.argmax(all_dis >= (1 + disTol) * all_dis[j0])
+            if j1 > j0:
+                # Add the average of the distances within tolerance to the
+                # list of unique distances and store the number of distances
+                dis.append(np.mean(all_dis[j0:j1]))
+                wDis.append(j1-j0)
+            else:
+                # All remaining distances are within tolerance
+                dis.append(np.mean(all_dis[j0:]))
+                wDis.append(nDis-j0)
+            j0 = j1
+        
+        return np.array(dis), np.array(wDis)
+
+
 def find_duplicates(boreField, disp=False):
     """
     The distance method :func:`Borehole.distance` is utilized to find all
