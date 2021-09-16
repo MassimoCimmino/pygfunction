@@ -130,7 +130,7 @@ def finite_line_source(
         D2 = np.array([b.D for b in borehole2]).reshape(-1, 1)
         H2 = np.array([b.H for b in borehole2]).reshape(-1, 1)
 
-        if time == np.inf:
+        if time is np.inf:
             h = _finite_line_source_steady_state(
                 dis, H1, D1, H2, D2, reaSource, imgSource)
         else:
