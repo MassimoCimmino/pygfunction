@@ -157,7 +157,7 @@ class gFunction(object):
        g-function calculation of bore fields with series- and
        parallel-connected boreholes. Science and Technology for the Built
        Environment, 25 (8), 1007-1022.
-    .. [#gFunction-PriCim2021] Cimmino, M. (2021). Prieto, C. & Cimmino, M.
+    .. [#gFunction-PriCim2021] Prieto, C., & Cimmino, M.
        (2021). Thermal interactions in large irregular fields of geothermal
        boreholes: the method of equivalent borehole. Journal of Building
        Performance Simulation, 14 (4), 446-460.
@@ -2496,7 +2496,7 @@ class _Equivalent(_BaseSolver):
        g-functions of geothermal borehole fields using similarities in the
        evaluation of the finite line source solution. Journal of Building
        Performance Simulation, 11 (6), 655-668.
-    .. [#Equivalent-PriCim2021] Cimmino, M. (2021). Prieto, C. & Cimmino, M.
+    .. [#Equivalent-PriCim2021] Prieto, C., & Cimmino, M.
        (2021). Thermal interactions in large irregular fields of geothermal
        boreholes: the method of equivalent borehole. Journal of Building
        Performance Simulation, 14 (4), 446-460.
