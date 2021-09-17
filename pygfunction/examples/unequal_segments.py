@@ -48,7 +48,7 @@ def main():
     # -------------------------------------------------------------------------
 
     # Calculate g-function with equal number of segments
-    nSegments = 12
+    nSegments = 24
     options = {'nSegments': nSegments, 'disp': True}
 
     gfunc_equal = gt.gfunction.gFunction(
@@ -70,12 +70,12 @@ def main():
     # Calculate g-function with unequal number of segments and predefined
     # segment lengths
 
-    nSegments = 4
+    nSegments = 8
     # Define the segment lengths for each borehole in each segment
     # the segment lengths are defined top to bottom left to right
-    segmentLengths = [[45., 30., 30., 45.]] * len(boreField)
-    options = {'nSegments': [nSegments] * len(boreField),
-               'segmentLengths': segmentLengths, 'disp': True}
+    segment_ratios = np.array([0.05, 0.10, 0.10, 0.25, 0.25, 0.10, 0.10, 0.05])
+    options = {'nSegments': nSegments,
+               'segment_ratios': segment_ratios, 'disp': True, 'profiles': True}
 
     g_func_predefined = gt.gfunction.gFunction(boreField, alpha,
                                                        time=time,
@@ -95,7 +95,11 @@ def main():
     # Heat extraction rate profiles
     gfunc_unequal.visualize_heat_extraction_rates(
         iBoreholes=[18, 12, 14])
+    g_func_predefined.visualize_heat_extraction_rates(
+        iBoreholes=[18, 12, 14])
     gfunc_unequal.visualize_heat_extraction_rate_profiles(
+        iBoreholes=[18, 12, 14])
+    g_func_predefined.visualize_heat_extraction_rate_profiles(
         iBoreholes=[18, 12, 14])
 
     return
