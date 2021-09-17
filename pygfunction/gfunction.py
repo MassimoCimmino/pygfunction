@@ -22,7 +22,6 @@ class gFunction(object):
     modeled as a series of finite line source segments, as proposed in
     [#gFunction-CimBer2014]_. Different boundary conditions and solution
     methods are implemented.
-    
 
     Attributes
     ----------
@@ -76,10 +75,12 @@ class gFunction(object):
                 Number of line segments used per borehole, or list of number of
                 line segments used for each borehole.
                 Default is 12.
-            segmentLengths : list, optional
-                This is a 2D list that defines the segment lengths of borehole
-                i. Each of the lists must add up to the total height of borehole
-                i.
+            segment_ratios :
+            (nSegments,) array or list of (nSegments[i],) arrays, optional
+                Ratio of the borehole length represented by each segment. The
+                sum of ratios must be equal to 1. If segment_ratios==None,
+                segments of equal lengths are considered.
+                Default is None.
             disp : bool, optional
                 Set to true to print progression messages.
                 Default is False.
@@ -811,7 +812,8 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
     return gFunc.gFunc
 
 
-def uniform_temperature(boreholes, time, alpha, nSegments=12, kind='linear',
+def uniform_temperature(boreholes, time, alpha, nSegments=12,
+                        segment_ratios=None, kind='linear',
                         use_similarities=True, disTol=0.01, tol=1.0e-6,
                         dtype=np.double, disp=False, **kwargs):
     """
@@ -834,9 +836,12 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, kind='linear',
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
-    segmentLengths : list, optional
-        This is a 2D list that defines the segment lengths of borehole i. Each
-        of the lists must add up to the total height of borehole i.
+    segment_ratios :
+    (nSegments,) array or list of (nSegments[i],) arrays, optional
+        Ratio of the borehole length represented by each segment. The
+        sum of ratios must be equal to 1. If segment_ratios==None,
+        segments of equal lengths are considered.
+        Default is None.
     kind : string, optional
         Interpolation method used for segment-to-segment thermal response
         factors. See documentation for scipy.interpolate.interp1d.
@@ -886,6 +891,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, kind='linear',
     boundary_condition = 'UBWT'
     # Build options dict
     options = {'nSegments':nSegments,
+               'segment_ratios':segment_ratios,
                'disp':disp,
                'kind':kind,
                'disTol':disTol,
@@ -907,7 +913,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12, kind='linear',
 
 def equal_inlet_temperature(
         boreholes, UTubes, m_flow_borehole, cp_f, time, alpha,
-        kind='linear', nSegments=12, segmentLengths=None,
+        kind='linear', nSegments=12, segment_ratios=None,
         use_similarities=True, disTol=0.01, tol=1.0e-6, dtype=np.double,
         disp=False, **kwargs):
     """
@@ -936,9 +942,12 @@ def equal_inlet_temperature(
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
-    segmentLengths : list, optional
-        This is a 2D list that defines the segment lengths of borehole i. Each
-        of the lists must add up to the total height of borehole i.
+    segment_ratios :
+    (nSegments,) array or list of (nSegments[i],) arrays, optional
+        Ratio of the borehole length represented by each segment. The
+        sum of ratios must be equal to 1. If segment_ratios==None,
+        segments of equal lengths are considered.
+        Default is None.
     kind : string, optional
         Interpolation method used for segment-to-segment thermal response
         factors. See documentation for scipy.interpolate.interp1d.
@@ -981,7 +990,7 @@ def equal_inlet_temperature(
     boundary_condition = 'MIFT'
     # Build options dict
     options = {'nSegments':nSegments,
-               'segmentLengths': segmentLengths,
+               'segment_ratios':segment_ratios,
                'disp':disp,
                'kind':kind,
                'disTol':disTol,
@@ -1003,7 +1012,7 @@ def equal_inlet_temperature(
 
 def mixed_inlet_temperature(network, m_flow_network, cp_f,
                             time, alpha, kind='linear', nSegments=12,
-                            segmentLengths=None, use_similarities=True,
+                            segment_ratios=None, use_similarities=True,
                             disTol=0.01, tol=1.0e-6, dtype=np.double,
                             disp=False, **kwargs):
     """
@@ -1034,9 +1043,12 @@ def mixed_inlet_temperature(network, m_flow_network, cp_f,
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
-    segmentLengths : list, optional
-        This is a 2D list that defines the segment lengths of borehole i. Each
-        of the lists must add up to the total height of borehole i.
+    segment_ratios :
+    (nSegments,) array or list of (nSegments[i],) arrays, optional
+        Ratio of the borehole length represented by each segment. The
+        sum of ratios must be equal to 1. If segment_ratios==None,
+        segments of equal lengths are considered.
+        Default is None.
     kind : string, optional
         Interpolation method used for segment-to-segment thermal response
         factors. See documentation for scipy.interpolate.interp1d.
@@ -1097,7 +1109,7 @@ def mixed_inlet_temperature(network, m_flow_network, cp_f,
     boundary_condition = 'MIFT'
     # Build options dict
     options = {'nSegments':nSegments,
-               'segmentLengths': segmentLengths,
+               'segment_ratios':segment_ratios,
                'disp':disp,
                'kind':kind,
                'disTol':disTol,
@@ -1146,9 +1158,12 @@ class _BaseSolver(object):
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
-    segmentLengths : list, optional
-        This is a 2D list that defines the segment lengths of borehole i. Each
-        of the lists must add up to the total height of borehole i.
+    segment_ratios :
+    (nSegments,) array or list of (nSegments[i],) arrays, optional
+        Ratio of the borehole length represented by each segment. The
+        sum of ratios must be equal to 1. If segment_ratios==None,
+        segments of equal lengths are considered.
+        Default is None.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -1167,7 +1182,7 @@ class _BaseSolver(object):
 
     """
     def __init__(self, boreholes, network, time, boundary_condition,
-                 nSegments=12, segmentLengths=None, disp=False, profiles=False,
+                 nSegments=12, segment_ratios=None, disp=False, profiles=False,
                  kind='linear', dtype=np.double, **other_options):
         self.boreholes = boreholes
         self.network = network
@@ -1180,14 +1195,11 @@ class _BaseSolver(object):
             self.nBoreSegments = [nSegments] * nBoreholes
         else:
             self.nBoreSegments = nSegments
-        if type(segmentLengths) is list:
-            # Flatten the list for use inside of the solver
-            self.segmentLengths = [Lq for sub in segmentLengths for Lq in sub]
-        else:
-            # Segment lengths will be equal for borehole i
-            self.segmentLengths = [boreholes[i].H / self.nBoreSegments[i]
-                                   for i in range(len(boreholes))
-                                   for j in range(self.nBoreSegments[i])]
+        if isinstance(segment_ratios, np.ndarray):
+            segment_ratios = [segment_ratios for b in boreholes]
+        elif segment_ratios is None:
+            segment_ratios = [np.ones(n)/n for n in self.nBoreSegments]
+        self.segment_ratios = segment_ratios
         self._i0Segments = [sum(self.nBoreSegments[0:i])
                             for i in range(nBoreholes)]
         self._i1Segments = [sum(self.nBoreSegments[0:(i + 1)])
@@ -1398,7 +1410,7 @@ class _BaseSolver(object):
 
         """
         # Borehole lengths
-        H_b = np.array(self.segmentLengths, dtype=self.dtype)
+        H_b = np.array([b.H for b in self.boreSegments], dtype=self.dtype)
         return H_b
 
     def borehole_segments(self):
@@ -1415,17 +1427,10 @@ class _BaseSolver(object):
 
         """
         boreSegments = []  # list for storage of boreSegments
-        for j in range(len(self.boreholes)):
-            for k in range(self.nBoreSegments[j]):
-                # Get index for current bore-segment
-                idx = sum(self.nBoreSegments[0:j]) + k
-                # Current borehole j
-                b = self.boreholes[j]
-                # Segment length, could be equal or unequal
-                H_b = self.segmentLengths[idx]
-                # Burial depth based on previous depth
-                D = b.D + sum(self.segmentLengths[0:idx])
-                boreSegments.append(Borehole(H_b, D, b.r_b, b.x, b.y))
+        for b, nSegments, segment_ratios in zip(self.boreholes, self.nBoreSegments, self.segment_ratios):
+            segments = b.segments(nSegments, segment_ratios=segment_ratios)
+            for seg in segments:
+                boreSegments.append(seg)
 
         return boreSegments
 
@@ -1552,18 +1557,12 @@ class _BaseSolver(object):
             "Data type \'{}\' is not an acceptable data type. \n" \
             "Please provide one of the following inputs : {}".format(
                 self.dtype, acceptable_dtypes)
-        # Check to make sure the segment lengths for each borehole add up to the
-        # total borehole length
+        # Check to make sure the segment ratios add up to 1.
         for j in range(len(self.boreholes)):
-            previous_sum = sum(self.nBoreSegments[0:j])
-            total_length_j = \
-                sum(self.segmentLengths[
-                    previous_sum:self.nBoreSegments[j] + previous_sum])
-            error = abs(total_length_j - self.boreholes[j].H)
-            assert(error < 1.0e-01), \
-                "Defined segment lengths must add up to within a tenth " \
-                "of a meter of the total borehole length, check borehole " \
-                + str(j)
+            error = np.abs(1. - np.sum(self.segment_ratios[j]))
+            assert(error < 1.0e-6), \
+                "Defined segment ratios must add up to 1. " \
+                ", check borehole {}".format(j)
 
         return
 
@@ -1607,9 +1606,12 @@ class _Detailed(_BaseSolver):
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
-    segmentLengths : list, optional
-        This is a 2D list that defines the segment lengths of borehole i. Each
-        of the lists must add up to the total height of borehole i.
+    segment_ratios :
+    (nSegments,) array or list of (nSegments[i],) arrays, optional
+        Ratio of the borehole length represented by each segment. The
+        sum of ratios must be equal to 1. If segment_ratios==None,
+        segments of equal lengths are considered.
+        Default is None.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -1699,7 +1701,7 @@ class _Detailed(_BaseSolver):
 
         for i in range(nBoreholes):
             # Segments of the receiving borehole
-            b2 = self.boreholes[i].segments(self.nBoreSegments[i])
+            b2 = self.boreholes[i].segments(self.nBoreSegments[i], segment_ratios=self.segment_ratios[i])
             # -----------------------------------------------------------------
             # Segment-to-segment thermal response factors for same-borehole
             # thermal interactions
@@ -1719,7 +1721,7 @@ class _Detailed(_BaseSolver):
                 # Segments of the emitting borehole
                 b1 = [seg
                       for (b, iBor) in zip(self.boreholes[i+1:], range(i+1, nBoreholes))
-                      for seg in b.segments(self.nBoreSegments[iBor])]
+                      for seg in b.segments(self.nBoreSegments[iBor], segment_ratios=self.segment_ratios[iBor])]
                 h = finite_line_source(time, alpha, b1, b2)
                 # Broadcast values to h_ij matrix
                 for j in range(i+1, nBoreholes):
@@ -1787,9 +1789,12 @@ class _Similarities(_BaseSolver):
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
-    segmentLengths : list, optional
-        This is a 2D list that defines the segment lengths of borehole i. Each
-        of the lists must add up to the total height of borehole i.
+    segment_ratios :
+    (nSegments,) array or list of (nSegments[i],) arrays, optional
+        Ratio of the borehole length represented by each segment. The
+        sum of ratios must be equal to 1. If segment_ratios==None,
+        segments of equal lengths are considered.
+        Default is None.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -1914,6 +1919,8 @@ class _Similarities(_BaseSolver):
                 self._map_segment_pairs(
                     i_pair, j_pair, k_pair, [(n, n) for n in group], [0])
             # Evaluate FLS at all time steps
+            H1 = H1.reshape(1, -1)
+            H2 = H2.reshape(1, -1)
             D1 = D1.reshape(1, -1)
             D2 = D2.reshape(1, -1)
             dis = self.boreholes[i].r_b
@@ -1938,6 +1945,8 @@ class _Similarities(_BaseSolver):
                     self.borehole_to_borehole_indices[n])
             # Evaluate FLS at all time steps
             dis = np.reshape(self.borehole_to_borehole_distances[n], (-1, 1))
+            H1 = H1.reshape(1, -1)
+            H2 = H2.reshape(1, -1)
             D1 = D1.reshape(1, -1)
             D2 = D2.reshape(1, -1)
             h = finite_line_source_vectorized(time, alpha, dis, H1, D1, H2, D2)
@@ -2266,11 +2275,11 @@ class _Similarities(_BaseSolver):
 
         Returns
         -------
-        H1 : float
+        H1 : array
             Length of the emitting segments.
         D1 : array
             Array of buried depths of the emitting segments.
-        H2 : float
+        H2 : array
             Length of the receiving segments.
         D2 : array
             Array of buried depths of the receiving segments.
@@ -2298,11 +2307,11 @@ class _Similarities(_BaseSolver):
             # Find segment pairs for the image FLS solution
             compare_pairs = self._compare_image_pairs
         # Dive both boreholes into segments
-        segments1 = borehole1.segments(self.nBoreSegments[i])
-        segments2 = borehole2.segments(self.nBoreSegments[j])
-        # Segments have equal lengths
-        H1 = segments1[0].H
-        H2 = segments2[0].H
+        segments1 = borehole1.segments(self.nBoreSegments[i], segment_ratios=self.segment_ratios[i])
+        segments2 = borehole2.segments(self.nBoreSegments[j], segment_ratios=self.segment_ratios[j])
+        # Prepare lists of segment lengths
+        H1 = []
+        H2 = []
         # Prepare lists of segment buried depths
         D1 = []
         D2 = []
@@ -2340,12 +2349,14 @@ class _Similarities(_BaseSolver):
                 # depths
                 else:
                     k_pair[p] = nPairs
+                    H1.append(segments1[ii].H)
+                    H2.append(segments2[jj].H)
                     D1.append(segments1[ii].D)
                     D2.append(segments2[jj].D)
                     unique_pairs.append((ii, jj))
                     nPairs += 1
                 p += 1
-        return H1, np.array(D1), H2, np.array(D2), i_pair, j_pair, k_pair
+        return np.array(H1), np.array(D1), np.array(H2), np.array(D2), i_pair, j_pair, k_pair
 
     def _map_segment_pairs(self, i_pair, j_pair, k_pair, borehole_to_borehole,
                            borehole_to_borehole_indices):

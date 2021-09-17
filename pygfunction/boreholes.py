@@ -102,7 +102,7 @@ class Borehole(object):
         pos = (self.x, self.y)
         return pos
 
-    def segments(self, nSegments, segmentLengths=None):
+    def segments(self, nSegments, segment_ratios=None):
         """
         Split a borehole into segments.
 
@@ -110,6 +110,11 @@ class Borehole(object):
         ----------
         nSegments : int
             Number of segments.
+        segment_ratios : (nSegments,) array, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments of
+            equal lengths are returned.
+            Default is None.
 
         Returns
         -------
@@ -122,24 +127,38 @@ class Borehole(object):
         >>> b1.segments(5)
 
         """
-        if segmentLengths is None:
-            segmentLengths = [self.H / nSegments for _ in range(nSegments)]
+        if segment_ratios is None:
+            segment_ratios = [1. / nSegments for _ in range(nSegments)]
+        z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1]
         boreSegments = []
         for i in range(nSegments):
             # Divide borehole into segments of equal length
-            H = segmentLengths[i]
+            H = segment_ratios[i] * self.H
             # Buried depth of the i-th segment
-            D = self.D + sum(segmentLengths[0:i]) * np.cos(self.tilt)
+            D = self.D + z[i] * np.cos(self.tilt)
             # x-position
-            x = self.x + sum(segmentLengths[0:i]) * np.sin(self.tilt) * np.cos(self.orientation)
+            x = self.x + z[i] * self.H * np.sin(self.tilt) * np.cos(self.orientation)
             # y-position
-            y = self.y + sum(segmentLengths[0:i]) * np.sin(self.tilt) * np.sin(self.orientation)
+            y = self.y + z[i] * self.H * np.sin(self.tilt) * np.sin(self.orientation)
             # Add to list of segments
             boreSegments.append(
                 Borehole(H, D, self.r_b, x, y,
                          tilt=self.tilt,
                          orientation=self.orientation))
         return boreSegments
+
+    def _segment_edges(self, nSegments, segment_ratios=None):
+        if segment_ratios is None:
+            segment_ratios = [1. / nSegments for _ in range(nSegments)]
+        z = self.D + np.concatenate(([0.], np.cumsum(segment_ratios))) * self.H
+        return z
+
+    def _segment_midpoints(self, nSegments, segment_ratios=None):
+        if segment_ratios is None:
+            segment_ratios = [1. / nSegments for _ in range(nSegments)]
+        z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1] \
+            + segment_ratios * self.H / 2
+        return z
 
 
 def find_duplicates(boreField, disp=False):
