@@ -1956,7 +1956,9 @@ class _Similarities(_BaseSolver):
             # Broadcast values to h_ij matrix
             h_ij[j_segment, i_segment, 1:] = h[l_segment, k_segment, :]
             if (self._compare_boreholes(self.boreholes[j], self.boreholes[i]) and
-                self.nBoreSegments[i] == self.nBoreSegments[j]):
+                self.nBoreSegments[i] == self.nBoreSegments[j] and
+                np.allclose(self.segment_ratios[i], self.segment_ratios[i][0:1], rtol=self.tol) and
+                np.allclose(self.segment_ratios[j], self.segment_ratios[j][0:1], rtol=self.tol) ):
                 h_ij[i_segment, j_segment, 1:] = h[l_segment, k_segment, :]
             else:
                 h_ij[i_segment, j_segment, 1:] = (h[l_segment, k_segment, :].T \
@@ -2158,7 +2160,8 @@ class _Similarities(_BaseSolver):
                     # Add the borehole to the group if a similar borehole is
                     # found
                     if (self._compare_boreholes(boreholes[i], boreholes[m]) and
-                        self.nBoreSegments[i] == self.nBoreSegments[m]):
+                        self.nBoreSegments[i] == self.nBoreSegments[m] and
+                        np.allclose(self.segment_ratios[i], self.segment_ratios[m], rtol=self.tol)):
                         borehole_to_self[k].append(i)
                         break
                 else:
@@ -2175,12 +2178,16 @@ class _Similarities(_BaseSolver):
                         # if a similar one is found
                         if (compare_pairs(pair0, pair_ref) and
                             self.nBoreSegments[i] == self.nBoreSegments[m] and
-                            self.nBoreSegments[j] == self.nBoreSegments[n]):
+                            self.nBoreSegments[j] == self.nBoreSegments[n] and
+                            np.allclose(self.segment_ratios[i], self.segment_ratios[m], rtol=self.tol) and
+                            np.allclose(self.segment_ratios[j], self.segment_ratios[n], rtol=self.tol)):
                             borehole_to_borehole[k].append((i, j))
                             break
                         elif (compare_pairs(pair1, pair_ref) and
                               self.nBoreSegments[j] == self.nBoreSegments[m] and
-                              self.nBoreSegments[i] == self.nBoreSegments[n]):
+                              self.nBoreSegments[i] == self.nBoreSegments[n] and
+                            np.allclose(self.segment_ratios[j], self.segment_ratios[m], rtol=self.tol) and
+                            np.allclose(self.segment_ratios[i], self.segment_ratios[n], rtol=self.tol)):
                             borehole_to_borehole[k].append((j, i))
                             break
                     # If no similar pairs are known, append the groups
