@@ -495,7 +495,9 @@ class gFunction(object):
                 # heat extraction rate.
                 i0 = self.solver._i0Segments[i]
                 i1 = self.solver._i1Segments[i]
-                Q_t.append(np.mean(self.solver.Q_b[i0:i1,:], axis=0))
+                Q_t.append(
+                    np.sum(self.solver.Q_b[i0:i1,:]*self.solver.segment_ratios[i][:,np.newaxis],
+                           axis=0))
         return Q_t
 
     def _heat_extraction_rate_profiles(self, time, iBoreholes):
@@ -547,11 +549,10 @@ class gFunction(object):
                                     axis=1)(time).flatten()
                 if self.solver.nBoreSegments[i] > 1:
                     # Borehole length ratio at the mid-depth of each segment
-                    z_ratio = np.linspace(
-                        start=0.5/self.solver.nBoreSegments[i],
-                        stop=1-0.5/self.solver.nBoreSegments[i],
-                        num=self.solver.nBoreSegments[i])
-                    z.append(self.boreholes[i].D + self.boreholes[i].H*z_ratio)
+                    segment_ratios = self.solver.segment_ratios[i]
+                    z.append(self.solver.boreholes[i]._segment_midpoints(
+                        self.solver.nBoreSegments[i],
+                        segment_ratios=segment_ratios))
                     Q_b.append(Q_bi)
                 else:
                     # If there is only one segment, the heat extraction rate is
@@ -590,7 +591,10 @@ class gFunction(object):
                 # borehole wall temperature.
                 i0 = self.solver._i0Segments[i]
                 i1 = self.solver._i1Segments[i]
-                T_b.append(np.mean(self.solver.T_b[i0:i1,:], axis=0))
+                segment_ratios = self.solver.segment_ratios[i]
+                T_b.append(
+                    np.sum(self.solver.T_b[i0:i1,:]*segment_ratios[i][:,np.newaxis],
+                           axis=0))
         return T_b
 
     def _temperature_profiles(self, time, iBoreholes):
@@ -653,11 +657,10 @@ class gFunction(object):
                                     axis=1)(time).flatten()
                 if self.solver.nBoreSegments[i] > 1:
                     # Borehole length ratio at the mid-depth of each segment
-                    z_ratio = np.linspace(
-                        start=0.5/self.solver.nBoreSegments[i],
-                        stop=1-0.5/self.solver.nBoreSegments[i],
-                        num=self.solver.nBoreSegments[i])
-                    z.append(self.boreholes[i].D + self.boreholes[i].H*z_ratio)
+                    segment_ratios = self.solver.segment_ratios[i]
+                    z.append(self.solver.boreholes[i]._segment_midpoints(
+                        self.solver.nBoreSegments[i],
+                        segment_ratios=segment_ratios))
                     T_b.append(T_bi)
                 else:
                     # If there is only one segment, the temperature is
