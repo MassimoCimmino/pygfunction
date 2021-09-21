@@ -495,8 +495,9 @@ class gFunction(object):
                 # heat extraction rate.
                 i0 = self.solver._i0Segments[i]
                 i1 = self.solver._i1Segments[i]
+                segment_ratios = self.solver.segment_ratios[i]
                 Q_t.append(
-                    np.sum(self.solver.Q_b[i0:i1,:]*self.solver.segment_ratios[i][:,np.newaxis],
+                    np.sum(self.solver.Q_b[i0:i1,:]*segment_ratios[:,np.newaxis],
                            axis=0))
         return Q_t
 
@@ -593,7 +594,7 @@ class gFunction(object):
                 i1 = self.solver._i1Segments[i]
                 segment_ratios = self.solver.segment_ratios[i]
                 T_b.append(
-                    np.sum(self.solver.T_b[i0:i1,:]*segment_ratios[i][:,np.newaxis],
+                    np.sum(self.solver.T_b[i0:i1,:]*segment_ratios[:,np.newaxis],
                            axis=0))
         return T_b
 
@@ -1357,7 +1358,8 @@ class _BaseSolver(object):
                     a_in, a_b = self.network.coefficients_borehole_heat_extraction_rate(
                             self.network.m_flow_network,
                             self.network.cp_f,
-                            self.nBoreSegments)
+                            self.nBoreSegments,
+                            segment_ratios=self.segment_ratios)
                     k_s = self.network.p[0].k_s
                     A = np.block(
                         [[h_dt,
