@@ -155,7 +155,7 @@ class Borehole(object):
 
     def _segment_midpoints(self, nSegments, segment_ratios=None):
         if segment_ratios is None:
-            segment_ratios = [1. / nSegments for _ in range(nSegments)]
+            segment_ratios = np.array([1. / nSegments for _ in range(nSegments)])
         z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1] \
             + segment_ratios * self.H / 2
         return z
