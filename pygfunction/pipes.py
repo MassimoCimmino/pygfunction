@@ -726,9 +726,15 @@ class _BasePipe(object):
         stored_m_flow_cp = self._m_flow_cp_model_variables
         stored_nSegments = self._nSegments_model_variables
         stored_segment_ratios = self._segment_ratios_model_variables
+        if stored_segment_ratios is None and segment_ratios is None:
+            check_ratios = True
+        elif isinstance(stored_segment_ratios, np.ndarray) and isinstance(segment_ratios, np.ndarray):
+            check_ratios = np.all(np.abs(segment_ratios - stored_segment_ratios) < np.abs(stored_segment_ratios)*tol)
+        else:
+            check_ratios = False
         if (np.all(np.abs(m_flow_borehole*cp_f - stored_m_flow_cp) < np.abs(stored_m_flow_cp)*tol)
             and nSegments == stored_nSegments
-            and np.all(np.abs(segment_ratios - stored_segment_ratios) < np.abs(stored_segment_ratios)*tol)):
+            and check_ratios):
             check = True
         else:
             self._update_model_variables(
@@ -743,15 +749,18 @@ class _BasePipe(object):
     def _check_coefficients(
             self, m_flow_borehole, cp_f, nSegments, segment_ratios, method_id,
             tol=1e-6):
-        if segment_ratios is None:
-            segment_ratios = np.array(
-                [1. / nSegments for _ in range(nSegments)])
         stored_m_flow_cp = self._stored_m_flow_cp[method_id]
         stored_nSegments = self._stored_nSegments[method_id]
         stored_segment_ratios = self._stored_segment_ratios[method_id]
+        if stored_segment_ratios is None and segment_ratios is None:
+            check_ratios = True
+        elif isinstance(stored_segment_ratios, np.ndarray) and isinstance(segment_ratios, np.ndarray):
+            check_ratios = np.all(np.abs(segment_ratios - stored_segment_ratios) < np.abs(stored_segment_ratios)*tol)
+        else:
+            check_ratios = False
         if (np.all(np.abs(m_flow_borehole*cp_f - stored_m_flow_cp) < np.abs(stored_m_flow_cp)*tol)
             and nSegments == stored_nSegments
-            and np.all(np.abs(segment_ratios - stored_segment_ratios) < np.abs(stored_segment_ratios)*tol)):
+            and check_ratios):
             check = True
         else:
             check = False
