@@ -1602,7 +1602,7 @@ class MultipleUTube(_BasePipe):
 
         """
         # Load coefficients
-        A = self._A
+        sumA = self._sumA
         V = self._V
         Vm1 = self._Vm1
         L = self._L
@@ -1614,7 +1614,6 @@ class MultipleUTube(_BasePipe):
 
         # Coefficient matrix for borehole wall temperatures
         IIm1 = np.hstack((np.eye(self.nPipes), -np.eye(self.nPipes)))
-        Ones = np.ones((2*self.nPipes, 1))
         a_b = np.zeros((self.nPipes, nSegments))
         z = self.b._segment_edges(nSegments, segment_ratios=segment_ratios) - self.b.D
         for v in range(nSegments):
@@ -1675,7 +1674,7 @@ class MultipleUTube(_BasePipe):
             m_flow_borehole, cp_f, nSegments, segment_ratios)
 
         # Load coefficients
-        A = self._A
+        sumA = self._sumA
         V = self._V
         Vm1 = self._Vm1
         L = self._L
@@ -1730,6 +1729,7 @@ class MultipleUTube(_BasePipe):
                 [self._A[i, j] for j in range(2*nPipes) if not i == j])
         for i in range(nPipes, 2*nPipes):
             self._A[i, :] = - self._A[i, :]
+        self._sumA = np.sum(self._A, axis=1)
         # Eigenvalues and eigenvectors of A
         self._L, self._V = np.linalg.eig(self._A)
         # Inverse of eigenvector matrix

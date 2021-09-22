@@ -13,6 +13,7 @@ Examples
    examples/custom_borehole
    examples/uniform_heat_extraction_rate
    examples/uniform_temperature
+   examples/comparison_gfunction_solvers
    examples/unequal_segments
    examples/load_aggregation
    examples/comparison_load_aggregation
