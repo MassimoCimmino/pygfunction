@@ -130,7 +130,7 @@ class Borehole(object):
         """
         if segment_ratios is None:
             segment_ratios = [1. / nSegments for _ in range(nSegments)]
-        z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1]
+        z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1] - self.D
         boreSegments = []
         for i in range(nSegments):
             # Divide borehole into segments of equal length
