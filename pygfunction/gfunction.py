@@ -85,11 +85,11 @@ class gFunction(object):
                 Number of line segments used per borehole, or list of number of
                 line segments used for each borehole.
                 Default is 12.
-            segment_ratios :
-            (nSegments,) array or list of (nSegments[i],) arrays, optional
+            segment_ratios : array or list of arrays, optional
                 Ratio of the borehole length represented by each segment. The
-                sum of ratios must be equal to 1. If segment_ratios==None,
-                segments of equal lengths are considered.
+                sum of ratios must be equal to 1. The shape of the array is of
+                (nSegments,) or list of (nSegments[i],). If
+                segment_ratios==None, segments of equal lengths are considered.
                 Default is None.
             disp : bool, optional
                 Set to true to print progression messages.
@@ -889,10 +889,10 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12,
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
-    segment_ratios :
-    (nSegments,) array or list of (nSegments[i],) arrays, optional
+    segment_ratios : array or list of arrays, optional
         Ratio of the borehole length represented by each segment. The
-        sum of ratios must be equal to 1. If segment_ratios==None,
+        sum of ratios must be equal to 1. The shape of the array is of
+        (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
         segments of equal lengths are considered.
         Default is None.
     kind : string, optional
@@ -995,10 +995,10 @@ def equal_inlet_temperature(
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
-    segment_ratios :
-    (nSegments,) array or list of (nSegments[i],) arrays, optional
+    segment_ratios : array or list of arrays, optional
         Ratio of the borehole length represented by each segment. The
-        sum of ratios must be equal to 1. If segment_ratios==None,
+        sum of ratios must be equal to 1. The shape of the array is of
+        (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
         segments of equal lengths are considered.
         Default is None.
     kind : string, optional
@@ -1096,10 +1096,10 @@ def mixed_inlet_temperature(network, m_flow_network, cp_f,
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
-    segment_ratios :
-    (nSegments,) array or list of (nSegments[i],) arrays, optional
+    segment_ratios : array or list of arrays, optional
         Ratio of the borehole length represented by each segment. The
-        sum of ratios must be equal to 1. If segment_ratios==None,
+        sum of ratios must be equal to 1. The shape of the array is of
+        (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
         segments of equal lengths are considered.
         Default is None.
     kind : string, optional
@@ -1211,10 +1211,10 @@ class _BaseSolver(object):
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
-    segment_ratios :
-    (nSegments,) array or list of (nSegments[i],) arrays, optional
+    segment_ratios : array or list of arrays, optional
         Ratio of the borehole length represented by each segment. The
-        sum of ratios must be equal to 1. If segment_ratios==None,
+        sum of ratios must be equal to 1. The shape of the array is of
+        (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
         segments of equal lengths are considered.
         Default is None.
     disp : bool, optional
@@ -1662,10 +1662,10 @@ class _Detailed(_BaseSolver):
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
-    segment_ratios :
-    (nSegments,) array or list of (nSegments[i],) arrays, optional
+    segment_ratios : array or list of arrays, optional
         Ratio of the borehole length represented by each segment. The
-        sum of ratios must be equal to 1. If segment_ratios==None,
+        sum of ratios must be equal to 1. The shape of the array is of
+        (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
         segments of equal lengths are considered.
         Default is None.
     disp : bool, optional
@@ -1845,10 +1845,10 @@ class _Similarities(_BaseSolver):
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
-    segment_ratios :
-    (nSegments,) array or list of (nSegments[i],) arrays, optional
+    segment_ratios : array or list of arrays, optional
         Ratio of the borehole length represented by each segment. The
-        sum of ratios must be equal to 1. If segment_ratios==None,
+        sum of ratios must be equal to 1. The shape of the array is of
+        (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
         segments of equal lengths are considered.
         Default is None.
     disp : bool, optional
