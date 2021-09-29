@@ -1249,7 +1249,7 @@ class _BaseSolver(object):
         else:
             self.nBoreSegments = nSegments
         if isinstance(segment_ratios, np.ndarray):
-            segment_ratios = [segment_ratios for b in boreholes]
+            segment_ratios = [segment_ratios] * nBoreholes
         elif segment_ratios is None:
             segment_ratios = [np.ones(n)/n for n in self.nBoreSegments]
         self.segment_ratios = segment_ratios
