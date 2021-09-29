@@ -267,13 +267,13 @@ class TestMixedInletTemperature(unittest.TestCase):
             UTube = SingleUTube(pos_pipes, self.r_in, self.r_out, borebole,
                                 self.k_s, self.k_g, R_f + R_p)
             UTubes.append(UTube)
-        network = Network(
-            boreField, UTubes, bore_connectivity=bore_connectivity,
-            m_flow_network=m_flow_pipe, cp_f=fluid.cp, nSegments=nSegments)
 
         # g-Function calculation option for uniform borehole segment lengths
         # in the field by defining nSegments as an integer >= 1
         options = {'nSegments': nSegments[0]}
+        network = Network(
+            boreField, UTubes, bore_connectivity=bore_connectivity,
+            m_flow_network=m_flow_pipe, cp_f=fluid.cp, nSegments=nSegments[0])
         gfunc = gFunction(network, self.alpha, time=time, options=options)
         g_ref = gfunc.gFunc
 
@@ -281,7 +281,10 @@ class TestMixedInletTemperature(unittest.TestCase):
         # is of the same length as boreField and each borehole is defined to
         # have >= 1 segment
         # Note: nSegments[i] pertains to boreField[i]
-        options = {'nSegments':nSegments}
+        options = {'nSegments': nSegments}
+        network = Network(
+            boreField, UTubes, bore_connectivity=bore_connectivity,
+            m_flow_network=m_flow_pipe, cp_f=fluid.cp, nSegments=nSegments)
         g = gFunction(network, self.alpha, time=time, options=options).gFunc
 
         self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-6),
@@ -290,12 +293,13 @@ class TestMixedInletTemperature(unittest.TestCase):
                             'unequal numbers of segments.')
 
         # Compute g-function with predefined segment lengths
-        nSegments = 4
-        # Define the segment lengths for each borehole in each segment
+        nSegments = 8
+        # Define the segment ratios for each borehole in each segment
         # the segment lengths are defined top to bottom left to right
-        segmentLengths = [[45., 30., 30., 45.]] * len(boreField)
+        segment_ratios = np.array(
+            [0.05, 0.10, 0.10, 0.25, 0.25, 0.10, 0.10, 0.05])
         options = {'nSegments': [nSegments] * len(boreField),
-                   'segmentLengths': segmentLengths, 'disp': False}
+                   'segment_ratios': segment_ratios, 'disp': False}
 
         g_func_predefined = gFunction(boreField, self.alpha, time=time,
                                       options=options)
