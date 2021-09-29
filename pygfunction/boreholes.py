@@ -110,10 +110,11 @@ class Borehole(object):
         ----------
         nSegments : int
             Number of segments.
-        segment_ratios : (nSegments,) array, optional
-            Ratio of the borehole length represented by each segment. The sum
-            of ratios must be equal to 1. If segment_ratios==None, segments of
-            equal lengths are returned.
+        segment_ratios : array or list of arrays, optional
+            Ratio of the borehole length represented by each segment. The
+            sum of ratios must be equal to 1. The shape of the array is of
+            (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
+            segments of equal lengths are considered.
             Default is None.
 
         Returns
