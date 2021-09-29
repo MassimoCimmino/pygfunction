@@ -1485,8 +1485,7 @@ class _BaseSolver(object):
         boreSegments = []  # list for storage of boreSegments
         for b, nSegments, segment_ratios in zip(self.boreholes, self.nBoreSegments, self.segment_ratios):
             segments = b.segments(nSegments, segment_ratios=segment_ratios)
-            for seg in segments:
-                boreSegments.append(seg)
+            boreSegments.extend(segments)
 
         return boreSegments
 
