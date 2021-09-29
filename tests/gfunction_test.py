@@ -298,12 +298,18 @@ class TestMixedInletTemperature(unittest.TestCase):
         # the segment lengths are defined top to bottom left to right
         segment_ratios = np.array(
             [0.05, 0.10, 0.10, 0.25, 0.25, 0.10, 0.10, 0.05])
-        options = {'nSegments': [nSegments] * len(boreField),
+        options = {'nSegments': nSegments,
                    'segment_ratios': segment_ratios, 'disp': False}
+        network = Network(
+            boreField, UTubes, bore_connectivity=bore_connectivity,
+            m_flow_network=m_flow_pipe, cp_f=fluid.cp, nSegments=nSegments,
+            segment_ratios=segment_ratios)
 
-        g_func_predefined = gFunction(boreField, self.alpha, time=time,
-                                      options=options)
-        g_pred = g_func_predefined.gFunc
+        g_pred = gFunction(network, self.alpha, time=time, options=options).gFunc
+
+        # g_func_predefined = gFunction(boreField, self.alpha, time=time,
+        #                               options=options)
+        # g_pred = g_func_predefined.gFunc
 
         self.assertTrue(np.allclose(g_pred, g_ref, rtol=1.0e-00, atol=1.0e-00),
                         msg='Incorrect values of the g-function of six '
