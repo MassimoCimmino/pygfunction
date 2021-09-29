@@ -47,14 +47,17 @@ def main():
     # Evaluate g-functions with different segment options
     # -------------------------------------------------------------------------
 
-    # Calculate g-function with equal number of segments
+    # Calculate g-function with equal number of segments for all boreholes and
+    # uniform segment lengths
     nSegments = 24
     options = {'nSegments': nSegments, 'disp': True}
 
     gfunc_equal = gt.gfunction.gFunction(
         boreField, alpha, time=time, options=options)
 
-    # Calculate g-function with unequal number of segments
+    # Calculate g-function with predefined number of segments for each borehole,
+    # the segment lengths will be uniform along each borehole, but the number of
+    # segments for the boreholes can be unequal
 
     # Boreholes 12, 14 and 18 have more segments than the others and their
     # heat extraction rate profiles are plotted.
@@ -67,19 +70,19 @@ def main():
     gfunc_unequal = gt.gfunction.gFunction(
         boreField, alpha, time=time, options=options)
 
-    # Calculate g-function with unequal number of segments and predefined
-    # segment lengths
+    # Calculate g-function with equal number of segments for each borehole,
+    # unequal segment lengths along the length of the borehole defined by
+    # segment ratios. The segment ratios for each borehole are the same.
 
     nSegments = 8
-    # Define the segment lengths for each borehole in each segment
+    # Define the segment ratios for each borehole in each segment
     # the segment lengths are defined top to bottom left to right
     segment_ratios = np.array([0.05, 0.10, 0.10, 0.25, 0.25, 0.10, 0.10, 0.05])
     options = {'nSegments': nSegments,
                'segment_ratios': segment_ratios, 'disp': True, 'profiles': True}
 
-    g_func_predefined = gt.gfunction.gFunction(boreField, alpha,
-                                                       time=time,
-                                                       options=options)
+    g_func_predefined = gt.gfunction.gFunction(
+        boreField, alpha, time=time, options=options)
 
     # -------------------------------------------------------------------------
     # Plot g-functions
