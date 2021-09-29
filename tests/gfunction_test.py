@@ -376,7 +376,7 @@ class TestEqualInletTemperature(unittest.TestCase):
                 UTube._Rd[1,1] = Rd_00
                 UTube._Rd[0,1] = Rd_01
                 UTube._Rd[1,0] = Rd_01
-                UTube._update_model_variables(self.m_flow, self.cp, nSegments)
+                UTube._update_model_variables(self.m_flow, self.cp, nSegments, None)
             g[i] = equal_inlet_temperature(boreField, UTubes, self.m_flow,
                                            self.cp, time, self.alpha,
                                            nSegments=nSegments)
@@ -428,7 +428,7 @@ class TestEqualInletTemperature(unittest.TestCase):
             UTube._Rd[1,1] = Rd_00
             UTube._Rd[0,1] = Rd_01
             UTube._Rd[1,0] = Rd_01
-            UTube._update_model_variables(self.m_flow, self.cp, nSegments)
+            UTube._update_model_variables(self.m_flow, self.cp, nSegments, None)
         g = equal_inlet_temperature(boreField, UTubes, self.m_flow,
                                        self.cp, time, self.alpha,
                                        nSegments=nSegments)
