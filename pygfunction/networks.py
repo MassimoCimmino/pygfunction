@@ -477,12 +477,9 @@ class Network(object):
             c_out = self._c_out
             # Coefficient matrices for borehole outlet temperatures:
             # [T_{f,b,out}] = [A]*[T_{f,b,in}] + [B]*[T_{b}]
-            AB = list(zip(*[
-                self.p[i].coefficients_outlet_temperature(
-                    self._m_flow_borehole[i],
-                    self._cp_borehole[i],
-                    self.nSegments[i],
-                    segment_ratios=self._segment_ratios[i])
+            AB = list(zip(*[self.p[i].coefficients_outlet_temperature(
+                self._m_flow_borehole[i], self._cp_borehole[i],
+                self.nSegments[i], segment_ratios=self._segment_ratios[i])
                 for i in range(self.nBoreholes)]))
             A = block_diag(*AB[0])
             B = block_diag(*AB[1])
