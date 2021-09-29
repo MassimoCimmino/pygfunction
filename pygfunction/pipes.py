@@ -1006,13 +1006,12 @@ class SingleUTube(_BasePipe):
 
         a_b = np.zeros((self.nOutlets, nSegments))
 
-        z = self.b._segment_edges(nSegments, segment_ratios=segment_ratios) - self.b.D
-        for i in range(nSegments):
-            z1 = z[nSegments-i-1]
-            z2 = z[nSegments-i]
-            dF4 = self._F4(z2) - self._F4(z1)
-            dF5 = self._F5(z2) - self._F5(z1)
-            a_b[0, i] = (dF4 + dF5) / (self._f3(self.b.H) - self._f2(self.b.H))
+        z = self.b._segment_edges(nSegments, segment_ratios=segment_ratios)[::-1] - self.b.D
+        F4 = self._F4(z)
+        dF4 = F4[:-1] - F4[1:]
+        F5 = self._F5(z)
+        dF5 = F5[:-1] - F5[1:]
+        a_b[0, :] = (dF4 + dF5) / (self._f3(self.b.H) - self._f2(self.b.H))
 
         return a_in, a_out, a_b
 
@@ -1112,13 +1111,12 @@ class SingleUTube(_BasePipe):
         a_b = np.zeros((2*self.nPipes, nSegments))
         z_all = self.b._segment_edges(nSegments, segment_ratios=segment_ratios) - self.b.D
         N = min(int(np.sum(z > z_all)), nSegments)
-        for i in range(N):
-            z1 = z - min(z_all[i+1], z)
-            z2 = z - z_all[i]
-            dF4 = self._F4(z2) - self._F4(z1)
-            dF5 = self._F5(z2) - self._F5(z1)
-            a_b[0, i] = dF4
-            a_b[1, i] = -dF5
+        z1 = z - np.minimum(z_all[1:N+1], z)
+        z2 = z - z_all[:N]
+        dF4 = self._F4(z2) - self._F4(z1)
+        dF5 = self._F5(z2) - self._F5(z1)
+        a_b[0, :N] = dF4
+        a_b[1, :N] = -dF5
 
         return a_f0, a_b
 
@@ -1615,12 +1613,10 @@ class MultipleUTube(_BasePipe):
         # Coefficient matrix for borehole wall temperatures
         IIm1 = np.hstack((np.eye(self.nPipes), -np.eye(self.nPipes)))
         a_b = np.zeros((self.nPipes, nSegments))
-        z = self.b._segment_edges(nSegments, segment_ratios=segment_ratios) - self.b.D
-        for v in range(nSegments):
-            z1 = z[nSegments-v]
-            z2 = z[nSegments-v-1]
-            dE = np.diag(np.exp(L*z1) - np.exp(L*z2))
-            a_b[:, v:v+1] = np.real(IIm1 @ V @ Dm1 @ dE @ Vm1 @ A @ Ones)
+        z = self.b._segment_edges(nSegments, segment_ratios=segment_ratios)[::-1] - self.b.D
+        exp_Lz = np.exp(np.multiply.outer(L, z))
+        dexp_Lz = exp_Lz[:,:-1] - exp_Lz[:,1:]
+        a_b = np.real(((IIm1 @ V @ Dm1) * (Vm1 @ sumA)) @ dexp_Lz)
             
 
         # Configuration-specific inlet and outlet coefficient matrices
@@ -1685,14 +1681,11 @@ class MultipleUTube(_BasePipe):
 
         # Coefficient matrix for borehole wall temperatures
         a_b = np.zeros((2*self.nPipes, nSegments))
-        Ones = np.ones((2*self.nPipes, 1))
         z_all = self.b._segment_edges(nSegments, segment_ratios=segment_ratios) - self.b.D
-        for v in range(nSegments):
-            dz1 = z - min(z, z_all[v])
-            dz2 = z - min(z, z_all[v+1])
-            E1 = np.diag(np.exp(L*dz1))
-            E2 = np.diag(np.exp(L*dz2))
-            a_b[:,v:v+1] = np.real(V @ Dm1 @ (E2 - E1) @ Vm1 @ A @ Ones)
+        dz = z - np.minimum(z, z_all)
+        exp_Lz = np.exp(np.multiply.outer(L, dz))
+        dexp_Lz = exp_Lz[:,1:] - exp_Lz[:,:-1]
+        a_b = np.real(((V @ Dm1) * (Vm1 @ sumA)) @ dexp_Lz)
 
         return a_f0, a_b
 
