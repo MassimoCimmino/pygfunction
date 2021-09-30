@@ -307,10 +307,6 @@ class TestMixedInletTemperature(unittest.TestCase):
 
         g_pred = gFunction(network, self.alpha, time=time, options=options).gFunc
 
-        # g_func_predefined = gFunction(boreField, self.alpha, time=time,
-        #                               options=options)
-        # g_pred = g_func_predefined.gFunc
-
         self.assertTrue(np.allclose(g_pred, g_ref, rtol=1.0e-00, atol=1.0e-00),
                         msg='Incorrect values of the g-function of six '
                             'boreholes for mixed inlet temperature and '
