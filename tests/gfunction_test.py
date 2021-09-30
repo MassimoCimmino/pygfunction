@@ -305,7 +305,8 @@ class TestMixedInletTemperature(unittest.TestCase):
             m_flow_network=m_flow_pipe, cp_f=fluid.cp, nSegments=nSegments,
             segment_ratios=segment_ratios)
 
-        g_pred = gFunction(network, self.alpha, time=time, options=options).gFunc
+        g_pred = gFunction(
+            network, self.alpha, time=time, options=options).gFunc
 
         self.assertTrue(np.allclose(g_pred, g_ref, rtol=1.0e-00, atol=1.0e-00),
                         msg='Incorrect values of the g-function of six '
