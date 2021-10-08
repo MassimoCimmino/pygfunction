@@ -1328,7 +1328,7 @@ class _BaseSolver(object):
         # Segment lengths
         H_b = self.segment_lengths()
         if self.boundary_condition == 'MIFT':
-            Hb_individual = np.array([b.H/nSegments for (b, nSegments) in zip(self.boreholes, self.nBoreSegments) for i in range(nSegments)])
+            Hb_individual = np.array([b.H for b in self.boreSegments], dtype=self.dtype)
         H_tot = np.sum(H_b)
         if self.disp: print('Building and solving the system of equations ...',
                             end='')
