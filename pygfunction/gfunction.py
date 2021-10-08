@@ -2525,6 +2525,12 @@ class _Equivalent(_BaseSolver):
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
+    segment_ratios : array or list of arrays, optional
+        Ratio of the borehole length represented by each segment. The
+        sum of ratios must be equal to 1. The shape of the array is of
+        (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
+        segments of equal lengths are considered.
+        Default is None.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -2595,6 +2601,7 @@ class _Equivalent(_BaseSolver):
         # Initialize groups for equivalent boreholes
         nSources = self.find_groups()
         self.nBoreSegments = [self.nBoreSegments[0]] * self.nEqBoreholes
+        self.boreSegments = self.borehole_segments()
         self._i0Segments = [sum(self.nBoreSegments[0:i]) 
                             for i in range(self.nEqBoreholes)]
         self._i1Segments = [sum(self.nBoreSegments[0:(i + 1)])
@@ -2641,6 +2648,7 @@ class _Equivalent(_BaseSolver):
         tic = tim.time()
         # Initialize segment-to-segment response factors
         h_ij = np.zeros((self.nSources, self.nSources, nt+1), dtype=self.dtype)
+        segment_lengths = self.segment_lengths()
 
         # ---------------------------------------------------------------------
         # Segment-to-segment thermal response factors for borehole-to-borehole
@@ -2656,6 +2664,8 @@ class _Equivalent(_BaseSolver):
             dis, wDis = self._find_unique_distances(self.dis, indices)
             H1, D1, H2, D2, i_pair, j_pair, k_pair = \
                 self._map_axial_segment_pairs(i, j)
+            H1 = H1.reshape(1, -1)
+            H2 = H2.reshape(1, -1)
             D1 = D1.reshape(1, -1)
             D2 = D2.reshape(1, -1)
             N2 = np.array([[self.boreholes[j].nBoreholes for (i, j) in indices]]).T
@@ -2669,9 +2679,8 @@ class _Equivalent(_BaseSolver):
                 j_segment = self._i0Segments[j] + j_pair
                 h_ij[j_segment, i_segment, 1:] = h[k, k_pair, :]
                 if not i == j:
-                    w_ratio = self.wBoreholes[j] / self.wBoreholes[i]
-                    H_ratio = self.boreholes[j].H / self.boreholes[i].H
-                    h_ij[i_segment, j_segment, 1:] = h[k, k_pair, :] * H_ratio * w_ratio
+                    h_ij[i_segment, j_segment, 1:] = (h[k, k_pair, :].T \
+                        * segment_lengths[j_segment]/segment_lengths[i_segment]).T
 
         # ---------------------------------------------------------------------
         # Segment-to-segment thermal response factors for same-borehole thermal
@@ -2686,6 +2695,8 @@ class _Equivalent(_BaseSolver):
                 self._map_axial_segment_pairs(i, i)
             # Evaluate FLS at all time steps
             dis = self.boreholes[i].r_b
+            H1 = H1.reshape(1, -1)
+            H2 = H2.reshape(1, -1)
             D1 = D1.reshape(1, -1)
             D2 = D2.reshape(1, -1)
             h = finite_line_source_vectorized(time, alpha, dis, H1, D1, H2, D2)
@@ -2806,7 +2817,8 @@ class _Equivalent(_BaseSolver):
                 pipes,
                 m_flow_network=self.network.m_flow_network,
                 cp_f=self.network.cp_f,
-                nSegments=self.nBoreSegments[0])
+                nSegments=self.nBoreSegments[0],
+                segment_ratios=self.segment_ratios[0])
 
         # Stop chrono
         toc = tim.time()
@@ -2832,8 +2844,8 @@ class _Equivalent(_BaseSolver):
         """
         # Borehole lengths
         H = np.array([seg.H*seg.nBoreholes
-                      for (b, nSegments) in zip(self.boreholes, self.nBoreSegments)
-                      for seg in b.segments(nSegments)],
+                      for (b, nSegments, segment_ratios) in zip(self.boreholes, self.nBoreSegments, self.segment_ratios)
+                      for seg in b.segments(nSegments, segment_ratios=segment_ratios)],
                      dtype=self.dtype)
         return H
 
@@ -3150,11 +3162,11 @@ class _Equivalent(_BaseSolver):
             # Find segment pairs for the image FLS solution
             compare_pairs = self._compare_image_pairs
         # Dive both boreholes into segments
-        segments1 = borehole1.segments(self.nBoreSegments[iBor])
-        segments2 = borehole2.segments(self.nBoreSegments[jBor])
-        # Segments have equal lengths
-        H1 = segments1[0].H
-        H2 = segments2[0].H
+        segments1 = borehole1.segments(self.nBoreSegments[iBor], segment_ratios=self.segment_ratios[iBor])
+        segments2 = borehole2.segments(self.nBoreSegments[jBor], segment_ratios=self.segment_ratios[jBor])
+        # Prepare lists of segment lengths
+        H1 = []
+        H2 = []
         # Prepare lists of segment buried depths
         D1 = []
         D2 = []
@@ -3192,12 +3204,14 @@ class _Equivalent(_BaseSolver):
                 # depths
                 else:
                     k_pair[p] = nPairs
+                    H1.append(segments1[i].H)
+                    H2.append(segments2[j].H)
                     D1.append(segments1[i].D)
                     D2.append(segments2[j].D)
                     unique_pairs.append((i, j))
                     nPairs += 1
                 p += 1
-        return H1, np.array(D1), H2, np.array(D2), i_pair, j_pair, k_pair
+        return np.array(H1), np.array(D1), np.array(H2), np.array(D2), i_pair, j_pair, k_pair
 
     def _check_solver_specific_inputs(self):
         """
@@ -3213,6 +3227,8 @@ class _Equivalent(_BaseSolver):
             "The precision increment 'kClusters' should be a positive int."
         assert np.all(np.array(self.nBoreSegments, dtype=np.uint) == self.nBoreSegments[0]), \
             "Solver 'equivalent' can only handle equal numbers of segments."
+        assert np.all([np.allclose(segment_ratios, self.segment_ratios[0]) for segment_ratios in self.segment_ratios]), \
+            "Solver 'equivalent' can only handle identical segment_ratios for all boreholes."
         if self.boundary_condition == 'MIFT':
             assert np.all(np.array(self.network.c, dtype=np.int) == -1), \
                 "Solver 'equivalent' is only valid for parallel-connected " \

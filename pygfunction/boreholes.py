@@ -275,7 +275,7 @@ class _EquivalentBorehole(object):
         """
         return (self.x, self.y)
 
-    def segments(self, nSegments):
+    def segments(self, nSegments, segment_ratios=None):
         """
         Split an equivalent borehole into segments.
 
@@ -283,6 +283,12 @@ class _EquivalentBorehole(object):
         ----------
         nSegments : int
             Number of segments.
+        segment_ratios : array or list of arrays, optional
+            Ratio of the borehole length represented by each segment. The
+            sum of ratios must be equal to 1. The shape of the array is of
+            (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
+            segments of equal lengths are considered.
+            Default is None.
 
         Returns
         -------
@@ -295,7 +301,10 @@ class _EquivalentBorehole(object):
         >>> b1.segments(5)
 
         """
-        return [_EquivalentBorehole((self.H/nSegments, self.D+i*self.H/nSegments, self.r_b, self.x, self.y)) for i in range(nSegments)]
+        if segment_ratios is None:
+            segment_ratios = [1. / nSegments for _ in range(nSegments)]
+        z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1]
+        return [_EquivalentBorehole((segment_ratios[i] * self.H, z[i], self.r_b, self.x, self.y)) for i in range(nSegments)]
 
     def unique_distance(self, target, disTol=0.01):
         """
@@ -358,6 +367,19 @@ class _EquivalentBorehole(object):
             j0 = j1
         
         return np.array(dis), np.array(wDis)
+
+    def _segment_edges(self, nSegments, segment_ratios=None):
+        if segment_ratios is None:
+            segment_ratios = [1. / nSegments for _ in range(nSegments)]
+        z = self.D + np.concatenate(([0.], np.cumsum(segment_ratios))) * self.H
+        return z
+
+    def _segment_midpoints(self, nSegments, segment_ratios=None):
+        if segment_ratios is None:
+            segment_ratios = np.array([1. / nSegments for _ in range(nSegments)])
+        z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1] \
+            + segment_ratios * self.H / 2
+        return z
 
 
 def find_duplicates(boreField, disp=False):
