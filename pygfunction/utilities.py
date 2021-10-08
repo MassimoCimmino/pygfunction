@@ -206,3 +206,56 @@ def _format_axes_3d(ax):
     # ax.yaxis.set_minor_locator(AutoMinorLocator())
     # ax.zaxis.set_minor_locator(AutoMinorLocator())
     return
+
+
+def discretize(H, end_length_ratio=0.05, ratio=np.sqrt(2.)):
+    """
+    Discretize a borehole into segments of differing length. Eskilson (1987)
+    proposed that segments lengths increase with a factor of sqrt(2) towards
+    the center of the borehole. The segments are symmetric about the center of
+    the borehole.
+
+    Parameters
+    ----------
+    H : float
+        The height of the borehole
+    end_length_ratio: float
+        The ratio of the height of the borehole that accounts for the end
+        segment lengths.
+    ratio: float
+        The ratio of segment length increase towards the center of the borehole.
+
+    Returns
+    -------
+    segment_ratios : list
+        The segment ratios along the borhole from top to bottom.
+
+    """
+    H_half = H / 2.
+    end_length = H * end_length_ratio
+
+    segment_lengths = []
+    nSegments = 0
+    length = end_length
+    while (sum(segment_lengths) + length) <= H_half:
+
+        segment_lengths.append(length)
+        length *= ratio
+
+        nSegments += 1
+
+    diff = H_half - sum(segment_lengths)
+    segment_lengths.append(diff * 2.)
+
+    segment_lengths = segment_lengths + list(reversed(segment_lengths[0:len(segment_lengths)-1]))
+
+    nSegments = (nSegments * 2) + 1
+    assert nSegments == len(segment_lengths)
+
+    assert (sum(segment_lengths) - H) <= 1.0e-08
+
+    segment_ratios = [segment_lengths[i] / H for i in range(len(segment_lengths))]
+
+    assert (sum(segment_ratios) - 1.0) <= 1.0e-8
+
+    return segment_ratios
