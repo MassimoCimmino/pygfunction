@@ -780,7 +780,7 @@ class gFunction(object):
         assert type(self.method) is str and self.method in acceptable_methods, \
             "Method \'{}\' is not an acceptable method. \n" \
             "Please provide one of the following inputs : {}".format(
-                self.boundary_condition, acceptable_methods)
+                self.method, acceptable_methods)
         return
 
 
