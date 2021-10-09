@@ -211,14 +211,14 @@ def _format_axes_3d(ax):
 def discretize(H, end_length_ratio=0.05, ratio=np.sqrt(2.)):
     """
     Discretize a borehole into segments of differing length. Eskilson (1987)
-    proposed that segments lengths increase with a factor of sqrt(2) towards
-    the center of the borehole. The segments are symmetric about the center of
-    the borehole.
+    [#Eskilson_1987]_ proposed that segment lengths increase with a factor of
+    sqrt(2) towards the center of the borehole, and is implemented here. The
+    segments are symmetric about the center of the borehole.
 
     Parameters
     ----------
     H : float
-        The height of the borehole
+         Borehole length (in meters).
     end_length_ratio: float
         The ratio of the height of the borehole that accounts for the end
         segment lengths.
@@ -230,6 +230,16 @@ def discretize(H, end_length_ratio=0.05, ratio=np.sqrt(2.)):
     segment_ratios : list
         The segment ratios along the borhole from top to bottom.
 
+    Examples
+    --------
+    >>> H = 150. # Borehole length (m)
+    >>> segment_ratios = gt.utilities.discretize(H)
+
+    References
+    ----------
+    .. [#Eskilson_1987] Eskilson, P. (1987). Thermal analysis of heat extraction
+        boreholes. PhD Thesis. University of Lund, Department of Mathematical
+        Physics. Lund, Sweden.
     """
     H_half = H / 2.
     end_length = H * end_length_ratio
