@@ -5,6 +5,8 @@ import unittest
 
 import numpy as np
 
+import pygfunction.utilities
+
 
 class TestUniformHeatExtractionRate(unittest.TestCase):
     """ Test cases for calculation of g-functions using uniform heat extraction
@@ -225,7 +227,7 @@ class TestMixedInletTemperature(unittest.TestCase):
         """
         from pygfunction.gfunction import gFunction
         from pygfunction.boreholes import rectangle_field
-        from pygfunction.utilities import time_geometric
+        from pygfunction.utilities import time_geometric, discretize
         from pygfunction.pipes import \
             conduction_thermal_resistance_circular_pipe, \
             convective_heat_transfer_coefficient_circular_pipe, \
@@ -298,6 +300,26 @@ class TestMixedInletTemperature(unittest.TestCase):
         # the segment lengths are defined top to bottom left to right
         segment_ratios = np.array(
             [0.05, 0.10, 0.10, 0.25, 0.25, 0.10, 0.10, 0.05])
+        options = {'nSegments': nSegments,
+                   'segment_ratios': segment_ratios, 'disp': False}
+        network = Network(
+            boreField, UTubes, bore_connectivity=bore_connectivity,
+            m_flow_network=m_flow_pipe, cp_f=fluid.cp, nSegments=nSegments,
+            segment_ratios=segment_ratios)
+
+        g_pred = gFunction(
+            network, self.alpha, time=time, options=options).gFunc
+
+        self.assertTrue(np.allclose(g_pred, g_ref, rtol=1.0e-00, atol=1.0e-00),
+                        msg='Incorrect values of the g-function of six '
+                            'boreholes for mixed inlet temperature and '
+                            'unequal numbers of segments.'
+                        )
+
+        # Compute g-function with discretized segment lengths
+        segment_ratios = discretize(self.H)
+        nSegments = len(segment_ratios)
+        segment_ratios = np.array(segment_ratios)
         options = {'nSegments': nSegments,
                    'segment_ratios': segment_ratios, 'disp': False}
         network = Network(
