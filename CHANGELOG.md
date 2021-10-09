@@ -6,7 +6,7 @@
 
 * [Issue 36](https://github.com/MassimoCimmino/pygfunction/issues/36) - Added a `Coaxial` class to the `pipes` module to model boreholes with coaxial pipes.
 * [Issue 146](https://github.com/MassimoCimmino/pygfunction/issues/146) - Added new solver `'equivalent'` to the `gFunction` class. This solver uses hierarchical agglomerative clustering to identify groups of boreholes that are expected to have similar borehole wall temperatures and heat extraction rates. Each group of boreholes is represented by a single equivalent borehole. The FLS solution is adapted to evaluate thermal interactions between groups of boreholes. This greatly reduces the number of evaluations of the FLS solution and the size of the system of equations to evaluate the g-function.
-* [Issue 135](https://github.com/MassimoCimmino/pygfunction/issues/135) - Adds unequal segment length functionality. Each borehole now can be split into a number of segments and each of those segment lengths can be defined.
+* [Issue 135](https://github.com/MassimoCimmino/pygfunction/issues/135) - Added unequal segment length functionality. A `discretize` function is addd to the `utilities` module that increases the segment length by `sqrt(2)` from the outer boreholes (Eskilson 1987). Each borehole now can be split into a number of segments and each of those segment lengths can be defined.
 
 ### Enhancements
 
