@@ -15,6 +15,7 @@ Examples
    examples/uniform_temperature
    examples/comparison_gfunction_solvers
    examples/unequal_segments
+   examples/discretize_boreholes
    examples/load_aggregation
    examples/comparison_load_aggregation
    examples/fluid_temperature
@@ -24,4 +25,3 @@ Examples
    examples/multipole_temperature
    examples/bore_field_thermal_resistance
    examples/mixed_inlet_conditions
-   examples/discretize_boreholes
