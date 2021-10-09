@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 """ Example of g-function calculation using discretized segment lengths along
-    the boreholes. g-Functions for a field of 6x4 boreholes are computed using
-    the MIFT and UT boundary conditions with a 24 segments per borehole and
-    equal segment lengths. The MIFT and UT g-functions are computed with less
-    segments per borehole. RMSE values are compared.
+    the boreholes.
 """
 
 import pygfunction as gt
