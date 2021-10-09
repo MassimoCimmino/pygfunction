@@ -1145,6 +1145,12 @@ class _EquivalentNetwork(Network):
         Number of line segments used per borehole. This parameter is used to
         initialize the coefficients if it is provided.
         Default is None.
+    segment_ratios :
+    (nSegments,) array or list of (nSegments[i],) arrays, optional
+        Ratio of the borehole length represented by each segment. The sum of
+        ratios must be equal to 1. If segment_ratios==None, segments of equal
+        lengths are considered.
+        Default is None.
 
     Notes
     -----
@@ -1168,7 +1174,7 @@ class _EquivalentNetwork(Network):
 
     """
     def __init__(self, equivalentBoreholes, pipes, m_flow_network=None,
-                 cp_f=None, nSegments=None):
+                 cp_f=None, nSegments=None, segment_ratios=None):
         self.b = equivalentBoreholes
         self.H_tot = sum([b.H*b.nBoreholes for b in self.b])
         self.nBoreholes = len(equivalentBoreholes)
@@ -1194,11 +1200,12 @@ class _EquivalentNetwork(Network):
 
         # Initialize stored_coefficients
         self._initialize_coefficients_connectivity()
-        self._initialize_stored_coefficients(m_flow_network, cp_f, nSegments)
+        self._initialize_stored_coefficients(
+            m_flow_network, cp_f, nSegments, segment_ratios)
         return
 
     def coefficients_network_heat_extraction_rate(
-            self, m_flow_network, cp_f, nSegments):
+            self, m_flow_network, cp_f, nSegments, segment_ratios=None):
         """
         Build coefficient matrices to evaluate total heat extraction rate of
         the network.
@@ -1223,6 +1230,12 @@ class _EquivalentNetwork(Network):
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
             segments.
+        segment_ratios :
+        (nSegments,) array or list of (nSegments[i],) arrays, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments
+            of equal lengths are considered.
+            Default is None.
 
         Returns
         -------
@@ -1236,13 +1249,14 @@ class _EquivalentNetwork(Network):
         method_id = 6
         # Check if stored coefficients are available
         if self._check_coefficients(
-                m_flow_network, cp_f, nSegments, method_id):
+                m_flow_network, cp_f, nSegments, segment_ratios, method_id):
             a_in, a_b = self._get_stored_coefficients(method_id)
         else:
             # Coefficient matrices for fluid heat extraction rates:
             # [Q_{f}] = [b_in]*[T_{f,n,in}] + [b_b]*[T_{b}]
             b_in, b_b = self.coefficients_fluid_heat_extraction_rate(
-                    m_flow_network, cp_f, nSegments)
+                    m_flow_network, cp_f, nSegments,
+                    segment_ratios=segment_ratios)
             # The total network heat extraction rate is the sum of heat
             # extraction rates from all boreholes:
             # [Q_{tot}] = [a_in]*[T_{f,n,in}] + [a_b]*[T_{b}]
@@ -1251,7 +1265,8 @@ class _EquivalentNetwork(Network):
 
             # Store coefficients
             self._set_stored_coefficients(
-                m_flow_network, cp_f, nSegments, (a_in, a_b), method_id)
+                m_flow_network, cp_f, nSegments, segment_ratios, (a_in, a_b),
+                method_id)
 
         return a_in, a_b
 
@@ -1286,7 +1301,7 @@ class _EquivalentNetwork(Network):
             self._mixing_m_flow = m_flow_network
         return self._mix_out
 
-    def _format_inputs(self, m_flow_network, cp_f, nSegments):
+    def _format_inputs(self, m_flow_network, cp_f, nSegments, segment_ratios):
         """
         Format mass flow rate and heat capacity inputs.
         """
@@ -1330,6 +1345,17 @@ class _EquivalentNetwork(Network):
                 'Incorrect length of number of segments list.')
         else:
             self.nSegments = nSegments
+
+        # Format segment ratios
+        if segment_ratios is None:
+            self._segment_ratios = [None for _ in range(self.nBoreholes)]
+        elif isinstance(segment_ratios, np.ndarray):
+            self._segment_ratios = [segment_ratios for _ in range(self.nBoreholes)]
+        elif isinstance(segment_ratios, list):
+            self._segment_ratios = segment_ratios
+        else:
+            raise ValueError(
+                'Incorrect format of the segment ratios list.')
 
 
 def network_thermal_resistance(network, m_flow_network, cp_f):
