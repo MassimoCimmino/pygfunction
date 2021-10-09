@@ -1,8 +1,8 @@
 .. examples:
 
-***********************************************************
-g-Functions computed with discretized segment lengths
-***********************************************************
+********************************************************************
+Calculation of g-Functions computed with discretized segment lengths
+********************************************************************
 
 This example demonstrates the use of the :func:`utilities <../modules/utilities>`
 module to determine discretized segment ratios along a borehole.
