@@ -24,3 +24,4 @@ Examples
    examples/multipole_temperature
    examples/bore_field_thermal_resistance
    examples/mixed_inlet_conditions
+   examples/discretize_boreholes
