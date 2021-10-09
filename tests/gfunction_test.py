@@ -8,6 +8,146 @@ import numpy as np
 import pygfunction.utilities
 
 
+class TestSolvers(unittest.TestCase):
+    """
+    Test cases for calculation of g-functions using various solver methods
+    available.
+    """
+
+    def setUp(self) -> None:
+        self.H = 150.  # Borehole length [m]
+        self.D = 4.  # Borehole buried depth [m]
+        self.r_b = 0.075  # Borehole radius [m]
+        self.B = 7.5  # Borehole spacing [m]
+        self.alpha = 1.0e-6  # Ground thermal diffusivity [m2/s]
+
+    def test_detailed(self):
+        from pygfunction.gfunction import gFunction
+        from pygfunction.boreholes import rectangle_field
+        from pygfunction.utilities import time_geometric, discretize
+        # Calculation of the g-function at the same time values
+        N_1 = 3
+        N_2 = 2
+        boreField = rectangle_field(N_1, N_2, self.B, self.B,
+                                    self.H, self.D, self.r_b)
+
+        # Thermal properties
+        alpha = 1.0e-6  # Ground thermal diffusivity (m2/s)
+
+        # Geometrically expanding time vector.
+        dt = 100 * 3600.  # Time step
+        tmax = 3000. * 8760. * 3600.  # Maximum time
+        Nt = 10  # Number of time steps
+        time = time_geometric(dt, tmax, Nt)
+
+        # g-Function calculation options
+        options = {'nSegments': 24, 'disp': False}
+
+        gfunc_UT_ref = gFunction(
+            boreField, alpha, time=time, options=options, method='detailed').gFunc
+
+        segment_ratios = discretize(self.H)
+        nSegments = len(segment_ratios)
+        segment_ratios = np.array(segment_ratios)
+        options = {'nSegments': nSegments,
+                   'segment_ratios': segment_ratios, 'disp': False}
+
+        gfunc_UT_pred = gFunction(
+            boreField, alpha, time=time, options=options, method='detailed').gFunc
+
+        self.assertTrue(np.allclose(gfunc_UT_ref, gfunc_UT_pred,
+                                    rtol=1e-2, atol=1e-6),
+                        msg='Incorrect g-function for the detailed solver test.'
+                            'A converged solution is compared to a discretized'
+                            'solution using the UT boundary condition.')
+
+    def test_similarities(self):
+        from pygfunction.gfunction import gFunction
+        from pygfunction.boreholes import rectangle_field
+        from pygfunction.utilities import time_geometric, discretize
+        # Calculation of the g-function at the same time values
+        N_1 = 3
+        N_2 = 2
+        boreField = rectangle_field(N_1, N_2, self.B, self.B,
+                                    self.H, self.D, self.r_b)
+
+        # Thermal properties
+        alpha = 1.0e-6  # Ground thermal diffusivity (m2/s)
+
+        # Geometrically expanding time vector.
+        dt = 100 * 3600.  # Time step
+        tmax = 3000. * 8760. * 3600.  # Maximum time
+        Nt = 10  # Number of time steps
+        time = time_geometric(dt, tmax, Nt)
+
+        # g-Function calculation options
+        options = {'nSegments': 24, 'disp': False}
+
+        gfunc_UT_ref = gFunction(
+            boreField, alpha, time=time, options=options, method='similarities').gFunc
+
+        segment_ratios = discretize(self.H)
+        nSegments = len(segment_ratios)
+        segment_ratios = np.array(segment_ratios)
+        options = {'nSegments': nSegments,
+                   'segment_ratios': segment_ratios, 'disp': False}
+
+        gfunc_UT_pred = gFunction(
+            boreField, alpha, time=time, options=options, method='similarities').gFunc
+
+        self.assertTrue(np.allclose(gfunc_UT_ref, gfunc_UT_pred,
+                                    rtol=1e-2, atol=1e-6),
+                        msg='Incorrect g-function for the similarities solver '
+                            'test.'
+                            'A converged solution is compared to a discretized'
+                            'solution using the UT boundary condition.')
+
+    def test_equivalent(self):
+        from pygfunction.gfunction import gFunction
+        from pygfunction.boreholes import rectangle_field
+        from pygfunction.utilities import time_geometric, discretize
+        # Calculation of the g-function at the same time values
+        N_1 = 3
+        N_2 = 2
+        boreField = rectangle_field(N_1, N_2, self.B, self.B,
+                                    self.H, self.D, self.r_b)
+
+        # Thermal properties
+        alpha = 1.0e-6  # Ground thermal diffusivity (m2/s)
+
+        # Geometrically expanding time vector.
+        dt = 100 * 3600.  # Time step
+        tmax = 3000. * 8760. * 3600.  # Maximum time
+        Nt = 10  # Number of time steps
+        time = time_geometric(dt, tmax, Nt)
+
+        # g-Function calculation options
+        options = {'nSegments': 24, 'disp': False}
+
+        gfunc_UT_ref = gFunction(
+            boreField, alpha, time=time, options=options,
+            method='equivalent').gFunc
+
+        segment_ratios = discretize(self.H)
+        nSegments = len(segment_ratios)
+        segment_ratios = np.array(segment_ratios)
+        options = {'nSegments': nSegments,
+                   'segment_ratios': segment_ratios, 'disp': False}
+
+        gfunc_UT_pred = gFunction(
+            boreField, alpha, time=time, options=options,
+            method='equivalent').gFunc
+
+        self.assertTrue(np.allclose(gfunc_UT_ref, gfunc_UT_pred,
+                                    rtol=1e-2, atol=1e-6),
+                        msg='Incorrect g-function for the equivalent solver '
+                            'test.'
+                            'A converged solution is compared to a discretized'
+                            'solution using the UT boundary condition.')
+
+
+
+
 class TestUniformHeatExtractionRate(unittest.TestCase):
     """ Test cases for calculation of g-functions using uniform heat extraction
         rate boundary condition.
