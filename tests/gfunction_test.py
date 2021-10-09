@@ -146,8 +146,6 @@ class TestSolvers(unittest.TestCase):
                             'solution using the UT boundary condition.')
 
 
-
-
 class TestUniformHeatExtractionRate(unittest.TestCase):
     """ Test cases for calculation of g-functions using uniform heat extraction
         rate boundary condition.
