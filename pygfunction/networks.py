@@ -1047,7 +1047,8 @@ class Network(object):
         if stored_segment_ratios is None and segment_ratios is None:
             check_ratios = True
         elif isinstance(stored_segment_ratios, list) and isinstance(segment_ratios, list):
-            check_ratios = np.all([np.all(np.abs(segment_ratios[i] - stored_segment_ratios[i]) < np.abs(stored_segment_ratios[i])*tol) for i in range(len(segment_ratios))])
+            check_ratios = (np.all([len(segment_ratios[i]) == len(stored_segment_ratios[i]) for i in range(len(segment_ratios))]) and
+                            np.all([np.all(np.abs(segment_ratios[i] - stored_segment_ratios[i]) < np.abs(stored_segment_ratios[i])*tol) for i in range(len(segment_ratios))]))
         else:
             check_ratios = False
         if (np.all(np.abs(m_flow_network*cp_f - stored_m_flow_cp) < np.abs(stored_m_flow_cp)*tol)

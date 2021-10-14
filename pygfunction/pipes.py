@@ -729,7 +729,8 @@ class _BasePipe(object):
         if stored_segment_ratios is None and segment_ratios is None:
             check_ratios = True
         elif isinstance(stored_segment_ratios, np.ndarray) and isinstance(segment_ratios, np.ndarray):
-            check_ratios = np.all(np.abs(segment_ratios - stored_segment_ratios) < np.abs(stored_segment_ratios)*tol)
+            check_ratios = (len(segment_ratios) == len(stored_segment_ratios) and
+                            np.all(np.abs(segment_ratios - stored_segment_ratios) < np.abs(stored_segment_ratios)*tol))
         else:
             check_ratios = False
         if (np.all(np.abs(m_flow_borehole*cp_f - stored_m_flow_cp) < np.abs(stored_m_flow_cp)*tol)
