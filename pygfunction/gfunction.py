@@ -1261,6 +1261,12 @@ class _BaseSolver(object):
         self._equal_segment_ratios = \
             (np.all(np.array(self.nBoreSegments, dtype=np.uint) == self.nBoreSegments[0])
              and np.all([np.allclose(segment_ratios, self.segment_ratios[0]) for segment_ratios in self.segment_ratios]))
+        # Boreholes with a uniform discretization
+        self._uniform_segment_ratios = [
+            np.allclose(segment_ratios,
+                        segment_ratios[0:1],
+                        rtol=1e-6)
+            for segment_ratios in self.segment_ratios]
         # Find indices of first and last segments along boreholes
         self._i0Segments = [sum(self.nBoreSegments[0:i])
                             for i in range(nBoreholes)]
@@ -2021,8 +2027,8 @@ class _Similarities(_BaseSolver):
             h_ij[j_segment, i_segment, 1:] = h[l_segment, k_segment, :]
             if (self._compare_boreholes(self.boreholes[j], self.boreholes[i]) and
                 self.nBoreSegments[i] == self.nBoreSegments[j] and
-                np.allclose(self.segment_ratios[i], self.segment_ratios[i][0:1], rtol=self.tol) and
-                np.allclose(self.segment_ratios[j], self.segment_ratios[j][0:1], rtol=self.tol) ):
+                self._uniform_segment_ratios[i] and
+                self._uniform_segment_ratios[j]):
                 h_ij[i_segment, j_segment, 1:] = h[l_segment, k_segment, :]
             else:
                 h_ij[i_segment, j_segment, 1:] = (h[l_segment, k_segment, :].T \
