@@ -1104,9 +1104,9 @@ class Network(object):
 
         # Format segment ratios
         if segment_ratios is None:
-            self._segment_ratios = [None for _ in range(self.nBoreholes)]
+            self._segment_ratios = [None] * self.nBoreholes
         elif isinstance(segment_ratios, np.ndarray):
-            self._segment_ratios = [segment_ratios for _ in range(self.nBoreholes)]
+            self._segment_ratios = [segment_ratios] * self.nBoreholes
         elif isinstance(segment_ratios, list):
             self._segment_ratios = segment_ratios
         else:
@@ -1348,9 +1348,9 @@ class _EquivalentNetwork(Network):
 
         # Format segment ratios
         if segment_ratios is None:
-            self._segment_ratios = [None for _ in range(self.nBoreholes)]
+            self._segment_ratios = [None] * self.nBoreholes
         elif isinstance(segment_ratios, np.ndarray):
-            self._segment_ratios = [segment_ratios for _ in range(self.nBoreholes)]
+            self._segment_ratios = [segment_ratios] * self.nBoreholes
         elif isinstance(segment_ratios, list):
             self._segment_ratios = segment_ratios
         else:

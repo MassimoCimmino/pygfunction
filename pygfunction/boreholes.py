@@ -121,7 +121,7 @@ class Borehole(object):
 
         """
         if segment_ratios is None:
-            segment_ratios = [1. / nSegments for _ in range(nSegments)]
+            segment_ratios = np.full(nSegments, 1. / nSegments)
         z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1]
         boreSegments = []
         for i in range(nSegments):
@@ -169,7 +169,7 @@ class Borehole(object):
 
         """
         if segment_ratios is None:
-            segment_ratios = [1. / nSegments for _ in range(nSegments)]
+            segment_ratios = np.full(nSegments, 1. / nSegments)
         z = np.concatenate(([0.], np.cumsum(segment_ratios))) * self.H
         return z
 
@@ -202,7 +202,7 @@ class Borehole(object):
 
         """
         if segment_ratios is None:
-            segment_ratios = np.array([1. / nSegments for _ in range(nSegments)])
+            segment_ratios = np.full(nSegments, 1. / nSegments)
         z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1] \
             + segment_ratios * self.H / 2
         return z
@@ -347,7 +347,7 @@ class _EquivalentBorehole(object):
 
         """
         if segment_ratios is None:
-            segment_ratios = [1. / nSegments for _ in range(nSegments)]
+            segment_ratios = np.full(nSegments, 1. / nSegments)
         z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1]
         return [_EquivalentBorehole((segment_ratios[i] * self.H, z[i] + self.D, self.r_b, self.x, self.y)) for i in range(nSegments)]
 
@@ -442,7 +442,7 @@ class _EquivalentBorehole(object):
 
         """
         if segment_ratios is None:
-            segment_ratios = [1. / nSegments for _ in range(nSegments)]
+            segment_ratios = np.full(nSegments, 1. / nSegments)
         z = np.concatenate(([0.], np.cumsum(segment_ratios))) * self.H
         return z
 
@@ -475,7 +475,7 @@ class _EquivalentBorehole(object):
 
         """
         if segment_ratios is None:
-            segment_ratios = np.array([1. / nSegments for _ in range(nSegments)])
+            segment_ratios = np.full(nSegments, 1. / nSegments)
         z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1] \
             + segment_ratios * self.H / 2
         return z

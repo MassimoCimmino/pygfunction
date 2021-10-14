@@ -709,7 +709,7 @@ class _BasePipe(object):
     def _set_stored_coefficients(
             self, m_flow_borehole, cp_f, nSegments, segment_ratios, coefficients, method_id):
         if segment_ratios is None:
-            segment_ratios = np.array([1. / nSegments for _ in range(nSegments)])
+            segment_ratios = np.full(nSegments, 1. / nSegments)
         self._stored_coefficients[method_id] = coefficients
         self._stored_m_flow_cp[method_id] = m_flow_borehole*cp_f
         self._stored_nSegments[method_id] = nSegments
@@ -722,7 +722,7 @@ class _BasePipe(object):
     def _check_model_variables(
             self, m_flow_borehole, cp_f, nSegments, segment_ratios, tol=1e-6):
         if segment_ratios is None:
-            segment_ratios = np.array([1. / nSegments for _ in range(nSegments)])
+            segment_ratios = np.full(nSegments, 1. / nSegments)
         stored_m_flow_cp = self._m_flow_cp_model_variables
         stored_nSegments = self._nSegments_model_variables
         stored_segment_ratios = self._segment_ratios_model_variables

@@ -1255,7 +1255,7 @@ class _BaseSolver(object):
         if isinstance(segment_ratios, np.ndarray):
             segment_ratios = [segment_ratios] * nBoreholes
         elif segment_ratios is None:
-            segment_ratios = [np.ones(n)/n for n in self.nBoreSegments]
+            segment_ratios = [np.full(n, 1./n) for n in self.nBoreSegments]
         self.segment_ratios = segment_ratios
         self._i0Segments = [sum(self.nBoreSegments[0:i])
                             for i in range(nBoreholes)]
