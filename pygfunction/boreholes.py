@@ -84,14 +84,6 @@ class Borehole(object):
         pos : tuple
             Position (x, y) (in meters) of the borehole.
 
-        Raises
-        ------
-        SomeError
-
-        See Also
-        --------
-        OtherModules
-
         Examples
         --------
         >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
@@ -110,11 +102,11 @@ class Borehole(object):
         ----------
         nSegments : int
             Number of segments.
-        segment_ratios : array or list of arrays, optional
+        segment_ratios : array, optional
             Ratio of the borehole length represented by each segment. The
             sum of ratios must be equal to 1. The shape of the array is of
-            (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
-            segments of equal lengths are considered.
+            (nSegments,). If segment_ratios==None, segments of equal lengths
+            are considered.
             Default is None.
 
         Returns
@@ -149,12 +141,66 @@ class Borehole(object):
         return boreSegments
 
     def _segment_edges(self, nSegments, segment_ratios=None):
+        """
+        Linear coordinates of the segment edges.
+
+        Parameters
+        ----------
+        nSegments : int
+            Number of segments.
+        segment_ratios : array, optional
+            Ratio of the borehole length represented by each segment. The
+            sum of ratios must be equal to 1. The shape of the array is of
+            (nSegments,). If segment_ratios==None, segments of equal lengths
+            are considered.
+            Default is None.
+
+        Returns
+        -------
+        z : array
+            Coordinates of the segment edges, with z=0. corresponding to the
+            borehole head and z=H corresponding to the bottom edge of the
+            borehole. The shape of the array is of (nSegments + 1,).
+
+        Examples
+        --------
+        >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
+        >>> b1._segment_edges(5)
+
+        """
         if segment_ratios is None:
             segment_ratios = [1. / nSegments for _ in range(nSegments)]
         z = np.concatenate(([0.], np.cumsum(segment_ratios))) * self.H
         return z
 
     def _segment_midpoints(self, nSegments, segment_ratios=None):
+        """
+        Linear coordinates of the segment midpoints.
+
+        Parameters
+        ----------
+        nSegments : int
+            Number of segments.
+        segment_ratios : array, optional
+            Ratio of the borehole length represented by each segment. The
+            sum of ratios must be equal to 1. The shape of the array is of
+            (nSegments,). If segment_ratios==None, segments of equal lengths
+            are considered.
+            Default is None.
+
+        Returns
+        -------
+        z : array
+            Coordinates of the segment midpoints, with z=0. corresponding to
+            the borehole head and z=H corresponding to the bottom edge of the
+            borehole. The shape of the array is of (nSegments,).
+
+        Examples
+        --------
+        >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
+        >>> b1._segment_midpoints(5)
+
+        """
         if segment_ratios is None:
             segment_ratios = np.array([1. / nSegments for _ in range(nSegments)])
         z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1] \
@@ -283,13 +329,12 @@ class _EquivalentBorehole(object):
         ----------
         nSegments : int
             Number of segments.
-        segment_ratios : array or list of arrays, optional
+        segment_ratios : array, optional
             Ratio of the borehole length represented by each segment. The
             sum of ratios must be equal to 1. The shape of the array is of
-            (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
-            segments of equal lengths are considered.
+            (nSegments,). If segment_ratios==None, segments of equal lengths
+            are considered.
             Default is None.
-
         Returns
         -------
         boreSegments : list
@@ -369,12 +414,66 @@ class _EquivalentBorehole(object):
         return np.array(dis), np.array(wDis)
 
     def _segment_edges(self, nSegments, segment_ratios=None):
+        """
+        Linear coordinates of the segment edges.
+
+        Parameters
+        ----------
+        nSegments : int
+            Number of segments.
+        segment_ratios : array, optional
+            Ratio of the borehole length represented by each segment. The
+            sum of ratios must be equal to 1. The shape of the array is of
+            (nSegments,). If segment_ratios==None, segments of equal lengths
+            are considered.
+            Default is None.
+
+        Returns
+        -------
+        z : array
+            Coordinates of the segment edges, with z=0. corresponding to the
+            borehole head and z=H corresponding to the bottom edge of the
+            borehole. The shape of the array is of (nSegments + 1,).
+
+        Examples
+        --------
+        >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
+        >>> b1._segment_edges(5)
+
+        """
         if segment_ratios is None:
             segment_ratios = [1. / nSegments for _ in range(nSegments)]
         z = np.concatenate(([0.], np.cumsum(segment_ratios))) * self.H
         return z
 
     def _segment_midpoints(self, nSegments, segment_ratios=None):
+        """
+        Linear coordinates of the segment midpoints.
+
+        Parameters
+        ----------
+        nSegments : int
+            Number of segments.
+        segment_ratios : array, optional
+            Ratio of the borehole length represented by each segment. The
+            sum of ratios must be equal to 1. The shape of the array is of
+            (nSegments,). If segment_ratios==None, segments of equal lengths
+            are considered.
+            Default is None.
+
+        Returns
+        -------
+        z : array
+            Coordinates of the segment midpoints, with z=0. corresponding to
+            the borehole head and z=H corresponding to the bottom edge of the
+            borehole. The shape of the array is of (nSegments,).
+
+        Examples
+        --------
+        >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
+        >>> b1._segment_midpoints(5)
+
+        """
         if segment_ratios is None:
             segment_ratios = np.array([1. / nSegments for _ in range(nSegments)])
         z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1] \
