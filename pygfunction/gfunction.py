@@ -1616,12 +1616,15 @@ class _BaseSolver(object):
             "Data type \'{}\' is not an acceptable data type. \n" \
             "Please provide one of the following inputs : {}".format(
                 self.dtype, acceptable_dtypes)
-        # Check to make sure the segment ratios add up to 1.
+        # Check segment ratios
         for j in range(len(self.boreholes)):
+            assert len(self.segment_ratios[j]) == self.nBoreSegments[j], \
+                "The length of the segment ratios vectors must correspond to " \
+                "the number of segments, check borehole {}.".format(j)
             error = np.abs(1. - np.sum(self.segment_ratios[j]))
             assert(error < 1.0e-6), \
                 "Defined segment ratios must add up to 1. " \
-                ", check borehole {}".format(j)
+                ", check borehole {}.".format(j)
 
         return
 
