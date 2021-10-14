@@ -2031,8 +2031,7 @@ class _Similarities(_BaseSolver):
                 self._uniform_segment_ratios[j]):
                 h_ij[i_segment, j_segment, 1:] = h[l_segment, k_segment, :]
             else:
-                h_ij[i_segment, j_segment, 1:] = (h[l_segment, k_segment, :].T \
-                    * segment_lengths[j_segment]/segment_lengths[i_segment]).T
+                h_ij[i_segment, j_segment, 1:] = (h * H2.T / H1.T)[l_segment, k_segment, :]
 
         # Return 2d array if time is a scalar
         if np.isscalar(time):
