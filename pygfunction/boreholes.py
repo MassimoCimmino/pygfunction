@@ -130,7 +130,7 @@ class Borehole(object):
         """
         if segment_ratios is None:
             segment_ratios = [1. / nSegments for _ in range(nSegments)]
-        z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1] - self.D
+        z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1]
         boreSegments = []
         for i in range(nSegments):
             # Divide borehole into segments of equal length
@@ -151,7 +151,7 @@ class Borehole(object):
     def _segment_edges(self, nSegments, segment_ratios=None):
         if segment_ratios is None:
             segment_ratios = [1. / nSegments for _ in range(nSegments)]
-        z = self.D + np.concatenate(([0.], np.cumsum(segment_ratios))) * self.H
+        z = np.concatenate(([0.], np.cumsum(segment_ratios))) * self.H
         return z
 
     def _segment_midpoints(self, nSegments, segment_ratios=None):
@@ -304,7 +304,7 @@ class _EquivalentBorehole(object):
         if segment_ratios is None:
             segment_ratios = [1. / nSegments for _ in range(nSegments)]
         z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1]
-        return [_EquivalentBorehole((segment_ratios[i] * self.H, z[i], self.r_b, self.x, self.y)) for i in range(nSegments)]
+        return [_EquivalentBorehole((segment_ratios[i] * self.H, z[i] + self.D, self.r_b, self.x, self.y)) for i in range(nSegments)]
 
     def unique_distance(self, target, disTol=0.01):
         """
@@ -371,7 +371,7 @@ class _EquivalentBorehole(object):
     def _segment_edges(self, nSegments, segment_ratios=None):
         if segment_ratios is None:
             segment_ratios = [1. / nSegments for _ in range(nSegments)]
-        z = self.D + np.concatenate(([0.], np.cumsum(segment_ratios))) * self.H
+        z = np.concatenate(([0.], np.cumsum(segment_ratios))) * self.H
         return z
 
     def _segment_midpoints(self, nSegments, segment_ratios=None):

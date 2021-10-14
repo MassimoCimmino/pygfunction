@@ -538,7 +538,7 @@ class _BasePipe(object):
             a_b = np.zeros((nSegments, nSegments))
             # Heat extraction rates are calculated from an energy balance on a
             # borehole segment.
-            z = self.b._segment_edges(nSegments, segment_ratios=segment_ratios) - self.b.D
+            z = self.b._segment_edges(nSegments, segment_ratios=segment_ratios)
             z1 = z[0]
             aTf1, bTf1 = self.coefficients_temperature(
                 z1, m_flow_borehole, cp_f, nSegments,
@@ -1008,7 +1008,7 @@ class SingleUTube(_BasePipe):
 
         a_b = np.zeros((self.nOutlets, nSegments))
 
-        z = self.b._segment_edges(nSegments, segment_ratios=segment_ratios)[::-1] - self.b.D
+        z = self.b._segment_edges(nSegments, segment_ratios=segment_ratios)[::-1]
         F4 = self._F4(z)
         dF4 = F4[:-1] - F4[1:]
         F5 = self._F5(z)
@@ -1111,7 +1111,7 @@ class SingleUTube(_BasePipe):
                         [-self._f2(z), self._f3(z)]])
 
         a_b = np.zeros((2*self.nPipes, nSegments))
-        z_all = self.b._segment_edges(nSegments, segment_ratios=segment_ratios) - self.b.D
+        z_all = self.b._segment_edges(nSegments, segment_ratios=segment_ratios)
         N = min(int(np.sum(z > z_all)), nSegments)
         z1 = z - np.minimum(z_all[1:N+1], z)
         z2 = z - z_all[:N]
@@ -1615,7 +1615,7 @@ class MultipleUTube(_BasePipe):
         # Coefficient matrix for borehole wall temperatures
         IIm1 = np.hstack((np.eye(self.nPipes), -np.eye(self.nPipes)))
         a_b = np.zeros((self.nPipes, nSegments))
-        z = self.b._segment_edges(nSegments, segment_ratios=segment_ratios)[::-1] - self.b.D
+        z = self.b._segment_edges(nSegments, segment_ratios=segment_ratios)[::-1]
         exp_Lz = np.exp(np.multiply.outer(L, z))
         dexp_Lz = exp_Lz[:,:-1] - exp_Lz[:,1:]
         a_b = np.real(((IIm1 @ V @ Dm1) * (Vm1 @ sumA)) @ dexp_Lz)
@@ -1683,7 +1683,7 @@ class MultipleUTube(_BasePipe):
 
         # Coefficient matrix for borehole wall temperatures
         a_b = np.zeros((2*self.nPipes, nSegments))
-        z_all = self.b._segment_edges(nSegments, segment_ratios=segment_ratios) - self.b.D
+        z_all = self.b._segment_edges(nSegments, segment_ratios=segment_ratios)
         dz = z - np.minimum(z, z_all)
         exp_Lz = np.exp(np.multiply.outer(L, dz))
         dexp_Lz = exp_Lz[:,1:] - exp_Lz[:,:-1]

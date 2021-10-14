@@ -599,9 +599,11 @@ class gFunction(object):
                 if self.solver.nBoreSegments[i] > 1:
                     # Borehole length ratio at the mid-depth of each segment
                     segment_ratios = self.solver.segment_ratios[i]
-                    z.append(self.solver.boreholes[i]._segment_midpoints(
-                        self.solver.nBoreSegments[i],
-                        segment_ratios=segment_ratios))
+                    z.append(
+                        self.solver.boreholes[i].D \
+                        + self.solver.boreholes[i]._segment_midpoints(
+                            self.solver.nBoreSegments[i],
+                            segment_ratios=segment_ratios))
                     Q_b.append(Q_bi)
                 else:
                     # If there is only one segment, the heat extraction rate is
@@ -708,9 +710,11 @@ class gFunction(object):
                     # Borehole length ratio at the mid-depth of each segment
 
                     segment_ratios = self.solver.segment_ratios[i]
-                    z.append(self.solver.boreholes[i]._segment_midpoints(
-                        self.solver.nBoreSegments[i],
-                        segment_ratios=segment_ratios))
+                    z.append(
+                        self.solver.boreholes[i].D \
+                        + self.solver.boreholes[i]._segment_midpoints(
+                            self.solver.nBoreSegments[i],
+                            segment_ratios=segment_ratios))
                     T_b.append(T_bi)
                 else:
                     # If there is only one segment, the temperature is
