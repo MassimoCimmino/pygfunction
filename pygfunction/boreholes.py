@@ -130,9 +130,9 @@ class Borehole(object):
             # Buried depth of the i-th segment
             D = self.D + z[i] * np.cos(self.tilt)
             # x-position
-            x = self.x + z[i] * self.H * np.sin(self.tilt) * np.cos(self.orientation)
+            x = self.x + z[i] * np.sin(self.tilt) * np.cos(self.orientation)
             # y-position
-            y = self.y + z[i] * self.H * np.sin(self.tilt) * np.sin(self.orientation)
+            y = self.y + z[i] * np.sin(self.tilt) * np.sin(self.orientation)
             # Add to list of segments
             boreSegments.append(
                 Borehole(H, D, self.r_b, x, y,
