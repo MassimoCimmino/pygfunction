@@ -158,7 +158,7 @@ def main():
     ax.legend(['similarities (t = {:.3f} sec)'.format(t_similarities),
                'equivalent (t = {:.3f} sec)'.format(t_equivalent)])
     ax.set_title('Field of {} by {} boreholes'.format(N_1, N_2))
-    fig.tight_layout()
+    plt.tight_layout()
 
     # Draw absolute error
     # Configure figure and axes
