@@ -5,8 +5,8 @@
 ### New features 
 
 * [Issue 36](https://github.com/MassimoCimmino/pygfunction/issues/36) - Added a `Coaxial` class to the `pipes` module to model boreholes with coaxial pipes.
+* [Issue 135](https://github.com/MassimoCimmino/pygfunction/issues/135) - Added functionality for non-uniform discretization of the segments along the boreholes. This increases the accuracy of *g*-function calculations for the same number of segments when compared to a uniform discretization. Segment lengths are defined using the `segment_ratios` option in the `gFunction` class. A `discretize` function is added to the `utilities` module to generate borehole discretizations using an expanding mesh.
 * [Issue 146](https://github.com/MassimoCimmino/pygfunction/issues/146) - Added new solver `'equivalent'` to the `gFunction` class. This solver uses hierarchical agglomerative clustering to identify groups of boreholes that are expected to have similar borehole wall temperatures and heat extraction rates. Each group of boreholes is represented by a single equivalent borehole. The FLS solution is adapted to evaluate thermal interactions between groups of boreholes. This greatly reduces the number of evaluations of the FLS solution and the size of the system of equations to evaluate the g-function.
-* [Issue 135](https://github.com/MassimoCimmino/pygfunction/issues/135) - Added unequal segment length functionality. A `discretize` function is addd to the `utilities` module that increases the segment length by `sqrt(2)` from the outer boreholes (Eskilson 1987). Each borehole now can be split into a number of segments and each of those segment lengths can be defined.
 
 ### Enhancements
 
