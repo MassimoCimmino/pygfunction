@@ -24,7 +24,7 @@ class TestSolvers(unittest.TestCase):
     def test_detailed(self):
         from pygfunction.gfunction import gFunction
         from pygfunction.boreholes import rectangle_field
-        from pygfunction.utilities import time_geometric, discretize
+        from pygfunction.utilities import time_geometric, segment_ratios
         # Calculation of the g-function at the same time values
         N_1 = 3
         N_2 = 2
@@ -41,30 +41,31 @@ class TestSolvers(unittest.TestCase):
         time = time_geometric(dt, tmax, Nt)
 
         # g-Function calculation options
-        options = {'nSegments': 24, 'disp': False}
+        options_uniform = {'nSegments': 24, 'disp': False}
+        ratios = segment_ratios(8)
+        options_unequal = {'nSegments': 8,
+                          'segment_ratios': ratios,
+                          'disp': False}
+        method = 'detailed'
 
-        gfunc_UT_ref = gFunction(
-            boreField, alpha, time=time, options=options, method='detailed').gFunc
+        gfunc_UBWT_uniform = gFunction(
+            boreField, alpha, time=time, options=options_uniform,
+            method=method).gFunc
 
-        segment_ratios = discretize(self.H)
-        nSegments = len(segment_ratios)
-        segment_ratios = np.array(segment_ratios)
-        options = {'nSegments': nSegments,
-                   'segment_ratios': segment_ratios, 'disp': False}
+        gfunc_UBWT_unequal = gFunction(
+            boreField, alpha, time=time, options=options_unequal,
+            method=method).gFunc
 
-        gfunc_UT_pred = gFunction(
-            boreField, alpha, time=time, options=options, method='detailed').gFunc
-
-        self.assertTrue(np.allclose(gfunc_UT_ref, gfunc_UT_pred,
+        self.assertTrue(np.allclose(gfunc_UBWT_uniform, gfunc_UBWT_unequal,
                                     rtol=1e-2, atol=1e-6),
                         msg='Incorrect g-function for the detailed solver test.'
                             'A converged solution is compared to a discretized'
-                            'solution using the UT boundary condition.')
+                            'solution using the UBWT boundary condition.')
 
     def test_similarities(self):
         from pygfunction.gfunction import gFunction
         from pygfunction.boreholes import rectangle_field
-        from pygfunction.utilities import time_geometric, discretize
+        from pygfunction.utilities import time_geometric, segment_ratios
         # Calculation of the g-function at the same time values
         N_1 = 3
         N_2 = 2
@@ -81,21 +82,22 @@ class TestSolvers(unittest.TestCase):
         time = time_geometric(dt, tmax, Nt)
 
         # g-Function calculation options
-        options = {'nSegments': 24, 'disp': False}
+        options_uniform = {'nSegments': 24, 'disp': False}
+        ratios = segment_ratios(8)
+        options_unequal = {'nSegments': 8,
+                          'segment_ratios': ratios,
+                          'disp': False}
+        method = 'similarities'
 
-        gfunc_UT_ref = gFunction(
-            boreField, alpha, time=time, options=options, method='similarities').gFunc
+        gfunc_UBWT_uniform = gFunction(
+            boreField, alpha, time=time, options=options_uniform,
+            method=method).gFunc
 
-        segment_ratios = discretize(self.H)
-        nSegments = len(segment_ratios)
-        segment_ratios = np.array(segment_ratios)
-        options = {'nSegments': nSegments,
-                   'segment_ratios': segment_ratios, 'disp': False}
+        gfunc_UBWT_unequal = gFunction(
+            boreField, alpha, time=time, options=options_unequal,
+            method=method).gFunc
 
-        gfunc_UT_pred = gFunction(
-            boreField, alpha, time=time, options=options, method='similarities').gFunc
-
-        self.assertTrue(np.allclose(gfunc_UT_ref, gfunc_UT_pred,
+        self.assertTrue(np.allclose(gfunc_UBWT_uniform, gfunc_UBWT_unequal,
                                     rtol=1e-2, atol=1e-6),
                         msg='Incorrect g-function for the similarities solver '
                             'test.'
@@ -105,7 +107,7 @@ class TestSolvers(unittest.TestCase):
     def test_equivalent(self):
         from pygfunction.gfunction import gFunction
         from pygfunction.boreholes import rectangle_field
-        from pygfunction.utilities import time_geometric, discretize
+        from pygfunction.utilities import time_geometric, segment_ratios
         # Calculation of the g-function at the same time values
         N_1 = 3
         N_2 = 2
@@ -122,23 +124,22 @@ class TestSolvers(unittest.TestCase):
         time = time_geometric(dt, tmax, Nt)
 
         # g-Function calculation options
-        options = {'nSegments': 24, 'disp': False}
+        options_uniform = {'nSegments': 24, 'disp': False}
+        ratios = segment_ratios(8)
+        options_unequal = {'nSegments': 8,
+                          'segment_ratios': ratios,
+                          'disp': False}
+        method = 'equivalent'
 
-        gfunc_UT_ref = gFunction(
-            boreField, alpha, time=time, options=options,
-            method='equivalent').gFunc
+        gfunc_UBWT_uniform = gFunction(
+            boreField, alpha, time=time, options=options_uniform,
+            method=method).gFunc
 
-        segment_ratios = discretize(self.H)
-        nSegments = len(segment_ratios)
-        segment_ratios = np.array(segment_ratios)
-        options = {'nSegments': nSegments,
-                   'segment_ratios': segment_ratios, 'disp': False}
+        gfunc_UBWT_unequal = gFunction(
+            boreField, alpha, time=time, options=options_unequal,
+            method=method).gFunc
 
-        gfunc_UT_pred = gFunction(
-            boreField, alpha, time=time, options=options,
-            method='equivalent').gFunc
-
-        self.assertTrue(np.allclose(gfunc_UT_ref, gfunc_UT_pred,
+        self.assertTrue(np.allclose(gfunc_UBWT_uniform, gfunc_UBWT_unequal,
                                     rtol=1e-2, atol=1e-6),
                         msg='Incorrect g-function for the equivalent solver '
                             'test.'
@@ -359,13 +360,13 @@ class TestMixedInletTemperature(unittest.TestCase):
         self.epsilon = 1.0e-06  # Pipe roughness [m]
         self.m_flow_network = 0.25  # Fluid mass flor rate in network [kg/s]
 
-    def test_unequal_segments(self, rel_tol=1.0e-3):
+    def test_unequal_segments(self, rel_tol=1.0e-2):
         """ Tests the value of the g-function of six boreholes in series with
             unequal numbers of segments.
         """
         from pygfunction.gfunction import gFunction
         from pygfunction.boreholes import rectangle_field
-        from pygfunction.utilities import time_geometric, discretize
+        from pygfunction.utilities import time_geometric, segment_ratios
         from pygfunction.pipes import \
             conduction_thermal_resistance_circular_pipe, \
             convective_heat_transfer_coefficient_circular_pipe, \
@@ -407,72 +408,66 @@ class TestMixedInletTemperature(unittest.TestCase):
             UTube = SingleUTube(pos_pipes, self.r_in, self.r_out, borebole,
                                 self.k_s, self.k_g, R_f + R_p)
             UTubes.append(UTube)
+        network = Network(
+            boreField, UTubes, bore_connectivity=bore_connectivity,
+            m_flow_network=m_flow_pipe, cp_f=fluid.cp)
 
         # g-Function calculation option for uniform borehole segment lengths
         # in the field by defining nSegments as an integer >= 1
         options = {'nSegments': nSegments[0]}
-        network = Network(
-            boreField, UTubes, bore_connectivity=bore_connectivity,
-            m_flow_network=m_flow_pipe, cp_f=fluid.cp, nSegments=nSegments[0])
         gfunc = gFunction(network, self.alpha, time=time, options=options)
-        g_ref = gfunc.gFunc
+        g_reference = gfunc.gFunc
 
         # g-Function calculation with nSegments passed as list, where the list
         # is of the same length as boreField and each borehole is defined to
         # have >= 1 segment
         # Note: nSegments[i] pertains to boreField[i]
         options = {'nSegments': nSegments}
-        network = Network(
-            boreField, UTubes, bore_connectivity=bore_connectivity,
-            m_flow_network=m_flow_pipe, cp_f=fluid.cp, nSegments=nSegments)
-        g = gFunction(network, self.alpha, time=time, options=options).gFunc
+        g_unequal_nSegments = gFunction(
+            network, self.alpha, time=time, options=options).gFunc
 
-        self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-6),
-                        msg='Incorrect values of the g-function of six '
-                            'boreholes for mixed inlet temperature and '
-                            'unequal numbers of segments.')
+        self.assertTrue(
+            np.allclose(
+                g_unequal_nSegments, g_reference, rtol=rel_tol, atol=1e-6),
+            msg='Incorrect values of the g-function of six '
+                'boreholes for mixed inlet temperature and '
+                'unequal numbers of segments.')
 
         # Compute g-function with predefined segment lengths
         nSegments = 8
         # Define the segment ratios for each borehole in each segment
         # the segment lengths are defined top to bottom left to right
-        segment_ratios = np.array(
+        ratios = np.array(
             [0.05, 0.10, 0.10, 0.25, 0.25, 0.10, 0.10, 0.05])
         options = {'nSegments': nSegments,
-                   'segment_ratios': segment_ratios, 'disp': False}
-        network = Network(
-            boreField, UTubes, bore_connectivity=bore_connectivity,
-            m_flow_network=m_flow_pipe, cp_f=fluid.cp, nSegments=nSegments,
-            segment_ratios=segment_ratios)
+                   'segment_ratios': ratios,
+                   'disp': False}
 
-        g_pred = gFunction(
+        g_predefined_ratios = gFunction(
             network, self.alpha, time=time, options=options).gFunc
 
-        self.assertTrue(np.allclose(g_pred, g_ref, rtol=1.0e-00, atol=1.0e-00),
-                        msg='Incorrect values of the g-function of six '
-                            'boreholes for mixed inlet temperature and '
-                            'unequal numbers of segments.'
-                        )
+        self.assertTrue(
+            np.allclose(
+                g_predefined_ratios, g_reference, rtol=rel_tol, atol=1e-6),
+            msg='Incorrect values of the g-function of six '
+                'boreholes for mixed inlet temperature and '
+                'unequal numbers of segments.')
 
         # Compute g-function with discretized segment lengths
-        segment_ratios = discretize(self.H)
-        nSegments = len(segment_ratios)
-        segment_ratios = np.array(segment_ratios)
+        ratios = segment_ratios(8)
         options = {'nSegments': nSegments,
-                   'segment_ratios': segment_ratios, 'disp': False}
-        network = Network(
-            boreField, UTubes, bore_connectivity=bore_connectivity,
-            m_flow_network=m_flow_pipe, cp_f=fluid.cp, nSegments=nSegments,
-            segment_ratios=segment_ratios)
+                   'segment_ratios': ratios,
+                   'disp': False}
 
-        g_pred = gFunction(
+        g_generated_ratios = gFunction(
             network, self.alpha, time=time, options=options).gFunc
 
-        self.assertTrue(np.allclose(g_pred, g_ref, rtol=1.0e-00, atol=1.0e-00),
-                        msg='Incorrect values of the g-function of six '
-                            'boreholes for mixed inlet temperature and '
-                            'unequal numbers of segments.'
-                        )
+        self.assertTrue(
+            np.allclose(
+                g_generated_ratios, g_reference, rtol=rel_tol, atol=1e-6),
+            msg='Incorrect values of the g-function of six '
+                'boreholes for mixed inlet temperature and '
+                'unequal numbers of segments.')
 
 
 class TestEqualInletTemperature(unittest.TestCase):
