@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
-""" Example of g-function calculation using discretized segment lengths along
+""" Example of g-function calculation using non-uniform segment lengths along
     the boreholes.
+
+    The g-functions of a field of 6x4 boreholes are calculated for two
+    boundary conditions : (1) a uniform borehole wall temperature along the
+    boreholes equal for all boreholes, and (2) an equal inlet fluid
+    temperature into the boreholes. g-Functions using 8 segments in a
+    non-uniform deiscretization are compared to reference g-functions
+    calculated using 48 segments of equal lengths. It is shown that g-functions
+    can be calculated accurately using a small number of segments.
 """
 
 import pygfunction as gt
 from numpy import pi
 import matplotlib.pyplot as plt
 import numpy as np
-
-
-def compute_rmse(reference, predicted):
-    rmse = np.linalg.norm(predicted - reference) / len(reference)
-    return rmse
 
 
 def main():
@@ -55,13 +58,25 @@ def main():
     k_f = fluid.k       # Fluid thermal conductivity (W/m.K)
 
     # g-Function calculation options
-    nSegments = 24
-    options = {'nSegments':nSegments, 'disp':True}
+
+    # Number of segments used in the reference calculation with uniform
+    # discretization
+    nSegments_uniform = 48
+    options_uniform = {'nSegments': nSegments_uniform,
+                       'disp': True}
+    # Number of segments used in the calculation with non-uniform
+    # discretization
+    nSegments_unequal = 8
+    segment_ratios = gt.utilities.segment_ratios(
+        nSegments_unequal, end_length_ratio=0.02)
+    options_unequal = {'nSegments': nSegments_unequal,
+                       'segment_ratios': segment_ratios,
+                       'disp':True}
 
     # Geometrically expanding time vector.
     dt = 100*3600.                  # Time step
     tmax = 3000. * 8760. * 3600.    # Maximum time
-    Nt = 50                         # Number of time steps
+    Nt = 25                         # Number of time steps
     ts = H**2/(9.*alpha)            # Bore field characteristic time
     time = gt.utilities.time_geometric(dt, tmax, Nt)
 
@@ -92,10 +107,14 @@ def main():
     # Single U-tube, same for all boreholes in the bore field
     UTubes = []
     for borehole in boreField:
-        SingleUTube = gt.pipes.SingleUTube(pos_pipes, r_in, r_out,
-                                           borehole, k_s, k_g, R_f + R_p)
+        SingleUTube = gt.pipes.SingleUTube(
+            pos_pipes, r_in, r_out, borehole, k_s, k_g, R_f + R_p)
         UTubes.append(SingleUTube)
     m_flow_network = m_flow_borehole*nBoreholes
+
+    # Network of boreholes connected in parallel
+    network = gt.networks.Network(
+        boreField, UTubes, m_flow_network=m_flow_network, cp_f=cp_f)
 
     # -------------------------------------------------------------------------
     # Evaluate the g-functions for the borefield
@@ -103,61 +122,54 @@ def main():
 
     # Compute g-function for the converged MIFT case with equal number of
     # segments per borehole, and equal segment lengths along the boreholes
-    network = gt.networks.Network(
-        boreField, UTubes, m_flow_network=m_flow_network, cp_f=cp_f,
-        nSegments=nSegments)
-    gfunc_EFT_ref = gt.gfunction.gFunction(
-        network, alpha, time=time, boundary_condition='MIFT', options=options)
+    gfunc_MIFT_uniform = gt.gfunction.gFunction(
+        network, alpha, time=time, boundary_condition='MIFT',
+        options=options_uniform)
 
     # Calculate the g-function for uniform borehole wall temperature
-    gfunc_UT_ref = gt.gfunction.gFunction(
-        boreField, alpha, time=time, boundary_condition='UBWT', options=options)
+    gfunc_UBWT_uniform = gt.gfunction.gFunction(
+        boreField, alpha, time=time, boundary_condition='UBWT',
+        options=options_uniform)
 
-    # Compute g-function for discretized UIFT with equal number of segments per
-    # borehole, and equal segment lengths across the boreholes
-    # Compute g-function with predefined segment lengths
-
-    segment_ratios = gt.utilities.discretize(H, end_length_ratio=0.05)
-    nSegments = len(segment_ratios)
-    segment_ratios = np.array(segment_ratios)
-    options = {'nSegments': nSegments,
-               'segment_ratios': segment_ratios, 'disp': False}
-
-    # Update network for MIFT g-function and compute g-function with discretized
-    # segment lengths
-    network = gt.gfunction.Network(
-        boreField, UTubes, m_flow_network=m_flow_network, cp_f=fluid.cp,
-        nSegments=nSegments, segment_ratios=segment_ratios)
-    gfunc_EFT_pred = gt.gfunction.gFunction(
+    # Compute g-function for the MIFT case with equal number of segments per
+    # borehole, and non-uniform segment lengths along the boreholes
+    gfunc_MIFT_unequal = gt.gfunction.gFunction(
         network, alpha, time=time, boundary_condition='MIFT',
-        options=options)
+        options=options_unequal)
 
-    # Calculate the g-function for uniform borehole wall temperature with
-    # discretized segment lengths
-    gfunc_UT_pred = gt.gfunction.gFunction(
-        boreField, alpha, time=time, boundary_condition='UBWT', options=options)
+    # Calculate the g-function for uniform borehole wall temperature
+    gfunc_UBWT_unequal = gt.gfunction.gFunction(
+        boreField, alpha, time=time, boundary_condition='UBWT',
+        options=options_unequal)
 
     # Compute the rmse between the reference cases and the discretized
     # (predicted) cases
-    rmse = compute_rmse(gfunc_EFT_ref.gFunc, gfunc_EFT_pred.gFunc)
-    print('RMSE (MIFT) = {0:.5f}'.format(rmse))
-    rmse = compute_rmse(gfunc_UT_ref.gFunc, gfunc_UT_pred.gFunc)
-    print('RMSE (UT) = {0:.5f}'.format(rmse))
+    RMSE_MIFT = RMSE(gfunc_MIFT_uniform.gFunc, gfunc_MIFT_unequal.gFunc)
+    print('RMSE (MIFT) = {0:.5f}'.format(RMSE_MIFT))
+    RMSE_UBWT = RMSE(gfunc_UBWT_uniform.gFunc, gfunc_UBWT_unequal.gFunc)
+    print('RMSE (UBWT) = {0:.5f}'.format(RMSE_UBWT))
 
     # -------------------------------------------------------------------------
     # Plot g-functions
     # -------------------------------------------------------------------------
 
-    ax = gfunc_EFT_ref.visualize_g_function().axes[0]
-    ax.plot(np.log(time / ts), gfunc_EFT_pred.gFunc, 'k--')
-    ax.plot(np.log(time / ts), gfunc_UT_ref.gFunc)
-    ax.plot(np.log(time/ts), gfunc_UT_pred.gFunc)
-    ax.legend(['Equal inlet temperature Converged',
-               'Equal inlet temperature Discretized',
-               'UT Converged', 'UT Discretized'])
+    ax = gfunc_MIFT_uniform.visualize_g_function().axes[0]
+    ax.plot(np.log(time / ts), gfunc_UBWT_uniform.gFunc)
+    ax.plot(np.log(time / ts), gfunc_MIFT_unequal.gFunc, 'o')
+    ax.plot(np.log(time / ts), gfunc_UBWT_unequal.gFunc, 'o')
+    ax.legend(
+        ['Equal inlet temperature (uniform segments)',
+         'Uniform borehole wall temperature (uniform segments)',
+         'Equal inlet temperature (non-uniform segments)',
+         'Uniform borehole wall temperature (non-uniform segments)'])
     plt.tight_layout()
 
     return
+
+
+def RMSE(reference, predicted):
+    rmse = np.linalg.norm(predicted - reference) / len(reference)
+    return rmse
 
 
 # Main function
