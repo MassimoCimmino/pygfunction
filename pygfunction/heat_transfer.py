@@ -110,10 +110,10 @@ def finite_line_source(
         elif isinstance(time, (np.floating, float)):
             # Lower bound of integration
             a = 1.0 / np.sqrt(4.0*alpha*time)
-            h = quad(f, a, np.inf)[0]
+            h = 0.5 / H2 * quad(f, a, np.inf)[0]
         else:
             h = np.stack(
-                [quad(f, 1.0 / np.sqrt(4.0*alpha*t), np.inf)[0] for t in time],
+                [0.5 / H2 * quad(f, 1.0 / np.sqrt(4.0*alpha*t), np.inf)[0] for t in time],
                 axis=-1)
     else:
         # Unpack parameters
@@ -237,10 +237,10 @@ def finite_line_source_vectorized(
     if isinstance(time, (np.floating, float)):
         # Lower bound of integration
         a = 1.0 / np.sqrt(4.0*alpha*time)
-        h = quad_vec(f, a, np.inf)[0]
+        h = 0.5 / H2 * quad_vec(f, a, np.inf)[0]
     else:
         h = np.stack(
-            [quad_vec(f, 1.0 / np.sqrt(4.0*alpha*t), np.inf)[0]
+            [0.5 / H2 * quad_vec(f, 1.0 / np.sqrt(4.0*alpha*t), np.inf)[0]
              for t in time],
             axis=-1)
     return h
@@ -341,10 +341,10 @@ def finite_line_source_equivalent_boreholes_vectorized(
     if isinstance(time, (np.floating, float)):
         # Lower bound of integration
         a = 1.0 / np.sqrt(4.0*alpha*time)
-        h = quad_vec(f, a, np.inf)[0]
+        h = 0.5 / (N2*H2) * quad_vec(f, a, np.inf)[0]
     else:
         h = np.stack(
-            [quad_vec(f, 1.0 / np.sqrt(4.0*alpha*t), np.inf)[0]
+            [0.5 / (N2*H2) * quad_vec(f, 1.0 / np.sqrt(4.0*alpha*t), np.inf)[0]
              for t in time],
             axis=-1)
     return h
@@ -412,7 +412,7 @@ def _finite_line_source_integrand(dis, H1, D1, H2, D2, reaSource, imgSource):
                       D2 + D1 + H1,
                       D2 + D1 + H2 + H1],
                      axis=-1)
-        f = lambda s: 0.5 / (H2*s**2) * np.exp(-dis**2*s**2) * np.inner(p, _erfint(q*s))
+        f = lambda s: s**-2 * np.exp(-dis**2*s**2) * np.inner(p, _erfint(q*s))
     elif reaSource:
         # Real FLS solution
         p = np.array([1, -1, 1, -1])
@@ -421,7 +421,7 @@ def _finite_line_source_integrand(dis, H1, D1, H2, D2, reaSource, imgSource):
                       D2 - D1 - H1,
                       D2 - D1 + H2 - H1],
                      axis=-1)
-        f = lambda s: 0.5 / (H2*s**2) * np.exp(-dis**2*s**2) * np.inner(p, _erfint(q*s))
+        f = lambda s: s**-2 * np.exp(-dis**2*s**2) * np.inner(p, _erfint(q*s))
     elif imgSource:
         # Image FLS solution
         p = np.array([1, -1, 1, -1])
@@ -430,7 +430,7 @@ def _finite_line_source_integrand(dis, H1, D1, H2, D2, reaSource, imgSource):
                       D2 + D1 + H1,
                       D2 + D1 + H2 + H1],
                      axis=-1)
-        f = lambda s: 0.5 / (H2*s**2) * np.exp(-dis**2*s**2) * np.inner(p, _erfint(q*s))
+        f = lambda s: s**-2 * np.exp(-dis**2*s**2) * np.inner(p, _erfint(q*s))
     else:
         # No heat source
         f = lambda s: 0.
@@ -484,7 +484,7 @@ def _finite_line_source_equivalent_boreholes_integrand(dis, wDis, H1, D1, H2, D2
                       D2 + D1 + H1,
                       D2 + D1 + H2 + H1],
                      axis=-1)
-        f = lambda s: 0.5 / (N2*H2*s**2) * (np.exp(-dis**2*s**2) @ wDis).T * np.inner(p, _erfint(q*s))
+        f = lambda s: s**-2 * (np.exp(-dis**2*s**2) @ wDis).T * np.inner(p, _erfint(q*s))
     elif reaSource:
         # Real FLS solution
         p = np.array([1, -1, 1, -1])
@@ -493,7 +493,7 @@ def _finite_line_source_equivalent_boreholes_integrand(dis, wDis, H1, D1, H2, D2
                       D2 - D1 - H1,
                       D2 - D1 + H2 - H1],
                      axis=-1)
-        f = lambda s: 0.5 / (N2*H2*s**2) * (np.exp(-dis**2*s**2) @ wDis).T * np.inner(p, _erfint(q*s))
+        f = lambda s: s**-2 * (np.exp(-dis**2*s**2) @ wDis).T * np.inner(p, _erfint(q*s))
     elif imgSource:
         # Image FLS solution
         p = np.array([1, -1, 1, -1])
@@ -502,7 +502,7 @@ def _finite_line_source_equivalent_boreholes_integrand(dis, wDis, H1, D1, H2, D2
                       D2 + D1 + H1,
                       D2 + D1 + H2 + H1],
                      axis=-1)
-        f = lambda s: 0.5 / (N2*H2*s**2) * (np.exp(-dis**2*s**2) @ wDis).T * np.inner(p, _erfint(q*s))
+        f = lambda s: s**-2 * (np.exp(-dis**2*s**2) @ wDis).T * np.inner(p, _erfint(q*s))
     else:
         # No heat source
         f = lambda s: 0.
