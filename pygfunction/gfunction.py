@@ -2621,6 +2621,7 @@ class _Equivalent(_BaseSolver):
         # Initialize groups for equivalent boreholes
         nSources = self.find_groups()
         self.nBoreSegments = [self.nBoreSegments[0]] * self.nEqBoreholes
+        self.segment_ratios = [self.segment_ratios[0]] * self.nEqBoreholes
         self.boreSegments = self.borehole_segments()
         self._i0Segments = [sum(self.nBoreSegments[0:i]) 
                             for i in range(self.nEqBoreholes)]
