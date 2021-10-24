@@ -1341,6 +1341,9 @@ class _EquivalentNetwork(Network):
         nSeg = np.atleast_1d(nSegments)
         if len(nSeg) == 1:
             self.nSegments = [nSegments for i in range(self.nBoreholes)]
+            # Make sure the nSegments list is flat
+            if type(self.nSegments[0]) == list:
+                self.nSegments = self.nSegments[0]
         elif not len(nSeg) == self.nBoreholes:
             raise ValueError(
                 'Incorrect length of number of segments list.')
