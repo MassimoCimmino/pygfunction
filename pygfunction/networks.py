@@ -1339,11 +1339,8 @@ class _EquivalentNetwork(Network):
 
         # Format number of segments for each borehole
         nSeg = np.atleast_1d(nSegments)
-        if len(nSeg) == 1:
-            self.nSegments = [nSegments for i in range(self.nBoreholes)]
-            # Make sure the nSegments list is flat
-            if type(self.nSegments[0]) == list:
-                self.nSegments = self.nSegments[0]
+        if len(nSeg) == 1 and not isinstance(nSegments, list):
+            self.nSegments = [nSegments] * self.nBoreholes
         elif not len(nSeg) == self.nBoreholes:
             raise ValueError(
                 'Incorrect length of number of segments list.')
