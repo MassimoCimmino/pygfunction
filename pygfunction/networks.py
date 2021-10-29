@@ -838,7 +838,7 @@ class Network(object):
             # Coefficient matrices for borehole inlet temperatures:
             # [T_{f,b,in}] = [b_in]*[T_{f,n,in}] + [b_b]*[T_{b}]
             b_in, b_b = self.coefficients_inlet_temperature(
-                m_flow_network, cp_f, nSegments)
+                m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
             # Coefficient matrices for fluid heat extraction rates:
             # [Q_{f}] = [A]*[T_{f,b,in}] + [B]*[T_{b}]
             AB = list(zip(*[
