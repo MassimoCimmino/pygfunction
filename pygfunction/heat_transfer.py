@@ -301,6 +301,8 @@ def finite_line_source_equivalent_boreholes_vectorized(
         Lengths of the receiving heat sources.
     D2 : float or array
         Buried depths of the receiving heat sources.
+    N2 : float or array,
+        Number of segments represented by the receiving heat sources.
     reaSource : bool
         True if the real part of the FLS solution is to be included.
         Default is True.
@@ -455,7 +457,8 @@ def _finite_line_source_equivalent_boreholes_integrand(dis, wDis, H1, D1, H2, D2
         Lengths of the receiving heat sources.
     D2 : float or array
         Buried depths of the receiving heat sources.
-    N2 :
+    N2 : float or array,
+        Number of segments represented by the receiving heat sources.
     reaSource : bool
         True if the real part of the FLS solution is to be included.
     imgSource : bool

@@ -9,7 +9,7 @@ def segment_ratios(nSegments, end_length_ratio=0.02):
     """
     Discretize a borehole into segments of different lengths using a
     geometrically expanding mesh from the provided end-length-ratio towards the
-    midlle of the borehole. Eskilson (1987) [#Eskilson_1987]_ proposed that
+    middle of the borehole. Eskilson (1987) [#Eskilson_1987]_ proposed that
     segment lengths increase with a factor of sqrt(2) towards the middle of the
     borehole. Here, the expansion factor is inferred from the provided number
     of segments and end-length-ratio.
@@ -17,7 +17,7 @@ def segment_ratios(nSegments, end_length_ratio=0.02):
     Parameters
     ----------
     nSegments : int
-         Number of line segments along the borehole.
+        Number of line segments along the borehole.
     end_length_ratio: float, optional
         The ratio of the height of the borehole that accounts for the end
         segment lengths.
