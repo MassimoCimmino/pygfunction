@@ -39,6 +39,12 @@ class Network(object):
         Number of line segments used per borehole. This parameter is used to
         initialize the coefficients if it is provided.
         Default is None.
+    segment_ratios :
+    (nSegments,) array or list of (nSegments[i],) arrays, optional
+        Ratio of the borehole length represented by each segment. The sum of
+        ratios must be equal to 1. If segment_ratios==None, segments of equal
+        lengths are considered.
+        Default is None.
 
     Notes
     -----
@@ -62,7 +68,8 @@ class Network(object):
 
     """
     def __init__(self, boreholes, pipes, bore_connectivity=None,
-                 m_flow_network=None, cp_f=None, nSegments=None):
+                 m_flow_network=None, cp_f=None, nSegments=None,
+                 segment_ratios=None):
         self.b = boreholes
         self.H_tot = sum([b.H for b in self.b])
         self.nBoreholes = len(boreholes)
@@ -89,10 +96,12 @@ class Network(object):
 
         # Initialize stored_coefficients
         self._initialize_coefficients_connectivity()
-        self._initialize_stored_coefficients(m_flow_network, cp_f, nSegments)
+        self._initialize_stored_coefficients(
+            m_flow_network, cp_f, nSegments, segment_ratios)
 
     def get_inlet_temperature(
-            self, T_f_in, T_b, m_flow_network, cp_f, nSegments):
+            self, T_f_in, T_b, m_flow_network, cp_f, nSegments,
+            segment_ratios=None):
         """
         Returns the inlet fluid temperatures of all boreholes.
 
@@ -113,6 +122,12 @@ class Network(object):
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
             segments.
+        segment_ratios :
+        (nSegments,) array or list of (nSegments[i],) arrays, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments
+            of equal lengths are considered.
+            Default is None.
 
         Returns
         -------
@@ -122,14 +137,16 @@ class Network(object):
         """
         # Build coefficient matrices
         a_in, a_b = self.coefficients_inlet_temperature(
-                m_flow_network, cp_f, nSegments)
+                m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
         # Evaluate outlet temperatures
         if np.isscalar(T_b):
             T_b = np.tile(T_b, sum(self.nSegments))
         T_f_in_borehole = a_in @ np.atleast_1d(T_f_in) + a_b @ T_b
         return T_f_in_borehole
 
-    def get_outlet_temperature(self, T_f_in, T_b, m_flow_network, cp_f, nSegments):
+    def get_outlet_temperature(
+            self, T_f_in, T_b, m_flow_network, cp_f, nSegments,
+            segment_ratios=None):
         """
         Returns the outlet fluid temperatures of all boreholes.
 
@@ -150,6 +167,12 @@ class Network(object):
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
             segments.
+        segment_ratios :
+        (nSegments,) array or list of (nSegments[i],) arrays, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments
+            of equal lengths are considered.
+            Default is None.
 
         Returns
         -------
@@ -159,7 +182,7 @@ class Network(object):
         """
         # Build coefficient matrices
         a_in, a_b = self.coefficients_outlet_temperature(
-                m_flow_network, cp_f, nSegments)
+                m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
         # Evaluate outlet temperatures
         if np.isscalar(T_b):
             T_b = np.tile(T_b, sum(self.nSegments))
@@ -167,7 +190,8 @@ class Network(object):
         return T_f_out
 
     def get_borehole_heat_extraction_rate(
-            self, T_f_in, T_b, m_flow_network, cp_f, nSegments):
+            self, T_f_in, T_b, m_flow_network, cp_f, nSegments,
+            segment_ratios=None):
         """
         Returns the heat extraction rates of all boreholes.
 
@@ -188,6 +212,12 @@ class Network(object):
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
             segments.
+        segment_ratios :
+        (nSegments,) array or list of (nSegments[i],) arrays, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments
+            of equal lengths are considered.
+            Default is None.
 
         Returns
         -------
@@ -196,7 +226,7 @@ class Network(object):
 
         """
         a_in, a_b = self.coefficients_borehole_heat_extraction_rate(
-                m_flow_network, cp_f, nSegments)
+                m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
         if np.isscalar(T_b):
             T_b = np.tile(T_b, sum(self.nSegments))
         Q_b = a_in @ np.atleast_1d(T_f_in) + a_b @ T_b
@@ -204,7 +234,8 @@ class Network(object):
         return Q_b
 
     def get_fluid_heat_extraction_rate(
-            self, T_f_in, T_b, m_flow_network, cp_f, nSegments):
+            self, T_f_in, T_b, m_flow_network, cp_f, nSegments,
+            segment_ratios=None):
         """
         Returns the total heat extraction rates of all boreholes.
 
@@ -225,6 +256,12 @@ class Network(object):
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
             segments.
+        segment_ratios :
+        (nSegments,) array or list of (nSegments[i],) arrays, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments
+            of equal lengths are considered.
+            Default is None.
 
         Returns
         -------
@@ -233,7 +270,7 @@ class Network(object):
 
         """
         a_in, a_b = self.coefficients_fluid_heat_extraction_rate(
-                m_flow_network, cp_f, nSegments)
+                m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
         if np.isscalar(T_b):
             T_b = np.tile(T_b, sum(self.nSegments))
         Q_f = a_in @ np.atleast_1d(T_f_in) + a_b @ T_b
@@ -241,7 +278,8 @@ class Network(object):
         return Q_f
 
     def get_network_inlet_temperature(
-            self, Q_t, T_b, m_flow_network, cp_f, nSegments):
+            self, Q_t, T_b, m_flow_network, cp_f, nSegments,
+            segment_ratios=None):
         """
         Returns the inlet fluid temperature of the network.
 
@@ -262,6 +300,12 @@ class Network(object):
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
             segments.
+        segment_ratios :
+        (nSegments,) array or list of (nSegments[i],) arrays, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments
+            of equal lengths are considered.
+            Default is None.
 
         Returns
         -------
@@ -272,7 +316,7 @@ class Network(object):
         """
         # Build coefficient matrices
         a_q, a_b = self.coefficients_network_inlet_temperature(
-                m_flow_network, cp_f, nSegments)
+                m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
         # Evaluate outlet temperatures
         if np.isscalar(T_b):
             T_b = np.tile(T_b, sum(self.nSegments))
@@ -282,7 +326,8 @@ class Network(object):
         return T_f_in
 
     def get_network_outlet_temperature(
-            self, T_f_in, T_b, m_flow_network, cp_f, nSegments):
+            self, T_f_in, T_b, m_flow_network, cp_f, nSegments,
+            segment_ratios=None):
         """
         Returns the outlet fluid temperature of the network.
 
@@ -303,6 +348,12 @@ class Network(object):
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
             segments.
+        segment_ratios :
+        (nSegments,) array or list of (nSegments[i],) arrays, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments
+            of equal lengths are considered.
+            Default is None.
 
         Returns
         -------
@@ -313,7 +364,7 @@ class Network(object):
         """
         # Build coefficient matrices
         a_in, a_b = self.coefficients_network_outlet_temperature(
-                m_flow_network, cp_f, nSegments)
+                m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
         # Evaluate outlet temperatures
         if np.isscalar(T_b):
             T_b = np.tile(T_b, sum(self.nSegments))
@@ -323,7 +374,8 @@ class Network(object):
         return T_f_out
 
     def get_network_heat_extraction_rate(
-            self, T_f_in, T_b, m_flow_network, cp_f, nSegments):
+            self, T_f_in, T_b, m_flow_network, cp_f, nSegments,
+            segment_ratios=None):
         """
         Returns the total heat extraction rate of the network.
 
@@ -344,6 +396,12 @@ class Network(object):
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
             segments.
+        segment_ratios :
+        (nSegments,) array or list of (nSegments[i],) arrays, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments
+            of equal lengths are considered.
+            Default is None.
 
         Returns
         -------
@@ -353,7 +411,7 @@ class Network(object):
 
         """
         a_in, a_b = self.coefficients_network_heat_extraction_rate(
-                m_flow_network, cp_f, nSegments)
+                m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
         if np.isscalar(T_b):
             T_b = np.tile(T_b, sum(self.nSegments))
         Q_t = a_in @ np.atleast_1d(T_f_in) + a_b @ T_b
@@ -362,7 +420,8 @@ class Network(object):
 
         return Q_t
 
-    def coefficients_inlet_temperature(self, m_flow_network, cp_f, nSegments):
+    def coefficients_inlet_temperature(
+            self, m_flow_network, cp_f, nSegments, segment_ratios=None):
         """
         Build coefficient matrices to evaluate intlet fluid temperatures of all
         boreholes.
@@ -387,6 +446,12 @@ class Network(object):
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
             segments.
+        segment_ratios :
+        (nSegments,) array or list of (nSegments[i],) arrays, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments
+            of equal lengths are considered.
+            Default is None.
 
         Returns
         -------
@@ -400,22 +465,21 @@ class Network(object):
         method_id = 0
         # Check if stored coefficients are available
         if self._check_coefficients(
-                m_flow_network, cp_f, nSegments, method_id):
+                m_flow_network, cp_f, nSegments, segment_ratios, method_id):
             a_in, a_b = self._get_stored_coefficients(method_id)
         else:
             # Update input variables
-            self._format_inputs(m_flow_network, cp_f, nSegments)
+            self._format_inputs(
+                m_flow_network, cp_f, nSegments, segment_ratios)
             # Coefficient matrices for borehole inlet temperatures:
             # [T_{f,b,in}] = [c_in]*[T_{f,n,in}] + [c_out]*[T_{f,b,out}]
             c_in = self._c_in
             c_out = self._c_out
             # Coefficient matrices for borehole outlet temperatures:
             # [T_{f,b,out}] = [A]*[T_{f,b,in}] + [B]*[T_{b}]
-            AB = list(zip(*[
-                self.p[i].coefficients_outlet_temperature(
-                    self._m_flow_borehole[i],
-                    self._cp_borehole[i],
-                    self.nSegments[i])
+            AB = list(zip(*[self.p[i].coefficients_outlet_temperature(
+                self._m_flow_borehole[i], self._cp_borehole[i],
+                self.nSegments[i], segment_ratios=self._segment_ratios[i])
                 for i in range(self.nBoreholes)]))
             A = block_diag(*AB[0])
             B = block_diag(*AB[1])
@@ -427,11 +491,13 @@ class Network(object):
 
             # Store coefficients
             self._set_stored_coefficients(
-                m_flow_network, cp_f, nSegments, (a_in, a_b), method_id)
+                m_flow_network, cp_f, nSegments, segment_ratios, (a_in, a_b),
+                method_id)
 
         return a_in, a_b
 
-    def coefficients_outlet_temperature(self, m_flow_network, cp_f, nSegments):
+    def coefficients_outlet_temperature(
+            self, m_flow_network, cp_f, nSegments, segment_ratios=None):
         """
         Build coefficient matrices to evaluate outlet fluid temperatures of all
         boreholes.
@@ -456,6 +522,12 @@ class Network(object):
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
             segments.
+        segment_ratios :
+        (nSegments,) array or list of (nSegments[i],) arrays, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments
+            of equal lengths are considered.
+            Default is None.
 
         Returns
         -------
@@ -469,11 +541,12 @@ class Network(object):
         method_id = 1
         # Check if stored coefficients are available
         if self._check_coefficients(
-                m_flow_network, cp_f, nSegments, method_id):
+                m_flow_network, cp_f, nSegments, segment_ratios, method_id):
             a_in, a_b = self._get_stored_coefficients(method_id)
         else:
             # Update input variables
-            self._format_inputs(m_flow_network, cp_f, nSegments)
+            self._format_inputs(
+                m_flow_network, cp_f, nSegments, segment_ratios)
             # Coefficient matrices for borehole inlet temperatures:
             # [T_{f,b,in}] = [c_in]*[T_{f,n,in}] + [c_out]*[T_{f,b,out}]
             c_in = self._c_in
@@ -484,7 +557,8 @@ class Network(object):
                 self.p[i].coefficients_outlet_temperature(
                     self._m_flow_borehole[i],
                     self._cp_borehole[i],
-                    self.nSegments[i])
+                    self.nSegments[i],
+                    segment_ratios=self._segment_ratios[i])
                 for i in range(self.nBoreholes)]))
             A = block_diag(*AB[0])
             B = block_diag(*AB[1])
@@ -496,12 +570,13 @@ class Network(object):
 
             # Store coefficients
             self._set_stored_coefficients(
-                m_flow_network, cp_f, nSegments, (a_in, a_b), method_id)
+                m_flow_network, cp_f, nSegments, segment_ratios, (a_in, a_b),
+                method_id)
 
         return a_in, a_b
 
     def coefficients_network_inlet_temperature(
-            self, m_flow_network, cp_f, nSegments):
+            self, m_flow_network, cp_f, nSegments, segment_ratios=None):
         """
         Build coefficient matrices to evaluate intlet fluid temperature of the
         network.
@@ -526,6 +601,12 @@ class Network(object):
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
             segments.
+        segment_ratios :
+        (nSegments,) array or list of (nSegments[i],) arrays, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments
+            of equal lengths are considered.
+            Default is None.
 
         Returns
         -------
@@ -538,13 +619,15 @@ class Network(object):
         # method_id for coefficients_network_inlet_temperature is 2
         method_id = 2
         # Check if stored coefficients are available
-        if self._check_coefficients(m_flow_network, cp_f, nSegments, method_id):
+        if self._check_coefficients(
+                m_flow_network, cp_f, nSegments, segment_ratios, method_id):
             a_qf, a_b = self._get_stored_coefficients(method_id)
         else:
             # Coefficient matrices for network heat extraction rates:
             # [Q_{tot}] = [b_in]*[T_{f,n,in}] + [b_b]*[T_{b}]
             b_in, b_b = self.coefficients_network_heat_extraction_rate(
-                    m_flow_network, cp_f, nSegments)
+                    m_flow_network, cp_f, nSegments,
+                    segment_ratios=segment_ratios)
             # Coefficient matrices for network inlet temperature:
             # [T_{f,n,in}] = [a_qf]*[Q_{tot}] + [a_b]*[T_{b}]
             b_in_inv = np.linalg.inv(b_in)
@@ -553,12 +636,13 @@ class Network(object):
 
             # Store coefficients
             self._set_stored_coefficients(
-                m_flow_network, cp_f, nSegments, (a_qf, a_b), method_id)
+                m_flow_network, cp_f, nSegments, segment_ratios, (a_qf, a_b),
+                method_id)
 
         return a_qf, a_b
 
     def coefficients_network_outlet_temperature(
-            self, m_flow_network, cp_f, nSegments):
+            self, m_flow_network, cp_f, nSegments, segment_ratios=None):
         """
         Build coefficient matrices to evaluate outlet fluid temperature of the
         network.
@@ -583,6 +667,12 @@ class Network(object):
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
             segments.
+        segment_ratios :
+        (nSegments,) array or list of (nSegments[i],) arrays, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments
+            of equal lengths are considered.
+            Default is None.
 
         Returns
         -------
@@ -596,13 +686,13 @@ class Network(object):
         method_id = 3
         # Check if stored coefficients are available
         if self._check_coefficients(
-                m_flow_network, cp_f, nSegments, method_id):
+                m_flow_network, cp_f, nSegments, segment_ratios, method_id):
             a_in, a_b = self._get_stored_coefficients(method_id)
         else:
             # Coefficient matrices for borehole outlet temperatures:
             # [T_{f,b,out}] = [b_in]*[T_{f,n,in}] + [b_b]*[T_{b}]
             b_in, b_b = self.coefficients_outlet_temperature(
-                m_flow_network, cp_f, nSegments)
+                m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
             # Coefficient matrices for network outlet temperature:
             # [T_{f,n,out}] = [a_in]*[T_{f,n,in}] + [a_b]*[T_{b}]
             mix_out = self._coefficients_mixing(m_flow_network)
@@ -611,12 +701,13 @@ class Network(object):
 
             # Store coefficients
             self._set_stored_coefficients(
-                m_flow_network, cp_f, nSegments, (a_in, a_b), method_id)
+                m_flow_network, cp_f, nSegments, segment_ratios, (a_in, a_b),
+                method_id)
 
         return a_in, a_b
 
     def coefficients_borehole_heat_extraction_rate(
-            self, m_flow_network, cp_f, nSegments):
+            self, m_flow_network, cp_f, nSegments, segment_ratios=None):
         """
         Build coefficient matrices to evaluate heat extraction rates of all
         boreholes segments.
@@ -641,6 +732,12 @@ class Network(object):
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
             segments.
+        segment_ratios :
+        (nSegments,) array or list of (nSegments[i],) arrays, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments
+            of equal lengths are considered.
+            Default is None.
 
         Returns
         -------
@@ -654,22 +751,24 @@ class Network(object):
         method_id = 4
         # Check if stored coefficients are available
         if self._check_coefficients(
-                m_flow_network, cp_f, nSegments, method_id):
+                m_flow_network, cp_f, nSegments, segment_ratios, method_id):
             a_in, a_b = self._get_stored_coefficients(method_id)
         else:
             # Update input variables
-            self._format_inputs(m_flow_network, cp_f, nSegments)
+            self._format_inputs(
+                m_flow_network, cp_f, nSegments, segment_ratios)
             # Coefficient matrices for borehole inlet temperatures:
             # [T_{f,b,in}] = [b_in]*[T_{f,n,in}] + [b_b]*[T_{b}]
             b_in, b_b = self.coefficients_inlet_temperature(
-                m_flow_network, cp_f, nSegments)
+                m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
             # Coefficient matrices for borehole heat extraction rates:
             # [Q_{b}] = [A]*[T_{f,b,in}] + [B]*[T_{b}]
             AB = list(zip(*[
                 self.p[i].coefficients_borehole_heat_extraction_rate(
                     self._m_flow_borehole[i],
                     self._cp_borehole[i],
-                    self.nSegments[i])
+                    self.nSegments[i],
+                    segment_ratios=self._segment_ratios[i])
                 for i in range(self.nBoreholes)]))
             A = block_diag(*AB[0])
             B = block_diag(*AB[1])
@@ -680,12 +779,13 @@ class Network(object):
 
             # Store coefficients
             self._set_stored_coefficients(
-                m_flow_network, cp_f, nSegments, (a_in, a_b), method_id)
+                m_flow_network, cp_f, nSegments, segment_ratios, (a_in, a_b),
+                method_id)
 
         return a_in, a_b
 
     def coefficients_fluid_heat_extraction_rate(
-            self, m_flow_network, cp_f, nSegments):
+            self, m_flow_network, cp_f, nSegments, segment_ratios=None):
         """
         Build coefficient matrices to evaluate heat extraction rates of all
         boreholes.
@@ -710,6 +810,12 @@ class Network(object):
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
             segments.
+        segment_ratios :
+        (nSegments,) array or list of (nSegments[i],) arrays, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments
+            of equal lengths are considered.
+            Default is None.
 
         Returns
         -------
@@ -723,22 +829,24 @@ class Network(object):
         method_id = 5
         # Check if stored coefficients are available
         if self._check_coefficients(
-                m_flow_network, cp_f, nSegments, method_id):
+                m_flow_network, cp_f, nSegments, segment_ratios, method_id):
             a_in, a_b = self._get_stored_coefficients(method_id)
         else:
             # Update input variables
-            self._format_inputs(m_flow_network, cp_f, nSegments)
+            self._format_inputs(
+                m_flow_network, cp_f, nSegments, segment_ratios)
             # Coefficient matrices for borehole inlet temperatures:
             # [T_{f,b,in}] = [b_in]*[T_{f,n,in}] + [b_b]*[T_{b}]
             b_in, b_b = self.coefficients_inlet_temperature(
-                m_flow_network, cp_f, nSegments)
+                m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
             # Coefficient matrices for fluid heat extraction rates:
             # [Q_{f}] = [A]*[T_{f,b,in}] + [B]*[T_{b}]
             AB = list(zip(*[
                 self.p[i].coefficients_fluid_heat_extraction_rate(
                     self._m_flow_borehole[i],
                     self._cp_borehole[i],
-                    self.nSegments[i])
+                    self.nSegments[i],
+                    segment_ratios=self._segment_ratios[i])
                 for i in range(self.nBoreholes)]))
             A = block_diag(*AB[0])
             B = block_diag(*AB[1])
@@ -749,12 +857,13 @@ class Network(object):
 
             # Store coefficients
             self._set_stored_coefficients(
-                m_flow_network, cp_f, nSegments, (a_in, a_b), method_id)
+                m_flow_network, cp_f, nSegments, segment_ratios, (a_in, a_b),
+                method_id)
 
         return a_in, a_b
 
     def coefficients_network_heat_extraction_rate(
-            self, m_flow_network, cp_f, nSegments):
+            self, m_flow_network, cp_f, nSegments, segment_ratios=None):
         """
         Build coefficient matrices to evaluate total heat extraction rate of
         the network.
@@ -779,6 +888,12 @@ class Network(object):
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
             segments.
+        segment_ratios :
+        (nSegments,) array or list of (nSegments[i],) arrays, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments
+            of equal lengths are considered.
+            Default is None.
 
         Returns
         -------
@@ -792,13 +907,14 @@ class Network(object):
         method_id = 6
         # Check if stored coefficients are available
         if self._check_coefficients(
-                m_flow_network, cp_f, nSegments, method_id):
+                m_flow_network, cp_f, nSegments, segment_ratios, method_id):
             a_in, a_b = self._get_stored_coefficients(method_id)
         else:
             # Coefficient matrices for fluid heat extraction rates:
             # [Q_{f}] = [b_in]*[T_{f,n,in}] + [b_b]*[T_{b}]
             b_in, b_b = self.coefficients_fluid_heat_extraction_rate(
-                    m_flow_network, cp_f, nSegments)
+                    m_flow_network, cp_f, nSegments,
+                    segment_ratios=segment_ratios)
             # The total network heat extraction rate is the sum of heat
             # extraction rates from all boreholes:
             # [Q_{tot}] = [a_in]*[T_{f,n,in}] + [a_b]*[T_{b}]
@@ -807,7 +923,8 @@ class Network(object):
 
             # Store coefficients
             self._set_stored_coefficients(
-                m_flow_network, cp_f, nSegments, (a_in, a_b), method_id)
+                m_flow_network, cp_f, nSegments, segment_ratios, (a_in, a_b),
+                method_id)
 
         return a_in, a_b
 
@@ -861,14 +978,17 @@ class Network(object):
             
         return
 
-    def _initialize_stored_coefficients(self, m_flow_network, cp_f, nSegments):
+    def _initialize_stored_coefficients(
+            self, m_flow_network, cp_f, nSegments, segment_ratios):
         nMethods = 7    # Number of class methods
         self._stored_coefficients = [() for i in range(nMethods)]
         self._stored_m_flow_cp = [np.empty(self.nInlets)
                                   for i in range(nMethods)]
         self._stored_nSegments = [np.nan for i in range(nMethods)]
+        self._stored_segment_ratios = [np.nan for i in range(nMethods)]
         self._m_flow_cp_model_variables = np.empty(self.nInlets)
         self._nSegments_model_variables = np.nan
+        self._segment_ratios_model_variables = np.nan
         self._mixing_m_flow = np.empty(self.nInlets)
         self._mixing_m_flow[:] = np.nan
         self._mix_out = np.empty((1, self.nBoreholes))
@@ -878,27 +998,29 @@ class Network(object):
         # matrix coefficients.
         if m_flow_network is not None and cp_f is not None and nSegments is not None:
             self.coefficients_inlet_temperature(
-                m_flow_network, cp_f, nSegments)
+                m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
             self.coefficients_outlet_temperature(
-                m_flow_network, cp_f, nSegments)
+                m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
             self.coefficients_network_inlet_temperature(
-                m_flow_network, cp_f, nSegments)
+                m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
             self.coefficients_network_outlet_temperature(
-                m_flow_network, cp_f, nSegments)
+                m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
             self.coefficients_borehole_heat_extraction_rate(
-                m_flow_network, cp_f, nSegments)
+                m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
             self.coefficients_fluid_heat_extraction_rate(
-                m_flow_network, cp_f, nSegments)
+                m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
             self.coefficients_network_heat_extraction_rate(
-                m_flow_network, cp_f, nSegments)
+                m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
 
         return
 
-    def _set_stored_coefficients(self, m_flow_network, cp_f, nSegments, coefficients,
-                                 method_id):
+    def _set_stored_coefficients(
+            self, m_flow_network, cp_f, nSegments, segment_ratios,
+            coefficients, method_id):
         self._stored_coefficients[method_id] = coefficients
         self._stored_m_flow_cp[method_id] = m_flow_network*cp_f
         self._stored_nSegments[method_id] = nSegments
+        self._stored_segment_ratios[method_id] = segment_ratios
 
         return
 
@@ -916,18 +1038,28 @@ class Network(object):
 
         return check
 
-    def _check_coefficients(self, m_flow_network, cp_f, nSegments, method_id, tol=1e-6):
+    def _check_coefficients(
+            self, m_flow_network, cp_f, nSegments, segment_ratios, method_id,
+            tol=1e-6):
         stored_m_flow_cp = self._stored_m_flow_cp[method_id]
         stored_nSegments = self._stored_nSegments[method_id]
+        stored_segment_ratios = self._stored_segment_ratios[method_id]
+        if stored_segment_ratios is None and segment_ratios is None:
+            check_ratios = True
+        elif isinstance(stored_segment_ratios, list) and isinstance(segment_ratios, list):
+            check_ratios = (np.all([len(segment_ratios[i]) == len(stored_segment_ratios[i]) for i in range(len(segment_ratios))]) and
+                            np.all([np.all(np.abs(segment_ratios[i] - stored_segment_ratios[i]) < np.abs(stored_segment_ratios[i])*tol) for i in range(len(segment_ratios))]))
+        else:
+            check_ratios = False
         if (np.all(np.abs(m_flow_network*cp_f - stored_m_flow_cp) < np.abs(stored_m_flow_cp)*tol)
-            and nSegments == stored_nSegments):
+            and nSegments == stored_nSegments and check_ratios):
             check = True
         else:
             check = False
 
         return check
 
-    def _format_inputs(self, m_flow_network, cp_f, nSegments):
+    def _format_inputs(self, m_flow_network, cp_f, nSegments, segment_ratios):
         """
         Format mass flow rate and heat capacity inputs.
         """
@@ -971,6 +1103,17 @@ class Network(object):
         else:
             self.nSegments = nSegments
 
+        # Format segment ratios
+        if segment_ratios is None:
+            self._segment_ratios = [None] * self.nBoreholes
+        elif isinstance(segment_ratios, np.ndarray):
+            self._segment_ratios = [segment_ratios] * self.nBoreholes
+        elif isinstance(segment_ratios, list):
+            self._segment_ratios = segment_ratios
+        else:
+            raise ValueError(
+                'Incorrect format of the segment ratios list.')
+
 
 class _EquivalentNetwork(Network):
     """
@@ -1003,6 +1146,12 @@ class _EquivalentNetwork(Network):
         Number of line segments used per borehole. This parameter is used to
         initialize the coefficients if it is provided.
         Default is None.
+    segment_ratios :
+    (nSegments,) array or list of (nSegments[i],) arrays, optional
+        Ratio of the borehole length represented by each segment. The sum of
+        ratios must be equal to 1. If segment_ratios==None, segments of equal
+        lengths are considered.
+        Default is None.
 
     Notes
     -----
@@ -1026,7 +1175,7 @@ class _EquivalentNetwork(Network):
 
     """
     def __init__(self, equivalentBoreholes, pipes, m_flow_network=None,
-                 cp_f=None, nSegments=None):
+                 cp_f=None, nSegments=None, segment_ratios=None):
         self.b = equivalentBoreholes
         self.H_tot = sum([b.H*b.nBoreholes for b in self.b])
         self.nBoreholes = len(equivalentBoreholes)
@@ -1052,11 +1201,12 @@ class _EquivalentNetwork(Network):
 
         # Initialize stored_coefficients
         self._initialize_coefficients_connectivity()
-        self._initialize_stored_coefficients(m_flow_network, cp_f, nSegments)
+        self._initialize_stored_coefficients(
+            m_flow_network, cp_f, nSegments, segment_ratios)
         return
 
     def coefficients_network_heat_extraction_rate(
-            self, m_flow_network, cp_f, nSegments):
+            self, m_flow_network, cp_f, nSegments, segment_ratios=None):
         """
         Build coefficient matrices to evaluate total heat extraction rate of
         the network.
@@ -1081,6 +1231,12 @@ class _EquivalentNetwork(Network):
             Number of borehole segments for each borehole. If an int is
             supplied, all boreholes are considered to have the same number of
             segments.
+        segment_ratios :
+        (nSegments,) array or list of (nSegments[i],) arrays, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments
+            of equal lengths are considered.
+            Default is None.
 
         Returns
         -------
@@ -1094,13 +1250,14 @@ class _EquivalentNetwork(Network):
         method_id = 6
         # Check if stored coefficients are available
         if self._check_coefficients(
-                m_flow_network, cp_f, nSegments, method_id):
+                m_flow_network, cp_f, nSegments, segment_ratios, method_id):
             a_in, a_b = self._get_stored_coefficients(method_id)
         else:
             # Coefficient matrices for fluid heat extraction rates:
             # [Q_{f}] = [b_in]*[T_{f,n,in}] + [b_b]*[T_{b}]
             b_in, b_b = self.coefficients_fluid_heat_extraction_rate(
-                    m_flow_network, cp_f, nSegments)
+                    m_flow_network, cp_f, nSegments,
+                    segment_ratios=segment_ratios)
             # The total network heat extraction rate is the sum of heat
             # extraction rates from all boreholes:
             # [Q_{tot}] = [a_in]*[T_{f,n,in}] + [a_b]*[T_{b}]
@@ -1109,7 +1266,8 @@ class _EquivalentNetwork(Network):
 
             # Store coefficients
             self._set_stored_coefficients(
-                m_flow_network, cp_f, nSegments, (a_in, a_b), method_id)
+                m_flow_network, cp_f, nSegments, segment_ratios, (a_in, a_b),
+                method_id)
 
         return a_in, a_b
 
@@ -1144,7 +1302,7 @@ class _EquivalentNetwork(Network):
             self._mixing_m_flow = m_flow_network
         return self._mix_out
 
-    def _format_inputs(self, m_flow_network, cp_f, nSegments):
+    def _format_inputs(self, m_flow_network, cp_f, nSegments, segment_ratios):
         """
         Format mass flow rate and heat capacity inputs.
         """
@@ -1181,13 +1339,24 @@ class _EquivalentNetwork(Network):
 
         # Format number of segments for each borehole
         nSeg = np.atleast_1d(nSegments)
-        if len(nSeg) == 1:
-            self.nSegments = [nSegments for i in range(self.nBoreholes)]
+        if len(nSeg) == 1 and not isinstance(nSegments, list):
+            self.nSegments = [nSegments] * self.nBoreholes
         elif not len(nSeg) == self.nBoreholes:
             raise ValueError(
                 'Incorrect length of number of segments list.')
         else:
             self.nSegments = nSegments
+
+        # Format segment ratios
+        if segment_ratios is None:
+            self._segment_ratios = [None] * self.nBoreholes
+        elif isinstance(segment_ratios, np.ndarray):
+            self._segment_ratios = [segment_ratios] * self.nBoreholes
+        elif isinstance(segment_ratios, list):
+            self._segment_ratios = segment_ratios
+        else:
+            raise ValueError(
+                'Incorrect format of the segment ratios list.')
 
 
 def network_thermal_resistance(network, m_flow_network, cp_f):

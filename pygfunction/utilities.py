@@ -1,6 +1,142 @@
 # -*- coding: utf-8 -*-
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.polynomial.polynomial as poly
+import warnings
+
+
+def segment_ratios(nSegments, end_length_ratio=0.02):
+    """
+    Discretize a borehole into segments of different lengths using a
+    geometrically expanding mesh from the provided end-length-ratio towards the
+    middle of the borehole. Eskilson (1987) [#Eskilson_1987]_ proposed that
+    segment lengths increase with a factor of sqrt(2) towards the middle of the
+    borehole. Here, the expansion factor is inferred from the provided number
+    of segments and end-length-ratio.
+
+    Parameters
+    ----------
+    nSegments : int
+        Number of line segments along the borehole.
+    end_length_ratio: float, optional
+        The ratio of the height of the borehole that accounts for the end
+        segment lengths.
+        Default is 0.02.
+
+    Returns
+    -------
+    segment_ratios : array
+        The segment ratios along the borehole, from top to bottom.
+
+    Examples
+    --------
+    >>> gt.utilities.segment_ratios(5)
+    array([0.02, 0.12, 0.72, 0.12, 0.02])
+
+    References
+    ----------
+    .. [#Eskilson_1987] Eskilson, P. (1987). Thermal analysis of heat
+        extraction boreholes. PhD Thesis. University of Lund, Department of
+        Mathematical Physics. Lund, Sweden.
+    """
+    def is_even(n):
+        "Returns True if n is even."
+        return not(n & 0x1)
+    assert nSegments >= 3 and isinstance(nSegments, int), \
+            "The number of segments `nSegments` should be greater or equal " \
+            "to 3 and of type int."
+    assert end_length_ratio > 0. and isinstance(end_length_ratio, (float, np.floating)), \
+            "The end-length-ratio `end_length_ratio` should be greater than " \
+            "0. and of type float."
+
+    # If nSegments == 3, then the middle segment is simply the remainder of the
+    # length
+    if nSegments == 3:
+        assert end_length_ratio < 0.5, \
+            "For nSegments == 3, the end-length-ratio `end_length_ratio` " \
+            "should be less than 0.5."
+        segment_ratios = np.array(
+            [end_length_ratio,
+             1 - 2 * end_length_ratio,
+             end_length_ratio])
+        return segment_ratios
+
+    # If end_length_ratio == 1 / nSegments, then the discretization is
+    # uniform
+    if np.abs(1. - nSegments * end_length_ratio) < 1e-6:
+        return np.full(nSegments, 1 / nSegments)
+
+    # Find the required constant expansion ratio to fill the borehole length
+    # from the provided end-length-ratio inwards with the provided nSegments
+    if is_even(nSegments):
+        # The ratio is a root of the polynomial expression :
+        # 0 = (1 - 2 * end_length_ratio)
+        #     - ratio * x
+        #     + 2 * end_length_ratio * x**nz
+        nz = int(nSegments / 2)
+        coefs = np.zeros(nz + 1)
+        coefs[0] = 1 - 2 * end_length_ratio
+        coefs[1] = -1
+        coefs[-1] = 2 * end_length_ratio
+        # Roots of the polynomial
+        roots = poly.Polynomial(coefs).roots()
+        # Find the correct root
+        for x in roots:
+            if np.isreal(x):
+                factor = np.real(x)
+                dz = [factor**i * end_length_ratio for i in range(nz)]
+                segment_ratios = np.concatenate(
+                    (dz,
+                     dz[::-1]))
+                if (np.abs(1. - np.sum(segment_ratios)) < 1e-6
+                    and np.all(segment_ratios > 0.)):
+                    break
+        else:
+            raise RuntimeError(
+                'utilities.segment_ratios failed to generate segment '
+                'discretization for the given input parameters : '
+                ' nSegments={}, end_length_ratio={}.'.format(
+                    nSegments, end_length_ratio))
+    else:
+        # The ratio is a root of the polynomial expression
+        # 0 = (1 - 2 * end_length_ratio) - ratio * x
+        #     + end_length_ratio * x**nz
+        #     + end_length_ratio * x**(nz + 1)
+        nz = int((nSegments - 1) / 2)
+        coefs = np.zeros(nz + 2)
+        coefs[0] = 1 - 2 * end_length_ratio
+        coefs[1] = -1
+        coefs[-2] = end_length_ratio
+        coefs[-1] = end_length_ratio
+        # Roots of the polynomial
+        roots = poly.Polynomial(coefs).roots()
+        # Find the correct root
+        for x in roots:
+            if np.isreal(x):
+                factor = np.real(x)
+                dz = [factor**i * end_length_ratio for i in range(nz)]
+                segment_ratios = np.concatenate(
+                    (dz,
+                     np.array([factor**nz]) * end_length_ratio,
+                     dz[::-1]))
+                if (np.abs(1. - np.sum(segment_ratios)) < 1e-6
+                    and np.all(segment_ratios > 0.)):
+                    break
+        else:
+            raise RuntimeError(
+                'utilities.segment_ratios failed to generate segment '
+                'discretization for the given input parameters : '
+                ' nSegments={}, end_length_ratio={}.'.format(
+                    nSegments, end_length_ratio))
+
+    if factor < 1.:
+        warnings.warn(
+            'A decreasing segment ratios discretization was found by '
+            'utilities.segment_ratios(). Better accuracy is expected for '
+            'increasing segment ratios. Consider decreasing the '
+            'end-length-ratio.')
+
+    return segment_ratios
 
 
 def time_ClaessonJaved(dt, tmax, cells_per_level=5):

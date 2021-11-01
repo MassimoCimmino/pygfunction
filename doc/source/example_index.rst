@@ -15,6 +15,7 @@ Examples
    examples/uniform_temperature
    examples/comparison_gfunction_solvers
    examples/unequal_segments
+   examples/discretize_boreholes
    examples/load_aggregation
    examples/comparison_load_aggregation
    examples/fluid_temperature
