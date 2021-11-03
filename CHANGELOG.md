@@ -26,6 +26,7 @@
 
 * [Issue 99](https://github.com/MassimoCimmino/pygfunction/issues/99) - Fixed an issue where `MultipleUTube._continuity_condition()` and `MultipleUTube._general_solution()` returned complex valued coefficient matrices.
 * [Issue 130](https://github.com/MassimoCimmino/pygfunction/issues/130) - Fix incorrect initialization of variables `_mix_out` and `_mixing_m_flow` in `Network`.
+* [Issue 155](https://github.com/MassimoCimmino/pygfunction/issues/155) - Fix incorrect initialization of variables in `Network` and `_BasePipe`. Stored variables are now initialized as `numpy.nan` instead of `numpy.empty`.
 
 ## Version 2.0.0 (2021-05-22)
 
