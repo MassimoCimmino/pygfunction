@@ -982,17 +982,16 @@ class Network(object):
             self, m_flow_network, cp_f, nSegments, segment_ratios):
         nMethods = 7    # Number of class methods
         self._stored_coefficients = [() for i in range(nMethods)]
-        self._stored_m_flow_cp = [np.empty(self.nInlets)
+        self._stored_m_flow_cp = [np.empty(self.nInlets)*np.nan
                                   for i in range(nMethods)]
         self._stored_nSegments = [np.nan for i in range(nMethods)]
         self._stored_segment_ratios = [np.nan for i in range(nMethods)]
-        self._m_flow_cp_model_variables = np.empty(self.nInlets)
+        self._m_flow_cp_model_variables = np.empty(self.nInlets)*np.nan
         self._nSegments_model_variables = np.nan
         self._segment_ratios_model_variables = np.nan
-        self._mixing_m_flow = np.empty(self.nInlets)
+        self._mixing_m_flow = np.empty(self.nInlets)*np.nan*np.nan
         self._mixing_m_flow[:] = np.nan
-        self._mix_out = np.empty((1, self.nBoreholes))
-        self._mix_out[:] = np.nan
+        self._mix_out = np.empty((1, self.nBoreholes))*np.nan
 
         # If m_flow, cp_f, and nSegments are specified, evaluate and store all
         # matrix coefficients.
