@@ -21,6 +21,7 @@
 * [Issue 100](https://github.com/MassimoCimmino/pygfunction/issues/100) - Replaced calls to `numpy.asscalar()` with calls to `array.item()`. `numpy.asscalar()` is deprecated as of `numpy` version `1.16`.
 * [Issue 124](https://github.com/MassimoCimmino/pygfunction/issues/124) - Reformatted `pipes`and `networks` modules to clarify the expected values for `m_flow` parameters. These are replaced by any of `m_flow_pipe`, `m_flow_borehole` or `m_flow_network` depending on the function or class method. Added a nomenclature of commonly used variables to the documentation.
 * [Issue 125](https://github.com/MassimoCimmino/pygfunction/issues/125) - Refactored class methods and docstrings in `Pipe` and `Network` objects to better represent the expected shapes of array inputs and outputs.
+* [Issue 154](https://github.com/MassimoCimmino/pygfunction/issues/154) - Replaced `numpy.int` and `numpy.bool` dtypes in array initializations with built-in types `int` and `bool`. `numpy.int` and `numpy.bool` are deprecated as of `numpy` version `1.20`.
 
 ### Bug fixes
 

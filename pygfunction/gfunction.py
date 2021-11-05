@@ -3120,7 +3120,7 @@ class _Equivalent(_BaseSolver):
             else:
                 # Remove the borehole radius from the distances
                 dis_ij = b1.distance(b2)[
-                    ~np.eye(b1.nBoreholes, dtype=np.bool)].flatten()
+                    ~np.eye(b1.nBoreholes, dtype=bool)].flatten()
             wDis_ij = np.zeros(len(dis), dtype=np.uint)
             # Get insert positions for the distances
             iDis = np.searchsorted(dis, dis_ij, side='left')
@@ -3251,7 +3251,7 @@ class _Equivalent(_BaseSolver):
         assert np.all([np.allclose(segment_ratios, self.segment_ratios[0]) for segment_ratios in self.segment_ratios]), \
             "Solver 'equivalent' can only handle identical segment_ratios for all boreholes."
         if self.boundary_condition == 'MIFT':
-            assert np.all(np.array(self.network.c, dtype=np.int) == -1), \
+            assert np.all(np.array(self.network.c, dtype=int) == -1), \
                 "Solver 'equivalent' is only valid for parallel-connected " \
                 "boreholes."
             assert type(self.network.m_flow_network) is float \
