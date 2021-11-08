@@ -12,6 +12,7 @@ from .heat_transfer import finite_line_source, finite_line_source_vectorized, \
     finite_line_source_equivalent_boreholes_vectorized
 from .networks import Network, _EquivalentNetwork, network_thermal_resistance
 from .utilities import _initialize_figure, _format_axes
+from . import utilities
 
 
 class gFunction(object):
@@ -85,12 +86,16 @@ class gFunction(object):
                 Number of line segments used per borehole, or list of number of
                 line segments used for each borehole.
                 Default is 12.
-            segment_ratios : array or list of arrays, optional
+            segment_ratios : array, list of arrays, or callable, optional
                 Ratio of the borehole length represented by each segment. The
                 sum of ratios must be equal to 1. The shape of the array is of
                 (nSegments,) or list of (nSegments[i],). If
                 segment_ratios==None, segments of equal lengths are considered.
-                Default is None.
+                If a callable is provided, it must return an array of size
+                (nSegments,) when provided with nSegments (of type int) as an
+                argument, or an array of size (nSegments[i],) when provided
+                with an element of nSegments (of type list).
+                Default is :func:`utilities.segment_ratios`.
             disp : bool, optional
                 Set to true to print progression messages.
                 Default is False.
@@ -870,7 +875,7 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
 
 
 def uniform_temperature(boreholes, time, alpha, nSegments=12,
-                        segment_ratios=None, kind='linear',
+                        segment_ratios=utilities.segment_ratios, kind='linear',
                         use_similarities=True, disTol=0.01, tol=1.0e-6,
                         dtype=np.double, disp=False, **kwargs):
     """
@@ -897,8 +902,11 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12,
         Ratio of the borehole length represented by each segment. The
         sum of ratios must be equal to 1. The shape of the array is of
         (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
-        segments of equal lengths are considered.
-        Default is None.
+        segments of equal lengths are considered. If a callable is provided, it
+        must return an array of size (nSegments,) when provided with nSegments
+        (of type int) as an argument, or an array of size (nSegments[i],) when
+        provided with an element of nSegments (of type list).
+        Default is :func:`utilities.segment_ratios`.
     kind : string, optional
         Interpolation method used for segment-to-segment thermal response
         factors. See documentation for scipy.interpolate.interp1d.
@@ -970,7 +978,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12,
 
 def equal_inlet_temperature(
         boreholes, UTubes, m_flow_borehole, cp_f, time, alpha,
-        kind='linear', nSegments=12, segment_ratios=None,
+        kind='linear', nSegments=12, segment_ratios=utilities.segment_ratios,
         use_similarities=True, disTol=0.01, tol=1.0e-6, dtype=np.double,
         disp=False, **kwargs):
     """
@@ -1003,8 +1011,11 @@ def equal_inlet_temperature(
         Ratio of the borehole length represented by each segment. The
         sum of ratios must be equal to 1. The shape of the array is of
         (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
-        segments of equal lengths are considered.
-        Default is None.
+        segments of equal lengths are considered. If a callable is provided, it
+        must return an array of size (nSegments,) when provided with nSegments
+        (of type int) as an argument, or an array of size (nSegments[i],) when
+        provided with an element of nSegments (of type list).
+        Default is :func:`utilities.segment_ratios`.
     kind : string, optional
         Interpolation method used for segment-to-segment thermal response
         factors. See documentation for scipy.interpolate.interp1d.
@@ -1067,11 +1078,11 @@ def equal_inlet_temperature(
     return gFunc.gFunc
 
 
-def mixed_inlet_temperature(network, m_flow_network, cp_f,
-                            time, alpha, kind='linear', nSegments=12,
-                            segment_ratios=None, use_similarities=True,
-                            disTol=0.01, tol=1.0e-6, dtype=np.double,
-                            disp=False, **kwargs):
+def mixed_inlet_temperature(
+        network, m_flow_network, cp_f, time, alpha, kind='linear',
+        nSegments=12, segment_ratios=utilities.segment_ratios,
+        use_similarities=True, disTol=0.01, tol=1.0e-6, dtype=np.double,
+        disp=False, **kwargs):
     """
     Evaluate the g-function with mixed inlet fluid temperatures.
 
@@ -1219,8 +1230,11 @@ class _BaseSolver(object):
         Ratio of the borehole length represented by each segment. The
         sum of ratios must be equal to 1. The shape of the array is of
         (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
-        segments of equal lengths are considered.
-        Default is None.
+        segments of equal lengths are considered. If a callable is provided, it
+        must return an array of size (nSegments,) when provided with nSegments
+        (of type int) as an argument, or an array of size (nSegments[i],) when
+        provided with an element of nSegments (of type list).
+        Default is :func:`utilities.segment_ratios`.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -1239,8 +1253,9 @@ class _BaseSolver(object):
 
     """
     def __init__(self, boreholes, network, time, boundary_condition,
-                 nSegments=12, segment_ratios=None, disp=False, profiles=False,
-                 kind='linear', dtype=np.double, **other_options):
+                 nSegments=12, segment_ratios=utilities.segment_ratios,
+                 disp=False, profiles=False, kind='linear', dtype=np.double,
+                 **other_options):
         self.boreholes = boreholes
         self.network = network
         # Convert time to a 1d array
@@ -1256,6 +1271,8 @@ class _BaseSolver(object):
             segment_ratios = [segment_ratios] * nBoreholes
         elif segment_ratios is None:
             segment_ratios = [np.full(n, 1./n) for n in self.nBoreSegments]
+        elif callable(segment_ratios):
+            segment_ratios = [segment_ratios(n) for n in self.nBoreSegments]
         self.segment_ratios = segment_ratios
         # Shortcut for segment_ratios comparisons
         self._equal_segment_ratios = \
@@ -1683,8 +1700,11 @@ class _Detailed(_BaseSolver):
         Ratio of the borehole length represented by each segment. The
         sum of ratios must be equal to 1. The shape of the array is of
         (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
-        segments of equal lengths are considered.
-        Default is None.
+        segments of equal lengths are considered. If a callable is provided, it
+        must return an array of size (nSegments,) when provided with nSegments
+        (of type int) as an argument, or an array of size (nSegments[i],) when
+        provided with an element of nSegments (of type list).
+        Default is :func:`utilities.segment_ratios`.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -1866,8 +1886,11 @@ class _Similarities(_BaseSolver):
         Ratio of the borehole length represented by each segment. The
         sum of ratios must be equal to 1. The shape of the array is of
         (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
-        segments of equal lengths are considered.
-        Default is None.
+        segments of equal lengths are considered. If a callable is provided, it
+        must return an array of size (nSegments,) when provided with nSegments
+        (of type int) as an argument, or an array of size (nSegments[i],) when
+        provided with an element of nSegments (of type list).
+        Default is :func:`utilities.segment_ratios`.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -2549,8 +2572,11 @@ class _Equivalent(_BaseSolver):
         Ratio of the borehole length represented by each segment. The
         sum of ratios must be equal to 1. The shape of the array is of
         (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
-        segments of equal lengths are considered.
-        Default is None.
+        segments of equal lengths are considered. If a callable is provided, it
+        must return an array of size (nSegments,) when provided with nSegments
+        (of type int) as an argument, or an array of size (nSegments[i],) when
+        provided with an element of nSegments (of type list).
+        Default is :func:`utilities.segment_ratios`.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
