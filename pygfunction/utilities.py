@@ -39,8 +39,6 @@ def segment_ratios(nSegments, end_length_ratio=0.02):
         extraction boreholes. PhD Thesis. University of Lund, Department of
         Mathematical Physics. Lund, Sweden.
     """
-    # TODO: End length ratio of 0 < alpha < 0.5 should apply to all cases
-    # TODO: allow nSegments==2 and nSegments==1, but warn user for override about end_length_ratio
     def is_even(n):
         "Returns True if n is even."
         return not(n & 0x1)
@@ -52,14 +50,26 @@ def segment_ratios(nSegments, end_length_ratio=0.02):
             "The end-length-ratio `end_length_ratio` should be greater than " \
             "0, less than 0.5 (0 < end_length_ratio < 0.5) and of type float."
 
+    if nSegments == 1:
+        warnings.warn('nSegments = 1 has been provided. The '
+                      '`end_length_ratio` will be over-ridden. One segment '
+                      'ratio of 1.0 will be returned.')
+        return np.array([1.0])
+    elif nSegments == 2:
+        warnings.warn('nSegments = 2 ahs been provided. The '
+                      '`end_length_ratio` will be over-ridden. Two segment '
+                      'ratios of [0.5, 0.5] will be returned.')
+        return np.array([0.5, 0.5])
     # If nSegments == 3, then the middle segment is simply the remainder of the
     # length
-    if nSegments == 3:
+    elif nSegments == 3:
         segment_ratios = np.array(
             [end_length_ratio,
              1 - 2 * end_length_ratio,
              end_length_ratio])
         return segment_ratios
+    else:
+        pass
 
     # If end_length_ratio == 1 / nSegments, then the discretization is
     # uniform
