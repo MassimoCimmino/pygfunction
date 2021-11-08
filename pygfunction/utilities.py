@@ -39,6 +39,8 @@ def segment_ratios(nSegments, end_length_ratio=0.02):
         extraction boreholes. PhD Thesis. University of Lund, Department of
         Mathematical Physics. Lund, Sweden.
     """
+    # TODO: End length ratio of 0 < alpha < 0.5 should apply to all cases
+    # TODO: allow nSegments==2 and nSegments==1, but warn user for override about end_length_ratio
     def is_even(n):
         "Returns True if n is even."
         return not(n & 0x1)
