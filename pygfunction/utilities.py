@@ -47,16 +47,14 @@ def segment_ratios(nSegments, end_length_ratio=0.02):
     assert nSegments >= 1 and isinstance(nSegments, int), \
             "The number of segments `nSegments` should be greater or equal " \
             "to 3 and of type int."
-    assert end_length_ratio > 0. and isinstance(end_length_ratio, (float, np.floating)), \
+    assert 0. < end_length_ratio < 0.5 and \
+           isinstance(end_length_ratio, (float, np.floating)), \
             "The end-length-ratio `end_length_ratio` should be greater than " \
-            "0. and of type float."
+            "0, less than 0.5 (0 < end_length_ratio < 0.5) and of type float."
 
     # If nSegments == 3, then the middle segment is simply the remainder of the
     # length
     if nSegments == 3:
-        assert end_length_ratio < 0.5, \
-            "For nSegments == 3, the end-length-ratio `end_length_ratio` " \
-            "should be less than 0.5."
         segment_ratios = np.array(
             [end_length_ratio,
              1 - 2 * end_length_ratio,
