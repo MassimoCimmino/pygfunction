@@ -57,7 +57,7 @@ class gFunction(object):
                 are calculated by the FLS solution. This is an approximation of
                 the 'similarities' method.
 
-        Default is 'similarities'.
+        Default is 'equivalent'.
     boundary_condition : str, optional
         Boundary condition for the evaluation of the g-function. Should be one
         of
@@ -85,7 +85,7 @@ class gFunction(object):
             nSegments : int or list, optional
                 Number of line segments used per borehole, or list of number of
                 line segments used for each borehole.
-                Default is 12.
+                Default is 8.
             segment_ratios : array, list of arrays, or callable, optional
                 Ratio of the borehole length represented by each segment. The
                 sum of ratios must be equal to 1. The shape of the array is of
@@ -174,7 +174,7 @@ class gFunction(object):
 
     """
     def __init__(self, boreholes_or_network, alpha, time=None,
-                 method='similarities', boundary_condition=None, options={}):
+                 method='equivalent', boundary_condition=None, options={}):
         self.alpha = alpha
         self.time = time
         self.method = method
@@ -1225,7 +1225,7 @@ class _BaseSolver(object):
     nSegments : int or list, optional
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
-        Default is 12.
+        Default is 8.
     segment_ratios : array or list of arrays, optional
         Ratio of the borehole length represented by each segment. The
         sum of ratios must be equal to 1. The shape of the array is of
@@ -1253,7 +1253,7 @@ class _BaseSolver(object):
 
     """
     def __init__(self, boreholes, network, time, boundary_condition,
-                 nSegments=12, segment_ratios=utilities.segment_ratios,
+                 nSegments=8, segment_ratios=utilities.segment_ratios,
                  disp=False, profiles=False, kind='linear', dtype=np.double,
                  **other_options):
         self.boreholes = boreholes
@@ -1695,7 +1695,7 @@ class _Detailed(_BaseSolver):
     nSegments : int or list, optional
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
-        Default is 12.
+        Default is 8.
     segment_ratios : array or list of arrays, optional
         Ratio of the borehole length represented by each segment. The
         sum of ratios must be equal to 1. The shape of the array is of
@@ -1881,7 +1881,7 @@ class _Similarities(_BaseSolver):
     nSegments : int or list, optional
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
-        Default is 12.
+        Default is 8.
     segment_ratios : array or list of arrays, optional
         Ratio of the borehole length represented by each segment. The
         sum of ratios must be equal to 1. The shape of the array is of
@@ -2567,7 +2567,7 @@ class _Equivalent(_BaseSolver):
     nSegments : int or list, optional
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
-        Default is 12.
+        Default is 8.
     segment_ratios : array or list of arrays, optional
         Ratio of the borehole length represented by each segment. The
         sum of ratios must be equal to 1. The shape of the array is of
