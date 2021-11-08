@@ -53,7 +53,7 @@ def segment_ratios(nSegments, end_length_ratio=0.02):
     if nSegments == 1:
         warnings.warn('nSegments = 1 has been provided. The '
                       '`end_length_ratio` will be over-ridden. One segment '
-                      'ratio of 1.0 will be returned.')
+                      'ratio of [1.0] will be returned.')
         return np.array([1.0])
     elif nSegments == 2:
         warnings.warn('nSegments = 2 ahs been provided. The '
