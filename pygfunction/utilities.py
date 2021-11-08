@@ -44,7 +44,7 @@ def segment_ratios(nSegments, end_length_ratio=0.02):
     def is_even(n):
         "Returns True if n is even."
         return not(n & 0x1)
-    assert nSegments >= 3 and isinstance(nSegments, int), \
+    assert nSegments >= 1 and isinstance(nSegments, int), \
             "The number of segments `nSegments` should be greater or equal " \
             "to 3 and of type int."
     assert end_length_ratio > 0. and isinstance(end_length_ratio, (float, np.floating)), \
