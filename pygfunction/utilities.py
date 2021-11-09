@@ -44,19 +44,18 @@ def segment_ratios(nSegments, end_length_ratio=0.02):
         return not(n & 0x1)
     assert nSegments >= 1 and isinstance(nSegments, int), \
             "The number of segments `nSegments` should be greater or equal " \
-            "to 3 and of type int."
+            "to 1 and of type int."
     assert 0. < end_length_ratio < 0.5 and \
            isinstance(end_length_ratio, (float, np.floating)), \
             "The end-length-ratio `end_length_ratio` should be greater than " \
             "0, less than 0.5 (0 < end_length_ratio < 0.5) and of type float."
 
+    # If nSegments == 1, the only segment covers the entire length
     if nSegments == 1:
-        warnings.warn('nSegments = 1 has been provided. The '
-                      '`end_length_ratio` will be over-ridden. One segment '
-                      'ratio of [1.0] will be returned.')
         return np.array([1.0])
+    # If nSegments == 2, split the borehole in two even segments
     elif nSegments == 2:
-        warnings.warn('nSegments = 2 ahs been provided. The '
+        warnings.warn('nSegments = 2 has been provided. The '
                       '`end_length_ratio` will be over-ridden. Two segment '
                       'ratios of [0.5, 0.5] will be returned.')
         return np.array([0.5, 0.5])
@@ -144,7 +143,7 @@ def segment_ratios(nSegments, end_length_ratio=0.02):
             'A decreasing segment ratios discretization was found by '
             'utilities.segment_ratios(). Better accuracy is expected for '
             'increasing segment ratios. Consider decreasing the '
-            'end-length-ratio.')
+            'end-length-ratio such that end_length_ratio < 1 / nSegments.')
 
     return segment_ratios
 
