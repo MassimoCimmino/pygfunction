@@ -42,24 +42,34 @@ def segment_ratios(nSegments, end_length_ratio=0.02):
     def is_even(n):
         "Returns True if n is even."
         return not(n & 0x1)
-    assert nSegments >= 3 and isinstance(nSegments, int), \
+    assert nSegments >= 1 and isinstance(nSegments, int), \
             "The number of segments `nSegments` should be greater or equal " \
-            "to 3 and of type int."
-    assert end_length_ratio > 0. and isinstance(end_length_ratio, (float, np.floating)), \
+            "to 1 and of type int."
+    assert nSegments <= 2 or 0. < end_length_ratio < 0.5 and \
+           isinstance(end_length_ratio, (float, np.floating)), \
             "The end-length-ratio `end_length_ratio` should be greater than " \
-            "0. and of type float."
+            "0, less than 0.5 (0 < end_length_ratio < 0.5) and of type float."
 
+    # If nSegments == 1, the only segment covers the entire length
+    if nSegments == 1:
+        return np.array([1.0])
+    # If nSegments == 2, split the borehole in two even segments
+    elif nSegments == 2:
+        if not np.abs(end_length_ratio - 0.5) < 1e-6:
+            warnings.warn('nSegments = 2 has been provided. The '
+                          '`end_length_ratio` will be over-ridden. Two '
+                          'segment ratios of [0.5, 0.5] will be returned.')
+        return np.array([0.5, 0.5])
     # If nSegments == 3, then the middle segment is simply the remainder of the
     # length
-    if nSegments == 3:
-        assert end_length_ratio < 0.5, \
-            "For nSegments == 3, the end-length-ratio `end_length_ratio` " \
-            "should be less than 0.5."
+    elif nSegments == 3:
         segment_ratios = np.array(
             [end_length_ratio,
              1 - 2 * end_length_ratio,
              end_length_ratio])
         return segment_ratios
+    else:
+        pass
 
     # If end_length_ratio == 1 / nSegments, then the discretization is
     # uniform
@@ -134,7 +144,7 @@ def segment_ratios(nSegments, end_length_ratio=0.02):
             'A decreasing segment ratios discretization was found by '
             'utilities.segment_ratios(). Better accuracy is expected for '
             'increasing segment ratios. Consider decreasing the '
-            'end-length-ratio.')
+            'end-length-ratio such that end_length_ratio < 1 / nSegments.')
 
     return segment_ratios
 
