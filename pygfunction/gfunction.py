@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import time as tim
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -754,6 +755,33 @@ class gFunction(object):
             # use 'UBWT'
             if self.boundary_condition is None:
                 self.boundary_condition = 'UBWT'
+        # If the 'equivalent' solver is selected for the 'MIFT' condition,
+        # switch to the 'similarities' solver if boreholes are in series
+        if self.boundary_condition == 'MIFT' and  self.method.lower() == 'equivalent':
+            if not np.all(np.array(self.network.c, dtype=int) == -1):
+                warnings.warn(
+                    "\nSolver 'equivalent' is only valid for "
+                    "parallel-connected boreholes. Calculations will use the "
+                    "'similarities' solver instead.")
+                self.method = 'similarities'
+            elif not (
+                    type(self.network.m_flow_network) is float or (
+                        type(self.network.m_flow_network) is np.ndarray and \
+                            np.allclose(self.network.m_flow_network,
+                                        self.network.m_flow_network[0]))):
+                warnings.warn(
+                    "\nSolver 'equivalent' is only valid for equal mass flow "
+                    "rates into the boreholes. Calculations will use the "
+                    "'similarities' solver instead.")
+                self.method = 'similarities'
+            elif not np.all(
+                    [np.allclose(self.network.p[0]._Rd, pipe._Rd)
+                     for pipe in self.network.p]):
+                warnings.warn(
+                    "\nSolver 'equivalent' is only valid for boreholes with "
+                    "the same piping  configuration. Calculations will use "
+                    "the 'similarities' solver instead.")
+                self.method = 'similarities'
         return
 
     def _check_inputs(self):
@@ -1466,7 +1494,7 @@ class _BaseSolver(object):
                     # temperature
                     # Outlet fluid temperature
                     T_f_out = T_f_in - 2*pi*self.network.p[0].k_s*H_tot/(
-                        self.network.m_flow_network*self.network.cp_f)
+                        np.sum(self.network.m_flow_network*self.network.cp_f))
                     # Average fluid temperature
                     T_f = 0.5*(T_f_in + T_f_out)
                     # Borefield thermal resistance
@@ -3285,6 +3313,11 @@ class _Equivalent(_BaseSolver):
                     and np.allclose(self.network.m_flow_network, self.network.m_flow_network[0])), \
                 "Mass flow rates into the network must be equal for all " \
                 "boreholes."
+            # Use the total network mass flow rate.
+            if (type(self.network.m_flow_network) is np.ndarray and \
+                len(self.network.m_flow_network)==len(self.network.b)):
+                self.network.m_flow_network = \
+                    self.network.m_flow_network[0]*len(self.network.b)
             # Verify that all boreholes have the same piping configuration
             # This is best done by comparing the matrix of thermal resistances.
             assert np.all(
