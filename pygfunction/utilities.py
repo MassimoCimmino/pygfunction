@@ -45,7 +45,7 @@ def segment_ratios(nSegments, end_length_ratio=0.02):
     assert nSegments >= 1 and isinstance(nSegments, int), \
             "The number of segments `nSegments` should be greater or equal " \
             "to 1 and of type int."
-    assert 0. < end_length_ratio < 0.5 and \
+    assert nSegments <= 2 or 0. < end_length_ratio < 0.5 and \
            isinstance(end_length_ratio, (float, np.floating)), \
             "The end-length-ratio `end_length_ratio` should be greater than " \
             "0, less than 0.5 (0 < end_length_ratio < 0.5) and of type float."
@@ -55,9 +55,10 @@ def segment_ratios(nSegments, end_length_ratio=0.02):
         return np.array([1.0])
     # If nSegments == 2, split the borehole in two even segments
     elif nSegments == 2:
-        warnings.warn('nSegments = 2 has been provided. The '
-                      '`end_length_ratio` will be over-ridden. Two segment '
-                      'ratios of [0.5, 0.5] will be returned.')
+        if not np.abs(end_length_ratio - 0.5) < 1e-6:
+            warnings.warn('nSegments = 2 has been provided. The '
+                          '`end_length_ratio` will be over-ridden. Two '
+                          'segment ratios of [0.5, 0.5] will be returned.')
         return np.array([0.5, 0.5])
     # If nSegments == 3, then the middle segment is simply the remainder of the
     # length
