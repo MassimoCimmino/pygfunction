@@ -31,8 +31,9 @@ def main():
     k_s = 2.0           # Ground thermal conductivity (W/m.K)
     T_g = 10.0          # Undisturbed ground temperature (degC)
 
-    # Number of segments per borehole
-    nSegments = 12
+    # g-Function calculation options
+    options = {'nSegments': 8,
+               'disp': True}
 
     # Simulation parameters
     dt = 3600.                  # Time step (s)
@@ -55,10 +56,10 @@ def main():
     # Get time values needed for g-function evaluation
     time_req = LoadAgg.get_times_for_simulation()
     # Calculate g-function
-    gFunc = gt.gfunction.uniform_temperature(boreField, time_req, alpha,
-                                             nSegments=nSegments)
+    gFunc = gt.gfunction.gFunction(
+        boreField, alpha, time=time_req, options=options)
     # Initialize load aggregation scheme
-    LoadAgg.initialize(gFunc/(2*pi*k_s))
+    LoadAgg.initialize(gFunc.gFunc/(2*pi*k_s))
 
     # -------------------------------------------------------------------------
     # Simulation
@@ -84,7 +85,7 @@ def main():
     dQ = np.zeros(Nt)
     dQ[0] = Q_b[0]
     # Interpolated g-function
-    g = interp1d(time_req, gFunc)(time)
+    g = interp1d(time_req, gFunc.gFunc)(time)
     for i in range(1, Nt):
         dQ[i] = Q_b[i] - Q_b[i-1]
 

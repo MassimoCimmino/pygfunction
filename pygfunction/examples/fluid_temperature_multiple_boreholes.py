@@ -64,7 +64,8 @@ def main():
     k_f = fluid.k       # Fluid thermal conductivity (W/m.K)
 
     # g-Function calculation options
-    options = {'nSegments':12, 'disp':True}
+    options = {'nSegments': 8,
+               'disp': True}
 
     # Simulation parameters
     dt = 3600.                  # Time step (s)

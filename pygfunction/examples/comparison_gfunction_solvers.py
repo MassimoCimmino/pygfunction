@@ -40,7 +40,8 @@ def main():
     alpha = 1.0e-6      # Ground thermal diffusivity (m2/s)
 
     # g-Function calculation options
-    options = {'nSegments': 12, 'disp': True}
+    options = {'nSegments': 8,
+               'disp': True}
 
     # Geometrically expanding time vector.
     dt = 100*3600.                  # Time step

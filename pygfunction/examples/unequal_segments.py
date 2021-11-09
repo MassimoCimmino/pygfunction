@@ -29,7 +29,7 @@ def main():
     # Geometrically expanding time vector.
     dt = 100*3600.                  # Time step
     tmax = 3000. * 8760. * 3600.    # Maximum time
-    Nt = 50                         # Number of time steps
+    Nt = 25                         # Number of time steps
     ts = H**2/(9.*alpha)            # Bore field characteristic time
     time = gt.utilities.time_geometric(dt, tmax, Nt)
 
@@ -47,14 +47,20 @@ def main():
     # Evaluate g-functions with different segment options
     # -------------------------------------------------------------------------
 
+    # The 'similarities' method is used to consider unequal numbers of segments
+    # per borehole and to plot heat extraction rate profiles along
+    # individual boreholes
+    method = 'similarities'
+
     # Calculate g-function with equal number of segments for all boreholes and
     # uniform segment lengths
     nSegments = 24
     options = {'nSegments': nSegments,
+               'segment_ratios': None,
                'disp': True}
 
     gfunc_equal = gt.gfunction.gFunction(
-        boreField, alpha, time=time, options=options)
+        boreField, alpha, time=time, options=options, method=method)
 
     # Calculate g-function with predefined number of segments for each
     # borehole, the segment lengths will be uniform along each borehole, but
@@ -66,10 +72,13 @@ def main():
     nSegments[12] = 24
     nSegments[14] = 24
     nSegments[18] = 24
-    options = {'nSegments': nSegments, 'disp': True, 'profiles': True}
+    options = {'nSegments': nSegments,
+               'segment_ratios': None,
+               'disp': True,
+               'profiles': True}
 
     gfunc_unequal = gt.gfunction.gFunction(
-        boreField, alpha, time=time, options=options)
+        boreField, alpha, time=time, options=options, method=method)
 
     # Calculate g-function with equal number of segments for each borehole,
     # unequal segment lengths along the length of the borehole defined by
@@ -85,7 +94,7 @@ def main():
                'profiles': True}
 
     g_func_predefined = gt.gfunction.gFunction(
-        boreField, alpha, time=time, options=options)
+        boreField, alpha, time=time, options=options, method=method)
 
     # -------------------------------------------------------------------------
     # Plot g-functions

@@ -9,6 +9,7 @@
 """
 import matplotlib.pyplot as plt
 import numpy as np
+from time import time as tic
 
 import pygfunction as gt
 
@@ -31,14 +32,20 @@ def main():
     filePath = './data/CiBe14_uniform_temperature.txt'
 
     # g-Function calculation options
-    options = {'nSegments':12, 'disp':True, 'profiles':True}
+    # A uniform discretization is used to compare results with Cimmino and
+    # Bernier (2014).
+    options = {'nSegments': 12,
+               'segment_ratios': None,
+               'disp': True,
+               'profiles': True}
 
     # Geometrically expanding time vector.
     dt = 100*3600.                  # Time step
     tmax = 3000. * 8760. * 3600.    # Maximum time
-    Nt = 50                         # Number of time steps
+    Nt = 25                         # Number of time steps
     ts = H**2/(9.*alpha)            # Bore field characteristic time
     time = gt.utilities.time_geometric(dt, tmax, Nt)
+    lntts = np.log(time/ts)
 
     # -------------------------------------------------------------------------
     # Borehole fields
@@ -69,21 +76,51 @@ def main():
     # -------------------------------------------------------------------------
     i = 0
     for field in [boreField1, boreField2, boreField3]:
-        gfunc = gt.gfunction.gFunction(
-            field, alpha, time=time, options=options)
+        # Compare 'similarities' and 'equivalent' solvers
+        t0 = tic()
+        gfunc_similarities = gt.gfunction.gFunction(
+            field, alpha, time=time, options=options, method='similarities')
+        t1 = tic()
+        t_similarities = t1 - t0
+        gfunc_equivalent = gt.gfunction.gFunction(
+            field, alpha, time=time, options=options, method='equivalent')
+        t2 = tic()
+        t_equivalent = t2 - t1
         # Draw g-function
-        ax = gfunc.visualize_g_function().axes[0]
+        ax = gfunc_similarities.visualize_g_function().axes[0]
+        ax.plot(lntts, gfunc_equivalent.gFunc)
         # Draw reference g-function
-        ax.plot(data[:,0], data[:,i+1], 'bx')
-        ax.legend(['pygfunction', 'Cimmino and Bernier (2014)'])
+        ax.plot(data[:,0], data[:,i+1], 'o')
+        ax.legend(['similarities (t = {:.3f} sec)'.format(t_similarities),
+                   'equivalent (t = {:.3f} sec)'.format(t_equivalent),
+                   'Cimmino and Bernier (2014)'])
         ax.set_title('Field of {} boreholes'.format(len(field)))
         plt.tight_layout()
         i += 1
 
         # For the second borefield, draw the evolution of heat extraction rates
         if i == 2:
-            gfunc.visualize_heat_extraction_rates(iBoreholes=[18, 12, 14])
-            gfunc.visualize_heat_extraction_rate_profiles(iBoreholes=[14])
+            fig = gfunc_similarities.visualize_heat_extraction_rates(
+                iBoreholes=[18, 12, 14])
+            fig.suptitle("Field of {} boreholes: 'similarities' solver".format(
+                len(field)))
+            fig.tight_layout()
+
+            fig = gfunc_equivalent.visualize_heat_extraction_rates()
+            fig.suptitle("Field of {} boreholes: 'equivalent' solver".format(
+                len(field)))
+            fig.tight_layout()
+
+            fig = gfunc_similarities.visualize_heat_extraction_rate_profiles(
+                iBoreholes=[18, 12, 14])
+            fig.suptitle("Field of {} boreholes: 'similarities' solver".format(
+                len(field)))
+            fig.tight_layout()
+
+            fig = gfunc_equivalent.visualize_heat_extraction_rate_profiles()
+            fig.suptitle("Field of {} boreholes: 'equivalent' solver".format(
+                len(field)))
+            fig.tight_layout()
 
     return
 
