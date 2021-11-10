@@ -23,6 +23,7 @@
 * [Issue 125](https://github.com/MassimoCimmino/pygfunction/issues/125) - Refactored class methods and docstrings in `Pipe` and `Network` objects to better represent the expected shapes of array inputs and outputs.
 * [Issue 154](https://github.com/MassimoCimmino/pygfunction/issues/154) - Replaced `numpy.int` and `numpy.bool` dtypes in array initializations with built-in types `int` and `bool`. `numpy.int` and `numpy.bool` are deprecated as of `numpy` version `1.20`.
 * [Issue 158](https://github.com/MassimoCimmino/pygfunction/issues/158) - Changed default parameter values for *g*-function calculations. The `gFunction` class now uses the `'equivalent'` solver by default and a non-uniform discretization of `nSegments=8` given by `utilities.segment_ratios()`.
+* [Issue 160](https://github.com/MassimoCimmino/pygfunction/issues/160) - Deprecated functions `gfunction.uniform_heat_extraction`, `gfunction.uniform_temperature`, `gfunction.equal_inlet_temperature` and `gfunction.mixed_inlet_temperature`. They will be removed in `v3.0.0`.
 
 ### Bug fixes
 
