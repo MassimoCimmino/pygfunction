@@ -902,7 +902,7 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
     return gFunc.gFunc
 
 
-def uniform_temperature(boreholes, time, alpha, nSegments=12,
+def uniform_temperature(boreholes, time, alpha, nSegments=8,
                         segment_ratios=utilities.segment_ratios, kind='linear',
                         use_similarities=True, disTol=0.01, tol=1.0e-6,
                         dtype=np.double, disp=False, **kwargs):
@@ -925,7 +925,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12,
     nSegments : int or list, optional
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
-        Default is 12.
+        Default is 8.
     segment_ratios : array, list of arrays, or callable, optional
         Ratio of the borehole length represented by each segment. The
         sum of ratios must be equal to 1. The shape of the array is of
@@ -1006,7 +1006,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12,
 
 def equal_inlet_temperature(
         boreholes, UTubes, m_flow_borehole, cp_f, time, alpha,
-        kind='linear', nSegments=12, segment_ratios=utilities.segment_ratios,
+        kind='linear', nSegments=8, segment_ratios=utilities.segment_ratios,
         use_similarities=True, disTol=0.01, tol=1.0e-6, dtype=np.double,
         disp=False, **kwargs):
     """
@@ -1034,7 +1034,7 @@ def equal_inlet_temperature(
     nSegments : int or list, optional
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
-        Default is 12.
+        Default is 8.
     segment_ratios : array, list of arrays, or callable, optional
         Ratio of the borehole length represented by each segment. The
         sum of ratios must be equal to 1. The shape of the array is of
@@ -1108,7 +1108,7 @@ def equal_inlet_temperature(
 
 def mixed_inlet_temperature(
         network, m_flow_network, cp_f, time, alpha, kind='linear',
-        nSegments=12, segment_ratios=utilities.segment_ratios,
+        nSegments=8, segment_ratios=utilities.segment_ratios,
         use_similarities=True, disTol=0.01, tol=1.0e-6, dtype=np.double,
         disp=False, **kwargs):
     """
@@ -1138,7 +1138,7 @@ def mixed_inlet_temperature(
     nSegments : int or list, optional
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
-        Default is 12.
+        Default is 8.
     segment_ratios : array, list of arrays, or callable, optional
         Ratio of the borehole length represented by each segment. The
         sum of ratios must be equal to 1. The shape of the array is of
