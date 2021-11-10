@@ -881,6 +881,13 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
        Journal of Heat and Mass Transfer, 70, 641-650.
 
     """
+    # This function is deprecated as of v2.1. It will be removed in v3.0.
+    warnings.warn("`pygfunction.gfunction.uniform_heat_extraction` is "
+                  "deprecated as of v2.1. It will be removed in v3.0. "
+                  "New features are not fully supported by the function. "
+                  "Use the `pygfunction.gfunction.gFunction` class instead.",
+                  DeprecationWarning)
+
     boundary_condition = 'UHTR'
     # Build options dict
     options = {'nSegments':1,
@@ -981,6 +988,13 @@ def uniform_temperature(boreholes, time, alpha, nSegments=8,
        Journal of Heat and Mass Transfer, 70, 641-650.
 
     """
+    # This function is deprecated as of v2.1. It will be removed in v3.0.
+    warnings.warn("`pygfunction.gfunction.uniform_temperature` is "
+                  "deprecated as of v2.1. It will be removed in v3.0. "
+                  "New features are not fully supported by the function. "
+                  "Use the `pygfunction.gfunction.gFunction` class instead.",
+                  DeprecationWarning)
+
     boundary_condition = 'UBWT'
     # Build options dict
     options = {'nSegments':nSegments,
@@ -1080,6 +1094,13 @@ def equal_inlet_temperature(
        fields. International Journal of Heat and Mass Transfer, 91, 1119-1127.
 
     """
+    # This function is deprecated as of v2.1. It will be removed in v3.0.
+    warnings.warn("`pygfunction.gfunction.equal_inlet_temperature` is "
+                  "deprecated as of v2.1. It will be removed in v3.0. "
+                  "New features are not fully supported by the function. "
+                  "Use the `pygfunction.gfunction.gFunction` class instead.",
+                  DeprecationWarning)
+
     network = Network(
         boreholes, UTubes, m_flow_network=m_flow_borehole*len(boreholes),
         cp_f=cp_f, nSegments=nSegments)
@@ -1202,6 +1223,13 @@ def mixed_inlet_temperature(
        Environment, 25 (8), 1007-1022
 
     """
+    # This function is deprecated as of v2.1. It will be removed in v3.0.
+    warnings.warn("`pygfunction.gfunction.mixed_inlet_temperature` is "
+                  "deprecated as of v2.1. It will be removed in v3.0. "
+                  "New features are not fully supported by the function. "
+                  "Use the `pygfunction.gfunction.gFunction` class instead.",
+                  DeprecationWarning)
+
     boundary_condition = 'MIFT'
     # Build options dict
     options = {'nSegments':nSegments,
