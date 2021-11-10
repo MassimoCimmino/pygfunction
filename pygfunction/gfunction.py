@@ -926,7 +926,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=12,
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
-    segment_ratios : array or list of arrays, optional
+    segment_ratios : array, list of arrays, or callable, optional
         Ratio of the borehole length represented by each segment. The
         sum of ratios must be equal to 1. The shape of the array is of
         (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
@@ -1035,7 +1035,7 @@ def equal_inlet_temperature(
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
-    segment_ratios : array or list of arrays, optional
+    segment_ratios : array, list of arrays, or callable, optional
         Ratio of the borehole length represented by each segment. The
         sum of ratios must be equal to 1. The shape of the array is of
         (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
@@ -1139,7 +1139,7 @@ def mixed_inlet_temperature(
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 12.
-    segment_ratios : array or list of arrays, optional
+    segment_ratios : array, list of arrays, or callable, optional
         Ratio of the borehole length represented by each segment. The
         sum of ratios must be equal to 1. The shape of the array is of
         (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
@@ -1254,7 +1254,7 @@ class _BaseSolver(object):
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 8.
-    segment_ratios : array or list of arrays, optional
+    segment_ratios : array, list of arrays, or callable, optional
         Ratio of the borehole length represented by each segment. The
         sum of ratios must be equal to 1. The shape of the array is of
         (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
@@ -1724,7 +1724,7 @@ class _Detailed(_BaseSolver):
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 8.
-    segment_ratios : array or list of arrays, optional
+    segment_ratios : array, list of arrays, or callable, optional
         Ratio of the borehole length represented by each segment. The
         sum of ratios must be equal to 1. The shape of the array is of
         (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
@@ -1910,7 +1910,7 @@ class _Similarities(_BaseSolver):
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 8.
-    segment_ratios : array or list of arrays, optional
+    segment_ratios : array, list of arrays, or callable, optional
         Ratio of the borehole length represented by each segment. The
         sum of ratios must be equal to 1. The shape of the array is of
         (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
@@ -2596,7 +2596,7 @@ class _Equivalent(_BaseSolver):
         Number of line segments used per borehole, or list of number of
         line segments used for each borehole.
         Default is 8.
-    segment_ratios : array or list of arrays, optional
+    segment_ratios : array, list of arrays, or callable, optional
         Ratio of the borehole length represented by each segment. The
         sum of ratios must be equal to 1. The shape of the array is of
         (nSegments,) or list of (nSegments[i],). If segment_ratios==None,
