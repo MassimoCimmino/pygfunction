@@ -63,6 +63,7 @@ def main():
     # discretization
     nSegments_uniform = 48
     options_uniform = {'nSegments': nSegments_uniform,
+                       'segment_ratios': None,
                        'disp': True}
     # Number of segments used in the calculation with non-uniform
     # discretization

@@ -56,13 +56,14 @@ def main():
     k_f = fluid.k       # Fluid thermal conductivity (W/m.K)
 
     # g-Function calculation options
-    nSegments = 12
-    options = {'nSegments':nSegments, 'disp':True}
+    nSegments = 8
+    options = {'nSegments': nSegments,
+               'disp': True}
 
     # Geometrically expanding time vector.
     dt = 100*3600.                  # Time step
     tmax = 3000. * 8760. * 3600.    # Maximum time
-    Nt = 50                         # Number of time steps
+    Nt = 25                         # Number of time steps
     ts = H**2/(9.*alpha)            # Bore field characteristic time
     time = gt.utilities.time_geometric(dt, tmax, Nt)
 

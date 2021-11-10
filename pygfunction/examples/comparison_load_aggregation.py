@@ -39,7 +39,8 @@ def main():
     T_g = 10.0          # Undisturbed ground temperature (degC)
 
     # g-Function calculation options
-    options = {'nSegments':12, 'disp':True}
+    options = {'nSegments': 8,
+               'disp': True}
 
     # Simulation parameters
     dt = 3600.                  # Time step (s)

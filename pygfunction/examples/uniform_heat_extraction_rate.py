@@ -33,15 +33,30 @@ def main():
 
     # g-Function calculation options
     # The second field is evaluated with more segments to draw the
-    # temperature profiles
-    options = [{'nSegments':1, 'disp':True, 'profiles':True},
-               {'nSegments':12, 'disp':True, 'profiles':True},
-               {'nSegments':1, 'disp':True, 'profiles':True}]
+    # temperature profiles. A uniform discretization is used to compare results
+    # with Cimmino and Bernier (2014).
+    options = [{'nSegments': 1,
+                'segment_ratios': None,
+                'disp': True,
+                'profiles': True},
+               {'nSegments': 12,
+                'segment_ratios': None,
+                'disp': True,
+                'profiles': True},
+               {'nSegments': 1,
+                'segment_ratios': None,
+                'disp': True,
+                'profiles': True}]
+
+    # The 'similarities' method is used to consider unequal numbers of segments
+    # per borehole and to plot heat extraction rate profiles along
+    # individual boreholes
+    method = 'similarities'
 
     # Geometrically expanding time vector.
     dt = 100*3600.                  # Time step
     tmax = 3000. * 8760. * 3600.    # Maximum time
-    Nt = 50                         # Number of time steps
+    Nt = 25                         # Number of time steps
     ts = H**2/(9.*alpha)            # Bore field characteristic time
     time = gt.utilities.time_geometric(dt, tmax, Nt)
 
@@ -76,7 +91,7 @@ def main():
     for field in [boreField1, boreField2, boreField3]:
         gfunc = gt.gfunction.gFunction(
             field, alpha, time=time, boundary_condition='UHTR',
-            options=options[i])
+            options=options[i], method=method)
         # Draw g-function
         ax = gfunc.visualize_g_function().axes[0]
         # Draw reference g-function

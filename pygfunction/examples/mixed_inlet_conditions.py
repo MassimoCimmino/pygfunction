@@ -61,13 +61,18 @@ def main():
     k_f = fluid.k       # Fluid thermal conductivity (W/m.K)
 
     # g-Function calculation options
-    nSegments = 12
-    options = {'nSegments':nSegments, 'disp':True, 'profiles':True}
+    nSegments = 8
+    options = {'nSegments': nSegments,
+               'disp': True,
+               'profiles': True}
+    # The similarities method is used since the 'equivalent' method does not
+    # apply if boreholes are connected in series
+    method = 'similarities'
 
     # Geometrically expanding time vector.
     dt = 100*3600.                  # Time step
     tmax = 3000. * 8760. * 3600.    # Maximum time
-    Nt = 50                         # Number of time steps
+    Nt = 25                         # Number of time steps
     ts = H_mean**2/(9.*alpha)   # Bore field characteristic time
     time = gt.utilities.time_geometric(dt, tmax, Nt)
 
@@ -115,11 +120,13 @@ def main():
 
     # Calculate the g-function for uniform temperature
     gfunc_Tb = gt.gfunction.gFunction(
-        boreField, alpha, time=time, boundary_condition='UBWT', options=options)
+        boreField, alpha, time=time, boundary_condition='UBWT',
+        options=options, method=method)
 
     # Calculate the g-function for mixed inlet fluid conditions
     gfunc_equal_Tf_mixed = gt.gfunction.gFunction(
-        network, alpha, time=time, boundary_condition='MIFT', options=options)
+        network, alpha, time=time, boundary_condition='MIFT', options=options,
+        method=method)
 
     # -------------------------------------------------------------------------
     # Plot g-functions

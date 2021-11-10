@@ -41,7 +41,9 @@ class TestSolvers(unittest.TestCase):
         time = time_geometric(dt, tmax, Nt)
 
         # g-Function calculation options
-        options_uniform = {'nSegments': 24, 'disp': False}
+        options_uniform = {'nSegments': 24,
+                          'segment_ratios': None,
+                          'disp': False}
         ratios = segment_ratios(8)
         options_unequal = {'nSegments': 8,
                           'segment_ratios': ratios,
@@ -82,7 +84,9 @@ class TestSolvers(unittest.TestCase):
         time = time_geometric(dt, tmax, Nt)
 
         # g-Function calculation options
-        options_uniform = {'nSegments': 24, 'disp': False}
+        options_uniform = {'nSegments': 24,
+                          'segment_ratios': None,
+                          'disp': False}
         ratios = segment_ratios(8)
         options_unequal = {'nSegments': 8,
                           'segment_ratios': ratios,
@@ -124,7 +128,9 @@ class TestSolvers(unittest.TestCase):
         time = time_geometric(dt, tmax, Nt)
 
         # g-Function calculation options
-        options_uniform = {'nSegments': 24, 'disp': False}
+        options_uniform = {'nSegments': 24,
+                          'segment_ratios': None,
+                          'disp': False}
         ratios = segment_ratios(8)
         options_unequal = {'nSegments': 8,
                           'segment_ratios': ratios,
@@ -276,7 +282,8 @@ class TestUniformTemperature(unittest.TestCase):
         N_2 = 1
         boreField = rectangle_field(N_1, N_2, self.B, self.B,
                                     self.H, self.D, self.r_b)
-        g = uniform_temperature(boreField, time, self.alpha, nSegments=12)
+        g = uniform_temperature(
+            boreField, time, self.alpha, nSegments=12, segment_ratios=None)
 
         self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-6),
                         msg='Incorrect values of the g-function of one '
@@ -297,7 +304,8 @@ class TestUniformTemperature(unittest.TestCase):
         N_2 = 2
         boreField = rectangle_field(N_1, N_2, self.B, self.B,
                                     self.H, self.D, self.r_b)
-        g = uniform_temperature(boreField, time, self.alpha, nSegments=12)
+        g = uniform_temperature(
+            boreField, time, self.alpha, nSegments=12, segment_ratios=None)
 
         self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-6),
                         msg='Incorrect values of the g-function of three by '
@@ -323,16 +331,23 @@ class TestUniformTemperature(unittest.TestCase):
 
         # g-Function calculation option for uniform borehole segment lengths
         # in the field by defining nSegments as an integer >= 1
-        options = {'nSegments': nSegments[0]}
-        gfunc = gFunction(boreField, self.alpha, time=time, options=options)
+        options = {'nSegments': nSegments[0],
+                   'segment_ratios': None}
+        method = 'similarities'
+        gfunc = gFunction(
+            boreField, self.alpha, time=time, options=options, method=method)
         g_ref = gfunc.gFunc
 
         # g-Function calculation with nSegments passed as list, where the list
         # is of the same length as boreField and each borehole is defined to
         # have >= 1 segment
         # Note: nSegments[i] pertains to boreField[i]
-        options = {'nSegments':nSegments}
-        g = gFunction(boreField, self.alpha, time=time, options=options).gFunc
+        options = {'nSegments': nSegments,
+                   'segment_ratios': None}
+        method = 'similarities'
+        gfunc = gFunction(
+            boreField, self.alpha, time=time, options=options, method=method)
+        g = gfunc.gFunc
 
         self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-6),
                         msg='Incorrect values of the g-function of six '
@@ -414,8 +429,11 @@ class TestMixedInletTemperature(unittest.TestCase):
 
         # g-Function calculation option for uniform borehole segment lengths
         # in the field by defining nSegments as an integer >= 1
-        options = {'nSegments': nSegments[0]}
-        gfunc = gFunction(network, self.alpha, time=time, options=options)
+        options = {'nSegments': nSegments[0],
+                   'segment_ratios': None}
+        method = 'similarities'
+        gfunc = gFunction(
+            network, self.alpha, time=time, options=options, method=method)
         g_reference = gfunc.gFunc
 
         # g-Function calculation with nSegments passed as list, where the list
@@ -423,8 +441,10 @@ class TestMixedInletTemperature(unittest.TestCase):
         # have >= 1 segment
         # Note: nSegments[i] pertains to boreField[i]
         options = {'nSegments': nSegments}
-        g_unequal_nSegments = gFunction(
-            network, self.alpha, time=time, options=options).gFunc
+        method = 'similarities'
+        gfunc = gFunction(
+            network, self.alpha, time=time, options=options, method=method)
+        g_unequal_nSegments = gfunc.gFunc
 
         self.assertTrue(
             np.allclose(
@@ -442,9 +462,11 @@ class TestMixedInletTemperature(unittest.TestCase):
         options = {'nSegments': nSegments,
                    'segment_ratios': ratios,
                    'disp': False}
+        method = 'similarities'
 
-        g_predefined_ratios = gFunction(
-            network, self.alpha, time=time, options=options).gFunc
+        gfunc = gFunction(
+            network, self.alpha, time=time, options=options, method=method)
+        g_predefined_ratios = gfunc.gFunc
 
         self.assertTrue(
             np.allclose(
@@ -458,9 +480,11 @@ class TestMixedInletTemperature(unittest.TestCase):
         options = {'nSegments': nSegments,
                    'segment_ratios': ratios,
                    'disp': False}
+        method = 'similarities'
 
-        g_generated_ratios = gFunction(
-            network, self.alpha, time=time, options=options).gFunc
+        gfunc = gFunction(
+            network, self.alpha, time=time, options=options, method=method)
+        g_generated_ratios = gfunc.gFunc
 
         self.assertTrue(
             np.allclose(
@@ -529,9 +553,9 @@ class TestEqualInletTemperature(unittest.TestCase):
                 UTube._Rd[0,1] = Rd_01
                 UTube._Rd[1,0] = Rd_01
                 UTube._update_model_variables(self.m_flow, self.cp, nSegments, None)
-            g[i] = equal_inlet_temperature(boreField, UTubes, self.m_flow,
-                                           self.cp, time, self.alpha,
-                                           nSegments=nSegments)
+            g[i] = equal_inlet_temperature(
+                boreField, UTubes, self.m_flow, self.cp, time, self.alpha,
+                nSegments=nSegments, segment_ratios=None)
 
         self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-6),
                         msg='Incorrect values of the g-function of one '
@@ -581,9 +605,9 @@ class TestEqualInletTemperature(unittest.TestCase):
             UTube._Rd[0,1] = Rd_01
             UTube._Rd[1,0] = Rd_01
             UTube._update_model_variables(self.m_flow, self.cp, nSegments, None)
-        g = equal_inlet_temperature(boreField, UTubes, self.m_flow,
-                                       self.cp, time, self.alpha,
-                                       nSegments=nSegments)
+        g = equal_inlet_temperature(
+            boreField, UTubes, self.m_flow, self.cp, time, self.alpha,
+            nSegments=nSegments, segment_ratios=None)
 
         self.assertTrue(np.allclose(g, g_ref, rtol=rel_tol, atol=1e-6),
                         msg='Incorrect values of the g-function of four by '
