@@ -6,7 +6,7 @@
     boundary conditions : (1) a uniform borehole wall temperature along the
     boreholes equal for all boreholes, and (2) an equal inlet fluid
     temperature into the boreholes. g-Functions using 8 segments in a
-    non-uniform deiscretization are compared to reference g-functions
+    non-uniform discretization are compared to reference g-functions
     calculated using 48 segments of equal lengths. It is shown that g-functions
     can be calculated accurately using a small number of segments.
 """
