@@ -2496,6 +2496,12 @@ def borehole_thermal_resistance(pipe, m_flow_borehole, cp_f):
         Effective borehole thermal resistance (m.K/W).
 
     """
+    # This function is deprecated as of v2.2. It will be removed in v3.0.
+    warnings.warn("`pygfunction.pipes.borehole_thermal_resistance` is "
+                  "deprecated as of v2.2. It will be removed in v3.0. "
+                  "Use the `_BasePipe.effective_borehole_thermal_resistance` "
+                  "class method instead.",
+                  DeprecationWarning)
     # Coefficient for T_{f,out} = a_out*T_{f,in} + [b_out]*[T_b]
     a_out = pipe.coefficients_outlet_temperature(
         m_flow_borehole, cp_f, nSegments=1)[0].item()
