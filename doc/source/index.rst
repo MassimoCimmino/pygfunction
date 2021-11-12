@@ -6,9 +6,9 @@
 pygfunction
 ===========
 
-*pygfunction* is a Python package that allows the calculation thermal response
-factors - or *g*-functions - for geothermal borehole fields using analytical
-solutions.
+*pygfunction* is a Python package that allows the calculation of thermal
+response factors - or *g*-functions - for geothermal borehole fields using
+analytical solutions.
 
 .. toctree::
    :maxdepth: 2

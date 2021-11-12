@@ -2,6 +2,8 @@
 
 ## Current version
 
+## Version 2.1.0 (2021-11-12)
+
 ### New features 
 
 * [Issue 36](https://github.com/MassimoCimmino/pygfunction/issues/36) - Added a `Coaxial` class to the `pipes` module to model boreholes with coaxial pipes.
