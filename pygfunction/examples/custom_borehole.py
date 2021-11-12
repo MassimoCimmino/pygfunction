@@ -95,8 +95,8 @@ def main():
           + str(check_single))
 
     # Evaluate and print the effective borehole thermal resistance
-    R_b = gt.pipes.borehole_thermal_resistance(
-        SingleUTube, m_flow_borehole, fluid.cp)
+    R_b = SingleUTube.effective_borehole_thermal_resistance(
+        m_flow_borehole, fluid.cp)
     print('Single U-tube Borehole thermal resistance: '
           '{0:.4f} m.K/W'.format(R_b))
 
@@ -143,12 +143,12 @@ def main():
         config='parallel')
 
     # Evaluate and print the effective borehole thermal resistance
-    R_b_series = gt.pipes.borehole_thermal_resistance(
-        DoubleUTube_series, m_flow_borehole, cp_f)
+    R_b_series = DoubleUTube_series.effective_borehole_thermal_resistance(
+        m_flow_borehole, fluid.cp)
     print('Double U-tube (series) Borehole thermal resistance: {0:.4f} m.K/W'.
           format(R_b_series))
-    R_b_parallel = gt.pipes.borehole_thermal_resistance(
-        DoubleUTube_parallel, m_flow_borehole, cp_f)
+    R_b_parallel = DoubleUTube_parallel.effective_borehole_thermal_resistance(
+        m_flow_borehole, fluid.cp)
     print('Double U-tube (parallel) Borehole thermal resistance: {0:.4f} m.K/W'.
           format(R_b_parallel))
 
@@ -193,8 +193,8 @@ def main():
         pos, r_inner, r_outer, borehole, k_s, k_g, R_ff, R_fp, J=2)
 
     # Evaluate and print the effective borehole thermal resistance
-    R_b = gt.pipes.borehole_thermal_resistance(
-        Coaxial, m_flow_borehole, cp_f)
+    R_b = Coaxial.effective_borehole_thermal_resistance(
+        m_flow_borehole, fluid.cp)
     print('Coaxial tube Borehole thermal resistance: {0:.4f} m.K/W'.
           format(R_b))
 
