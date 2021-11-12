@@ -7,11 +7,11 @@ Setting up pygfunction
 *pygfunction* uses Python 3.7, along with the following packages:
 	- Coolprop (>=6.4.1)
 	- matplotlib (>= 3.3.4),
-	- numpy (>= 1.19.2)
+	- numpy (>= 1.20.1)
 	- scipy (>= 1.6.2)
 
 *pygfunction*'s- documentation is built using:
-	- sphinx (>= 3.5.4)
+	- sphinx (>= 4.0.1)
 	- numpydoc (>= 1.1.0)
 
 **Users** - `Download pip <https://pip.pypa.io/en/latest/>`_ and install the

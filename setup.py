@@ -14,7 +14,7 @@ setup(
     include_package_data=True,
     install_requires=['coolprop>=6.4.1',
                       'matplotlib>=3.3.4',
-                      'numpy>=1.19.2',
+                      'numpy>=1.20.1',
                       'scipy>=1.6.2'],
     test_suite='tests',
 
