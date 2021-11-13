@@ -628,6 +628,80 @@ class _BasePipe(object):
 
         return a_in, a_b
 
+    def effective_borehole_thermal_resistance(self, m_flow_borehole, cp_f):
+        """
+        Evaluate the effective borehole thermal resistance, defined by:
+
+            .. math::
+
+                \\frac{Q_b}{H} = \\frac{T^*_b - \\bar{T}_f}{R^*_b}
+
+                \\bar{T}_f = \\frac{1}{2}(T_{f,in} + T_{f,out})
+
+        where :math:`Q_b` is the borehole heat extraction rate (in Watts),
+        :math:`H` is the borehole length, :math:`T^*_b` is the effective
+        borehole wall temperature, :math:`R^*_b` is the effective borehole
+        thermal resistance, :math:`T_{f,in}` is the inlet fluid temperature,
+        and :math:`T_{f,out}` is the outlet fluid temperature.
+
+        Parameters
+        ----------
+        m_flow_borehole : float
+            Fluid mass flow rate (in kg/s) into the borehole.
+        cp_f : float
+            Fluid specific isobaric heat capacity (in J/kg.K)
+
+        Returns
+        -------
+        R_b : float
+            Effective borehole thermal resistance (in m.K/W).
+
+        """
+        # Coefficient for T_{f,out} = a_out*T_{f,in} + [b_out]*[T_b]
+        a_out = self.coefficients_outlet_temperature(
+            m_flow_borehole, cp_f, nSegments=1)[0].item()
+        # Coefficient for Q_b = [a_Q]*T{f,in} + [b_Q]*[T_b]
+        a_Q = self.coefficients_borehole_heat_extraction_rate(
+                m_flow_borehole, cp_f, nSegments=1)[0].item()
+        # Borehole length
+        H = self.b.H
+        # Effective borehole thermal resistance
+        R_b = -0.5*H*(1. + a_out)/a_Q
+        return R_b
+
+    def local_borehole_thermal_resistance(self):
+        """
+        Evaluate the local (cross-sectional) borehole thermal resistance,
+        defined by:
+
+            .. math::
+
+                Q'_b(z) = \\frac{T_b(z) - \\bar{T}_f(z)}{R_b}
+
+        where :math:`Q'_b(z)` is the borehole heat extraction rate per unit
+        depth at a depth :math:`(z)`, :math:`T_b(z)` is the borehole wall
+        temperature, :math:`\\bar{T}_f(z)` is the arithmetic mean fluid
+        temperature and :math:`R_b` is the local borehole thermal resistance.
+
+        Returns
+        -------
+        R_b : float
+            Local borehole thermal resistance (in m.K/W).
+
+        """
+        # Evaluate borehole thermal resistance
+        R_b = 1 / np.trace(1 / self._Rd)
+        return R_b
+
+    def update_thermal_resistances(self):
+        """ Update the delta-circuit of thermal resistances.
+        """
+        raise NotImplementedError(
+            'update_thermal_resistances class method not implemented, '
+            'this method should update the array of delta-circuit thermal '
+            'resistances.')
+        return
+
     def visualize_pipes(self):
         """
         Plot the cross-section view of the borehole.
@@ -948,11 +1022,31 @@ class SingleUTube(_BasePipe):
         self._check_geometry()
 
         # Delta-circuit thermal resistances
-        self._Rd = thermal_resistances(pos, r_out, borehole.r_b,
-                                       k_s, k_g, self.R_fp, J=self.J)[1]
+        self.update_thermal_resistances(self.R_fp)
+        return
 
+    def update_thermal_resistances(self, R_fp):
+        """
+        Update the delta-circuit of thermal resistances.
+
+        This methods updates the values of the delta-circuit thermal
+        resistances based on the provided fluid to outer pipe wall thermal
+        resistance.
+
+        Parameters
+        ----------
+        R_fp : float
+            Fluid to outer pipe wall thermal resistance (m-K/W).
+
+        """
+        self.R_fp = R_fp
+        # Delta-circuit thermal resistances
+        self._Rd = thermal_resistances(
+            self.pos, self.r_out, self.b.r_b, self.k_s, self.k_g, R_fp,
+            J=self.J)[1]
         # Initialize stored_coefficients
         self._initialize_stored_coefficients()
+        return
 
     def _continuity_condition_base(
             self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
@@ -1378,11 +1472,31 @@ class MultipleUTube(_BasePipe):
         self._check_geometry()
 
         # Delta-circuit thermal resistances
-        self._Rd = thermal_resistances(pos, r_out, borehole.r_b,
-                                       k_s, k_g, self.R_fp, J=self.J)[1]
+        self.update_thermal_resistances(self.R_fp)
+        return
 
+    def update_thermal_resistances(self, R_fp):
+        """
+        Update the delta-circuit of thermal resistances.
+
+        This methods updates the values of the delta-circuit thermal
+        resistances based on the provided fluid to outer pipe wall thermal
+        resistance.
+
+        Parameters
+        ----------
+        R_fp : float
+            Fluid to outer pipe wall thermal resistance (m-K/W).
+
+        """
+        self.R_fp = R_fp
+        # Delta-circuit thermal resistances
+        self._Rd = thermal_resistances(
+            self.pos, self.r_out, self.b.r_b, self.k_s, self.k_g, R_fp,
+            J=self.J)[1]
         # Initialize stored_coefficients
         self._initialize_stored_coefficients()
+        return
 
     def _continuity_condition_base(
             self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
@@ -1837,11 +1951,31 @@ class IndependentMultipleUTube(MultipleUTube):
         self._check_geometry()
 
         # Delta-circuit thermal resistances
-        self._Rd = thermal_resistances(pos, r_out, borehole.r_b,
-                                       k_s, k_g, self.R_fp, J=self.J)[1]
+        self.update_thermal_resistances(self.R_fp)
+        return
 
+    def update_thermal_resistances(self, R_fp):
+        """
+        Update the delta-circuit of thermal resistances.
+
+        This methods updates the values of the delta-circuit thermal
+        resistances based on the provided fluid to outer pipe wall thermal
+        resistance.
+
+        Parameters
+        ----------
+        R_fp : float
+            Fluid to outer pipe wall thermal resistance (m-K/W).
+
+        """
+        self.R_fp = R_fp
+        # Delta-circuit thermal resistances
+        self._Rd = thermal_resistances(
+            self.pos, self.r_out, self.b.r_b, self.k_s, self.k_g, R_fp,
+            J=self.J)[1]
         # Initialize stored_coefficients
         self._initialize_stored_coefficients()
+        return
 
     def _continuity_condition_base(
             self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
@@ -2042,23 +2176,50 @@ class Coaxial(SingleUTube):
         self.nPipes = 1
         self.nInlets = 1
         self.nOutlets = 1
-        self._check_geometry()
 
         # Determine the indexes of the inner and outer pipes
-        iInner = r_out.argmin()
-        iOuter = r_out.argmax()
+        self._iInner = r_out.argmin()
+        self._iOuter = r_out.argmax()
+
+        self._check_geometry()
+
+        # Delta-circuit thermal resistances
+        self.update_thermal_resistances(self.R_ff, self.R_fp)
+        return
+
+    def update_thermal_resistances(self, R_ff, R_fp):
+        """
+        Update the delta-circuit of thermal resistances.
+
+        This methods updates the values of the delta-circuit thermal
+        resistances based on the provided fluid to fluid and fluid to outer
+        pipe wall thermal resistances.
+
+        Parameters
+        ----------
+        R_ff : float
+            Fluid to fluid thermal resistance of the inner pipe to the outer
+            pipe (in m-K/W).
+        R_fp : float
+            Fluid to outer pipe wall thermal resistance of the outer pipe in
+            contact with the grout (in m-K/W).
+
+        """
+        self.R_ff = R_ff
+        self.R_fp = R_fp
         # Outer pipe to borehole wall thermal resistance
-        R_fg = thermal_resistances(pos, r_out[iOuter], borehole.r_b, k_s,
-                                   k_g, self.R_fp, J=self.J)[1][0]
+        R_fg = thermal_resistances(
+            self.pos, self.r_out[self._iOuter], self.b.r_b, self.k_s, self.k_g,
+            R_fp, J=self.J)[1][0]
         # Delta-circuit thermal resistances
         self._Rd = np.zeros((2*self.nPipes, 2*self.nPipes))
-        self._Rd[iInner, iInner] = np.inf
-        self._Rd[iInner, iOuter] = R_ff
-        self._Rd[iOuter, iInner] = R_ff
-        self._Rd[iOuter, iOuter] = R_fg
-
+        self._Rd[self._iInner, self._iInner] = np.inf
+        self._Rd[self._iInner, self._iOuter] = R_ff
+        self._Rd[self._iOuter, self._iInner] = R_ff
+        self._Rd[self._iOuter, self._iOuter] = R_fg
         # Initialize stored_coefficients
         self._initialize_stored_coefficients()
+        return
 
     def visualize_pipes(self):
         """
@@ -2070,10 +2231,6 @@ class Coaxial(SingleUTube):
             Figure object (matplotlib).
 
         """
-        # Determine the indexes of the inner and outer pipes
-        iInner = self.r_out.argmin()
-        iOuter = self.r_out.argmax()
-
         # Configure figure and axes
         fig = _initialize_figure()
         ax = fig.add_subplot(111)
@@ -2109,7 +2266,7 @@ class Coaxial(SingleUTube):
             pipe_in_out = plt.Circle(
                 (x_in, y_in), radius=self.r_out[0],
                 fill=False, linestyle='-', color=colors[i], lw=lw)
-            if iInner == 0:
+            if self._iInner == 0:
                 ax.text(x_in, y_in, i, ha="center", va="center")
             else:
                 ax.text(x_in + 0.5 * (self.r_out[0] + self.r_in[1]), y_in, i,
@@ -2122,7 +2279,7 @@ class Coaxial(SingleUTube):
             pipe_out_out = plt.Circle(
                 (x_out, y_out), radius=self.r_out[1],
                 fill=False, linestyle='-', color=colors[i], lw=lw)
-            if iInner == 1:
+            if self._iInner == 1:
                 ax.text(x_out, y_out, i + self.nPipes, ha="center", va="center")
             else:
                 ax.text(x_out + 0.5 * (self.r_out[0] + self.r_in[1]), y_out,
@@ -2141,10 +2298,6 @@ class Coaxial(SingleUTube):
         """ Verifies the inputs to the pipe object and raises an error if
             the geometry is not valid.
         """
-        # Determine the indexes of the inner and outer pipes
-        iInner = self.r_out.argmin()
-        iOuter = self.r_out.argmax()
-
         # Verify that thermal properties are greater than 0.
         if not self.k_s > 0.:
             raise ValueError(
@@ -2181,7 +2334,7 @@ class Coaxial(SingleUTube):
 
         # Verify that the inner radius of the outer pipe is greater than the
         # outer radius of the inner pipe.
-        if not np.greater(self.r_in[iOuter], self.r_out[iInner]):
+        if not np.greater(self.r_in[self._iOuter], self.r_out[self._iInner]):
             raise ValueError(
                 'The inner radius of the outer pipe must be greater than the'
                 ' outer radius of the inner pipe.')
@@ -2343,6 +2496,12 @@ def borehole_thermal_resistance(pipe, m_flow_borehole, cp_f):
         Effective borehole thermal resistance (m.K/W).
 
     """
+    # This function is deprecated as of v2.2. It will be removed in v3.0.
+    warnings.warn("`pygfunction.pipes.borehole_thermal_resistance` is "
+                  "deprecated as of v2.2. It will be removed in v3.0. "
+                  "Use the `_BasePipe.effective_borehole_thermal_resistance` "
+                  "class method instead.",
+                  DeprecationWarning)
     # Coefficient for T_{f,out} = a_out*T_{f,in} + [b_out]*[T_b]
     a_out = pipe.coefficients_outlet_temperature(
         m_flow_borehole, cp_f, nSegments=1)[0].item()
