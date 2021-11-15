@@ -74,15 +74,13 @@ class _BasePipe(object):
         """
         T_b = np.atleast_1d(T_b)
         nSegments = len(T_b)
+        # Build coefficient matrices
         z_all = np.atleast_1d(z).flatten()
-        AB = list(zip(*[
-            self.coefficients_temperature(
-                zi, m_flow_borehole, cp_f, nSegments, segment_ratios=segment_ratios)
-            for zi in z_all]))
-        a_in = np.stack(AB[0], axis=-1)
-        a_b = np.stack(AB[1], axis=-1)
-        T_f = np.einsum('ijk,j->ki', a_in, np.atleast_1d(T_f_in)) \
-            + np.einsum('ijk,j->ki', a_b, T_b)
+        a_in, a_b = self.coefficients_temperature(
+            z_all, m_flow_borehole, cp_f, nSegments,
+            segment_ratios=segment_ratios)
+        # Evaluate fluid temperatures
+        T_f = a_in @ np.atleast_1d(T_f_in) + a_b @ T_b
 
         # Return 1d array if z was supplied as scalar
         if np.isscalar(z):
@@ -423,8 +421,8 @@ class _BasePipe(object):
 
         Parameters
         ----------
-        z : float
-            Depth (in meters) to evaluate the fluid temperature coefficients.
+        z : float or (nDepths,) array
+            Depths (in meters) to evaluate the fluid temperature coefficients.
         m_flow_borehole : float or (nInlets,) array
             Inlet mass flow rate (in kg/s) into the borehole.
         cp_f : float or (nInlets,) array
@@ -439,9 +437,11 @@ class _BasePipe(object):
 
         Returns
         -------
-        a_in : (2*nPipes, nInlets,) array
+        a_in :
+        (2*nPipes, nInlets,) array, or (nDepths, 2*nPipes, nInlets,) array
             Array of coefficients for inlet fluid temperature.
-        a_b : (2*nPipes, nSegments,) array
+        a_b :
+        (2*nPipes, nSegments,) array, or (nDepths, 2*nPipes, nSegments,) array
             Array of coefficients for borehole wall temperatures.
 
         """
@@ -539,18 +539,11 @@ class _BasePipe(object):
             # Heat extraction rates are calculated from an energy balance on a
             # borehole segment.
             z = self.b._segment_edges(nSegments, segment_ratios=segment_ratios)
-            z1 = z[0]
-            aTf1, bTf1 = self.coefficients_temperature(
-                z1, m_flow_borehole, cp_f, nSegments,
+            aTf, bTf = self.coefficients_temperature(
+                z, m_flow_borehole, cp_f, nSegments,
                 segment_ratios=segment_ratios)
-            for i in range(nSegments):
-                z2 = z[i+1]
-                aTf2, bTf2 = self.coefficients_temperature(
-                    z2, m_flow_borehole, cp_f, nSegments,
-                    segment_ratios=segment_ratios)
-                a_in[i, :] = mcp @ (aTf1 - aTf2)
-                a_b[i, :] = mcp @ (bTf1 - bTf2)
-                aTf1, bTf1 = aTf2, bTf2
+            a_in = mcp @ (aTf[:-1,:,:] - aTf[1:,:,:])
+            a_b = mcp @ (bTf[:-1,:,:] - bTf[1:,:,:])
 
             # Store coefficients
             self._set_stored_coefficients(
@@ -1172,8 +1165,8 @@ class SingleUTube(_BasePipe):
 
         Parameters
         ----------
-        z : float
-            Depth (in meters) to evaluate the fluid temperature coefficients.
+        z : float or (nDepths,) array
+            Depths (in meters) to evaluate the fluid temperature coefficients.
         m_flow_borehole : float or (nInlets,) array
             Inlet mass flow rate (in kg/s) into the borehole.
         cp_f : float or (nInlets,) array
@@ -1188,28 +1181,34 @@ class SingleUTube(_BasePipe):
 
         Returns
         -------
-        a_f0 : (2*nPipes, 2*nPipes,) array
+        a_f0 :
+        (2*nPipes, 2*nPipes,) array, or (nDepths, 2*nPipes, 2*nPipes,) array
             Array of coefficients for inlet fluid temperature.
-        a_b : (2*nPipes, nSegments,) array
+        a_b :
+        (2*nPipes, nSegments,) array, or (nDepths, 2*nPipes, nSegments,) array
             Array of coefficients for borehole wall temperatures.
 
         """
+        z_array = np.atleast_1d(z)
         # Check if model variables need to be updated
         self._check_model_variables(
             m_flow_borehole, cp_f, nSegments, segment_ratios)
 
-        a_f0 = np.array([[self._f1(z), self._f2(z)],
-                        [-self._f2(z), self._f3(z)]])
+        a_f0 = np.block([[[self._f1(z)], [self._f2(z)]],
+                         [[-self._f2(z)], [self._f3(z)]]]).transpose(2, 0, 1)
 
-        a_b = np.zeros((2*self.nPipes, nSegments))
-        z_all = self.b._segment_edges(nSegments, segment_ratios=segment_ratios)
-        N = min(int(np.sum(z > z_all)), nSegments)
-        z1 = z - np.minimum(z_all[1:N+1], z)
-        z2 = z - z_all[:N]
-        dF4 = self._F4(z2) - self._F4(z1)
-        dF5 = self._F5(z2) - self._F5(z1)
-        a_b[0, :N] = dF4
-        a_b[1, :N] = -dF5
+        a_b = np.zeros((len(z_array), 2*self.nPipes, nSegments))
+        z_edges = self.b._segment_edges(
+            nSegments, segment_ratios=segment_ratios)
+        dz = np.maximum(np.subtract.outer(z_array, z_edges), 0.)
+        dF4 = self._F4(dz)
+        dF5 = self._F5(dz)
+        a_b[:, 0, :] = (dF4[:, :-1] - dF4[:, 1:])
+        a_b[:, 1, :] = -(dF5[:, :-1] - dF5[:, 1:])
+        # Remove first dimension if z is a scalar
+        if np.isscalar(z):
+            a_f0 = a_f0[0, :, :]
+            a_b = a_b[0, :, :]
 
         return a_f0, a_b
 
@@ -1756,8 +1755,8 @@ class MultipleUTube(_BasePipe):
 
         Parameters
         ----------
-        z : float
-            Depth (in meters) to evaluate the fluid temperature coefficients.
+        z : float or (nDepths,) array
+            Depths (in meters) to evaluate the fluid temperature coefficients.
         m_flow_borehole : float or (nInlets,) array
             Inlet mass flow rate (in kg/s) into the borehole.
         cp_f : float or (nInlets,) array
@@ -1772,12 +1771,15 @@ class MultipleUTube(_BasePipe):
 
         Returns
         -------
-        a_f0 : (2*nPipes, 2*nPipes,) array
+        a_f0 :
+        (2*nPipes, 2*nPipes,) array, or (nDepths, 2*nPipes, 2*nPipes,) array
             Array of coefficients for inlet fluid temperature.
-        a_b : (2*nPipes, nSegments,) array
+        a_b :
+        (2*nPipes, nSegments,) array, or (nDepths, 2*nPipes, nSegments,) array
             Array of coefficients for borehole wall temperatures.
 
         """
+        z_array = np.atleast_1d(z)
         # Check if model variables need to be updated
         self._check_model_variables(
             m_flow_borehole, cp_f, nSegments, segment_ratios)
@@ -1789,16 +1791,22 @@ class MultipleUTube(_BasePipe):
         L = self._L
         Dm1 = self._Dm1
 
-        # Matrix exponential at depth (z)
-        a_f0 = np.real(V @ np.diag(np.exp(L*z)) @ Vm1)
+        # Coefficient matrix for fluid temperatures at z=0
+        a_f0 = np.real(
+            (V * np.exp(np.multiply.outer(z_array, L))[:,np.newaxis,:]) @ Vm1)
 
         # Coefficient matrix for borehole wall temperatures
-        a_b = np.zeros((2*self.nPipes, nSegments))
-        z_all = self.b._segment_edges(nSegments, segment_ratios=segment_ratios)
-        dz = z - np.minimum(z, z_all)
-        exp_Lz = np.exp(np.multiply.outer(L, dz))
-        dexp_Lz = exp_Lz[:,1:] - exp_Lz[:,:-1]
+        a_b = np.zeros((len(z_array), 2*self.nPipes, nSegments))
+        z_edges = self.b._segment_edges(
+            nSegments, segment_ratios=segment_ratios)
+        dz = np.maximum(np.subtract.outer(z_array, z_edges), 0.)
+        exp_Lz = np.exp(np.multiply.outer(L, dz)).transpose(1, 0, 2)
+        dexp_Lz = exp_Lz[:,:,1:] - exp_Lz[:,:,:-1]
         a_b = np.real(((V @ Dm1) * (Vm1 @ sumA)) @ dexp_Lz)
+        # Remove first dimension if z is a scalar
+        if np.isscalar(z):
+            a_f0 = a_f0[0, :, :]
+            a_b = a_b[0, :, :]
 
         return a_f0, a_b
 
