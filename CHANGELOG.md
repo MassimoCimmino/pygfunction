@@ -2,13 +2,17 @@
 
 ## Current version
 
-### New features 
+### New features
 
 * [Issue 148](https://github.com/MassimoCimmino/pygfunction/issues/148) - Implemented `effective_borehole_thermal_resistance()` and `local_borehole_thermal_resistance()` methods for all pipe classes. Deprecated `pipes.borehole_thermal_resistance()`, which computed the effective borehole thermal resistance. It will be removed in `v3.0.0`. Implemented a new `update_thermal_resistances()` method to all pipe classes. This method allows to update the delta-circuit of thermal resistance of the boreholes based on provided values for the fluid thermal resistances. This allows simulations with time-variable fluid thermal resistances.
 
+### Enhancements
+
+* [Issue 152](https://github.com/MassimoCimmino/pygfunction/issues/152) - Vectorized `coefficients_temperature` and `_general_solution` in `pipe` objects to accept depths `z` as an array. This speeds up calculations for `get_temperature` and `get_borehole_heat_extraction_rate` class methods.
+
 ## Version 2.1.0 (2021-11-12)
 
-### New features 
+### New features
 
 * [Issue 36](https://github.com/MassimoCimmino/pygfunction/issues/36) - Added a `Coaxial` class to the `pipes` module to model boreholes with coaxial pipes.
 * [Issue 135](https://github.com/MassimoCimmino/pygfunction/issues/135) - Added functionality for non-uniform discretization of the segments along the boreholes. This increases the accuracy of *g*-function calculations for the same number of segments when compared to a uniform discretization. Segment lengths are defined using the `segment_ratios` option in the `gFunction` class. A `discretize` function is added to the `utilities` module to generate borehole discretizations using an expanding mesh.
