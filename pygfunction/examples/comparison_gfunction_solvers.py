@@ -20,7 +20,7 @@
 """
 import matplotlib.pyplot as plt
 import numpy as np
-from time import time as tic
+from time import perf_counter
 
 import pygfunction as gt
 
@@ -63,18 +63,18 @@ def main():
     # -------------------------------------------------------------------------
     # Evaluate g-functions
     # -------------------------------------------------------------------------
-    t0 = tic()
+    t0 = perf_counter()
     gfunc_detailed = gt.gfunction.gFunction(
         field, alpha, time=time, options=options, method='detailed')
-    t1 = tic()
+    t1 = perf_counter()
     t_detailed = t1 - t0
     gfunc_similarities = gt.gfunction.gFunction(
         field, alpha, time=time, options=options, method='similarities')
-    t2 = tic()
+    t2 = perf_counter()
     t_similarities = t2 - t1
     gfunc_equivalent = gt.gfunction.gFunction(
         field, alpha, time=time, options=options, method='equivalent')
-    t3 = tic()
+    t3 = perf_counter()
     t_equivalent = t3 - t2
 
     # -------------------------------------------------------------------------
@@ -143,11 +143,11 @@ def main():
     # -------------------------------------------------------------------------
     gfunc_similarities = gt.gfunction.gFunction(
         field, alpha, time=time, options=options, method='similarities')
-    t2 = tic()
+    t2 = perf_counter()
     t_similarities = t2 - t1
     gfunc_equivalent = gt.gfunction.gFunction(
         field, alpha, time=time, options=options, method='equivalent')
-    t3 = tic()
+    t3 = perf_counter()
     t_equivalent = t3 - t2
 
     # -------------------------------------------------------------------------

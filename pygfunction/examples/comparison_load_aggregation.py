@@ -12,7 +12,7 @@
     Default parameters are used for each of the aggregation schemes.
 
 """
-import time as tim
+from time import perf_counter
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -92,7 +92,7 @@ def main():
         # Initialize load aggregation scheme
         LoadAgg.initialize(gFunc_int/(2*pi*k_s))
 
-        tic = tim.time()
+        tic = perf_counter()
         for i in range(Nt):
             # Increment time step by (1)
             LoadAgg.next_time_step(time[i])
@@ -103,7 +103,7 @@ def main():
             # Evaluate borehole wall temeprature
             deltaT_b = LoadAgg.temporal_superposition()
             T_b[n,i] = T_g - deltaT_b
-        toc = tim.time()
+        toc = perf_counter()
         t_calc[n] = toc - tic
 
     # -------------------------------------------------------------------------
