@@ -10,6 +10,10 @@
 
 * [Issue 152](https://github.com/MassimoCimmino/pygfunction/issues/152) - Vectorized `coefficients_temperature` and `_general_solution` in `pipe` objects to accept depths `z` as an array. This speeds up calculations for `get_temperature` and `get_borehole_heat_extraction_rate` class methods.
 
+### Other changes
+
+* [Issue 172](https://github.com/MassimoCimmino/pygfunction/issues/172) - Refactored reports of calculation time to use `time.perf_counter()` instead of `time.time()`.
+
 ## Version 2.1.0 (2021-11-12)
 
 ### New features
@@ -27,6 +31,7 @@
 * [Issue 141](https://github.com/MassimoCimmino/pygfunction/issues/141) - Changed the calculation of the convective heat transfer coefficient in the transition region (`2300. < Re < 4000.`) by `convective_heat_transfer_coefficient_circular_pipe()`. The Nusselt number is now interpolated between the laminar value (at `Re = 2300.`) and the turbulent value (at `Re = 4000.`). This avoids any discontinuities in the values of the convective heat transfer coefficient near `Re = 2300.`.
 
 ### Other changes
+
 * [Issue 93](https://github.com/MassimoCimmino/pygfunction/issues/93) - Reformatted `pipes` and `networks` modules to use the `@` matrix product operator introduced in [PEP465](https://www.python.org/dev/peps/pep-0465/). This improves readability of the code.
 * [Issue 100](https://github.com/MassimoCimmino/pygfunction/issues/100) - Replaced calls to `numpy.asscalar()` with calls to `array.item()`. `numpy.asscalar()` is deprecated as of `numpy` version `1.16`.
 * [Issue 124](https://github.com/MassimoCimmino/pygfunction/issues/124) - Reformatted `pipes`and `networks` modules to clarify the expected values for `m_flow` parameters. These are replaced by any of `m_flow_pipe`, `m_flow_borehole` or `m_flow_network` depending on the function or class method. Added a nomenclature of commonly used variables to the documentation.
