@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import time as tim
+from time import perf_counter
 import warnings
 
 import matplotlib.pyplot as plt
@@ -233,11 +233,11 @@ class gFunction(object):
                 self.boundary_condition).center(60))
             print(60*'-')
         # Initialize chrono
-        tic = tim.time()
+        tic = perf_counter()
 
         # Evaluate g-function
         self.gFunc = self.solver.solve(time, self.alpha)
-        toc = tim.time()
+        toc = perf_counter()
 
         if self.solver.disp:
             print('Total time for g-function evaluation: {:.3f} sec'.format(
@@ -1421,7 +1421,7 @@ class _BaseSolver(object):
         if self.disp: print('Building and solving the system of equations ...',
                             end='')
         # Initialize chrono
-        tic = tim.time()
+        tic = perf_counter()
 
         # Build and solve the system of equations at all times
         for p in range(nt):
@@ -1536,7 +1536,7 @@ class _BaseSolver(object):
         if self.profiles:
             self.Q_b = Q_b
             self.T_b = T_b
-        toc = tim.time()
+        toc = perf_counter()
         if self.disp: print(' {:.3f} sec'.format(toc - tic))
         return gFunc
 
@@ -1842,7 +1842,7 @@ class _Detailed(_BaseSolver):
         # Number of time values
         nt = len(np.atleast_1d(time))
         # Initialize chrono
-        tic = tim.time()
+        tic = perf_counter()
         # Initialize segment-to-segment response factors
         h_ij = np.zeros((self.nSources, self.nSources, nt+1), dtype=self.dtype)
         nBoreholes = len(self.boreholes)
@@ -1891,7 +1891,7 @@ class _Detailed(_BaseSolver):
         # Interp1d object for thermal response factors
         h_ij = interp1d(np.hstack((0., time)), h_ij,
                         kind=kind, copy=True, axis=2)
-        toc = tim.time()
+        toc = perf_counter()
         if self.disp: print(' {:.3f} sec'.format(toc - tic))
 
         return h_ij
@@ -2051,7 +2051,7 @@ class _Similarities(_BaseSolver):
         # Number of time values
         nt = len(np.atleast_1d(time))
         # Initialize chrono
-        tic = tim.time()
+        tic = perf_counter()
         # Initialize segment-to-segment response factors
         h_ij = np.zeros((self.nSources, self.nSources, nt+1), dtype=self.dtype)
         segment_lengths = self.segment_lengths()
@@ -2120,7 +2120,7 @@ class _Similarities(_BaseSolver):
         h_ij = interp1d(
             np.hstack((0., time)), h_ij,
             kind=kind, copy=True, assume_sorted=True, axis=2)
-        toc = tim.time()
+        toc = perf_counter()
         if self.disp: print(' {:.3f} sec'.format(toc - tic))
 
         return h_ij
@@ -2135,7 +2135,7 @@ class _Similarities(_BaseSolver):
         """
         if self.disp: print('Identifying similarities ...', end='')
         # Initialize chrono
-        tic = tim.time()
+        tic = perf_counter()
 
         # Find similar pairs of boreholes
         # Boreholes can only be similar if their segments are similar
@@ -2147,7 +2147,7 @@ class _Similarities(_BaseSolver):
                 self.boreholes, self.borehole_to_borehole)
 
         # Stop chrono
-        toc = tim.time()
+        toc = perf_counter()
         if self.disp: print(' {:.3f} sec'.format(toc - tic))
 
         return
@@ -2748,7 +2748,7 @@ class _Equivalent(_BaseSolver):
         # Number of time values
         nt = len(np.atleast_1d(time))
         # Initialize chrono
-        tic = tim.time()
+        tic = perf_counter()
         # Initialize segment-to-segment response factors
         h_ij = np.zeros((self.nSources, self.nSources, nt+1), dtype=self.dtype)
         segment_lengths = self.segment_lengths()
@@ -2817,7 +2817,7 @@ class _Equivalent(_BaseSolver):
         # Interp1d object for thermal response factors
         h_ij = interp1d(np.hstack((0., time)), h_ij,
                         kind=kind, copy=True, axis=2)
-        toc = tim.time()
+        toc = perf_counter()
         if self.disp: print(' {:.3f} sec'.format(toc - tic))
 
         return h_ij
@@ -2850,7 +2850,7 @@ class _Equivalent(_BaseSolver):
         """
         if self.disp: print('Identifying equivalent boreholes ...', end='')
         # Initialize chrono
-        tic = tim.time()
+        tic = perf_counter()
 
         # Temperature change of individual boreholes
         self.nBoreholes = len(self.boreholes)
@@ -2924,7 +2924,7 @@ class _Equivalent(_BaseSolver):
                 segment_ratios=self.segment_ratios[0])
 
         # Stop chrono
-        toc = tim.time()
+        toc = perf_counter()
         if self.disp:
             print(' {:.3f} sec'.format(toc - tic))
             print('Calculations will be done using {} equivalent boreholes'.format(self.nEqBoreholes))

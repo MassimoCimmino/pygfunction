@@ -9,7 +9,7 @@
 """
 import matplotlib.pyplot as plt
 import numpy as np
-from time import time as tic
+from time import perf_counter
 
 import pygfunction as gt
 
@@ -77,14 +77,14 @@ def main():
     i = 0
     for field in [boreField1, boreField2, boreField3]:
         # Compare 'similarities' and 'equivalent' solvers
-        t0 = tic()
+        t0 = perf_counter()
         gfunc_similarities = gt.gfunction.gFunction(
             field, alpha, time=time, options=options, method='similarities')
-        t1 = tic()
+        t1 = perf_counter()
         t_similarities = t1 - t0
         gfunc_equivalent = gt.gfunction.gFunction(
             field, alpha, time=time, options=options, method='equivalent')
-        t2 = tic()
+        t2 = perf_counter()
         t_equivalent = t2 - t1
         # Draw g-function
         ax = gfunc_similarities.visualize_g_function().axes[0]
