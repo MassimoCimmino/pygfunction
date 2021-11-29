@@ -477,14 +477,10 @@ class Network(object):
             c_out = self._c_out
             # Coefficient matrices for borehole outlet temperatures:
             # [T_{f,b,out}] = [A]*[T_{f,b,in}] + [B]*[T_{b}]
-            AB = list(zip(*[pipe.coefficients_outlet_temperature(
-                m_flow, cp, nSegments, segment_ratios=ratios)
-                for pipe, m_flow, cp, nSegments, ratios in zip(
-                        self.p,
-                        self._m_flow_borehole,
-                        self._cp_borehole,
-                        self.nSegments,
-                        self._segment_ratios)]))
+            AB = list(zip(*[self.p[i].coefficients_outlet_temperature(
+                self._m_flow_borehole[i], self._cp_borehole[i],
+                self.nSegments[i], segment_ratios=self._segment_ratios[i])
+                for i in range(self.nBoreholes)]))
             A = block_diag(*AB[0])
             B = block_diag(*AB[1])
             # Coefficient matrices for borehole inlet temperatures:
@@ -557,14 +553,13 @@ class Network(object):
             c_out = self._c_out
             # Coefficient matrices for borehole outlet temperatures:
             # [T_{f,b,out}] = [A]*[T_{f,b,in}] + [B]*[T_{b}]
-            AB = list(zip(*[pipe.coefficients_outlet_temperature(
-                m_flow, cp, nSegments, segment_ratios=ratios)
-                for pipe, m_flow, cp, nSegments, ratios in zip(
-                        self.p,
-                        self._m_flow_borehole,
-                        self._cp_borehole,
-                        self.nSegments,
-                        self._segment_ratios)]))
+            AB = list(zip(*[
+                self.p[i].coefficients_outlet_temperature(
+                    self._m_flow_borehole[i],
+                    self._cp_borehole[i],
+                    self.nSegments[i],
+                    segment_ratios=self._segment_ratios[i])
+                for i in range(self.nBoreholes)]))
             A = block_diag(*AB[0])
             B = block_diag(*AB[1])
             # Coefficient matrices for borehole outlet temperatures:
@@ -768,14 +763,13 @@ class Network(object):
                 m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
             # Coefficient matrices for borehole heat extraction rates:
             # [Q_{b}] = [A]*[T_{f,b,in}] + [B]*[T_{b}]
-            AB = list(zip(*[pipe.coefficients_borehole_heat_extraction_rate(
-                m_flow, cp, nSegments, segment_ratios=ratios)
-                for pipe, m_flow, cp, nSegments, ratios in zip(
-                        self.p,
-                        self._m_flow_borehole,
-                        self._cp_borehole,
-                        self.nSegments,
-                        self._segment_ratios)]))
+            AB = list(zip(*[
+                self.p[i].coefficients_borehole_heat_extraction_rate(
+                    self._m_flow_borehole[i],
+                    self._cp_borehole[i],
+                    self.nSegments[i],
+                    segment_ratios=self._segment_ratios[i])
+                for i in range(self.nBoreholes)]))
             A = block_diag(*AB[0])
             B = block_diag(*AB[1])
             # Coefficient matrices for borehole heat extraction rates:
@@ -847,14 +841,13 @@ class Network(object):
                 m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
             # Coefficient matrices for fluid heat extraction rates:
             # [Q_{f}] = [A]*[T_{f,b,in}] + [B]*[T_{b}]
-            AB = list(zip(*[pipe.coefficients_fluid_heat_extraction_rate(
-                m_flow, cp, nSegments, segment_ratios=ratios)
-                for pipe, m_flow, cp, nSegments, ratios in zip(
-                        self.p,
-                        self._m_flow_borehole,
-                        self._cp_borehole,
-                        self.nSegments,
-                        self._segment_ratios)]))
+            AB = list(zip(*[
+                self.p[i].coefficients_fluid_heat_extraction_rate(
+                    self._m_flow_borehole[i],
+                    self._cp_borehole[i],
+                    self.nSegments[i],
+                    segment_ratios=self._segment_ratios[i])
+                for i in range(self.nBoreholes)]))
             A = block_diag(*AB[0])
             B = block_diag(*AB[1])
             # Coefficient matrices for fluid heat extraction rates:
@@ -1185,8 +1178,7 @@ class _EquivalentNetwork(Network):
         self.b = equivalentBoreholes
         self.H_tot = sum([b.H*b.nBoreholes for b in self.b])
         self.nBoreholes = len(equivalentBoreholes)
-        self.wBoreholes = np.array(
-            [[b.nBoreholes for b in equivalentBoreholes]]).T
+        self.wBoreholes = np.array([[b.nBoreholes for b in equivalentBoreholes]]).T
         self.nBoreholes_total = np.sum(self.wBoreholes)
         self.p = pipes
         self.c = [-1]*self.nBoreholes
@@ -1504,8 +1496,10 @@ def _verify_bore_connectivity(bore_connectivity, nBoreholes):
     # Cycle through each borehole and verify that connections lead to -1
     # (-1 is the bore field inlet) and that no two boreholes have the same
     # index of fluid inlet (except for -1).
-    for index_in in bore_connectivity:
+    for i in range(nBoreholes):
         n = 0 # Initialize step counter
+        # Index of borehole feeding into borehole i
+        index_in = bore_connectivity[i]
         if index_in != -1 and bore_connectivity.count(index_in) > 1:
             raise ValueError(
                 'Two boreholes cannot have the same inlet, except fort the '

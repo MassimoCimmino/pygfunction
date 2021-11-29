@@ -2262,18 +2262,18 @@ class Coaxial(SingleUTube):
         ax.add_patch(borewall)
 
         # Pipes
-        for i, (pos, color) in enumerate(zip(self.pos, colors)):
+        for i in range(self.nPipes):
             # Coordinates of pipes
-            (x_in, y_in) = pos
-            (x_out, y_out) = pos
+            (x_in, y_in) = self.pos[i]
+            (x_out, y_out) = self.pos[i]
 
             # Pipe outline (inlet)
             pipe_in_in = plt.Circle(
                 (x_in, y_in), radius=self.r_in[0],
-                fill=False, linestyle='-', color=color, lw=lw)
+                fill=False, linestyle='-', color=colors[i], lw=lw)
             pipe_in_out = plt.Circle(
                 (x_in, y_in), radius=self.r_out[0],
-                fill=False, linestyle='-', color=color, lw=lw)
+                fill=False, linestyle='-', color=colors[i], lw=lw)
             if self._iInner == 0:
                 ax.text(x_in, y_in, i, ha="center", va="center")
             else:
@@ -2283,10 +2283,10 @@ class Coaxial(SingleUTube):
             # Pipe outline (outlet)
             pipe_out_in = plt.Circle(
                 (x_out, y_out), radius=self.r_in[1],
-                fill=False, linestyle='-', color=color, lw=lw)
+                fill=False, linestyle='-', color=colors[i], lw=lw)
             pipe_out_out = plt.Circle(
                 (x_out, y_out), radius=self.r_out[1],
-                fill=False, linestyle='-', color=color, lw=lw)
+                fill=False, linestyle='-', color=colors[i], lw=lw)
             if self._iInner == 1:
                 ax.text(x_out, y_out, i + self.nPipes, ha="center", va="center")
             else:
@@ -2888,12 +2888,12 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
     """
     # Pipe coordinates in complex form
     n_p = len(pos)
-    z_p = np.array([x + 1.j*y for (x, y) in pos])
+    z_p = np.array([pos[i][0] + 1.j*pos[i][1] for i in range(n_p)])
     # If r_out and/or Rfp are supplied as float, build arrays of size n_p
     if np.isscalar(r_out):
-        r_out = np.full(n_p, r_out)
+        r_out = np.ones(n_p)*r_out
     if np.isscalar(R_fp):
-        R_fp = np.full(n_p, R_fp)
+        R_fp = np.ones(n_p)*R_fp
 
     # -------------------------------------
     # Thermal resistance matrix R0 (EQ. 33)
@@ -2902,13 +2902,13 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
     sigma = (k_g - k_s)/(k_g + k_s)
     beta_p = 2*pi*k_g*R_fp
     R0 = np.zeros((n_p, n_p))
-    for i, (z_i, beta_i, r_out_i) in enumerate(zip(z_p, beta_p, r_out)):
-        rbm = r_b**2/(r_b**2 - np.abs(z_i)**2)
-        R0[i, i] = pikg*(np.log(r_b/r_out_i) + beta_i + sigma*np.log(rbm))
-        for j, z_j in enumerate(z_p):
+    for i in range(n_p):
+        rbm = r_b**2/(r_b**2 - np.abs(z_p[i])**2)
+        R0[i, i] = pikg*(np.log(r_b/r_out[i]) + beta_p[i] + sigma*np.log(rbm))
+        for j in range(n_p):
             if i != j:
-                dz = np.abs(z_i - z_j)
-                rbm = r_b**2/np.abs(r_b**2 - z_j*np.conj(z_i))
+                dz = np.abs(z_p[i] - z_p[j])
+                rbm = r_b**2/np.abs(r_b**2 - z_p[j]*np.conj(z_p[i]))
                 R0[i, j] = pikg*(np.log(r_b/dz) + sigma*np.log(rbm))
 
     # Initialize maximum error and iteration counter
@@ -2919,8 +2919,8 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
     # -------------------
     if J > 0:
         P = np.zeros((n_p, J), dtype=np.cfloat)
-        coeff = -np.array([[(1 - (k+1)*beta_m)/(1 + (k+1)*beta_m)
-                           for k in range(J)] for beta_m in beta_p])
+        coeff = -np.array([[(1 - (k+1)*beta_p[m])/(1 + (k+1)*beta_p[m])
+                           for k in range(J)] for m in range(n_p)])
         while eps_max > eps and it < it_max:
             it += 1
             eps_max = 0.
@@ -2939,16 +2939,16 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
     # --------------------------
     T_f = T_b + R0 @ q_p
     if J > 0:
-        for m, z_m in enumerate(z_p):
+        for m in range(n_p):
             dTfm = 0. + 0.j
-            for n, (z_n, r_out_n) in enumerate(zip(z_p, r_out)):
+            for n in range(n_p):
                 for j in range(J):
                     # Second term
                     if n != m:
-                        dTfm += P[n,j]*(r_out_n/(z_m-z_n))**(j+1)
+                        dTfm += P[n,j]*(r_out[n]/(z_p[m]-z_p[n]))**(j+1)
                     # Third term
-                    dTfm += sigma*P[n,j]*(r_out_n*np.conj(z_m) \
-                                   /(r_b**2 - z_n*np.conj(z_m)))**(j+1)
+                    dTfm += sigma*P[n,j]*(r_out[n]*np.conj(z_p[m]) \
+                                   /(r_b**2 - z_p[n]*np.conj(z_p[m])))**(j+1)
             T_f[m] += np.real(dTfm)
 
     # -------------------------------
@@ -2956,37 +2956,36 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
     # -------------------------------
     n_T = len(x_T)
     T = np.zeros(n_T)
-    for i, (x, y) in enumerate(zip(x_T, y_T)):
-        z_T = x + 1.j*y
+    for i in range(n_T):
+        z_T = x_T[i] + 1.j*y_T[i]
         dT0 = 0. + 0.j
         dTJ = 0. + 0.j
-        for n, (z_n, r_out_n, q_n, T_n, P_n) in enumerate(
-                zip(z_p, r_out, q_p, T_f, P)):
-            if np.abs(z_T - z_n)/r_out_n < 1.0:
+        for n in range(n_p):
+            if np.abs(z_T - z_p[n])/r_out[n] < 1.0:
                 # Coordinate inside pipe
-                T[i] = T_n
+                T[i] = T_f[n]
                 break
             # Order 0
             if np.abs(z_T) <= r_b:
                 # Coordinate inside borehole
-                W0 = np.log(r_b/(z_T - z_n)) \
-                        + sigma*np.log(r_b**2/(r_b**2 - z_n*np.conj(z_T)))
+                W0 = np.log(r_b/(z_T - z_p[n])) \
+                        + sigma*np.log(r_b**2/(r_b**2 - z_p[n]*np.conj(z_T)))
             else:
                 # Coordinate outside borehole
-                W0 = (1. + sigma)*np.log(r_b/(z_T - z_n)) \
+                W0 = (1. + sigma)*np.log(r_b/(z_T - z_p[n])) \
                         + sigma*(1. + sigma)/(1. - sigma)*np.log(r_b/z_T)
-            dT0 += q_n*pikg*W0
+            dT0 += q_p[n]*pikg*W0
             # Multipoles
             for j in range(J):
                 if np.abs(z_T) <= r_b:
                     # Coordinate inside borehole
-                    WJ = (r_out_n/(z_T - z_n))**(j+1) \
-                            + sigma*((r_out_n*np.conj(z_T))
-                                     /(r_b**2 - z_n*np.conj(z_T)))**(j+1)
+                    WJ = (r_out[n]/(z_T - z_p[n]))**(j+1) \
+                            + sigma*((r_out[n]*np.conj(z_T))
+                                     /(r_b**2 - z_p[n]*np.conj(z_T)))**(j+1)
                 else:
                     # Coordinate outside borehole
-                    WJ = (1. + sigma)*(r_out_n/(z_T - z_n))**(j+1)
-                dTJ += P_n[j]*WJ
+                    WJ = (1. + sigma)*(r_out[n]/(z_T - z_p[n]))**(j+1)
+                dTJ += P[n,j]*WJ
         else:
             T[i] += T_b + np.real(dT0 + dTJ)
 
@@ -3028,31 +3027,30 @@ def _F_mk(q_p, P, n_p, J, r_b, r_out, z, pikg, sigma):
 
     """
     F = np.zeros((n_p, J), dtype=np.cfloat)
-    for m, (z_m, r_out_m) in enumerate(zip(z, r_out)):
+    for m in range(n_p):
         for k in range(J):
             fmk = 0. + 0.j
-            for n, (z_n, r_out_n, q_n, P_n) in enumerate(
-                    zip(z, r_out, q_p, P)):
+            for n in range(n_p):
                 # First term
                 if m != n:
-                    fmk += q_n*pikg/(k+1)*(r_out_m/(z_n - z_m))**(k+1)
+                    fmk += q_p[n]*pikg/(k+1)*(r_out[m]/(z[n] - z[m]))**(k+1)
                 # Second term
-                fmk += sigma*q_n*pikg/(k+1)*(r_out_m*np.conj(z_n)/(
-                        r_b**2 - z_m*np.conj(z_n)))**(k+1)
+                fmk += sigma*q_p[n]*pikg/(k+1)*(r_out[m]*np.conj(z[n])/(
+                        r_b**2 - z[m]*np.conj(z[n])))**(k+1)
                 for j in range(J):
                     # Third term
                     if m != n:
-                        fmk += P_n[j]*binom(j+k+1, j) \
-                                *r_out_n**(j+1)*(-r_out_m)**(k+1) \
-                                /(z_m - z_n)**(j+k+2)
+                        fmk += P[n,j]*binom(j+k+1, j) \
+                                *r_out[n]**(j+1)*(-r_out[m])**(k+1) \
+                                /(z[m] - z[n])**(j+k+2)
                     # Fourth term
                     j_pend = np.min((k, j)) + 2
                     for jp in range(j_pend):
-                        fmk += sigma*np.conj(P_n[j])*binom(j+1, jp) \
-                                *binom(j+k-jp+1, j)*r_out_n**(j+1) \
-                                *r_out_m**(k+1)*z_m**(j+1-jp) \
-                                *np.conj(z_n)**(k+1-jp) \
-                                /(r_b**2 - z_m*np.conj(z_n))**(k+j+2-jp)
+                        fmk += sigma*np.conj(P[n,j])*binom(j+1, jp) \
+                                *binom(j+k-jp+1, j)*r_out[n]**(j+1) \
+                                *r_out[m]**(k+1)*z[m]**(j+1-jp) \
+                                *np.conj(z[n])**(k+1-jp) \
+                                /(r_b**2 - z[m]*np.conj(z[n]))**(k+j+2-jp)
             F[m,k] = fmk
 
     return F

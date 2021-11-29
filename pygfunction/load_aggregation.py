@@ -98,7 +98,8 @@ class ClaessonJaved(_LoadAggregation):
         # Build matrix of thermal response factor increments
         self.dg = np.zeros_like(g_d)
         self.dg[:,:,0] = g_d[:,:,0]
-        self.dg[:,:,1:] = g_d[:,:,1:] - g_d[:,:,:-1]
+        for i in range(1, len(self._time)):
+            self.dg[:,:,i] = g_d[:,:,i] - g_d[:,:,i-1]
 
     def next_time_step(self, time):
         """
