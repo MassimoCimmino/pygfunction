@@ -136,12 +136,12 @@ def main():
     T_f_out_single = np.zeros(Nt)
     T_f_out_double_par = np.zeros(Nt)
     T_f_out_double_ser = np.zeros(Nt)
-    for i in range(Nt):
+    for i, (t, Q_b_i) in enumerate(zip(time, Q)):
         # Increment time step by (1)
-        LoadAgg.next_time_step(time[i])
+        LoadAgg.next_time_step(t)
 
         # Apply current load
-        LoadAgg.set_current_load(Q[i]/H)
+        LoadAgg.set_current_load(Q_b_i/H)
 
         # Evaluate borehole wall temperature
         deltaT_b = LoadAgg.temporal_superposition()
@@ -177,7 +177,7 @@ def main():
     gt.utilities._format_axes(ax1)
 
     # Plot heat extraction rates
-    hours = np.array([(j+1)*dt/3600. for j in range(Nt)])
+    hours = np.arange(1, Nt+1) * dt / 3600.
     ax1.plot(hours, Q)
 
     ax2 = fig.add_subplot(212)
