@@ -78,8 +78,10 @@ def main():
     T_b = np.zeros((nLoadAgg, Nt))
 
     t_calc = np.zeros(nLoadAgg)
-    for n, (LoadAgg, label) in enumerate(zip(LoadAggSchemes, loadAgg_labels)):
-        print('Simulation using {} ...'.format(label))
+    for n in range(nLoadAgg):
+        print('Simulation using {} ...'.format(loadAgg_labels[n]))
+        # Select aggregation scheme
+        LoadAgg = LoadAggSchemes[n]
         # Interpolate g-function at required times
         time_req = LoadAgg.get_times_for_simulation()
         gFunc_int = interp1d(np.hstack([0., time_gFunc]),
@@ -111,9 +113,10 @@ def main():
     # Heat extraction rate increment
     dQ = np.zeros(Nt)
     dQ[0] = Q_b[0]
-    dQ[1:] = Q_b[1:] - Q_b[:-1]
     # Interpolated g-function
     g = interp1d(time_gFunc, gFunc.gFunc)(time)
+    for i in range(1, Nt):
+        dQ[i] = Q_b[i] - Q_b[i-1]
 
     # Convolution in Fourier domain
     T_b_exact = T_g - fftconvolve(dQ, g/(2.0*pi*k_s*H), mode='full')[0:Nt]
@@ -138,8 +141,9 @@ def main():
     ax2.set_xlabel(r'$t$ [hours]')
     ax2.set_ylabel(r'$T_b$ [degC]')
     gt.utilities._format_axes(ax2)
-    for T_b_n, line, label in zip(T_b, loadAgg_lines, loadAgg_labels):
-        ax2.plot(hours, T_b_n, line, label=label)
+    for n in range(nLoadAgg):
+        ax2.plot(hours, T_b[n,:],
+                 loadAgg_lines[n], label=loadAgg_labels[n])
     ax2.plot(hours, T_b_exact, 'k.', label='exact')
     ax2.legend()
 
@@ -148,8 +152,9 @@ def main():
     ax3.set_xlabel(r'$t$ [hours]')
     ax3.set_ylabel(r'Error [degC]')
     gt.utilities._format_axes(ax3)
-    for T_b_n, line, label in zip(T_b, loadAgg_lines, loadAgg_labels):
-        ax3.plot(hours, T_b_n - T_b_exact, line, label=label)
+    for n in range(nLoadAgg):
+        ax3.plot(hours, T_b[n,:] - T_b_exact,
+                 loadAgg_lines[n], label=loadAgg_labels[n])
     # Adjust to plot window
     plt.tight_layout()
 
@@ -158,14 +163,15 @@ def main():
     # -------------------------------------------------------------------------
 
     # Maximum errors in evaluation of borehole wall temperatures
-    maxError = np.array([np.max(np.abs(T_b_n-T_b_exact)) for T_b_n in T_b])
+    maxError = np.array([np.max(np.abs(T_b[n,:]-T_b_exact))
+                         for n in range(nLoadAgg)])
     # Print results
     print('Simulation results')
-    for label, maxError_n, t_calc_n in zip(loadAgg_labels, maxError, t_calc):
+    for n in range(nLoadAgg):
         print()
-        print((' ' + label + ' ').center(60, '-'))
-        print('Maximum absolute error : {:.3f} degC'.format(maxError_n))
-        print('Calculation time : {:.3f} sec'.format(t_calc_n))
+        print((' ' + loadAgg_labels[n] + ' ').center(60, '-'))
+        print('Maximum absolute error : {:.3f} degC'.format(maxError[n]))
+        print('Calculation time : {:.3f} sec'.format(t_calc[n]))
 
     return
 

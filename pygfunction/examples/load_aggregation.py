@@ -66,12 +66,12 @@ def main():
     # -------------------------------------------------------------------------
 
     T_b = np.zeros(Nt)
-    for i, (t, Q_b_i) in enumerate(zip(time, Q_b)):
+    for i in range(Nt):
         # Increment time step by (1)
-        LoadAgg.next_time_step(t)
+        LoadAgg.next_time_step(time[i])
 
         # Apply current load
-        LoadAgg.set_current_load(Q_b_i/H)
+        LoadAgg.set_current_load(Q_b[i]/H)
 
         # Evaluate borehole wall temeprature
         deltaT_b = LoadAgg.temporal_superposition()
@@ -84,9 +84,10 @@ def main():
     # Heat extraction rate increment
     dQ = np.zeros(Nt)
     dQ[0] = Q_b[0]
-    dQ[1:] = Q_b[1:] - Q_b[:-1]
     # Interpolated g-function
     g = interp1d(time_req, gFunc.gFunc)(time)
+    for i in range(1, Nt):
+        dQ[i] = Q_b[i] - Q_b[i-1]
 
     # Convolution in Fourier domain
     T_b_exact = T_g - fftconvolve(dQ, g/(2.0*pi*k_s*H), mode='full')[0:Nt]
@@ -104,7 +105,8 @@ def main():
     ax1.set_ylabel(r'$Q_b$ [W]')
     gt.utilities._format_axes(ax1)
 
-    hours = np.arange(1, Nt+1) * dt / 3600.
+
+    hours = np.array([(j+1)*dt/3600. for j in range(Nt)])
     ax1.plot(hours, Q_b)
 
     ax2 = fig.add_subplot(312)

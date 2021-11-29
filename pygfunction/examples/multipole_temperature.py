@@ -149,8 +149,8 @@ def main():
                           fill=False, linestyle='--', linewidth=2.)
     ax1.add_patch(borewall)
     # Pipe outlines
-    for pos, r_out_n in zip(pos_pipes, rp_out):
-        pipe = plt.Circle(pos, radius=r_out_n,
+    for n in range(n_p):
+        pipe = plt.Circle(pos_pipes[n], radius=rp_out[n],
                           fill=False, linestyle='-', linewidth=4.)
         ax1.add_patch(pipe)
     # Temperature contours
