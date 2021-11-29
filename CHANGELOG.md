@@ -12,6 +12,7 @@
 
 ### Other changes
 
+* [Issue 171](https://github.com/MassimoCimmino/pygfunction/issues/171) - Refactored modules and examples to use the built-in `enumerate(x)` instead of `range(len(x))`.
 * [Issue 172](https://github.com/MassimoCimmino/pygfunction/issues/172) - Refactored reports of calculation time to use `time.perf_counter()` instead of `time.time()`.
 
 ## Version 2.1.0 (2021-11-12)
