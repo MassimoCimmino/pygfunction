@@ -78,10 +78,10 @@ def main():
     # Initialize result array
     R = np.zeros((nBoreholes, len(m_flow_network)))
     for i in range(nBoreholes):
-        for j in range(len(m_flow_network)):
+        for j, m_flow_network_j in enumerate(m_flow_network):
             nBoreholes = i + 1
             # Boreholes are connected in series
-            m_flow_borehole = m_flow_network[j]
+            m_flow_borehole = m_flow_network_j
             # Boreholes are single U-tube
             m_flow_pipe = m_flow_borehole
 
@@ -106,7 +106,7 @@ def main():
 
             # Effective bore field thermal resistance
             R_field = gt.networks.network_thermal_resistance(
-                network, m_flow_network[j], cp_f)
+                network, m_flow_network_j, cp_f)
             # Add to result array
             R[i,j] = R_field
 

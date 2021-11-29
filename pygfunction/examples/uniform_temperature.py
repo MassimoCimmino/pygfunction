@@ -74,8 +74,7 @@ def main():
     # -------------------------------------------------------------------------
     # Evaluate g-functions for all fields
     # -------------------------------------------------------------------------
-    i = 0
-    for field in [boreField1, boreField2, boreField3]:
+    for i, field in enumerate([boreField1, boreField2, boreField3]):
         # Compare 'similarities' and 'equivalent' solvers
         t0 = perf_counter()
         gfunc_similarities = gt.gfunction.gFunction(
@@ -96,10 +95,9 @@ def main():
                    'Cimmino and Bernier (2014)'])
         ax.set_title('Field of {} boreholes'.format(len(field)))
         plt.tight_layout()
-        i += 1
 
         # For the second borefield, draw the evolution of heat extraction rates
-        if i == 2:
+        if i == 1:
             fig = gfunc_similarities.visualize_heat_extraction_rates(
                 iBoreholes=[18, 12, 14])
             fig.suptitle("Field of {} boreholes: 'similarities' solver".format(

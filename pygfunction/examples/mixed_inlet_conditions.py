@@ -82,8 +82,7 @@ def main():
 
     boreField = []
     bore_connectivity = []
-    for i in range(len(H_boreholes)):
-        H = H_boreholes[i]
+    for i, H in enumerate(H_boreholes):
         x = i*B
         borehole = gt.boreholes.Borehole(H, D, r_b, x, 0.)
         boreField.append(borehole)

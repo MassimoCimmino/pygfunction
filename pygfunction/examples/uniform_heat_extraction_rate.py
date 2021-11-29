@@ -87,8 +87,7 @@ def main():
     # -------------------------------------------------------------------------
     # Evaluate g-functions for all fields
     # -------------------------------------------------------------------------
-    i = 0
-    for field in [boreField1, boreField2, boreField3]:
+    for i, field in enumerate([boreField1, boreField2, boreField3]):
         gfunc = gt.gfunction.gFunction(
             field, alpha, time=time, boundary_condition='UHTR',
             options=options[i], method=method)
@@ -99,10 +98,9 @@ def main():
         ax.legend(['pygfunction', 'Cimmino and Bernier (2014)'])
         ax.set_title('Field of {} boreholes'.format(len(field)))
         plt.tight_layout()
-        i += 1
 
         # For the second borefield, draw the evolution of heat extraction rates
-        if i == 2:
+        if i == 1:
             gfunc.visualize_temperatures(iBoreholes=[18, 12, 14])
             gfunc.visualize_temperature_profiles(iBoreholes=[14])
 
