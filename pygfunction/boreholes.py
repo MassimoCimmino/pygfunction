@@ -124,15 +124,15 @@ class Borehole(object):
             segment_ratios = np.full(nSegments, 1. / nSegments)
         z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1]
         boreSegments = []
-        for i in range(nSegments):
+        for z_i, ratios in zip(z, segment_ratios):
             # Divide borehole into segments of equal length
-            H = segment_ratios[i] * self.H
+            H = ratios * self.H
             # Buried depth of the i-th segment
-            D = self.D + z[i] * np.cos(self.tilt)
+            D = self.D + z_i * np.cos(self.tilt)
             # x-position
-            x = self.x + z[i] * np.sin(self.tilt) * np.cos(self.orientation)
+            x = self.x + z_i * np.sin(self.tilt) * np.cos(self.orientation)
             # y-position
-            y = self.y + z[i] * np.sin(self.tilt) * np.sin(self.orientation)
+            y = self.y + z_i * np.sin(self.tilt) * np.sin(self.orientation)
             # Add to list of segments
             boreSegments.append(
                 Borehole(H, D, self.r_b, x, y,
@@ -349,7 +349,7 @@ class _EquivalentBorehole(object):
         if segment_ratios is None:
             segment_ratios = np.full(nSegments, 1. / nSegments)
         z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1]
-        return [_EquivalentBorehole((segment_ratios[i] * self.H, z[i] + self.D, self.r_b, self.x, self.y)) for i in range(nSegments)]
+        return [_EquivalentBorehole((ratios * self.H, z_i + self.D, self.r_b, self.x, self.y)) for z_i, ratios in zip(z, segment_ratios)]
 
     def unique_distance(self, target, disTol=0.01):
         """
@@ -503,16 +503,12 @@ def find_duplicates(boreField, disp=False):
     duplicate_pairs : list
         A list of tuples where the tuples are pairs of duplicates
     """
-
-    duplicate_pairs = []   # define an empty list to be appended to
-    for i in range(len(boreField)):
-        borehole_1 = boreField[i]
-        for j in range(i, len(boreField)):  # only loop unique interactions
-            borehole_2 = boreField[j]
-            if i == j:  # skip the borehole itself
-                continue
-            else:
-                dist = borehole_1.distance(borehole_2)
+    # Initialize an empty list of duplicate pairs
+    duplicate_pairs = []
+    for i, borehole_1 in enumerate(boreField):
+        # Only loop unique interactions
+        for j, borehole_2 in enumerate(boreField[i+1:], start=i+1):
+            dist = borehole_1.distance(borehole_2)
             if abs(dist - borehole_1.r_b) < borehole_1.r_b:
                 duplicate_pairs.append((i, j))
     if disp:
@@ -543,23 +539,16 @@ def remove_duplicates(boreField, disp=False):
     new_boreField : list
         A boreField without duplicates
     """
-    # get a list of tuple
+    # Find duplicate pairs
     duplicate_pairs = find_duplicates(boreField, disp=disp)
 
-    new_boreField = []
+    # Boreholes not to be included
+    duplicate_bores = [pair[1] for pair in duplicate_pairs]
+    # Initialize new borefield
+    new_boreField = [b for i, b in enumerate(boreField) if i not in duplicate_bores]
 
-    # values not to be included
-    duplicate_bores = []
-    for i in range(len(duplicate_pairs)):
-        duplicate_bores.append(duplicate_pairs[i][1])
-
-    for i in range(len(boreField)):
-        if i in duplicate_bores:
-            continue
-        else:
-            new_boreField.append(boreField[i])
     if disp:
-        print(' gt.boreholes.find_duplicates() '.center(50, '-'))
+        print(' gt.boreholes.remove_duplicates() '.center(50, '-'))
         n_duplicates = len(boreField) - len(new_boreField)
         print('The number of duplicates removed: {}'.format(n_duplicates))
 
