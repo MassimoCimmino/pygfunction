@@ -38,9 +38,9 @@ class Borehole(object):
         self.orientation = float(orientation)
 
     def __repr__(self):
-        s = ('Borehole(H={self.H}, D={self.D}, r_b={self.r_b}, x={self.x},'
-             ' y={self.y}, tilt={self.tilt},'
-             ' orientation={self.orientation})').format(self=self)
+        s = (f'Borehole(H={self.H}, D={self.D}, r_b={self.r_b}, x={self.x},'
+             f' y={self.y}, tilt={self.tilt},'
+             f' orientation={self.orientation})')
         return s
 
     def distance(self, target):
@@ -513,8 +513,7 @@ def find_duplicates(boreField, disp=False):
                 duplicate_pairs.append((i, j))
     if disp:
         print(' gt.boreholes.find_duplicates() '.center(50, '-'))
-        print('The duplicate pairs of boreholes found: {}'\
-              .format(duplicate_pairs))
+        print(f'The duplicate pairs of boreholes found:\n{duplicate_pairs}')
     return duplicate_pairs
 
 
@@ -550,7 +549,7 @@ def remove_duplicates(boreField, disp=False):
     if disp:
         print(' gt.boreholes.remove_duplicates() '.center(50, '-'))
         n_duplicates = len(boreField) - len(new_boreField)
-        print('The number of duplicates removed: {}'.format(n_duplicates))
+        print(f'The number of duplicates removed: {n_duplicates}')
 
     return new_boreField
 
@@ -910,7 +909,7 @@ def visualize_field(borefield, viewTop=True, view3D=True, labels=True):
             # Add current borehole to the figure
             ax1.plot(x, y, 'ko')
             if labels: ax1.text(x, y,
-                                ' {}'.format(i),
+                                f' {i}',
                                 ha="left", va="bottom")
             i += 1  # Increment borehole index
 

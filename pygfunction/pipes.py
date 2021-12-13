@@ -840,47 +840,44 @@ class _BasePipe(object):
         # Verify that thermal properties are greater than 0.
         if not self.k_s > 0.:
             raise ValueError(
-                'The ground thermal conductivity must be greater than zero. '
-                'A value of {} was provided.'.format(self.k_s))
+                f'The ground thermal conductivity must be greater than zero. '
+                f'A value of {self.k_s} was provided.')
         if not self.k_g > 0.:
             raise ValueError(
-                'The grout thermal conductivity must be greater than zero. '
-                'A value of {} was provided.'.format(self.k_g))
+                f'The grout thermal conductivity must be greater than zero. '
+                f'A value of {self.k_g} was provided.')
         if not self.R_fp > 0.:
             raise ValueError(
-                'The fluid to outer pipe wall thermal resistance must be'
-                'greater than zero. '
-                'A value of {} was provided.'.format(self.R_fp))
+                f'The fluid to outer pipe wall thermal resistance must be'
+                f'greater than zero. '
+                f'A value of {self.R_fp} was provided.')
 
         # Verify that the pipe radius is greater than zero.
         if not self.r_in > 0.:
             raise ValueError(
-                'The pipe inner radius must be greater than zero. '
-                'A value of {} was provided.'.format(self.r_in))
+                f'The pipe inner radius must be greater than zero. '
+                f'A value of {self.r_in} was provided.')
 
         # Verify that the outer pipe radius is greater than the inner pipe
         # radius.
         if not self.r_out > self.r_in:
             raise ValueError(
-                'The pipe outer radius must be greater than the pipe inner'
-                ' radius. '
-                'A value of {} was provided.'.format(self.r_out))
+                f'The pipe outer radius must be greater than the pipe inner '
+                f'radius. A value of {self.r_out} was provided.')
 
         # Verify that the number of multipoles is zero or greater.
         if not self.J >= 0:
             raise ValueError(
-                'The number of terms in the multipole expansion must be zero'
-                ' or greater. '
-                'A value of {} was provided.'.format(self.J))
+                f'The number of terms in the multipole expansion must be zero '
+                f'or greater. A value of {self.J} was provided.')
 
         # Verify that the pipes are contained within the borehole.
         for i in range(2*self.nPipes):
             r_pipe = np.sqrt(self.pos[i][0]**2 + self.pos[i][1]**2)
             if not r_pipe + self.r_out <= self.b.r_b:
                 raise ValueError(
-                    'Pipes must be entirely contained within the borehole. '
-                    'Pipe {} is partly or entirely outside the '
-                    'borehole.'.format(i))
+                    f'Pipes must be entirely contained within the borehole. '
+                    f'Pipe {i} is partly or entirely outside the borehole.')
 
         # Verify that the pipes do not collide to one another.
         for i in range(2*self.nPipes):
@@ -890,7 +887,7 @@ class _BasePipe(object):
                 dis = np.sqrt(dx**2 + dy**2)
                 if not dis >= 2*self.r_out:
                     raise ValueError(
-                        'Pipes {} and {} are overlapping.'.format(i, j))
+                        f'Pipes {i} and {j} are overlapping.')
 
         return True
 
@@ -1583,7 +1580,8 @@ class MultipleUTube(_BasePipe):
             a_out = np.array([[1.0]])
             a_b = e_u @ d_u_m1 @ d_b
         else:
-            raise NotImplementedError("Configuration '{}' not implemented.".format(self.config))
+            raise NotImplementedError(f"Configuration '{self.config}' "
+                                      f"not implemented.")
 
         return a_in, a_out, a_b
 
@@ -1667,7 +1665,8 @@ class MultipleUTube(_BasePipe):
             a_out = np.zeros((2*self.nPipes, self.nOutlets))
             a_b = e_d @ c_u @ d_u_m1 @ d_b + e_u @ d_u_m1 @ d_b
         else:
-            raise NotImplementedError("Configuration '{}' not implemented.".format(self.config))
+            raise NotImplementedError(f"Configuration '{self.config}' not "
+                                      "implemented.")
 
         return a_in, a_out, a_b
 
@@ -2309,36 +2308,34 @@ class Coaxial(SingleUTube):
         # Verify that thermal properties are greater than 0.
         if not self.k_s > 0.:
             raise ValueError(
-                'The ground thermal conductivity must be greater than zero. '
-                'A value of {} was provided.'.format(self.k_s))
+                f'The ground thermal conductivity must be greater than zero. '
+                f'A value of {self.k_s} was provided.')
         if not self.k_g > 0.:
             raise ValueError(
-                'The grout thermal conductivity must be greater than zero. '
-                'A value of {} was provided.'.format(self.k_g))
+                f'The grout thermal conductivity must be greater than zero. '
+                f'A value of {self.k_g} was provided.')
         if not np.all(self.R_ff) >= 0.:
             raise ValueError(
-                'The fluid to fluid thermal resistance must be'
-                'greater or equal to zero. '
-                'A value of {} was provided.'.format(self.R_ff))
+                f'The fluid to fluid thermal resistance must be'
+                f'greater or equal to zero. '
+                f'A value of {self.R_ff} was provided.')
         if not np.all(self.R_fp) > 0.:
             raise ValueError(
-                'The fluid to outer pipe wall thermal resistance must be'
-                'greater than zero. '
-                'A value of {} was provided.'.format(self.R_fp))
+                f'The fluid to outer pipe wall thermal resistance must be'
+                f'greater than zero. A value of {self.R_fp} was provided.')
 
         # Verify that the pipe radius is greater than zero.
         if not np.all(self.r_in) > 0.:
             raise ValueError(
-                'The pipe inner radius must be greater than zero. '
-                'A value of {} was provided.'.format(self.r_in))
+                f'The pipe inner radius must be greater than zero. '
+                f'A value of {self.r_in} was provided.')
 
         # Verify that the outer pipe radius is greater than the inner pipe
         # radius.
         if not np.all(np.greater(self.r_out, self.r_in)):
             raise ValueError(
-                'The pipe outer radius must be greater than the pipe inner'
-                ' radius. '
-                'A value of {} was provided.'.format(self.r_out))
+                f'The pipe outer radius must be greater than the pipe inner '
+                f'radius. A value of {self.r_out} was provided.')
 
         # Verify that the inner radius of the outer pipe is greater than the
         # outer radius of the inner pipe.
@@ -2350,9 +2347,8 @@ class Coaxial(SingleUTube):
         # Verify that the number of multipoles is zero or greater.
         if not self.J >= 0:
             raise ValueError(
-                'The number of terms in the multipole expansion must be zero'
-                ' or greater. '
-                'A value of {} was provided.'.format(self.J))
+                f'The number of terms in the multipole expansion must be zero '
+                f'or greater. A value of {self.J} was provided.')
 
         # Verify that the pipes are contained within the borehole.
         for i in range(len(self.pos)):
@@ -2360,9 +2356,9 @@ class Coaxial(SingleUTube):
             radii = r_pipe + self.r_out
             if not np.any(np.greater_equal(self.b.r_b, radii)):
                 raise ValueError(
-                    'Pipes must be entirely contained within the borehole. '
-                    'Pipe {} is partly or entirely outside the '
-                    'borehole.'.format(i))
+                    f'Pipes must be entirely contained within the borehole. '
+                    f'Pipe {i} is partly or entirely outside the '
+                    f'borehole.')
 
         return True
 
@@ -3107,15 +3103,15 @@ def _Nusselt_number_turbulent_flow(Re, Pr, fDarcy):
 
     # Warn the user if the Reynolds number is out of bounds, but don't break
     if not 3.0E03 < Re < 5.0E06:
-        warnings.warn('This Nusselt calculation is only valid for Reynolds '
-                      'number in the range of 3.0E03 < Re < 5.0E06, your value'
-                      ' falls outside of the range at Re={0:.4f}'.format(Re))
+        warnings.warn(f'This Nusselt calculation is only valid for Reynolds '
+                      f'number in the range of 3.0E03 < Re < 5.0E06, your '
+                      f'value falls outside of the range at Re={Re:.4f}')
 
     # Warn the user if the Prandlt number is out of bounds
     if not 0.5 <= Pr <= 2000.:
-        warnings.warn('This Nusselt calculation is only valid for Prandlt '
-                      'numbers in the range of 0.5 <= Pr <= 2000, your value '
-                      'falls outside of the range at Pr={0:.4f}'.format(Pr))
+        warnings.warn(f'This Nusselt calculation is only valid for Prandlt '
+                      f'numbers in the range of 0.5 <= Pr <= 2000, your value '
+                      f'falls outside of the range at Pr={Pr:.4f}')
 
     Nu = 0.125 * fDarcy * (Re - 1.0e3) * Pr / \
         (1.0 + 12.7 * np.sqrt(0.125*fDarcy) * (Pr**(2.0/3.0) - 1.0))
