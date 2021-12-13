@@ -68,11 +68,11 @@ def main():
     (R, Rd) = gt.pipes.thermal_resistances(pos_pipes, rp_out, r_b, k_s, k_g,
                                            R_fp, J=3)
     print(50*'-')
-    print('Thermal resistance:\t100*R11\t100*R12\t100*R22')
-    print('Claesson and Hellstrom:\t{:.3f}\t{:.3f}\t{:.3f}'.format(
-            100*R_Claesson[0], 100*R_Claesson[1], 100*R_Claesson[2]))
-    print('Present:\t\t{:.3f}\t{:.3f}\t{:.3f}'.format(
-            100*R[0,0], 100*R[0,1], 100*R[1,1]))
+    print('Thermal resistance:\t\t100*R11\t100*R12\t100*R22')
+    print(f'Claesson and Hellstrom:\t{100*R_Claesson[0]:.3f}'
+          f'\t{100*R_Claesson[1]:.3f}\t{100*R_Claesson[2]:.3f}')
+    print(f'Present:\t\t\t\t{100*R[0,0]:.3f}\t{100*R[0,1]:.3f}'
+          f'\t{100*R[1,1]:.3f}')
     print(50*'-')
 
     # Heat flows

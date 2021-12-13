@@ -75,6 +75,7 @@ def main():
     # Evaluate g-functions for all fields
     # -------------------------------------------------------------------------
     for i, field in enumerate([boreField1, boreField2, boreField3]):
+        nBoreholes = len(field)
         # Compare 'similarities' and 'equivalent' solvers
         t0 = perf_counter()
         gfunc_similarities = gt.gfunction.gFunction(
@@ -90,34 +91,34 @@ def main():
         ax.plot(lntts, gfunc_equivalent.gFunc)
         # Draw reference g-function
         ax.plot(data[:,0], data[:,i+1], 'o')
-        ax.legend(['similarities (t = {:.3f} sec)'.format(t_similarities),
-                   'equivalent (t = {:.3f} sec)'.format(t_equivalent),
+        ax.legend([f'similarities (t = {t_similarities:.3f} sec)',
+                   f'equivalent (t = {t_equivalent:.3f} sec)',
                    'Cimmino and Bernier (2014)'])
-        ax.set_title('Field of {} boreholes'.format(len(field)))
+        ax.set_title(f'Field of {nBoreholes} boreholes')
         plt.tight_layout()
 
         # For the second borefield, draw the evolution of heat extraction rates
         if i == 1:
             fig = gfunc_similarities.visualize_heat_extraction_rates(
                 iBoreholes=[18, 12, 14])
-            fig.suptitle("Field of {} boreholes: 'similarities' solver".format(
-                len(field)))
+            fig.suptitle(f"Field of {nBoreholes} boreholes: 'similarities' "
+                         f"solver")
             fig.tight_layout()
 
             fig = gfunc_equivalent.visualize_heat_extraction_rates()
-            fig.suptitle("Field of {} boreholes: 'equivalent' solver".format(
-                len(field)))
+            fig.suptitle(f"Field of {nBoreholes} boreholes: 'equivalent' "
+                         f"solver")
             fig.tight_layout()
 
             fig = gfunc_similarities.visualize_heat_extraction_rate_profiles(
                 iBoreholes=[18, 12, 14])
-            fig.suptitle("Field of {} boreholes: 'similarities' solver".format(
-                len(field)))
+            fig.suptitle(f"Field of {nBoreholes} boreholes: 'similarities' "
+                         f"solver")
             fig.tight_layout()
 
             fig = gfunc_equivalent.visualize_heat_extraction_rate_profiles()
-            fig.suptitle("Field of {} boreholes: 'equivalent' solver".format(
-                len(field)))
+            fig.suptitle(f"Field of {nBoreholes} boreholes: 'equivalent' "
+                         f"solver")
             fig.tight_layout()
 
     return
