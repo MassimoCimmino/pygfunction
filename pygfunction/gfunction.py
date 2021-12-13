@@ -314,19 +314,21 @@ class gFunction(object):
         # Dimensionless time (log)
         lntts = np.log(self.time/ts)
         # Plot curves for requested boreholes
-        for (i, Q_ti) in zip(iBoreholes, Q_t):
-            line = ax2.plot(lntts, Q_ti)
-            color = line[-1]._color
-            ax1.plot(self.solver.boreholes[i].x,
-                     self.solver.boreholes[i].y,
-                     linestyle='None',
-                     marker='o',
-                     color=color)
-        # Draw positions of other boreholes
-        for i in range(len(self.solver.boreholes)):
-            if i not in iBoreholes:
-                ax1.plot(self.solver.boreholes[i].x,
-                         self.solver.boreholes[i].y,
+        for i, borehole in enumerate(self.solver.boreholes):
+            if i in iBoreholes:
+                # Draw heat extraction rate
+                line = ax2.plot(lntts, Q_t[iBoreholes.index(i)])
+                color = line[-1]._color
+                # Draw colored marker for borehole position
+                ax1.plot(borehole.x,
+                         borehole.y,
+                         linestyle='None',
+                         marker='o',
+                         color=color)
+            else:
+                # Draw black marker for borehole position
+                ax1.plot(borehole.x,
+                         borehole.y,
                          linestyle='None',
                          marker='o',
                          color='k')
@@ -379,19 +381,22 @@ class gFunction(object):
         _format_axes(ax2)
 
         # Plot curves for requested boreholes
-        for (i, zi, Q_bi) in zip(iBoreholes, z, Q_b):
-            line = ax2.plot(Q_bi, zi)
-            color = line[-1]._color
-            ax1.plot(self.solver.boreholes[i].x,
-                     self.solver.boreholes[i].y,
-                     linestyle='None',
-                     marker='o',
-                     color=color)
-        # Draw positions of other boreholes
-        for i in range(len(self.solver.boreholes)):
-            if i not in iBoreholes:
-                ax1.plot(self.solver.boreholes[i].x,
-                         self.solver.boreholes[i].y,
+        for i, borehole in enumerate(self.solver.boreholes):
+            if i in iBoreholes:
+                # Draw heat extraction rate profile
+                line = ax2.plot(
+                    Q_b[iBoreholes.index(i)], z[iBoreholes.index(i)])
+                color = line[-1]._color
+                # Draw colored marker for borehole position
+                ax1.plot(borehole.x,
+                         borehole.y,
+                         linestyle='None',
+                         marker='o',
+                         color=color)
+            else:
+                # Draw black marker for borehole position
+                ax1.plot(borehole.x,
+                         borehole.y,
                          linestyle='None',
                          marker='o',
                          color='k')
@@ -439,19 +444,21 @@ class gFunction(object):
         # Dimensionless time (log)
         lntts = np.log(self.time/ts)
         # Plot curves for requested boreholes
-        for (i, T_bi) in zip(iBoreholes, T_b):
-            line = ax2.plot(lntts, T_bi)
-            color = line[-1]._color
-            ax1.plot(self.solver.boreholes[i].x,
-                     self.solver.boreholes[i].y,
-                     linestyle='None',
-                     marker='o',
-                     color=color)
-        # Draw positions of other boreholes
-        for i in range(len(self.solver.boreholes)):
-            if i not in iBoreholes:
-                ax1.plot(self.solver.boreholes[i].x,
-                         self.solver.boreholes[i].y,
+        for i, borehole in enumerate(self.solver.boreholes):
+            if i in iBoreholes:
+                # Draw borehole wall temperature
+                line = ax2.plot(lntts, T_b[iBoreholes.index(i)])
+                color = line[-1]._color
+                # Draw colored marker for borehole position
+                ax1.plot(borehole.x,
+                         borehole.y,
+                         linestyle='None',
+                         marker='o',
+                         color=color)
+            else:
+                # Draw black marker for borehole position
+                ax1.plot(borehole.x,
+                         borehole.y,
                          linestyle='None',
                          marker='o',
                          color='k')
@@ -501,19 +508,22 @@ class gFunction(object):
         _format_axes(ax2)
 
         # Plot curves for requested boreholes
-        for (i, zi, T_bi) in zip(iBoreholes, z, T_b):
-            line = ax2.plot(T_bi, zi)
-            color = line[-1]._color
-            ax1.plot(self.solver.boreholes[i].x,
-                     self.solver.boreholes[i].y,
-                     linestyle='None',
-                     marker='o',
-                     color=color)
-        # Draw positions of other boreholes
-        for i in range(len(self.solver.boreholes)):
-            if i not in iBoreholes:
-                ax1.plot(self.solver.boreholes[i].x,
-                         self.solver.boreholes[i].y,
+        for i, borehole in enumerate(self.solver.boreholes):
+            if i in iBoreholes:
+                # Draw heat extraction rate profile
+                line = ax2.plot(
+                    T_b[iBoreholes.index(i)], z[iBoreholes.index(i)])
+                color = line[-1]._color
+                # Draw colored marker for borehole position
+                ax1.plot(borehole.x,
+                         borehole.y,
+                         linestyle='None',
+                         marker='o',
+                         color=color)
+            else:
+                # Draw black marker for borehole position
+                ax1.plot(borehole.x,
+                         borehole.y,
                          linestyle='None',
                          marker='o',
                          color='k')
@@ -1701,11 +1711,12 @@ class _BaseSolver(object):
             "Please provide one of the following inputs : {}".format(
                 self.dtype, acceptable_dtypes)
         # Check segment ratios
-        for j in range(len(self.boreholes)):
-            assert len(self.segment_ratios[j]) == self.nBoreSegments[j], \
+        for j, (ratios, nSegments) in enumerate(
+                zip(self.segment_ratios, self.nBoreSegments)):
+            assert len(ratios) == nSegments, \
                 "The length of the segment ratios vectors must correspond to " \
                 "the number of segments, check borehole {}.".format(j)
-            error = np.abs(1. - np.sum(self.segment_ratios[j]))
+            error = np.abs(1. - np.sum(ratios))
             assert(error < 1.0e-6), \
                 "Defined segment ratios must add up to 1. " \
                 ", check borehole {}.".format(j)
@@ -1848,9 +1859,14 @@ class _Detailed(_BaseSolver):
         nBoreholes = len(self.boreholes)
         segment_lengths = self.segment_lengths()
 
-        for i in range(nBoreholes):
+        for i, (borehole, nSegments, ratios, i0, i1) in enumerate(
+                zip(self.boreholes,
+                    self.nBoreSegments,
+                    self.segment_ratios,
+                    self._i0Segments,
+                    self._i1Segments)):
             # Segments of the receiving borehole
-            b2 = self.boreholes[i].segments(self.nBoreSegments[i], segment_ratios=self.segment_ratios[i])
+            b2 = borehole.segments(nSegments, segment_ratios=ratios)
             # -----------------------------------------------------------------
             # Segment-to-segment thermal response factors for same-borehole
             # thermal interactions
@@ -1858,8 +1874,6 @@ class _Detailed(_BaseSolver):
             b1 = b2
             h = finite_line_source(time, alpha, b1, b2)
             # Broadcast values to h_ij matrix
-            i0 = self._i0Segments[i]
-            i1 = self._i1Segments[i]
             h_ij[i0:i1, i0:i1, 1:] = h
 
             # -----------------------------------------------------------------
@@ -1869,13 +1883,16 @@ class _Detailed(_BaseSolver):
             if i+1 < nBoreholes:
                 # Segments of the emitting borehole
                 b1 = [seg
-                      for (b, iBor) in zip(self.boreholes[i+1:], range(i+1, nBoreholes))
-                      for seg in b.segments(self.nBoreSegments[iBor], segment_ratios=self.segment_ratios[iBor])]
+                      for b, nSeg, rat in zip(
+                              self.boreholes[i+1:],
+                              self.nBoreSegments[i+1:],
+                              self.segment_ratios[i+1:])
+                      for seg in b.segments(nSeg, segment_ratios=rat)]
                 h = finite_line_source(time, alpha, b1, b2)
                 # Broadcast values to h_ij matrix
-                for j in range(i+1, nBoreholes):
-                    j0 = self._i0Segments[j]
-                    j1 = self._i1Segments[j]
+                for j, (j0, j1) in enumerate(
+                        zip(self._i0Segments[i+1:], self._i1Segments[i+1:]),
+                        start=i+1):
                     h_ij[i0:i1, j0:j1, 1:] = h[:, j0-i1:j1-i1, :]
                     if j > i:
                         h_ij[j0:j1, i0:i1, 1:] = np.einsum(
@@ -2083,20 +2100,21 @@ class _Similarities(_BaseSolver):
         # Segment-to-segment thermal response factors for borehole-to-borehole
         # thermal interactions
         # ---------------------------------------------------------------------
-        nGroups = len(self.borehole_to_borehole)
-        for n in range(nGroups):
+        for pairs, distances, distance_indices in zip(
+                self.borehole_to_borehole,
+                self.borehole_to_borehole_distances,
+                self.borehole_to_borehole_indices):
             # Index of first borehole pair in group
-            i, j = self.borehole_to_borehole[n][0]
+            i, j = pairs[0]
             # Find segment-to-segment similarities
             H1, D1, H2, D2, i_pair, j_pair, k_pair = \
                 self._map_axial_segment_pairs(i, j)
             # Locate thermal response factors in the h_ij matrix
             i_segment, j_segment, k_segment, l_segment = \
                 self._map_segment_pairs(
-                    i_pair, j_pair, k_pair, self.borehole_to_borehole[n],
-                    self.borehole_to_borehole_indices[n])
+                    i_pair, j_pair, k_pair, pairs, distance_indices)
             # Evaluate FLS at all time steps
-            dis = np.reshape(self.borehole_to_borehole_distances[n], (-1, 1))
+            dis = np.reshape(distances, (-1, 1))
             H1 = H1.reshape(1, -1)
             H2 = H2.reshape(1, -1)
             D1 = D1.reshape(1, -1)
@@ -2301,45 +2319,61 @@ class _Similarities(_BaseSolver):
         # Only check for similarities if there is more than one borehole
         if nBoreholes > 1:
             borehole_to_borehole = []
-            for i in range(nBoreholes):
+            for i, (borehole_i, nSegments_i, ratios_i) in enumerate(
+                    zip(boreholes, self.nBoreSegments, self.segment_ratios)):
                 # Compare the borehole to all known unique sets of dimensions
-                for k in range(len(borehole_to_self)):
-                    m = borehole_to_self[k][0]
+                for k, borehole_set in enumerate(borehole_to_self):
+                    m = borehole_set[0]
                     # Add the borehole to the group if a similar borehole is
                     # found
-                    if (self._compare_boreholes(boreholes[i], boreholes[m]) and
+                    if (self._compare_boreholes(borehole_i, boreholes[m]) and
                         (self._equal_segment_ratios or
-                         (self.nBoreSegments[i] == self.nBoreSegments[m] and
-                          np.allclose(self.segment_ratios[i], self.segment_ratios[m], rtol=self.tol)))):
-                        borehole_to_self[k].append(i)
+                         (nSegments_i == self.nBoreSegments[m] and
+                          np.allclose(ratios_i,
+                                      self.segment_ratios[m],
+                                      rtol=self.tol)))):
+                        borehole_set.append(i)
                         break
                 else:
                     # If no similar boreholes are known, append the groups
                     borehole_to_self.append([i])
-                for j in range(i + 1, nBoreholes):
-                    pair0 = (boreholes[i], boreholes[j]) # pair
-                    pair1 = (boreholes[j], boreholes[i]) # reciprocal pair
+
+                for j, (borehole_j, nSegments_j, ratios_j) in enumerate(
+                        zip(boreholes[i+1:],
+                            self.nBoreSegments[i+1:],
+                            self.segment_ratios[i+1:]),
+                        start=i+1):
+                    pair0 = (borehole_i, borehole_j) # pair
+                    pair1 = (borehole_j, borehole_i) # reciprocal pair
                     # Compare pairs of boreholes to known unique pairs
-                    for k in range(len(borehole_to_borehole)):
-                        m, n = borehole_to_borehole[k][0]
+                    for pairs in borehole_to_borehole:
+                        m, n = pairs[0]
                         pair_ref = (boreholes[m], boreholes[n])
                         # Add the pair (or the reciprocal pair) to a group
                         # if a similar one is found
                         if (compare_pairs(pair0, pair_ref) and
                             (self._equal_segment_ratios or
-                             (self.nBoreSegments[i] == self.nBoreSegments[m] and
-                              self.nBoreSegments[j] == self.nBoreSegments[n] and
-                              np.allclose(self.segment_ratios[i], self.segment_ratios[m], rtol=self.tol) and
-                              np.allclose(self.segment_ratios[j], self.segment_ratios[n], rtol=self.tol)))):
-                            borehole_to_borehole[k].append((i, j))
+                             (nSegments_i == self.nBoreSegments[m] and
+                              nSegments_j == self.nBoreSegments[n] and
+                              np.allclose(ratios_i,
+                                          self.segment_ratios[m],
+                                          rtol=self.tol) and
+                              np.allclose(ratios_j,
+                                          self.segment_ratios[n],
+                                          rtol=self.tol)))):
+                            pairs.append((i, j))
                             break
                         elif (compare_pairs(pair1, pair_ref) and
                               (self._equal_segment_ratios or
-                               (self.nBoreSegments[j] == self.nBoreSegments[m] and
-                                self.nBoreSegments[i] == self.nBoreSegments[n] and
-                                np.allclose(self.segment_ratios[j], self.segment_ratios[m], rtol=self.tol) and
-                                np.allclose(self.segment_ratios[i], self.segment_ratios[n], rtol=self.tol)))):
-                            borehole_to_borehole[k].append((j, i))
+                               (nSegments_j == self.nBoreSegments[m] and
+                                nSegments_i == self.nBoreSegments[n] and
+                                np.allclose(ratios_j,
+                                            self.segment_ratios[m],
+                                            rtol=self.tol) and
+                                np.allclose(ratios_i,
+                                            self.segment_ratios[n],
+                                            rtol=self.tol)))):
+                            pairs.append((j, i))
                             break
                     # If no similar pairs are known, append the groups
                     else:
@@ -2373,17 +2407,19 @@ class _Similarities(_BaseSolver):
 
         """
         nGroups = len(borehole_to_borehole)
-        borehole_to_borehole_distances = []
+        borehole_to_borehole_distances = [[] for i in range(nGroups)]
         borehole_to_borehole_indices = \
             [np.empty(len(group), dtype=np.uint) for group in borehole_to_borehole]
         # Find unique distances for each group
-        for i in range(nGroups):
-            borehole_to_borehole_distances.append([])
-            pairs = borehole_to_borehole[i]
+        for i, (pairs, distances, distance_indices) in enumerate(
+                zip(borehole_to_borehole,
+                    borehole_to_borehole_distances,
+                    borehole_to_borehole_indices)):
             nPairs = len(pairs)
             # Array of all borehole-to-borehole distances within the group
             all_distances = np.array(
-                [boreholes[pair[0]].distance(boreholes[pair[1]]) for pair in pairs])
+                [boreholes[pair[0]].distance(boreholes[pair[1]])
+                 for pair in pairs])
             # Indices to sort the distance array
             i_sort = all_distances.argsort()
             # Sort the distance array
@@ -2403,16 +2439,14 @@ class _Similarities(_BaseSolver):
                     distances_sorted >= (1+self.disTol)*distances_sorted[j0])
                 if j1 > j0:
                     # Average distance between pairs of boreholes
-                    borehole_to_borehole_distances[i].append(
-                        np.mean(distances_sorted[j0:j1]))
+                    distances.append(np.mean(distances_sorted[j0:j1]))
                     # Apply distance index to borehole pairs
-                    borehole_to_borehole_indices[i][i_sort[j0:j1]] = nDis
+                    distance_indices[i_sort[j0:j1]] = nDis
                 else:
                     # Average distance between pairs of boreholes
-                    borehole_to_borehole_distances[i].append(
-                        np.mean(distances_sorted[j0:]))
+                    distances.append(np.mean(distances_sorted[j0:]))
                     # Apply distance index to borehole pairs
-                    borehole_to_borehole_indices[i][i_sort[j0:]] = nDis
+                    distance_indices[i_sort[j0:]] = nDis
                 j0 = j1
                 nDis += 1
         return borehole_to_borehole_distances, borehole_to_borehole_indices
@@ -2468,8 +2502,10 @@ class _Similarities(_BaseSolver):
             # Find segment pairs for the image FLS solution
             compare_pairs = self._compare_image_pairs
         # Dive both boreholes into segments
-        segments1 = borehole1.segments(self.nBoreSegments[i], segment_ratios=self.segment_ratios[i])
-        segments2 = borehole2.segments(self.nBoreSegments[j], segment_ratios=self.segment_ratios[j])
+        segments1 = borehole1.segments(
+            self.nBoreSegments[i], segment_ratios=self.segment_ratios[i])
+        segments2 = borehole2.segments(
+            self.nBoreSegments[j], segment_ratios=self.segment_ratios[j])
         # Prepare lists of segment lengths
         H1 = []
         H2 = []
@@ -2477,16 +2513,10 @@ class _Similarities(_BaseSolver):
         D1 = []
         D2 = []
         # All possible pairs (i, j) of indices between segments
-        i_pair = np.array(
-            [ii
-             for ii in range(self.nBoreSegments[i])
-             for jj in range(self.nBoreSegments[j])],
-            dtype=np.uint)
-        j_pair = np.array(
-            [jj
-             for ii in range(self.nBoreSegments[i])
-             for jj in range(self.nBoreSegments[j])],
-            dtype=np.uint)
+        i_pair = np.repeat(np.arange(self.nBoreSegments[i], dtype=np.uint),
+                           self.nBoreSegments[j])
+        j_pair = np.tile(np.arange(self.nBoreSegments[j], dtype=np.uint),
+                         self.nBoreSegments[i])
         # Empty list of indices for unique pairs
         k_pair = np.empty(self.nBoreSegments[i] * self.nBoreSegments[j],
                           dtype=np.uint)
@@ -2494,12 +2524,12 @@ class _Similarities(_BaseSolver):
         nPairs = 0
 
         p = 0
-        for ii in range(self.nBoreSegments[i]):
-            for jj in range(self.nBoreSegments[j]):
-                pair = (segments1[ii], segments2[jj])
+        for ii, segment_i in enumerate(segments1):
+            for jj, segment_j in enumerate(segments2):
+                pair = (segment_i, segment_j)
                 # Compare the segment pairs to all known unique pairs
-                for k in range(nPairs):
-                    m, n = unique_pairs[k][0], unique_pairs[k][1]
+                for k, pair_k in enumerate(unique_pairs):
+                    m, n = pair_k[0], pair_k[1]
                     pair_ref = (segments1[m], segments2[n])
                     # Stop if a similar pair is found and assign the index
                     if compare_pairs(pair, pair_ref):
@@ -2510,10 +2540,10 @@ class _Similarities(_BaseSolver):
                 # depths
                 else:
                     k_pair[p] = nPairs
-                    H1.append(segments1[ii].H)
-                    H2.append(segments2[jj].H)
-                    D1.append(segments1[ii].D)
-                    D2.append(segments2[jj].D)
+                    H1.append(segment_i.H)
+                    H2.append(segment_j.H)
+                    D1.append(segment_i.D)
+                    D2.append(segment_j.D)
                     unique_pairs.append((ii, jj))
                     nPairs += 1
                 p += 1
@@ -2562,8 +2592,7 @@ class _Similarities(_BaseSolver):
             [i_pair + self._i0Segments[i] for (i, j) in borehole_to_borehole])
         j_segment = np.concatenate(
             [j_pair + self._i0Segments[j] for (i, j) in borehole_to_borehole])
-        k_segment = np.concatenate(
-            [k_pair for (i, j) in borehole_to_borehole])
+        k_segment = np.tile(k_pair, len(borehole_to_borehole))
         l_segment = np.concatenate(
             [np.repeat(i, len(k_pair)) for i in borehole_to_borehole_indices])
         return i_segment, j_segment, k_segment, l_segment
@@ -2757,27 +2786,24 @@ class _Equivalent(_BaseSolver):
         # Segment-to-segment thermal response factors for borehole-to-borehole
         # thermal interactions
         # ---------------------------------------------------------------------
-        nGroups = len(self.borehole_to_borehole)
         # Groups correspond to unique pairs of borehole dimensions
-        for n in range(nGroups):
-            indices = self.borehole_to_borehole[n]
-            nPairs = len(indices)
-            i, j = indices[0]
+        for pairs in self.borehole_to_borehole:
+            i, j = pairs[0]
             # Prepare inputs to the FLS function
-            dis, wDis = self._find_unique_distances(self.dis, indices)
+            dis, wDis = self._find_unique_distances(self.dis, pairs)
             H1, D1, H2, D2, i_pair, j_pair, k_pair = \
                 self._map_axial_segment_pairs(i, j)
             H1 = H1.reshape(1, -1)
             H2 = H2.reshape(1, -1)
             D1 = D1.reshape(1, -1)
             D2 = D2.reshape(1, -1)
-            N2 = np.array([[self.boreholes[j].nBoreholes for (i, j) in indices]]).T
+            N2 = np.array(
+                [[self.boreholes[j].nBoreholes for (i, j) in pairs]]).T
             # Evaluate FLS at all time steps
             h = finite_line_source_equivalent_boreholes_vectorized(
                 time, alpha, dis, wDis, H1, D1, H2, D2, N2)
             # Broadcast values to h_ij matrix
-            for k in range(nPairs):
-                (i, j) = indices[k]
+            for k, (i, j) in enumerate(pairs):
                 i_segment = self._i0Segments[i] + i_pair
                 j_segment = self._i0Segments[j] + j_pair
                 h_ij[j_segment, i_segment, 1:] = h[k, k_pair, :]
@@ -2904,7 +2930,9 @@ class _Equivalent(_BaseSolver):
             self.clusters = range(self.nBoreholes)
         # Overwrite boreholes with equivalent boreholes
         self.boreholes = [_EquivalentBorehole(
-            [self.boreholes[j] for j in range(self.nBoreholes) if self.clusters[j]==i])
+            [borehole 
+             for borehole, cluster in zip(self.boreholes, self.clusters)
+             if cluster==i])
             for i in range(self.nEqBoreholes)]
         self.wBoreholes = np.array([b.nBoreholes for b in self.boreholes])
         # Find similar pairs of boreholes
@@ -2914,7 +2942,8 @@ class _Equivalent(_BaseSolver):
         self.dis = eqField.unique_distance(eqField, self.disTol)[0][1:]
 
         if self.boundary_condition == 'MIFT':
-            pipes = [self.network.p[self.clusters.index(i)] for i in range(self.nEqBoreholes)]
+            pipes = [self.network.p[self.clusters.index(i)]
+                     for i in range(self.nEqBoreholes)]
             self.network = _EquivalentNetwork(
                 self.boreholes,
                 pipes,
@@ -2947,8 +2976,12 @@ class _Equivalent(_BaseSolver):
         """
         # Borehole lengths
         H = np.array([seg.H*seg.nBoreholes
-                      for (b, nSegments, segment_ratios) in zip(self.boreholes, self.nBoreSegments, self.segment_ratios)
-                      for seg in b.segments(nSegments, segment_ratios=segment_ratios)],
+                      for (borehole, nSegments, ratios) in zip(
+                              self.boreholes,
+                              self.nBoreSegments,
+                              self.segment_ratios)
+                      for seg in borehole.segments(
+                              nSegments, segment_ratios=ratios)],
                      dtype=self.dtype)
         return H
 
@@ -3101,14 +3134,14 @@ class _Equivalent(_BaseSolver):
         # Only check for similarities if there is more than one borehole
         if nBoreholes > 1:
             borehole_to_borehole = []
-            for i in range(nBoreholes):
+            for i, borehole_i in enumerate(boreholes):
                 # Compare the borehole to all known unique sets of dimensions
-                for k in range(len(borehole_to_self)):
-                    m = borehole_to_self[k][0]
+                for k, borehole_set in enumerate(borehole_to_self):
+                    m = borehole_set[0]
                     # Add the borehole to the group if a similar borehole is
                     # found
-                    if self._compare_boreholes(boreholes[i], boreholes[m]):
-                        borehole_to_self[k].append(i)
+                    if self._compare_boreholes(borehole_i, boreholes[m]):
+                        borehole_set.append(i)
                         break
                 else:
                     # If no similar boreholes are known, append the groups
@@ -3116,20 +3149,20 @@ class _Equivalent(_BaseSolver):
                 # Note : The range is different from similarities since
                 # an equivalent borehole to itself includes borehole-to-
                 # borehole thermal interactions
-                for j in range(i, nBoreholes):
-                    pair0 = (boreholes[i], boreholes[j]) # pair
-                    pair1 = (boreholes[j], boreholes[i]) # reciprocal pair
+                for j, borehole_j in enumerate(boreholes[i:], start=i):
+                    pair0 = (borehole_i, borehole_j) # pair
+                    pair1 = (borehole_j, borehole_i) # reciprocal pair
                     # Compare pairs of boreholes to known unique pairs
-                    for k in range(len(borehole_to_borehole)):
-                        m, n = borehole_to_borehole[k][0]
+                    for pairs in borehole_to_borehole:
+                        m, n = pairs[0]
                         pair_ref = (boreholes[m], boreholes[n])
                         # Add the pair (or the reciprocal pair) to a group
                         # if a similar one is found
                         if compare_pairs(pair0, pair_ref):
-                            borehole_to_borehole[k].append((i, j))
+                            pairs.append((i, j))
                             break
                         elif compare_pairs(pair1, pair_ref):
-                            borehole_to_borehole[k].append((j, i))
+                            pairs.append((j, i))
                             break
                     # If no similar pairs are known, append the groups
                     else:
@@ -3157,13 +3190,12 @@ class _Equivalent(_BaseSolver):
 
         """
         unique_boreholes = []
-        for i in range(self.nBoreholes):
-            b1 = boreholes[i]
-            for k in range(len(unique_boreholes)):
-                b2 = boreholes[unique_boreholes[k][0]]
+        for i, borehole_1 in enumerate(boreholes):
+            for group in unique_boreholes:
+                borehole_2 = boreholes[group[0]]
                 # Add the borehole to a group if similar dimensions are found
-                if self._compare_boreholes(b1, b2):
-                    unique_boreholes[k].append(i)
+                if self._compare_boreholes(borehole_1, borehole_2):
+                    group.append(i)
                     break
             else:
                 # If no similar boreholes are known, append the groups
@@ -3193,8 +3225,8 @@ class _Equivalent(_BaseSolver):
 
         """
         wDis = np.zeros((len(dis), len(indices)), dtype=np.uint)
-        for k in range(len(indices)):
-            i, j = indices[k]
+        for k, pair in enumerate(indices):
+            i, j = pair
             b1, b2 = self.boreholes[i], self.boreholes[j]
             # Generate a flattened array of distances between boreholes i and j
             if not i == j:
@@ -3265,8 +3297,10 @@ class _Equivalent(_BaseSolver):
             # Find segment pairs for the image FLS solution
             compare_pairs = self._compare_image_pairs
         # Dive both boreholes into segments
-        segments1 = borehole1.segments(self.nBoreSegments[iBor], segment_ratios=self.segment_ratios[iBor])
-        segments2 = borehole2.segments(self.nBoreSegments[jBor], segment_ratios=self.segment_ratios[jBor])
+        segments1 = borehole1.segments(
+            self.nBoreSegments[iBor], segment_ratios=self.segment_ratios[iBor])
+        segments2 = borehole2.segments(
+            self.nBoreSegments[jBor], segment_ratios=self.segment_ratios[jBor])
         # Prepare lists of segment lengths
         H1 = []
         H2 = []
@@ -3274,16 +3308,10 @@ class _Equivalent(_BaseSolver):
         D1 = []
         D2 = []
         # All possible pairs (i, j) of indices between segments
-        i_pair = np.array(
-            [i
-             for i in range(self.nBoreSegments[iBor])
-             for j in range(self.nBoreSegments[jBor])],
-            dtype=np.uint)
-        j_pair = np.array(
-            [j
-             for i in range(self.nBoreSegments[iBor])
-             for j in range(self.nBoreSegments[jBor])],
-            dtype=np.uint)
+        i_pair = np.repeat(np.arange(self.nBoreSegments[iBor], dtype=np.uint),
+                           self.nBoreSegments[jBor])
+        j_pair = np.tile(np.arange(self.nBoreSegments[jBor], dtype=np.uint),
+                         self.nBoreSegments[iBor])
         # Empty list of indices for unique pairs
         k_pair = np.empty(self.nBoreSegments[iBor] * self.nBoreSegments[jBor],
                           dtype=np.uint)
@@ -3291,12 +3319,12 @@ class _Equivalent(_BaseSolver):
         nPairs = 0
 
         p = 0
-        for i in range(self.nBoreSegments[iBor]):
-            for j in range(self.nBoreSegments[jBor]):
-                pair = (segments1[i], segments2[j])
+        for i, segment_i in enumerate(segments1):
+            for j, segment_j in enumerate(segments2):
+                pair = (segment_i, segment_j)
                 # Compare the segment pairs to all known unique pairs
-                for k in range(nPairs):
-                    m, n = unique_pairs[k][0], unique_pairs[k][1]
+                for k, pair_k in enumerate(unique_pairs):
+                    m, n = pair_k[0], pair_k[1]
                     pair_ref = (segments1[m], segments2[n])
                     # Stop if a similar pair is found and assign the index
                     if compare_pairs(pair, pair_ref):
@@ -3307,10 +3335,10 @@ class _Equivalent(_BaseSolver):
                 # depths
                 else:
                     k_pair[p] = nPairs
-                    H1.append(segments1[i].H)
-                    H2.append(segments2[j].H)
-                    D1.append(segments1[i].D)
-                    D2.append(segments2[j].D)
+                    H1.append(segment_i.H)
+                    H2.append(segment_j.H)
+                    D1.append(segment_i.D)
+                    D2.append(segment_j.D)
                     unique_pairs.append((i, j))
                     nPairs += 1
                 p += 1

@@ -44,10 +44,7 @@ def main():
     # -------------------------------------------------------------------------
     # Draw bore fields
     # -------------------------------------------------------------------------
-    LW = 1.5    # Line width
-
     for field in [rectangularField, boxField, UField, LField, circleField]:
-
         gt.boreholes.visualize_field(field)
 
     return
