@@ -91,14 +91,14 @@ def main():
     # pipe object and raises an error if the pipe geometry is invalid. It is
     # manually called here for demonstration.
     check_single = SingleUTube._check_geometry()
-    print('The geometry of the borehole is valid (realistic/possible): '
-          + str(check_single))
+    print(f'The geometry of the borehole is valid (realistic/possible): '
+          f'{check_single!s}.')
 
     # Evaluate and print the effective borehole thermal resistance
     R_b = SingleUTube.effective_borehole_thermal_resistance(
         m_flow_borehole, fluid.cp)
-    print('Single U-tube Borehole thermal resistance: '
-          '{0:.4f} m.K/W'.format(R_b))
+    print(f'Single U-tube Borehole thermal resistance: '
+          f'{R_b:.4f} m.K/W')
 
     # Visualize the borehole geometry and save the figure
     fig_single = SingleUTube.visualize_pipes()
@@ -145,12 +145,12 @@ def main():
     # Evaluate and print the effective borehole thermal resistance
     R_b_series = DoubleUTube_series.effective_borehole_thermal_resistance(
         m_flow_borehole, fluid.cp)
-    print('Double U-tube (series) Borehole thermal resistance: {0:.4f} m.K/W'.
-          format(R_b_series))
+    print(f'Double U-tube (series) Borehole thermal resistance: '
+          f'{R_b_series:.4f} m.K/W')
     R_b_parallel = DoubleUTube_parallel.effective_borehole_thermal_resistance(
         m_flow_borehole, fluid.cp)
-    print('Double U-tube (parallel) Borehole thermal resistance: {0:.4f} m.K/W'.
-          format(R_b_parallel))
+    print(f'Double U-tube (parallel) Borehole thermal resistance: '
+          f'{R_b_parallel:.4f} m.K/W')
 
     # Visualize the borehole geometry and save the figure
     fig_double = DoubleUTube_series.visualize_pipes()
@@ -195,8 +195,7 @@ def main():
     # Evaluate and print the effective borehole thermal resistance
     R_b = Coaxial.effective_borehole_thermal_resistance(
         m_flow_borehole, fluid.cp)
-    print('Coaxial tube Borehole thermal resistance: {0:.4f} m.K/W'.
-          format(R_b))
+    print(f'Coaxial tube Borehole thermal resistance: {R_b:.4f} m.K/W')
 
     # Visualize the borehole geometry and save the figure
     fig_coaxial = Coaxial.visualize_pipes()

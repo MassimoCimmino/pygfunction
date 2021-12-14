@@ -79,7 +79,7 @@ def main():
 
     t_calc = np.zeros(nLoadAgg)
     for n, (LoadAgg, label) in enumerate(zip(LoadAggSchemes, loadAgg_labels)):
-        print('Simulation using {} ...'.format(label))
+        print(f'Simulation using {label} ...')
         # Interpolate g-function at required times
         time_req = LoadAgg.get_times_for_simulation()
         gFunc_int = interp1d(np.hstack([0., time_gFunc]),
@@ -163,9 +163,9 @@ def main():
     print('Simulation results')
     for label, maxError_n, t_calc_n in zip(loadAgg_labels, maxError, t_calc):
         print()
-        print((' ' + label + ' ').center(60, '-'))
-        print('Maximum absolute error : {:.3f} degC'.format(maxError_n))
-        print('Calculation time : {:.3f} sec'.format(t_calc_n))
+        print((f' {label} ').center(60, '-'))
+        print(f'Maximum absolute error : {maxError_n:.3f} degC')
+        print(f'Calculation time : {t_calc_n:.3f} sec')
 
     return
 

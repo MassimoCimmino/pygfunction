@@ -68,7 +68,7 @@ class Fluid:
         if mixer == 'Water':
             self.fluid_mix = mixer
         elif mixer in ['MEG', 'MPG', 'MMA', 'MEA']:  # Expected brines
-            self.fluid_mix = 'INCOMP::' + mixer + '-' + str(percent) + '%'
+            self.fluid_mix = f'INCOMP::{mixer}-{str(percent)}%'
         else:
             warnings.warn('It is unknown whether or not cool props has the '
                           'mixing fluid requested, proceed with caution.')
@@ -95,16 +95,17 @@ class Fluid:
         self.Pr = self.Prandlt_number()
 
     def __repr__(self):
-        return str(self.__class__) + '\n' + '\n'.join(
-            (str(item) + ' = ' + '{}'.format(
-                self.__dict__[item]) for item in sorted(self.__dict__)))
+        return f'{self.__class__!s}\n' \
+            + '\n'.join(
+                (f'{item!s} = {self.__dict__[item]}'
+                 for item in sorted(self.__dict__)))
 
     def append_to_dict(self, dnary):
         if len(list(dnary.keys())) == 0:
             for item in sorted(self.__dict__):
                 dnary[item] = []
         for item in sorted(self.__dict__):
-            dnary[item].append('{:.5E}'.format(self.__dict__[item]))
+            dnary[item].append(f'{self.__dict__[item]:.5E}')
 
     def density(self):
         """

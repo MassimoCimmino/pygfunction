@@ -201,7 +201,7 @@ class gFunction(object):
                 self.boreholes, self.network, self.time,
                 self.boundary_condition, **self.options)
         else:
-            raise ValueError('\'{}\' is not a valid method.'.format(method))
+            raise ValueError(f"'{method}' is not a valid method.")
 
         # If a time vector is provided, evaluate the g-function
         if self.time is not None:
@@ -229,8 +229,8 @@ class gFunction(object):
         self.time = time
         if self.solver.disp:
             print(60*'-')
-            print('Calculating g-function for boundary condition : \'{}\''.format(
-                self.boundary_condition).center(60))
+            print(f"Calculating g-function for boundary condition : "
+                  f"'{self.boundary_condition}'".center(60))
             print(60*'-')
         # Initialize chrono
         tic = perf_counter()
@@ -240,8 +240,8 @@ class gFunction(object):
         toc = perf_counter()
 
         if self.solver.disp:
-            print('Total time for g-function evaluation: {:.3f} sec'.format(
-                toc - tic))
+            print(f'Total time for g-function evaluation: '
+                  f'{toc - tic:.3f} sec')
             print(60*'-')
         return self.gFunc
 
@@ -820,14 +820,12 @@ class gFunction(object):
             "The thermal diffusivity 'alpha' should be a float or an array."
         acceptable_boundary_conditions = ['UHTR', 'UBWT', 'MIFT']
         assert type(self.boundary_condition) is str and self.boundary_condition in acceptable_boundary_conditions, \
-            "Boundary condition \'{}\' is not an acceptable boundary condition. \n" \
-            "Please provide one of the following inputs : {}".format(
-                self.boundary_condition, acceptable_boundary_conditions)
+            f"Boundary condition '{self.boundary_condition}' is not an acceptable boundary condition. \n" \
+            f"Please provide one of the following inputs : {acceptable_boundary_conditions}"
         acceptable_methods = ['detailed', 'similarities', 'equivalent']
         assert type(self.method) is str and self.method in acceptable_methods, \
-            "Method \'{}\' is not an acceptable method. \n" \
-            "Please provide one of the following inputs : {}".format(
-                self.method, acceptable_methods)
+            f"Method '{self.method}' is not an acceptable method. \n" \
+            f"Please provide one of the following inputs : {acceptable_methods}"
         return
 
 
@@ -1547,7 +1545,7 @@ class _BaseSolver(object):
             self.Q_b = Q_b
             self.T_b = T_b
         toc = perf_counter()
-        if self.disp: print(' {:.3f} sec'.format(toc - tic))
+        if self.disp: print(f' {toc - tic:.3f} sec')
         return gFunc
 
     def segment_lengths(self):
@@ -1694,10 +1692,10 @@ class _BaseSolver(object):
             "in the borefield. nSegments >= 1 is/are required."
         acceptable_boundary_conditions = ['UHTR', 'UBWT', 'MIFT']
         assert type(self.boundary_condition) is str and self.boundary_condition in acceptable_boundary_conditions, \
-            "Boundary condition \'{}\' is not an acceptable boundary " \
-            "condition. \n" \
-            "Please provide one of the following inputs : {}".format(
-                self.boundary_condition, acceptable_boundary_conditions)
+            f"Boundary condition '{self.boundary_condition}' is not an " \
+            f"acceptable boundary condition. \n" \
+            f"Please provide one of the following inputs : " \
+            f"{acceptable_boundary_conditions}"
         assert type(self.disp) is bool, \
             "The option 'disp' should be set to True or False."
         assert type(self.profiles) is bool, \
@@ -1707,19 +1705,18 @@ class _BaseSolver(object):
             "in accordance with scipy.interpolate.interp1d options."
         acceptable_dtypes = (np.single, np.double)
         assert np.any([self.dtype is dtype for dtype in acceptable_dtypes]), \
-            "Data type \'{}\' is not an acceptable data type. \n" \
-            "Please provide one of the following inputs : {}".format(
-                self.dtype, acceptable_dtypes)
+            f"Data type '{self.dtype}' is not an acceptable data type. \n" \
+            f"Please provide one of the following inputs : {acceptable_dtypes}"
         # Check segment ratios
         for j, (ratios, nSegments) in enumerate(
                 zip(self.segment_ratios, self.nBoreSegments)):
             assert len(ratios) == nSegments, \
-                "The length of the segment ratios vectors must correspond to " \
-                "the number of segments, check borehole {}.".format(j)
+                f"The length of the segment ratios vectors must correspond to " \
+                f"the number of segments, check borehole {j}."
             error = np.abs(1. - np.sum(ratios))
             assert(error < 1.0e-6), \
-                "Defined segment ratios must add up to 1. " \
-                ", check borehole {}.".format(j)
+                f"Defined segment ratios must add up to 1. " \
+                f", check borehole {j}."
 
         return
 
@@ -1909,7 +1906,7 @@ class _Detailed(_BaseSolver):
         h_ij = interp1d(np.hstack((0., time)), h_ij,
                         kind=kind, copy=True, axis=2)
         toc = perf_counter()
-        if self.disp: print(' {:.3f} sec'.format(toc - tic))
+        if self.disp: print(f' {toc - tic:.3f} sec')
 
         return h_ij
 
@@ -2139,7 +2136,7 @@ class _Similarities(_BaseSolver):
             np.hstack((0., time)), h_ij,
             kind=kind, copy=True, assume_sorted=True, axis=2)
         toc = perf_counter()
-        if self.disp: print(' {:.3f} sec'.format(toc - tic))
+        if self.disp: print(f' {toc - tic:.3f} sec')
 
         return h_ij
 
@@ -2166,7 +2163,7 @@ class _Similarities(_BaseSolver):
 
         # Stop chrono
         toc = perf_counter()
-        if self.disp: print(' {:.3f} sec'.format(toc - tic))
+        if self.disp: print(f' {toc - tic:.3f} sec')
 
         return
 
@@ -2844,7 +2841,7 @@ class _Equivalent(_BaseSolver):
         h_ij = interp1d(np.hstack((0., time)), h_ij,
                         kind=kind, copy=True, axis=2)
         toc = perf_counter()
-        if self.disp: print(' {:.3f} sec'.format(toc - tic))
+        if self.disp: print(f' {toc - tic:.3f} sec')
 
         return h_ij
 
@@ -2955,8 +2952,9 @@ class _Equivalent(_BaseSolver):
         # Stop chrono
         toc = perf_counter()
         if self.disp:
-            print(' {:.3f} sec'.format(toc - tic))
-            print('Calculations will be done using {} equivalent boreholes'.format(self.nEqBoreholes))
+            print(f' {toc - tic:.3f} sec')
+            print(f'Calculations will be done using {self.nEqBoreholes} '
+                  f'equivalent boreholes')
 
         return self.nBoreSegments[0]*self.nEqBoreholes
 

@@ -103,10 +103,9 @@ def segment_ratios(nSegments, end_length_ratio=0.02):
                     break
         else:
             raise RuntimeError(
-                'utilities.segment_ratios failed to generate segment '
-                'discretization for the given input parameters : '
-                ' nSegments={}, end_length_ratio={}.'.format(
-                    nSegments, end_length_ratio))
+                f'utilities.segment_ratios failed to generate segment '
+                f'discretization for the given input parameters : '
+                f'nSegments={nSegments}, end_length_ratio={end_length_ratio}.')
     else:
         # The ratio is a root of the polynomial expression
         # 0 = (1 - 2 * end_length_ratio) - ratio * x
@@ -134,10 +133,9 @@ def segment_ratios(nSegments, end_length_ratio=0.02):
                     break
         else:
             raise RuntimeError(
-                'utilities.segment_ratios failed to generate segment '
-                'discretization for the given input parameters : '
-                ' nSegments={}, end_length_ratio={}.'.format(
-                    nSegments, end_length_ratio))
+                f'utilities.segment_ratios failed to generate segment '
+                f'discretization for the given input parameters : '
+                f'nSegments={nSegments}, end_length_ratio={end_length_ratio}.')
 
     if factor < 1.:
         warnings.warn(

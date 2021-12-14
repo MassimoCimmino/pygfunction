@@ -146,9 +146,9 @@ def main():
     # Compute the rmse between the reference cases and the discretized
     # (predicted) cases
     RMSE_MIFT = RMSE(gfunc_MIFT_uniform.gFunc, gfunc_MIFT_unequal.gFunc)
-    print('RMSE (MIFT) = {0:.5f}'.format(RMSE_MIFT))
+    print(f'RMSE (MIFT) = {RMSE_MIFT:.5f}')
     RMSE_UBWT = RMSE(gfunc_UBWT_uniform.gFunc, gfunc_UBWT_unequal.gFunc)
-    print('RMSE (UBWT) = {0:.5f}'.format(RMSE_UBWT))
+    print(f'RMSE (UBWT) = {RMSE_UBWT:.5f}')
 
     # -------------------------------------------------------------------------
     # Plot g-functions
