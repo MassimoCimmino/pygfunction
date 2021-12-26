@@ -2897,15 +2897,11 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
     pikg = 1.0 / (2.0*pi*k_g)
     sigma = (k_g - k_s)/(k_g + k_s)
     beta_p = 2*pi*k_g*R_fp
-    R0 = np.zeros((n_p, n_p))
-    for i, (z_i, beta_i, r_out_i) in enumerate(zip(z_p, beta_p, r_out)):
-        rbm = r_b**2/(r_b**2 - np.abs(z_i)**2)
-        R0[i, i] = pikg*(np.log(r_b/r_out_i) + beta_i + sigma*np.log(rbm))
-        for j, z_j in enumerate(z_p):
-            if i != j:
-                dz = np.abs(z_i - z_j)
-                rbm = r_b**2/np.abs(r_b**2 - z_j*np.conj(z_i))
-                R0[i, j] = pikg*(np.log(r_b/dz) + sigma*np.log(rbm))
+    rbm = r_b**2/(r_b**2 - np.abs(z_p)**2)
+    R0 = np.diag(pikg * (np.log(r_b/r_out) + beta_p + sigma*np.log(rbm)))
+    rbmn = r_b**2/np.abs(r_b**2 - np.multiply.outer(np.conj(z_p), z_p))
+    dz = np.abs(np.subtract.outer(z_p + 1e-12, z_p))
+    R0 = R0 + (1 - np.eye(n_p)) * pikg * (np.log(r_b / dz) + sigma * np.log(rbmn))
 
     # Initialize maximum error and iteration counter
     eps_max = 1.0e99
@@ -2935,17 +2931,11 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
     # --------------------------
     T_f = T_b + R0 @ q_p
     if J > 0:
-        for m, z_m in enumerate(z_p):
-            dTfm = 0. + 0.j
-            for n, (z_n, r_out_n) in enumerate(zip(z_p, r_out)):
-                for j in range(J):
-                    # Second term
-                    if n != m:
-                        dTfm += P[n,j]*(r_out_n/(z_m-z_n))**(j+1)
-                    # Third term
-                    dTfm += sigma*P[n,j]*(r_out_n*np.conj(z_m) \
-                                   /(r_b**2 - z_n*np.conj(z_m)))**(j+1)
-            T_f[m] += np.real(dTfm)
+        for j in range(J):
+            dz = np.subtract.outer(z_p + 1e-12, z_p)
+            T_f = T_f + np.real((1 - np.eye(n_p)) / dz**(j+1) @ (P[:,j] * r_out**(j+1)))
+            zz = np.multiply.outer(np.conj(z_p), z_p)
+            T_f = T_f + sigma * np.real(np.conj(z_p)**(j+1) * (1 / (r_b**2 - zz)**(j+1) @ (P[:,j] * r_out**(j+1))))
 
     # -------------------------------
     # Requested temperatures (EQ. 28)
