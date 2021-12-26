@@ -3024,32 +3024,17 @@ def _F_mk(q_p, P, n_p, J, r_b, r_out, z, pikg, sigma):
 
     """
     F = np.zeros((n_p, J), dtype=np.cfloat)
-    for m, (z_m, r_out_m) in enumerate(zip(z, r_out)):
-        for k in range(J):
-            fmk = 0. + 0.j
-            for n, (z_n, r_out_n, q_n, P_n) in enumerate(
-                    zip(z, r_out, q_p, P)):
-                # First term
-                if m != n:
-                    fmk += q_n*pikg/(k+1)*(r_out_m/(z_n - z_m))**(k+1)
-                # Second term
-                fmk += sigma*q_n*pikg/(k+1)*(r_out_m*np.conj(z_n)/(
-                        r_b**2 - z_m*np.conj(z_n)))**(k+1)
-                for j in range(J):
-                    # Third term
-                    if m != n:
-                        fmk += P_n[j]*binom(j+k+1, j) \
-                                *r_out_n**(j+1)*(-r_out_m)**(k+1) \
-                                /(z_m - z_n)**(j+k+2)
-                    # Fourth term
-                    j_pend = np.min((k, j)) + 2
-                    for jp in range(j_pend):
-                        fmk += sigma*np.conj(P_n[j])*binom(j+1, jp) \
-                                *binom(j+k-jp+1, j)*r_out_n**(j+1) \
-                                *r_out_m**(k+1)*z_m**(j+1-jp) \
-                                *np.conj(z_n)**(k+1-jp) \
-                                /(r_b**2 - z_m*np.conj(z_n))**(k+j+2-jp)
-            F[m,k] = fmk
+    for k in range(J):
+        # First term
+        F[:,k] = F[:,k] + r_out**(k+1) * pikg / (k + 1) * ((1 - np.eye(n_p)) / np.add.outer(-z, z + 1e-12)**(k+1) @ q_p)
+        # Second term
+        F[:,k] = F[:,k] + sigma * r_out**(k+1) * pikg / (k + 1) * (1 / (r_b**2 - np.multiply.outer(z, np.conj(z)))**(k+1) @ (q_p * np.conj(z)**(k+1)))
+        for j in range(J):
+            # Third term
+            F[:,k] = F[:,k] + binom(j+k+1, j) * (-r_out)**(k+1) * ((1 - np.eye(n_p)) / np.add.outer(z + 1e-12, -z)**(j+k+2) @ (P[:,j] * r_out**(j+1)))
+            j_pend = min(k, j) + 2
+            for jp in range(j_pend):
+                F[:,k] = F[:,k] + sigma * binom(j+1, jp) * binom(j+k-jp+1, j) * r_out**(k+1) * z**(j+1-jp) * (1 / (r_b**2 - np.multiply.outer(z, np.conj(z)))**(k+j+2-jp) @ (np.conj(P[:,j]) * r_out**(j+1) * np.conj(z)**(k+1-jp)))
 
     return F
 
