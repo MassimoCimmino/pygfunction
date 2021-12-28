@@ -9,6 +9,7 @@
 ### Enhancements
 
 * [Issue 152](https://github.com/MassimoCimmino/pygfunction/issues/152) - Vectorized `coefficients_temperature` and `_general_solution` in `pipe` objects to accept depths `z` as an array. This speeds up calculations for `get_temperature` and `get_borehole_heat_extraction_rate` class methods.
+* [Issue 183](https://github.com/MassimoCimmino/pygfunction/issues/183) - The computation duration for initialization of the pipe objects is reduced by vectorization of the resistance network calculation in `multiple()`, and a `memoization` technique is implemented to reduce computation time for repeated function calls.   
 
 ### Other changes
 
