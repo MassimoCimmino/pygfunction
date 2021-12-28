@@ -1031,7 +1031,7 @@ class SingleUTube(_BasePipe):
         """
         self.R_fp = R_fp
         # Delta-circuit thermal resistances
-        self._Rd = thermal_resistances(
+        self._Rd = thermal_resistances(self,
             self.pos, self.r_out, self.b.r_b, self.k_s, self.k_g, R_fp,
             J=self.J)[1]
         # Initialize stored_coefficients
@@ -1487,7 +1487,7 @@ class MultipleUTube(_BasePipe):
         """
         self.R_fp = R_fp
         # Delta-circuit thermal resistances
-        self._Rd = thermal_resistances(
+        self._Rd = thermal_resistances(self,
             self.pos, self.r_out, self.b.r_b, self.k_s, self.k_g, R_fp,
             J=self.J)[1]
         # Initialize stored_coefficients
@@ -1977,7 +1977,7 @@ class IndependentMultipleUTube(MultipleUTube):
         """
         self.R_fp = R_fp
         # Delta-circuit thermal resistances
-        self._Rd = thermal_resistances(
+        self._Rd = thermal_resistances(self,
             self.pos, self.r_out, self.b.r_b, self.k_s, self.k_g, R_fp,
             J=self.J)[1]
         # Initialize stored_coefficients
@@ -2215,7 +2215,7 @@ class Coaxial(SingleUTube):
         self.R_ff = R_ff
         self.R_fp = R_fp
         # Outer pipe to borehole wall thermal resistance
-        R_fg = thermal_resistances(
+        R_fg = thermal_resistances(self,
             self.pos, self.r_out[self._iOuter], self.b.r_b, self.k_s, self.k_g,
             R_fp, J=self.J)[1][0]
         # Delta-circuit thermal resistances
@@ -2368,22 +2368,26 @@ thermal_resistances_dict = {
     'R_fp': None, 'J': None, 'R': None, 'Rd': None}
 
 
-def _compare_thermal_resistances_inputs(pos, r_out, r_b, k_s, k_g, R_fp, J,
-                                        tol=1e-6):
-    for arg in ('pos', 'r_out', 'r_b', 'k_s', 'k_g', 'R_fp', 'J'):
-        if thermal_resistances_dict[arg] is None:
+def _compare_thermal_resistances_inputs(self, pos, r_out, r_b, k_s, k_g, R_fp,
+                                        J, tol=1e-6):
+    # This is a memoization function...
+    args = ('pos', 'r_out', 'r_b', 'k_s', 'k_g', 'R_fp', 'J')
+    # loop through the arguments and see if the object has all instances defined
+    for arg in args:
+        if not hasattr(self, arg):
             return False
-    if not (len(pos) == len(thermal_resistances_dict['pos']) and
-            len(r_out) == len(thermal_resistances_dict['r_out']) and
-            len(R_fp) == len(thermal_resistances_dict['R_fp'])):
+    # check pos, r_out and R_fp for list sizes
+    if not (len(pos) == len(getattr(self, 'pos')) and
+            len(r_out) == len(getattr(self, 'r_out')) and
+            len(R_fp) == len(getattr(self, 'R_fp'))):
         return False
-    if (np.allclose(r_out, thermal_resistances_dict['r_out'], rtol=tol) and
-        np.abs(r_b - thermal_resistances_dict['r_b']) / r_b < tol and
-        np.abs(k_s - thermal_resistances_dict['k_s']) / k_s < tol and
-        np.abs(k_g - thermal_resistances_dict['k_g']) / k_g < tol and
-        np.allclose(R_fp, thermal_resistances_dict['R_fp']) and
-        J == thermal_resistances_dict['J']):
-        for (x, y), (x_ref, y_ref) in zip(pos, thermal_resistances_dict['pos']):
+    if (np.allclose(r_out, getattr(self, 'r_out'), rtol=tol) and
+        np.abs(r_b - getattr(self, 'r_b')) / r_b < tol and
+        np.abs(k_s - getattr(self, 'k_s')) / k_s < tol and
+        np.abs(k_g - getattr(self, 'k_g')) / k_g < tol and
+        np.allclose(R_fp, getattr(self, 'R_fp')) and
+        J == getattr(self, 'J')):
+        for (x, y), (x_ref, y_ref) in zip(pos, getattr(self, 'pos')):
             if (np.abs(x - x_ref) > np.abs(x*tol) or
                     np.abs(y - y_ref) > np.abs(y*tol)):
                 return False
@@ -2391,7 +2395,7 @@ def _compare_thermal_resistances_inputs(pos, r_out, r_b, k_s, k_g, R_fp, J,
     return False
 
         
-def thermal_resistances(pos, r_out, r_b, k_s, k_g, R_fp, J=2):
+def thermal_resistances(self, pos, r_out, r_b, k_s, k_g, R_fp, J=2):
     """
     Evaluate thermal resistances and delta-circuit thermal resistances.
 
@@ -2464,7 +2468,8 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, R_fp, J=2):
         r_out = np.ones(n_p)*r_out
     if np.isscalar(R_fp):
         R_fp = np.ones(n_p)*R_fp
-    if _compare_thermal_resistances_inputs(pos, r_out, r_b, k_s, k_g, R_fp, J):
+    if _compare_thermal_resistances_inputs(
+            self, pos, r_out, r_b, k_s, k_g, R_fp, J):
         return thermal_resistances_dict['R'], thermal_resistances_dict['Rd']
 
     R = np.zeros((n_p, n_p))
