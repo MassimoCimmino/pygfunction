@@ -2366,7 +2366,10 @@ class Coaxial(SingleUTube):
 thermal_resistances_dict = {
     'pos': None, 'r_out': None, 'r_b': None, 'k_s': None, 'k_g': None,
     'R_fp': None, 'J': None, 'R': None, 'Rd': None}
-def _compare_thermal_resistances_inputs(pos, r_out, r_b, k_s, k_g, R_fp, J, tol=1e-6):
+
+
+def _compare_thermal_resistances_inputs(pos, r_out, r_b, k_s, k_g, R_fp, J,
+                                        tol=1e-6):
     for arg in ('pos', 'r_out', 'r_b', 'k_s', 'k_g', 'R_fp', 'J'):
         if thermal_resistances_dict[arg] is None:
             return False
@@ -2380,13 +2383,13 @@ def _compare_thermal_resistances_inputs(pos, r_out, r_b, k_s, k_g, R_fp, J, tol=
         np.abs(k_g - thermal_resistances_dict['k_g']) / k_g < tol and
         np.allclose(R_fp, thermal_resistances_dict['R_fp']) and
         J == thermal_resistances_dict['J']):
-        for (x, y), (x_ref, y_ref) in zip(
-                pos, thermal_resistances_dict['pos']):
+        for (x, y), (x_ref, y_ref) in zip(pos, thermal_resistances_dict['pos']):
             if (np.abs(x - x_ref) > np.abs(x*tol) or
-                np.abs(y - y_ref) > np.abs(y*tol)):
+                    np.abs(y - y_ref) > np.abs(y*tol)):
                 return False
         return True
     return False
+
         
 def thermal_resistances(pos, r_out, r_b, k_s, k_g, R_fp, J=2):
     """
