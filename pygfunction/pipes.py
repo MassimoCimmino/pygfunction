@@ -2363,6 +2363,31 @@ class Coaxial(SingleUTube):
         return True
 
 
+thermal_resistances_dict = {
+    'pos': None, 'r_out': None, 'r_b': None, 'k_s': None, 'k_g': None,
+    'R_fp': None, 'J': None, 'R': None, 'Rd': None}
+def _compare_thermal_resistances_inputs(pos, r_out, r_b, k_s, k_g, R_fp, J, tol=1e-6):
+    for arg in ('pos', 'r_out', 'r_b', 'k_s', 'k_g', 'R_fp', 'J'):
+        if thermal_resistances_dict[arg] is None:
+            return False
+    if not (len(pos) == len(thermal_resistances_dict['pos']) and
+            len(r_out) == len(thermal_resistances_dict['r_out']) and
+            len(R_fp) == len(thermal_resistances_dict['R_fp'])):
+        return False
+    if (np.allclose(r_out, thermal_resistances_dict['r_out'], rtol=tol) and
+        np.abs(r_b - thermal_resistances_dict['r_b']) / r_b < tol and
+        np.abs(k_s - thermal_resistances_dict['k_s']) / k_s < tol and
+        np.abs(k_g - thermal_resistances_dict['k_g']) / k_g < tol and
+        np.allclose(R_fp, thermal_resistances_dict['R_fp']) and
+        J == thermal_resistances_dict['J']):
+        for (x, y), (x_ref, y_ref) in zip(
+                pos, thermal_resistances_dict['pos']):
+            if (np.abs(x - x_ref) > np.abs(x*tol) or
+                np.abs(y - y_ref) > np.abs(y*tol)):
+                return False
+        return True
+    return False
+        
 def thermal_resistances(pos, r_out, r_b, k_s, k_g, R_fp, J=2):
     """
     Evaluate thermal resistances and delta-circuit thermal resistances.
@@ -2436,6 +2461,8 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, R_fp, J=2):
         r_out = np.ones(n_p)*r_out
     if np.isscalar(R_fp):
         R_fp = np.ones(n_p)*R_fp
+    if _compare_thermal_resistances_inputs(pos, r_out, r_b, k_s, k_g, R_fp, J):
+        return thermal_resistances_dict['R'], thermal_resistances_dict['Rd']
 
     R = np.zeros((n_p, n_p))
     if J == 0:
@@ -2478,6 +2505,15 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, R_fp, J=2):
                     sum([K[i, j] for j in range(n_p) if not i == j]))
     Rd = 1.0/K
 
+    thermal_resistances_dict['pos'] = pos
+    thermal_resistances_dict['r_out'] = r_out
+    thermal_resistances_dict['r_b'] = r_b
+    thermal_resistances_dict['k_s'] = k_s
+    thermal_resistances_dict['k_g'] = k_g
+    thermal_resistances_dict['R_fp'] = R_fp
+    thermal_resistances_dict['J'] = J
+    thermal_resistances_dict['R'] = R
+    thermal_resistances_dict['Rd'] = Rd
     return R, Rd
 
 
