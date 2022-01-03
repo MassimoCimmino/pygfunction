@@ -2363,31 +2363,72 @@ class Coaxial(SingleUTube):
         return True
 
 
-thermal_resistances_dict = {
+# Dictionnary of inputs and outputs for thermal_resistance function
+# The inputs and outputs of the last call to the function are saved into this
+# dictionnary to save calculation time on repeated calls.
+_thermal_resistances_dict = {
     'pos': None, 'r_out': None, 'r_b': None, 'k_s': None, 'k_g': None,
     'R_fp': None, 'J': None, 'R': None, 'Rd': None}
-def _compare_thermal_resistances_inputs(pos, r_out, r_b, k_s, k_g, R_fp, J, tol=1e-6):
+
+
+def _compare_thermal_resistances_inputs(
+        pos, r_out, r_b, k_s, k_g, R_fp, J, tol=1e-6):
+    """
+    Compare inputs to the content of the _thermal_resistances_dict dictionnary.
+
+    Parameters
+    ----------
+    pos : list
+        List of positions (x,y) (in meters) of pipes around the center
+        of the borehole.
+    r_out : array
+        Outer radius of the pipes (in meters).
+    r_b : float
+        Borehole radius (in meters).
+    k_s : float
+        Soil thermal conductivity (in W/m-K).
+    k_g : float
+        Grout thermal conductivity (in W/m-K).
+    R_fp : array
+        Fluid-to-outer-pipe-wall thermal resistance (in m-K/W).
+    J : int
+        Number of multipoles per pipe to evaluate the thermal resistances.
+    tol : float, optional
+        Relative tolerance.
+        Default is 1e-6.
+
+    Returns
+    -------
+    bool
+        True if the inputs are the same as the content of the dictionnary.
+
+    """
+    # Return False if dictionnary is empty
     for arg in ('pos', 'r_out', 'r_b', 'k_s', 'k_g', 'R_fp', 'J'):
-        if thermal_resistances_dict[arg] is None:
+        if _thermal_resistances_dict[arg] is None:
             return False
-    if not (len(pos) == len(thermal_resistances_dict['pos']) and
-            len(r_out) == len(thermal_resistances_dict['r_out']) and
-            len(R_fp) == len(thermal_resistances_dict['R_fp'])):
+    # Return False if the number of pipes is not equal
+    if not (len(pos) == len(_thermal_resistances_dict['pos']) and
+            len(r_out) == len(_thermal_resistances_dict['r_out']) and
+            len(R_fp) == len(_thermal_resistances_dict['R_fp'])):
         return False
-    if (np.allclose(r_out, thermal_resistances_dict['r_out'], rtol=tol) and
-        np.abs(r_b - thermal_resistances_dict['r_b']) / r_b < tol and
-        np.abs(k_s - thermal_resistances_dict['k_s']) / k_s < tol and
-        np.abs(k_g - thermal_resistances_dict['k_g']) / k_g < tol and
-        np.allclose(R_fp, thermal_resistances_dict['R_fp']) and
-        J == thermal_resistances_dict['J']):
-        for (x, y), (x_ref, y_ref) in zip(
-                pos, thermal_resistances_dict['pos']):
-            if (np.abs(x - x_ref) > np.abs(x*tol) or
-                np.abs(y - y_ref) > np.abs(y*tol)):
-                return False
-        return True
-    return False
-        
+    # Compare r_out, r_b, k_s, k_g, R_fp and J
+    if not (np.allclose(r_out, _thermal_resistances_dict['r_out'], rtol=tol) and
+        np.abs(r_b - _thermal_resistances_dict['r_b']) / r_b < tol and
+        np.abs(k_s - _thermal_resistances_dict['k_s']) / k_s < tol and
+        np.abs(k_g - _thermal_resistances_dict['k_g']) / k_g < tol and
+        np.allclose(R_fp, _thermal_resistances_dict['R_fp']) and
+        J == _thermal_resistances_dict['J']):
+        return False
+    # Compare pipe positions
+    for (x, y), (x_ref, y_ref) in zip(
+            pos, _thermal_resistances_dict['pos']):
+        if (np.abs(x - x_ref) > np.abs(x*tol) or
+            np.abs(y - y_ref) > np.abs(y*tol)):
+            return False
+    return True
+
+
 def thermal_resistances(pos, r_out, r_b, k_s, k_g, R_fp, J=2):
     """
     Evaluate thermal resistances and delta-circuit thermal resistances.
@@ -2461,8 +2502,9 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, R_fp, J=2):
         r_out = np.ones(n_p)*r_out
     if np.isscalar(R_fp):
         R_fp = np.ones(n_p)*R_fp
+    # Return saved outputs if inputs are the same as last call
     if _compare_thermal_resistances_inputs(pos, r_out, r_b, k_s, k_g, R_fp, J):
-        return thermal_resistances_dict['R'], thermal_resistances_dict['Rd']
+        return _thermal_resistances_dict['R'], _thermal_resistances_dict['Rd']
 
     R = np.zeros((n_p, n_p))
     if J == 0:
@@ -2505,15 +2547,16 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, R_fp, J=2):
                     sum([K[i, j] for j in range(n_p) if not i == j]))
     Rd = 1.0/K
 
-    thermal_resistances_dict['pos'] = pos
-    thermal_resistances_dict['r_out'] = r_out
-    thermal_resistances_dict['r_b'] = r_b
-    thermal_resistances_dict['k_s'] = k_s
-    thermal_resistances_dict['k_g'] = k_g
-    thermal_resistances_dict['R_fp'] = R_fp
-    thermal_resistances_dict['J'] = J
-    thermal_resistances_dict['R'] = R
-    thermal_resistances_dict['Rd'] = Rd
+    # Save outputs into dictionnary
+    _thermal_resistances_dict['pos'] = pos
+    _thermal_resistances_dict['r_out'] = r_out
+    _thermal_resistances_dict['r_b'] = r_b
+    _thermal_resistances_dict['k_s'] = k_s
+    _thermal_resistances_dict['k_g'] = k_g
+    _thermal_resistances_dict['R_fp'] = R_fp
+    _thermal_resistances_dict['J'] = J
+    _thermal_resistances_dict['R'] = R
+    _thermal_resistances_dict['Rd'] = Rd
     return R, Rd
 
 
@@ -2937,7 +2980,8 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
     R0 = np.diag(pikg * (np.log(r_b/r_out) + beta_p + sigma*np.log(rbm)))
     rbmn = r_b**2/np.abs(r_b**2 - np.multiply.outer(np.conj(z_p), z_p))
     dz = np.abs(np.subtract.outer(z_p + 1e-12, z_p))
-    R0 = R0 + (1 - np.eye(n_p)) * pikg * (np.log(r_b / dz) + sigma * np.log(rbmn))
+    R0 = R0 + (1 - np.eye(n_p)) * pikg * (
+        np.log(r_b / dz) + sigma * np.log(rbmn))
 
     # Initialize maximum error and iteration counter
     eps_max = 1.0e99
@@ -2969,9 +3013,11 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
     if J > 0:
         for j in range(J):
             dz = np.subtract.outer(z_p + 1e-12, z_p)
-            T_f = T_f + np.real((1 - np.eye(n_p)) / dz**(j+1) @ (P[:,j] * r_out**(j+1)))
             zz = np.multiply.outer(np.conj(z_p), z_p)
-            T_f = T_f + sigma * np.real(np.conj(z_p)**(j+1) * (1 / (r_b**2 - zz)**(j+1) @ (P[:,j] * r_out**(j+1))))
+            T_f = T_f + np.real((1 - np.eye(n_p)) / dz**(j+1) @ (
+                P[:, j] * r_out**(j+1)))
+            T_f = T_f + sigma * np.real(np.conj(z_p)**(j+1) * (
+                1 / (r_b**2 - zz)**(j+1) @ (P[:, j] * r_out**(j+1))))
 
     # -------------------------------
     # Requested temperatures (EQ. 28)
@@ -3050,17 +3096,23 @@ def _F_mk(q_p, P, n_p, J, r_b, r_out, z, pikg, sigma):
 
     """
     F = np.zeros((n_p, J), dtype=np.cfloat)
+    dz = np.add.outer(z + 1e-12, -z)
+    zz = np.multiply.outer(z, np.conj(z))
     for k in range(J):
         # First term
-        F[:,k] = F[:,k] + r_out**(k+1) * pikg / (k + 1) * ((1 - np.eye(n_p)) / np.add.outer(-z, z + 1e-12)**(k+1) @ q_p)
+        F[:, k] = F[:, k] + r_out**(k+1) * pikg / (k + 1) * (
+            (1 - np.eye(n_p)) / (-dz)**(k+1) @ q_p)
         # Second term
-        F[:,k] = F[:,k] + sigma * r_out**(k+1) * pikg / (k + 1) * (1 / (r_b**2 - np.multiply.outer(z, np.conj(z)))**(k+1) @ (q_p * np.conj(z)**(k+1)))
+        F[:, k] = F[:, k] + sigma * r_out**(k+1) * pikg / (k + 1) * (
+            1 / (r_b**2 - zz)**(k+1) @ (q_p * np.conj(z)**(k+1)))
         for j in range(J):
             # Third term
-            F[:,k] = F[:,k] + binom(j+k+1, j) * (-r_out)**(k+1) * ((1 - np.eye(n_p)) / np.add.outer(z + 1e-12, -z)**(j+k+2) @ (P[:,j] * r_out**(j+1)))
+            F[:, k] = F[:, k] + binom(j+k+1, j) * (-r_out)**(k+1) * (
+                (1 - np.eye(n_p)) / dz**(j+k+2) @ (P[:, j] * r_out**(j+1)))
             j_pend = min(k, j) + 2
             for jp in range(j_pend):
-                F[:,k] = F[:,k] + sigma * binom(j+1, jp) * binom(j+k-jp+1, j) * r_out**(k+1) * z**(j+1-jp) * (1 / (r_b**2 - np.multiply.outer(z, np.conj(z)))**(k+j+2-jp) @ (np.conj(P[:,j]) * r_out**(j+1) * np.conj(z)**(k+1-jp)))
+                F[:, k] = F[:, k] + sigma * binom(j+1, jp) * binom(j+k-jp+1, j) * r_out**(k+1) * z**(j+1-jp) * (
+                    1 / (r_b**2 - zz)**(k+j+2-jp) @ (np.conj(P[:, j]) * r_out**(j+1) * np.conj(z)**(k+1-jp)))
 
     return F
 
