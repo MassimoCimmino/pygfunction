@@ -2979,7 +2979,7 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
     rbm = r_b**2/(r_b**2 - np.abs(z_p)**2)
     R0 = np.diag(pikg * (np.log(r_b/r_out) + beta_p + sigma*np.log(rbm)))
     rbmn = r_b**2/np.abs(r_b**2 - np.multiply.outer(np.conj(z_p), z_p))
-    dz = np.abs(np.subtract.outer(z_p + 1e-12, z_p))
+    dz = np.abs(np.subtract.outer(z_p, z_p)) + np.eye(n_p)
     R0 = R0 + (1 - np.eye(n_p)) * pikg * (
         np.log(r_b / dz) + sigma * np.log(rbmn))
 
@@ -3012,7 +3012,7 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
     T_f = T_b + R0 @ q_p
     if J > 0:
         for j in range(J):
-            dz = np.subtract.outer(z_p + 1e-12, z_p)
+            dz = np.subtract.outer(z_p, z_p) + np.eye(n_p)
             zz = np.multiply.outer(np.conj(z_p), z_p)
             T_f = T_f + np.real((1 - np.eye(n_p)) / dz**(j+1) @ (
                 P[:, j] * r_out**(j+1)))
@@ -3096,7 +3096,7 @@ def _F_mk(q_p, P, n_p, J, r_b, r_out, z, pikg, sigma):
 
     """
     F = np.zeros((n_p, J), dtype=np.cfloat)
-    dz = np.add.outer(z + 1e-12, -z)
+    dz = np.add.outer(z, -z) + np.eye(n_p)
     zz = np.multiply.outer(z, np.conj(z))
     for k in range(J):
         # First term
