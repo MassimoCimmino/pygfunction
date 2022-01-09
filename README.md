@@ -65,7 +65,7 @@ pip install pygfunction
 Alternatively, [download the latest release](https://github.com/MassimoCimmino/pygfunction/releases) and run the installation script:
 
 ```
-python setup.py install
+pip install .
 ```
 
 **Developers** - To get the latest version of the code, you can [download the
@@ -74,6 +74,11 @@ the project in a local directory using git:
 
 ```
 git clone https://github.com/MassimoCimmino/pygfunction.git
+```
+
+Install *pygfunction* in development mode (this requires `pip >= 21.1`):
+```
+pip install --editable .
 ```
 
 Once *pygfunction* is copied to a local directory, you can verify that it is

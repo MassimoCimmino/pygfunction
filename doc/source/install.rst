@@ -5,7 +5,7 @@ Setting up pygfunction
 **********************
 
 *pygfunction* uses Python 3.7, along with the following packages:
-	- Coolprop (>=6.4.1)
+	- Coolprop (>= 6.4.1)
 	- matplotlib (>= 3.3.4),
 	- numpy (>= 1.20.1)
 	- scipy (>= 1.6.2)
@@ -26,7 +26,7 @@ Alternatively, `download the latest release
 installation script:
 
 ```
-python setup.py install
+pip install .
 ```
 
 **Developers** - To get the latest version of the code, you can `download the
@@ -35,6 +35,11 @@ clone the project in a local directory using git:
 
 ```
 git clone https://github.com/MassimoCimmino/pygfunction.git
+```
+
+Install *pygfunction* in development mode (this requires `pip >= 21.1`):
+```
+pip install --editable .
 ```
 
 Test that *pygfunction* is running correctly by running any of the
