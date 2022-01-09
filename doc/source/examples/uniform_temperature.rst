@@ -16,7 +16,7 @@ The following script generates the *g*-functions of rectangular fields of
 The script is located in: 
 `pygfunction/examples/uniform_temperature.py`
 
-.. literalinclude:: ../../../pygfunction/examples/uniform_temperature.py
+.. literalinclude:: ../../../examples/uniform_temperature.py
    :language: python
    :linenos:
 

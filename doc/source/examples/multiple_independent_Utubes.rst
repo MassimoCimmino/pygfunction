@@ -17,7 +17,7 @@ against the fluid temeprature profiles presented by Cimmino [1]_.
 The script is located in: 
 `pygfunction/examples/multiple_independent_Utubes.py`
 
-.. literalinclude:: ../../../pygfunction/examples/multiple_independent_Utubes.py
+.. literalinclude:: ../../../examples/multiple_independent_Utubes.py
    :language: python
    :linenos:
 

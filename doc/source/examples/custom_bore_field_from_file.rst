@@ -14,6 +14,6 @@ then plotted on a figure.
 The script is located in: 
 `./pygfunction/examples/custom_bore_field_from_file.py`
 
-.. literalinclude:: ../../../pygfunction/examples/custom_bore_field_from_file.py
+.. literalinclude:: ../../../examples/custom_bore_field_from_file.py
    :language: python
    :linenos:

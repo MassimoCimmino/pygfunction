@@ -25,7 +25,7 @@ speed while maintaining reasonable accuracy.
 The script is located in: 
 `pygfunction/examples/comparison_gfunction_solvers.py`
 
-.. literalinclude:: ../../../pygfunction/examples/comparison_gfunction_solvers.py
+.. literalinclude:: ../../../examples/comparison_gfunction_solvers.py
    :language: python
    :linenos:
 

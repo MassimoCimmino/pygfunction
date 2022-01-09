@@ -18,6 +18,6 @@ then plotted on a figure.
 The script is located in: 
 `pygfunction/examples/custom_bore_field.py`
 
-.. literalinclude:: ../../../pygfunction/examples/custom_bore_field.py
+.. literalinclude:: ../../../examples/custom_bore_field.py
    :language: python
    :linenos:

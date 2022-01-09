@@ -17,6 +17,6 @@ small number of segments.
 The script is located in:
 `pygfunction/examples/discretize_boreholes.py`
 
-.. literalinclude:: ../../../pygfunction/examples/discretize_boreholes.py
+.. literalinclude:: ../../../examples/discretize_boreholes.py
    :language: python
    :linenos:

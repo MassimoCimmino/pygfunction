@@ -19,7 +19,7 @@ Cimmino [4]_.
 The script is located in: 
 `pygfunction/examples/fluid_temperature.py`
 
-.. literalinclude:: ../../../pygfunction/examples/fluid_temperature_multiple_boreholes.py
+.. literalinclude:: ../../../examples/fluid_temperature_multiple_boreholes.py
    :language: python
    :linenos:
 

@@ -19,7 +19,7 @@ temperature.
 The script is located in: 
 `pygfunction/examples/equal_inlet_temperature.py`
 
-.. literalinclude:: ../../../pygfunction/examples/equal_inlet_temperature.py
+.. literalinclude:: ../../../examples/equal_inlet_temperature.py
    :language: python
    :linenos:
 
