@@ -1,6 +1,6 @@
 # pygfunction: A g-function calculator for Python
 
-![Tests](https://github.com/MassimoCimmino/pygfunction/actions/workflows/tests.yml/badge.svg)
+[![Tests](https://github.com/MassimoCimmino/pygfunction/actions/workflows/test.yml/badge.svg)](https://github.com/MassimoCimmino/pygfunction/actions/workflows/test.yml)
 [![DOI](https://zenodo.org/badge/100305705.svg)](https://zenodo.org/badge/latestdoi/100305705)
 
 ## What is *pygfunction*?
