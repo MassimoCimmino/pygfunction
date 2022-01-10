@@ -19,7 +19,7 @@ a double U-tube in series, using the model of Cimmino [4]_.
 The script is located in: 
 `pygfunction/examples/fluid_temperature.py`
 
-.. literalinclude:: ../../../pygfunction/examples/fluid_temperature.py
+.. literalinclude:: ../../../examples/fluid_temperature.py
    :language: python
    :linenos:
 

@@ -22,7 +22,7 @@ temperature.
 The script is located in: 
 `pygfunction/examples/mixed_inlet_conditions.py`
 
-.. literalinclude:: ../../../pygfunction/examples/mixed_inlet_conditions.py
+.. literalinclude:: ../../../examples/mixed_inlet_conditions.py
    :language: python
    :linenos:
 

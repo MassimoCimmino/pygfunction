@@ -15,6 +15,6 @@ boreholes. Each field is then plotted on a separate figure.
 The script is located in: 
 `pygfunction/examples/regular_bore_field.py`
 
-.. literalinclude:: ../../../pygfunction/examples/regular_bore_field.py
+.. literalinclude:: ../../../examples/regular_bore_field.py
    :language: python
    :linenos:

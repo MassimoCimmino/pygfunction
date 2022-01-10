@@ -19,7 +19,7 @@ solution obtained from convolution in the Fourier domain (see ref. [3]_).
 The script is located in: 
 `pygfunction/examples/load_aggregation.py`
 
-.. literalinclude:: ../../../pygfunction/examples/load_aggregation.py
+.. literalinclude:: ../../../examples/load_aggregation.py
    :language: python
    :linenos:
 

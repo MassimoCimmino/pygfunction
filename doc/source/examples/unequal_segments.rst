@@ -17,6 +17,6 @@ The following script generates the *g*-functions of a rectangular field of
 The script is located in: 
 `pygfunction/examples/unequal_segments.py`
 
-.. literalinclude:: ../../../pygfunction/examples/unequal_segments.py
+.. literalinclude:: ../../../examples/unequal_segments.py
    :language: python
    :linenos:

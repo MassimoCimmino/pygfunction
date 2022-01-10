@@ -15,7 +15,7 @@ The following script generates the *g*-functions of rectangular fields of
 The script is located in: 
 `pygfunction/examples/uniform_heat_extraction_rate.py`
 
-.. literalinclude:: ../../../pygfunction/examples/uniform_heat_extraction_rate.py
+.. literalinclude:: ../../../examples/uniform_heat_extraction_rate.py
    :language: python
    :linenos:
 

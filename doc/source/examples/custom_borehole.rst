@@ -14,6 +14,6 @@ parallel configurations), and a coaxial borehole. The borehole cross-sections ar
 The script is located in: 
 `pygfunction/examples/custom_borehole.py`
 
-.. literalinclude:: ../../../pygfunction/examples/custom_borehole.py
+.. literalinclude:: ../../../examples/custom_borehole.py
    :language: python
    :linenos:
