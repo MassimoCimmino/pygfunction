@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from scipy.integrate import quad, quad_vec
+from scipy.special import erfc
 
 from .boreholes import Borehole
-from .utilities import erfint
+from .utilities import erfint, exp1, _erf_coeffs
 
 
 def finite_line_source(
-        time, alpha, borehole1, borehole2, reaSource=True, imgSource=True):
+        time, alpha, borehole1, borehole2, reaSource=True, imgSource=True,
+        approximation=False, N=10):
     """
     Evaluate the Finite Line Source (FLS) solution.
 
@@ -56,9 +58,18 @@ def finite_line_source(
     reaSource : bool
         True if the real part of the FLS solution is to be included.
         Default is True.
-    imgSource : bool
+    imgSource : bool, optional
         True if the image part of the FLS solution is to be included.
         Default is True.
+    approximation : bool, optional
+        Set to true to use the approximation of the FLS solution of Cimmino
+        (2021) [#FLS-Cimmin2021]_. This approximation does not require
+        the numerical evaluation of any integral.
+        Default is False.
+    N : int, optional
+        Number of terms in the approximation of the FLS solution. This
+        parameter is unused if `approximation` is set to False.
+        Default is 10. Maximum is 25.
 
     Returns
     -------
@@ -83,6 +94,9 @@ def finite_line_source(
     >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
     >>> h = gt.heat_transfer.finite_line_source(4*168*3600., 1.0e-6, b1, b2)
     h = 0.0110473635393
+    >>> h = gt.heat_transfer.finite_line_source(
+        4*168*3600., 1.0e-6, b1, b2, approximation=True, N=10)
+    h = 0.0110474667731
 
     References
     ----------
@@ -92,6 +106,10 @@ def finite_line_source(
     .. [#FLS-CimBer2014] Cimmino, M., & Bernier, M. (2014). A
        semi-analytical method to generate g-functions for geothermal bore
        fields. International Journal of Heat and Mass Transfer, 70, 641-650.
+    .. [#FLS-Cimmin2021] Cimmino, M. (2021). An approximation of the
+       finite line source solution to model thermal interactions between
+       geothermal boreholes. International Communications in Heat and Mass
+       Transfer, 127, 105496.
 
     """
     if isinstance(borehole1, Borehole) and isinstance(borehole2, Borehole):
@@ -108,13 +126,23 @@ def finite_line_source(
             h = _finite_line_source_steady_state(
                 dis, H1, D1, H2, D2, reaSource, imgSource)
         elif isinstance(time, (np.floating, float)):
-            # Lower bound of integration
-            a = 1.0 / np.sqrt(4.0*alpha*time)
-            h = 0.5 / H2 * quad(f, a, np.inf)[0]
+            if not approximation:
+                # Lower bound of integration
+                a = 1.0 / np.sqrt(4.0*alpha*time)
+                h = 0.5 / H2 * quad(f, a, np.inf)[0]
+            else:
+                h = finite_line_source_approximation(
+                    time, alpha, dis, H1, D1, H2, D2,
+                    reaSource=reaSource, imgSource=imgSource, N=N)
         else:
-            h = np.stack(
-                [0.5 / H2 * quad(f, 1.0 / np.sqrt(4.0*alpha*t), np.inf)[0] for t in time],
-                axis=-1)
+            if not approximation:
+                h = np.stack(
+                    [0.5 / H2 * quad(f, 1.0 / np.sqrt(4.0*alpha*t), np.inf)[0] for t in time],
+                    axis=-1)
+            else:
+                h = finite_line_source_approximation(
+                    time, alpha, dis, H1, D1, H2, D2,
+                    reaSource=reaSource, imgSource=imgSource, N=N)
     else:
         # Unpack parameters
         if isinstance(borehole1, Borehole): borehole1 = [borehole1]
@@ -134,15 +162,130 @@ def finite_line_source(
             h = _finite_line_source_steady_state(
                 dis, H1, D1, H2, D2, reaSource, imgSource)
         else:
-            # Evaluate integral
-            h = finite_line_source_vectorized(
-                time, alpha, dis, H1, D1, H2, D2,
-                reaSource=reaSource, imgSource=imgSource)
+            if not approximation:
+                # Evaluate integral
+                h = finite_line_source_vectorized(
+                    time, alpha, dis, H1, D1, H2, D2,
+                    reaSource=reaSource, imgSource=imgSource)
+            else:
+                h = finite_line_source_approximation(
+                    time, alpha, dis, H1, D1, H2, D2,
+                    reaSource=reaSource, imgSource=imgSource, N=N)
+    return h
+
+
+def finite_line_source_approximation(
+        time, alpha, dis, H1, D1, H2, D2, reaSource=True, imgSource=True,
+        N=10):
+    """
+    Evaluate the Finite Line Source (FLS) solution using the approximation
+    of Cimmino (2021) [#FLSApprox-Cimmin2021]_.
+
+    Parameters
+    ----------
+    time : float or array, shape (K)
+        Value of time (in seconds) for which the FLS solution is evaluated.
+    alpha : float
+        Soil thermal diffusivity (in m2/s).
+    dis : float or array
+        Radial distances to evaluate the FLS solution.
+    H1 : float or array
+        Lengths of the emitting heat sources.
+    D1 : float or array
+        Buried depths of the emitting heat sources.
+    H2 : float or array
+        Lengths of the receiving heat sources.
+    D2 : float or array
+        Buried depths of the receiving heat sources.
+    reaSource : bool
+        True if the real part of the FLS solution is to be included.
+        Default is True.
+    imgSource : bool
+        True if the image part of the FLS solution is to be included.
+        Default is True.
+    N : int, optional
+        Number of terms in the approximation of the FLS solution. This
+        parameter is unused if `approximation` is set to False.
+        Default is 10. Maximum is 25.
+
+    Returns
+    -------
+    h : float
+        Value of the FLS solution. The average (over the length) temperature
+        drop on the wall of borehole2 due to heat extracted from borehole1 is:
+
+        .. math:: \\Delta T_{b,2} = T_g - \\frac{Q_1}{2\\pi k_s H_2} h
+    
+
+    References
+    ----------
+    .. [#FLSApprox-Cimmin2021] Cimmino, M. (2021). An approximation of the
+       finite line source solution to model thermal interactions between
+       geothermal boreholes. International Communications in Heat and Mass
+       Transfer, 127, 105496.
+
+    """
+
+    dis = np.divide.outer(dis, np.sqrt(4*alpha*time))
+    H1 = np.divide.outer(H1, np.sqrt(4*alpha*time))
+    D1 = np.divide.outer(D1, np.sqrt(4*alpha*time))
+    H2 = np.divide.outer(H2, np.sqrt(4*alpha*time))
+    D2 = np.divide.outer(D2, np.sqrt(4*alpha*time))
+    if reaSource and imgSource:
+        # Full (real + image) FLS solution
+        p = np.array([1, -1, 1, -1, 1, -1, 1, -1])
+        q = np.abs(
+            np.stack([D2 - D1 + H2,
+                      D2 - D1,
+                      D2 - D1 - H1,
+                      D2 - D1 + H2 - H1,
+                      D2 + D1 + H2,
+                      D2 + D1,
+                      D2 + D1 + H1,
+                      D2 + D1 + H2 + H1],
+                     axis=-1))
+    elif reaSource:
+        # Real FLS solution
+        p = np.array([1, -1, 1, -1])
+        q = np.abs(
+            np.stack([D2 - D1 + H2,
+                      D2 - D1,
+                      D2 - D1 - H1,
+                      D2 - D1 + H2 - H1],
+                     axis=-1))
+    elif imgSource:
+        # Image FLS solution
+        p = np.array([1, -1, 1, -1])
+        q = np.abs(
+            np.stack([D2 + D1 + H2,
+                      D2 + D1,
+                      D2 + D1 + H1,
+                      D2 + D1 + H2 + H1],
+                     axis=-1))
+    else:
+        # No heat source
+        p = np.zeros(1)
+        q = np.zeros(1)
+    # Coefficients of the approximation of the error function
+    a, b = _erf_coeffs(N)
+
+    dd = dis**2
+    qq = q**2
+    G1 = np.inner(
+        p,
+        q * np.inner(
+            a,
+            0.5*  exp1(np.expand_dims(dd, axis=(-1, -2)) + np.multiply.outer(qq, b))))
+    x3 = np.sqrt(np.expand_dims(dd, axis=-1) + qq)
+    G3 = np.inner(p, np.exp(-x3**2) / np.sqrt(np.pi) - x3 * erfc(x3))
+
+    h = 0.5 / H2 * (G1 + G3)
     return h
 
 
 def finite_line_source_vectorized(
-        time, alpha, dis, H1, D1, H2, D2, reaSource=True, imgSource=True):
+        time, alpha, dis, H1, D1, H2, D2, reaSource=True, imgSource=True,
+        approximation=False, N=10):
     """
     Evaluate the Finite Line Source (FLS) solution.
 
@@ -201,6 +344,15 @@ def finite_line_source_vectorized(
     imgSource : bool
         True if the image part of the FLS solution is to be included.
         Default is True.
+    approximation : bool, optional
+        Set to true to use the approximation of the FLS solution of Cimmino
+        (2021) [#FLSVec-Cimmin2021]_. This approximation does not require
+        the numerical evaluation of any integral.
+        Default is False.
+    N : int, optional
+        Number of terms in the approximation of the FLS solution. This
+        parameter is unused if `approximation` is set to False.
+        Default is 10. Maximum is 25.
 
     Returns
     -------
@@ -227,22 +379,31 @@ def finite_line_source_vectorized(
     .. [#FLSVec-CimBer2014] Cimmino, M., & Bernier, M. (2014). A
        semi-analytical method to generate g-functions for geothermal bore
        fields. International Journal of Heat and Mass Transfer, 70, 641-650.
+    .. [#FLSVec-Cimmin2021] Cimmino, M. (2021). An approximation of the
+       finite line source solution to model thermal interactions between
+       geothermal boreholes. International Communications in Heat and Mass
+       Transfer, 127, 105496.
 
     """
-    # Integrand of the finite line source solution
-    f = _finite_line_source_integrand(
-        dis, H1, D1, H2, D2, reaSource, imgSource)
-
-    # Evaluate integral
-    if isinstance(time, (np.floating, float)):
-        # Lower bound of integration
-        a = 1.0 / np.sqrt(4.0*alpha*time)
-        h = 0.5 / H2 * quad_vec(f, a, np.inf)[0]
+    if not approximation:
+        # Integrand of the finite line source solution
+        f = _finite_line_source_integrand(
+            dis, H1, D1, H2, D2, reaSource, imgSource)
+    
+        # Evaluate integral
+        if isinstance(time, (np.floating, float)):
+            # Lower bound of integration
+            a = 1.0 / np.sqrt(4.0*alpha*time)
+            h = 0.5 / H2 * quad_vec(f, a, np.inf)[0]
+        else:
+            h = np.stack(
+                [0.5 / H2 * quad_vec(f, 1.0 / np.sqrt(4.0*alpha*t), np.inf)[0]
+                 for t in time],
+                axis=-1)
     else:
-        h = np.stack(
-            [0.5 / H2 * quad_vec(f, 1.0 / np.sqrt(4.0*alpha*t), np.inf)[0]
-             for t in time],
-            axis=-1)
+        h = finite_line_source_approximation(
+            time, alpha, dis, H1, D1, H2, D2, reaSource=reaSource,
+            imgSource=imgSource, N=N)
     return h
 
 
