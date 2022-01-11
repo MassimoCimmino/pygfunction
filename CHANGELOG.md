@@ -4,6 +4,7 @@
 
 ### New features
 
+* [Issue 138](https://github.com/MassimoCimmino/pygfunction/issues/138) - Implemented the approximation of the finite line source solution of Cimmino (2021). The approximation avoids the numerical evaluation of integrals. This speeds up the calculation of g-functions when enabled.
 * [Issue 148](https://github.com/MassimoCimmino/pygfunction/issues/148) - Implemented `effective_borehole_thermal_resistance()` and `local_borehole_thermal_resistance()` methods for all pipe classes. Deprecated `pipes.borehole_thermal_resistance()`, which computed the effective borehole thermal resistance. It will be removed in `v3.0.0`. Implemented a new `update_thermal_resistances()` method to all pipe classes. This method allows to update the delta-circuit of thermal resistance of the boreholes based on provided values for the fluid thermal resistances. This allows simulations with time-variable fluid thermal resistances.
 
 ### Enhancements
