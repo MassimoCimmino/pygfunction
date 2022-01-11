@@ -24,6 +24,37 @@ def erfint(x):
     return x * erf(x) - 1.0 / np.sqrt(np.pi) * (1.0 - np.exp(-x**2))
 
 
+def exp1(x):
+    """
+    Exponential integral E1.
+
+    Parameters
+    ----------
+    x : float or array
+        Argument.
+
+    Returns
+    -------
+    E1 : float or array
+        Exponential integral.
+
+    References
+    ----------
+    .. [#BaPaLi2000]  Barry, D.A., Parlange, J.-Y. & Li, L. (2000).
+       Approximation for the exponential integral (Theis well function).
+       Journal of Hydrology, 227 (1-4): 287-291.
+
+    """
+    q = 20 / 47 * x**np.sqrt(31/26)
+    G = np.exp(-np.euler_gamma)
+    b = np.sqrt(2 * (1 - G) / (G * (2 - G)))
+    h_inf = (1 - G) * (G**2 - 6 * G + 12.) / (3 * G * (2 - G)**2 * b)
+    h = 1 / (1 + x * np.sqrt(x)) + h_inf * q / (1 + q)
+    E1 = np.exp(-x) * np.log(1 + G / x - (1 - G) / (h + b * x)**2) / (
+        G + (1 - G) * np.exp(-x / (1 - G)))
+    return E1
+
+
 def segment_ratios(nSegments, end_length_ratio=0.02):
     """
     Discretize a borehole into segments of different lengths using a
