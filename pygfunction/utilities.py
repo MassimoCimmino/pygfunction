@@ -2,7 +2,26 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.polynomial.polynomial as poly
+from scipy.special import erf
 import warnings
+
+
+def erfint(x):
+    """
+    Integral of the error function.
+
+    Parameters
+    ----------
+    x : float or array
+        Argument.
+
+    Returns
+    -------
+    float or array
+        Integral of the error function.
+
+    """
+    return x * erf(x) - 1.0 / np.sqrt(np.pi) * (1.0 - np.exp(-x**2))
 
 
 def segment_ratios(nSegments, end_length_ratio=0.02):
