@@ -97,6 +97,19 @@ class gFunction(object):
                 argument, or an array of size (nSegments[i],) when provided
                 with an element of nSegments (of type list).
                 Default is :func:`utilities.segment_ratios`.
+            approximate_FLS : bool, optional
+                Set to true to use the approximation of the FLS solution of
+                Cimmino (2021) [#gFunction-Cimmin2021]_. This approximation
+                does not require the numerical evaluation of any integral. When
+                using the 'equivalent' solver, the approximation is only
+                applied to the thermal response at the borehole radius. Thermal
+                interaction between boreholes is evaluated using the FLS
+                solution.
+                Default is False.
+            nFLS : int, optional
+                Number of terms in the approximation of the FLS solution. This
+                parameter is unused if `approximate_FLS` is set to False.
+                Default is 10. Maximum is 25.
             disp : bool, optional
                 Set to true to print progression messages.
                 Default is False.
@@ -172,6 +185,10 @@ class gFunction(object):
        (2021). Thermal interactions in large irregular fields of geothermal
        boreholes: the method of equivalent borehole. Journal of Building
        Performance Simulation, 14 (4), 446-460.
+    .. [#gFunction-Cimmin2021] Cimmino, M. (2021). An approximation of the
+       finite line source solution to model thermal interactions between
+       geothermal boreholes. International Communications in Heat and Mass
+       Transfer, 127, 105496.
 
     """
     def __init__(self, boreholes_or_network, alpha, time=None,
@@ -1299,6 +1316,17 @@ class _BaseSolver(object):
         (of type int) as an argument, or an array of size (nSegments[i],) when
         provided with an element of nSegments (of type list).
         Default is :func:`utilities.segment_ratios`.
+    approximate_FLS : bool, optional
+        Set to true to use the approximation of the FLS solution of Cimmino
+        (2021). This approximation does not require the numerical evaluation of
+        any integral. When using the 'equivalent' solver, the approximation is
+        only applied to the thermal response at the borehole radius. Thermal
+        interaction between boreholes is evaluated using the FLS solution.
+        Default is False.
+    nFLS : int, optional
+        Number of terms in the approximation of the FLS solution. This
+        parameter is unused if `approximate_FLS` is set to False.
+        Default is 10. Maximum is 25.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -1318,8 +1346,8 @@ class _BaseSolver(object):
     """
     def __init__(self, boreholes, network, time, boundary_condition,
                  nSegments=8, segment_ratios=utilities.segment_ratios,
-                 disp=False, profiles=False, kind='linear', dtype=np.double,
-                 **other_options):
+                 approximate_FLS=False, nFLS=10, disp=False, profiles=False,
+                 kind='linear', dtype=np.double, **other_options):
         self.boreholes = boreholes
         self.network = network
         # Convert time to a 1d array
@@ -1353,6 +1381,8 @@ class _BaseSolver(object):
                             for i in range(nBoreholes)]
         self._i1Segments = [sum(self.nBoreSegments[0:(i + 1)])
                             for i in range(nBoreholes)]
+        self.approximate_FLS = approximate_FLS
+        self.nFLS = nFLS
         self.disp = disp
         self.profiles = profiles
         self.kind = kind
@@ -1696,6 +1726,11 @@ class _BaseSolver(object):
             f"acceptable boundary condition. \n" \
             f"Please provide one of the following inputs : " \
             f"{acceptable_boundary_conditions}"
+        assert type(self.approximate_FLS) is bool, \
+            "The option 'approximate_FLS' should be set to True or False."
+        assert type(self.nFLS) is int and 1 <= self.nFLS <= 25, \
+            "The option 'nFLS' should be a positive int and lower or equal to " \
+            "25."
         assert type(self.disp) is bool, \
             "The option 'disp' should be set to True or False."
         assert type(self.profiles) is bool, \
@@ -1769,6 +1804,15 @@ class _Detailed(_BaseSolver):
         (of type int) as an argument, or an array of size (nSegments[i],) when
         provided with an element of nSegments (of type list).
         Default is :func:`utilities.segment_ratios`.
+    approximate_FLS : bool, optional
+        Set to true to use the approximation of the FLS solution of Cimmino
+        (2021) [#Detailed-Cimmin2021]_. This approximation does not require the
+        numerical evaluation of any integral.
+        Default is False.
+    nFLS : int, optional
+        Number of terms in the approximation of the FLS solution. This
+        parameter is unused if `approximate_FLS` is set to False.
+        Default is 10. Maximum is 25.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -1794,6 +1838,10 @@ class _Detailed(_BaseSolver):
        g-function calculation of bore fields with series- and
        parallel-connected boreholes. Science and Technology for the Built
        Environment, 25 (8), 1007-1022.
+    .. [#Detailed-Cimmin2021] Cimmino, M. (2021). An approximation of the
+       finite line source solution to model thermal interactions between
+       geothermal boreholes. International Communications in Heat and Mass
+       Transfer, 127, 105496.
 
     """
     def initialize(self, **kwargs):
@@ -1869,7 +1917,9 @@ class _Detailed(_BaseSolver):
             # thermal interactions
             # -----------------------------------------------------------------
             b1 = b2
-            h = finite_line_source(time, alpha, b1, b2)
+            h = finite_line_source(
+                time, alpha, b1, b2, approximation=self.approximate_FLS,
+                N=self.nFLS)
             # Broadcast values to h_ij matrix
             h_ij[i0:i1, i0:i1, 1:] = h
 
@@ -1885,7 +1935,9 @@ class _Detailed(_BaseSolver):
                               self.nBoreSegments[i+1:],
                               self.segment_ratios[i+1:])
                       for seg in b.segments(nSeg, segment_ratios=rat)]
-                h = finite_line_source(time, alpha, b1, b2)
+                h = finite_line_source(
+                    time, alpha, b1, b2, approximation=self.approximate_FLS,
+                    N=self.nFLS)
                 # Broadcast values to h_ij matrix
                 for j, (j0, j1) in enumerate(
                         zip(self._i0Segments[i+1:], self._i1Segments[i+1:]),
@@ -1961,6 +2013,15 @@ class _Similarities(_BaseSolver):
         (of type int) as an argument, or an array of size (nSegments[i],) when
         provided with an element of nSegments (of type list).
         Default is :func:`utilities.segment_ratios`.
+    approximate_FLS : bool, optional
+        Set to true to use the approximation of the FLS solution of Cimmino
+        (2021) [#Similarities-Cimmin2021]_. This approximation does not require
+        the numerical evaluation of any integral.
+        Default is False.
+    nFLS : int, optional
+        Number of terms in the approximation of the FLS solution. This
+        parameter is unused if `approximate_FLS` is set to False.
+        Default is 10. Maximum is 25.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -2003,6 +2064,10 @@ class _Similarities(_BaseSolver):
        for g-function calculation of bore fields with series- and
        parallel-connected boreholes. Science and Technology for the Built
        Environment, 25 (8), 1007-1022.
+    .. [#Similarities-Cimmin2021] Cimmino, M. (2021). An approximation of the
+       finite line source solution to model thermal interactions between
+       geothermal boreholes. International Communications in Heat and Mass
+       Transfer, 127, 105496.
 
     """
     def initialize(self, disTol=0.01, tol=1.0e-6, **kwargs):
@@ -2090,7 +2155,9 @@ class _Similarities(_BaseSolver):
             D1 = D1.reshape(1, -1)
             D2 = D2.reshape(1, -1)
             dis = self.boreholes[i].r_b
-            h = finite_line_source_vectorized(time, alpha, dis, H1, D1, H2, D2)
+            h = finite_line_source_vectorized(
+                time, alpha, dis, H1, D1, H2, D2,
+                approximation=self.approximate_FLS, N=self.nFLS)
             # Broadcast values to h_ij matrix
             h_ij[j_segment, i_segment, 1:] = h[0, k_segment, :]
         # ---------------------------------------------------------------------
@@ -2116,7 +2183,9 @@ class _Similarities(_BaseSolver):
             H2 = H2.reshape(1, -1)
             D1 = D1.reshape(1, -1)
             D2 = D2.reshape(1, -1)
-            h = finite_line_source_vectorized(time, alpha, dis, H1, D1, H2, D2)
+            h = finite_line_source_vectorized(
+                time, alpha, dis, H1, D1, H2, D2,
+                approximation=self.approximate_FLS, N=self.nFLS)
             # Broadcast values to h_ij matrix
             h_ij[j_segment, i_segment, 1:] = h[l_segment, k_segment, :]
             if (self._compare_boreholes(self.boreholes[j], self.boreholes[i]) and
@@ -2659,6 +2728,18 @@ class _Equivalent(_BaseSolver):
         (of type int) as an argument, or an array of size (nSegments[i],) when
         provided with an element of nSegments (of type list).
         Default is :func:`utilities.segment_ratios`.
+    approximate_FLS : bool, optional
+        Set to true to use the approximation of the FLS solution of Cimmino
+        (2021) [#Equivalent-Cimmin2021]_. This approximation does not require
+        the numerical evaluation of any integral. When using the 'equivalent'
+        solver, the approximation is only applied to the thermal response at
+        the borehole radius. Thermal interaction between boreholes is evaluated
+        using the FLS solution.
+        Default is False.
+    nFLS : int, optional
+        Number of terms in the approximation of the FLS solution. This
+        parameter is unused if `approximate_FLS` is set to False.
+        Default is 10. Maximum is 25.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -2707,6 +2788,10 @@ class _Equivalent(_BaseSolver):
        (2021). Thermal interactions in large irregular fields of geothermal
        boreholes: the method of equivalent borehole. Journal of Building
        Performance Simulation, 14 (4), 446-460.
+    .. [#Equivalent-Cimmin2021] Cimmino, M. (2021). An approximation of the
+       finite line source solution to model thermal interactions between
+       geothermal boreholes. International Communications in Heat and Mass
+       Transfer, 127, 105496.
 
     """
     def initialize(self, disTol=0.01, tol=1.0e-6, kClusters=1, **kwargs):
@@ -2825,7 +2910,9 @@ class _Equivalent(_BaseSolver):
             H2 = H2.reshape(1, -1)
             D1 = D1.reshape(1, -1)
             D2 = D2.reshape(1, -1)
-            h = finite_line_source_vectorized(time, alpha, dis, H1, D1, H2, D2)
+            h = finite_line_source_vectorized(
+                time, alpha, dis, H1, D1, H2, D2,
+                approximation=self.approximate_FLS, N=self.nFLS)
             # Broadcast values to h_ij matrix
             for i in group:
                 i_segment = self._i0Segments[i] + i_pair
