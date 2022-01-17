@@ -578,7 +578,8 @@ def _finite_line_source_integrand(dis, H1, D1, H2, D2, reaSource, imgSource):
         f = lambda s: s**-2 * np.exp(-dis**2*s**2) * np.inner(p, erfint(q*s))
     else:
         # No heat source
-        f = lambda s: 0.
+        f = lambda s: np.zeros(np.broadcast_shapes(
+            *[np.shape(arg) for arg in (dis, H1, D1, H2, D2)]))
     return f
 
 
@@ -651,7 +652,8 @@ def _finite_line_source_equivalent_boreholes_integrand(dis, wDis, H1, D1, H2, D2
         f = lambda s: s**-2 * (np.exp(-dis**2*s**2) @ wDis).T * np.inner(p, erfint(q*s))
     else:
         # No heat source
-        f = lambda s: 0.
+        f = lambda s: np.zeros(np.broadcast_shapes(
+            *[np.shape(arg) for arg in (H1, D1, H2, D2, N2)]))
     return f
 
 
@@ -723,5 +725,6 @@ def _finite_line_source_steady_state(dis, H1, D1, H2, D2, reaSource, imgSource):
         h = 0.5 / H2 * np.inner(p, q * np.log((q + np.sqrt(q**2 + dis**2)) / dis) - np.sqrt(q**2 + dis**2))
     else:
         # No heat source
-        h = 0.
+        h = np.zeros(np.broadcast_shapes(
+            *[np.shape(arg) for arg in (dis, H1, D1, H2, D2)]))
     return h
