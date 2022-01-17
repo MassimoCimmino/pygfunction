@@ -1,353 +1,219 @@
 # -*- coding: utf-8 -*-
 """ Test suite for boreholes module.
 """
-import unittest
-
 import numpy as np
-from scipy.constants import pi
+import pytest
+
+import pygfunction as gt
 
 
-class TestBorehole(unittest.TestCase):
-    """ Test cases for Borehole() class.
-    """
-
-    def setUp(self):
-        from pygfunction import boreholes
-        self.H = 150.
-        self.D = 2.5
-        self.r_b = 0.075
-        self.tilt = pi/6.
-        self.orientation = pi
-        self.x = 2.
-        self.y = 4.
-        self.bore = boreholes.Borehole(self.H, self.D, self.r_b,
-                                       self.x, self.y, tilt=self.tilt,
-                                       orientation=self.orientation)
-        self.x2 = 5.
-        self.y2 = 8.
-        self.bore2 = boreholes.Borehole(self.H, self.D, self.r_b,
-                                        self.x2, self.y2, tilt=self.tilt,
-                                        orientation=self.orientation)
-
-    def test_inputs(self):
-        """ Tests that all inputs return their value.
-        """
-        self.assertEqual(self.bore.H, self.H,
-                         msg='borehole.H returns incorrect value.')
-        self.assertEqual(self.bore.D, self.D,
-                         msg='borehole.D returns incorrect value.')
-        self.assertEqual(self.bore.r_b, self.r_b,
-                         msg='borehole.r_b returns incorrect value.')
-        self.assertEqual(self.bore.x, self.x,
-                         msg='borehole.x returns incorrect value.')
-        self.assertEqual(self.bore.y, self.y,
-                         msg='borehole.y returns incorrect value.')
-        self.assertEqual(self.bore.tilt, self.tilt,
-                         msg='borehole.tilt returns incorrect value.')
-        self.assertEqual(self.bore.orientation, self.orientation,
-                         msg='borehole.orientation returns incorrect value.')
-
-    def test_position(self):
-        """ Tests position() class method.
-        """
-        pos = self.bore.position()
-        self.assertEqual(pos, (self.x, self.y),
-                         msg='borehole.position() returns incorrect value.')
-
-    def test_distance_with_self(self, abs_tol=1.0e-6):
-        """ Tests distance(borehole) class method returns radius when distance
-            is less than the borehole radius.
-        """
-        dis = self.bore.distance(self.bore)
-        self.assertAlmostEqual(dis, self.r_b, delta=abs_tol,
-                         msg=('borehole.distance() should return the borehole '
-                              'radius when the distance is less than r_b.'))
-
-    def test_distance_with_another(self, abs_tol=1.0e-6):
-        """ Tests distance(borehole2) class method returns separating distance.
-        """
-        dis = self.bore.distance(self.bore2)
-        correct_dis = np.sqrt((self.x2 - self.x)**2 + (self.y2 - self.y)**2)
-        self.assertAlmostEqual(dis, correct_dis, delta=abs_tol,
-                         msg=('borehole.distance() does not evaluate correct '
-                              'separating distance with target borehole.'))
+# =============================================================================
+# Test Borehole class
+# =============================================================================
+# Test the initialization of the Borehole class
+def test_borehole_init():
+    H = 150.                    # Borehole length [m]
+    D = 4.                      # Borehole buried depth [m]
+    r_b = 0.075                 # Borehole radius [m]
+    x = 0.                      # Borehole x-position [m]
+    y = 0.                      # Borehole y-position [m]
+    tilt = np.pi / 15           # Borehole tilt [rad]
+    orientation = np.pi / 3     # Borehole orientation [rad]
+    # Initialize borehole object
+    borehole = gt.boreholes.Borehole(
+        H, D, r_b, x, y, tilt=tilt, orientation=orientation)
+    assert np.all(
+        [H == borehole.H,
+         D == borehole.D,
+         r_b == borehole.r_b,
+         x == borehole.x,
+         y == borehole.y,
+         orientation == borehole.orientation,
+         tilt == borehole.tilt
+         ])
 
 
-class TestBoreFields_RectangleField(unittest.TestCase):
-    """ Test cases for boreholes.rectangle_field().
-    """
-
-    def setUp(self):
-        self.H = 150.
-        self.D = 2.5
-        self.r_b = 0.075
-        self.B_1 = 5.
-        self.B_2 = 6.
-
-    def test_rectangular_1_borehole(self):
-        """ Tests construction of rectangular field with one borehole.
-        """
-        from pygfunction import boreholes
-        N_1 = 1
-        N_2 = 1
-        boreField = boreholes.rectangle_field(N_1, N_2, self.B_1, self.B_2,
-                                              self.H, self.D, self.r_b)
-        self.assertEqual(len(boreField), 1,
-                         msg=('Incorrect number of boreholes in '
-                              'rectangle_field with N1=1 and N2=1.'))
-
-    def test_rectangular_1_row(self):
-        """ Tests construction of rectangular field with one row.
-        """
-        from pygfunction import boreholes
-        N_1 = 4
-        N_2 = 1
-        boreField = boreholes.rectangle_field(N_1, N_2, self.B_1, self.B_2,
-                                              self.H, self.D, self.r_b)
-        self.assertEqual(len(boreField), N_1,
-                         msg=('Incorrect number of boreholes in '
-                              'rectangle_field with N2=1.'))
-
-    def test_rectangular_1_column(self):
-        """ Tests construction of rectangular field with one column.
-        """
-        from pygfunction import boreholes
-        N_1 = 1
-        N_2 = 4
-        boreField = boreholes.rectangle_field(N_1, N_2, self.B_1, self.B_2,
-                                              self.H, self.D, self.r_b)
-        self.assertEqual(len(boreField), N_2,
-                         msg=('Incorrect number of boreholes in '
-                              'rectangle_field with N1=1.'))
-
-    def test_rectangular(self):
-        """ Tests construction of rectangular field with multiple rows/columns.
-        """
-        from pygfunction import boreholes
-        N_1 = 4
-        N_2 = 5
-        boreField = boreholes.rectangle_field(N_1, N_2, self.B_1, self.B_2,
-                                              self.H, self.D, self.r_b)
-        self.assertEqual(len(boreField), N_1*N_2,
-                         msg=('Incorrect number of boreholes in '
-                              'rectangle_field.'))
+# Test Borehole.distance
+@pytest.mark.parametrize("borehole1, borehole2", [
+        # Same borehole
+        ('single_borehole', 'single_borehole'),
+        # Two boreholes
+        ('single_borehole', 'single_borehole_short'),
+    ])
+def test_borehole_distance(borehole1, borehole2, request):
+    # Extract boreholes from fixtures
+    b1 = request.getfixturevalue(borehole1)[0]
+    b2 = request.getfixturevalue(borehole2)[0]
+    # Expected distance [m]
+    dis = max(b1.r_b, np.sqrt((b1.x - b2.x)**2 + (b1.y - b2.y)**2))
+    assert np.isclose(dis, b1.distance(b2))
 
 
-class TestBoreFields_LShapedField(unittest.TestCase):
-    """ Test cases for boreholes.L_shaped_field().
-    """
-
-    def setUp(self):
-        self.H = 150.
-        self.D = 2.5
-        self.r_b = 0.075
-        self.B_1 = 5.
-        self.B_2 = 6.
-
-    def test_L_shaped_1_borehole(self):
-        """ Tests construction of L-shaped field with one borehole.
-        """
-        from pygfunction import boreholes
-        N_1 = 1
-        N_2 = 1
-        boreField = boreholes.L_shaped_field(N_1, N_2, self.B_1, self.B_2,
-                                             self.H, self.D, self.r_b)
-        self.assertEqual(len(boreField), 1,
-                         msg=('Incorrect number of boreholes in '
-                              'L_shaped_field with N1=1 and N2=1.'))
-
-    def test_L_shaped_1_row(self):
-        """ Tests construction of L-shaped field with one borehole.
-        """
-        from pygfunction import boreholes
-        N_1 = 5
-        N_2 = 1
-        boreField = boreholes.L_shaped_field(N_1, N_2, self.B_1, self.B_2,
-                                             self.H, self.D, self.r_b)
-        self.assertEqual(len(boreField), N_1,
-                         msg=('Incorrect number of boreholes in '
-                              'L_shaped_field with N2=1.'))
-
-    def test_L_shaped_1_column(self):
-        """ Tests construction of L-shaped field with one borehole.
-        """
-        from pygfunction import boreholes
-        N_1 = 1
-        N_2 = 5
-        boreField = boreholes.L_shaped_field(N_1, N_2, self.B_1, self.B_2,
-                                             self.H, self.D, self.r_b)
-        self.assertEqual(len(boreField), N_2,
-                         msg=('Incorrect number of boreholes in '
-                              'L_shaped_field with N1=1.'))
-
-    def test_L_shaped(self):
-        """ Tests construction of L-shaped field with with multiple
-            rows/columns.
-        """
-        from pygfunction import boreholes
-        N_1 = 3
-        N_2 = 5
-        boreField = boreholes.L_shaped_field(N_1, N_2, self.B_1, self.B_2,
-                                             self.H, self.D, self.r_b)
-        self.assertEqual(len(boreField), N_1+N_2-1,
-                         msg=('Incorrect number of boreholes in '
-                              'L_shaped_field.'))
+# Test Borehole.position
+@pytest.mark.parametrize("borehole", [
+        ('single_borehole'),
+        ('single_borehole_short'),
+    ])
+def test_borehole_position(borehole, request):
+    # Extract borehole from fixture
+    b = request.getfixturevalue(borehole)[0]
+    # Evaluate position ([m], [m])
+    (x, y) = b.position()
+    assert x == b.x and y == b.y
 
 
-class TestBoreFields_UShapedField(unittest.TestCase):
-    """ Test cases for boreholes.U_shaped_field().
-    """
-
-    def setUp(self):
-        self.H = 150.
-        self.D = 2.5
-        self.r_b = 0.075
-        self.B_1 = 5.
-        self.B_2 = 6.
-
-    def test_U_shaped_1_borehole(self):
-        """ Tests construction of L-shaped field with one borehole.
-        """
-        from pygfunction import boreholes
-        N_1 = 1
-        N_2 = 1
-        boreField = boreholes.U_shaped_field(N_1, N_2, self.B_1, self.B_2,
-                                             self.H, self.D, self.r_b)
-        self.assertEqual(len(boreField), 1,
-                         msg=('Incorrect number of boreholes in '
-                              'U_shaped_field with N1=1 and N2=1.'))
-
-    def test_U_shaped_1_row(self):
-        """ Tests construction of L-shaped field with one borehole.
-        """
-        from pygfunction import boreholes
-        N_1 = 5
-        N_2 = 1
-        boreField = boreholes.U_shaped_field(N_1, N_2, self.B_1, self.B_2,
-                                             self.H, self.D, self.r_b)
-        self.assertEqual(len(boreField), N_1,
-                         msg=('Incorrect number of boreholes in '
-                              'U_shaped_field with N2=1.'))
-
-    def test_U_shaped_1_column(self):
-        """ Tests construction of U-shaped field with one borehole.
-        """
-        from pygfunction import boreholes
-        N_1 = 1
-        N_2 = 5
-        boreField = boreholes.U_shaped_field(N_1, N_2, self.B_1, self.B_2,
-                                             self.H, self.D, self.r_b)
-        self.assertEqual(len(boreField), N_2,
-                         msg=('Incorrect number of boreholes in '
-                              'U_shaped_field with N1=1.'))
-
-    def test_U_shaped(self):
-        """ Tests construction of U-shaped field with with multiple
-            rows/columns.
-        """
-        from pygfunction import boreholes
-        N_1 = 3
-        N_2 = 5
-        boreField = boreholes.U_shaped_field(N_1, N_2, self.B_1, self.B_2,
-                                             self.H, self.D, self.r_b)
-        self.assertEqual(len(boreField), N_1+2*N_2-2,
-                         msg=('Incorrect number of boreholes in '
-                              'U_shaped_field.'))
+# =============================================================================
+# Test functions
+# =============================================================================
+# Test rectangular_field
+@pytest.mark.parametrize("N_1, N_2, B_1, B_2", [
+        (1, 1, 5., 5.),     # 1 by 1
+        (2, 1, 5., 5.),     # 2 by 1
+        (1, 2, 5., 5.),     # 1 by 2
+        (2, 2, 5., 7.5),    # 2 by 2 (different x/y spacings)
+        (10, 9, 7.5, 5.),   # 10 by 9 (different x/y spacings)
+    ])
+def test_rectangular_field(N_1, N_2, B_1, B_2):
+    H = 150.        # Borehole length [m]
+    D = 4.          # Borehole buried depth [m]
+    r_b = 0.075     # Borehole radius [m]
+    # Generate the bore field
+    field = gt.boreholes.rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b)
+    # Evaluate the borehole to borehole distances
+    x = np.array([b.x for b in field])
+    y = np.array([b.y for b in field])
+    dis = np.sqrt(
+        np.subtract.outer(x, x)**2 + np.subtract.outer(y, y)**2)[
+            ~np.eye(len(field), dtype=bool)]
+    assert np.all(
+        [len(field) == N_1 * N_2,
+         np.allclose(H, [b.H for b in field]),
+         np.allclose(D, [b.D for b in field]),
+         np.allclose(r_b, [b.r_b for b in field]),
+         len(field) == 1 or np.isclose(np.min(dis), min(B_1, B_2)),
+         ])
 
 
-class TestBoreFields_BoxShapedField(unittest.TestCase):
-    """ Test cases for boreholes.box_shaped_field().
-    """
-
-    def setUp(self):
-        self.H = 150.
-        self.D = 2.5
-        self.r_b = 0.075
-        self.B_1 = 5.
-        self.B_2 = 6.
-
-    def test_box_shaped_1_borehole(self):
-        """ Tests construction of box-shaped field with one borehole.
-        """
-        from pygfunction import boreholes
-        N_1 = 1
-        N_2 = 1
-        boreField = boreholes.box_shaped_field(N_1, N_2, self.B_1, self.B_2,
-                                               self.H, self.D, self.r_b)
-        self.assertEqual(len(boreField), 1,
-                         msg=('Incorrect number of boreholes in '
-                              'box_shaped_field with N1=1 and N2=1.'))
-
-    def test_box_shaped_1_row(self):
-        """ Tests construction of L-shaped field with one borehole.
-        """
-        from pygfunction import boreholes
-        N_1 = 5
-        N_2 = 1
-        boreField = boreholes.box_shaped_field(N_1, N_2, self.B_1, self.B_2,
-                                             self.H, self.D, self.r_b)
-        self.assertEqual(len(boreField), N_1,
-                         msg=('Incorrect number of boreholes in '
-                              'box_shaped_field with N2=1.'))
-
-    def test_box_shaped_1_column(self):
-        """ Tests construction of box-shaped field with one borehole.
-        """
-        from pygfunction import boreholes
-        N_1 = 1
-        N_2 = 5
-        boreField = boreholes.box_shaped_field(N_1, N_2, self.B_1, self.B_2,
-                                               self.H, self.D, self.r_b)
-        self.assertEqual(len(boreField), N_2,
-                         msg=('Incorrect number of boreholes in '
-                              'box_shaped_field with N1=1.'))
-
-    def test_box_shaped(self):
-        """ Tests construction of box-shaped field with with multiple
-            rows/columns.
-        """
-        from pygfunction import boreholes
-        N_1 = 3
-        N_2 = 5
-        boreField = boreholes.box_shaped_field(N_1, N_2, self.B_1, self.B_2,
-                                             self.H, self.D, self.r_b)
-        self.assertEqual(len(boreField), 2*N_1+2*N_2-4,
-                         msg=('Incorrect number of boreholes in '
-                              'box_shaped_field.'))
+# Test L_shaped_field
+@pytest.mark.parametrize("N_1, N_2, B_1, B_2", [
+        (1, 1, 5., 5.),     # 1 by 1
+        (2, 1, 5., 5.),     # 2 by 1
+        (1, 2, 5., 5.),     # 1 by 2
+        (2, 2, 5., 7.5),    # 2 by 2 (different x/y spacings)
+        (10, 9, 7.5, 5.),   # 10 by 9 (different x/y spacings)
+    ])
+def test_L_shaped_field(N_1, N_2, B_1, B_2):
+    H = 150.        # Borehole length [m]
+    D = 4.          # Borehole buried depth [m]
+    r_b = 0.075     # Borehole radius [m]
+    # Generate the bore field
+    field = gt.boreholes.L_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b)
+    # Evaluate the borehole to borehole distances
+    x = np.array([b.x for b in field])
+    y = np.array([b.y for b in field])
+    dis = np.sqrt(
+        np.subtract.outer(x, x)**2 + np.subtract.outer(y, y)**2)[
+            ~np.eye(len(field), dtype=bool)]
+    assert np.all(
+        [len(field) == N_1 + N_2 - 1,
+         np.allclose(H, [b.H for b in field]),
+         np.allclose(D, [b.D for b in field]),
+         np.allclose(r_b, [b.r_b for b in field]),
+         len(field) == 1 or np.isclose(np.min(dis), min(B_1, B_2)),
+         ])
 
 
-class TestBoreFields_CircleField(unittest.TestCase):
-    """ Test cases for boreholes.circle_field().
-    """
-
-    def setUp(self):
-        self.H = 150.
-        self.D = 2.5
-        self.r_b = 0.075
-        self.R = 5.
-
-    def test_circle_1_borehole(self):
-        """ Tests construction of circle field with one borehole.
-        """
-        from pygfunction import boreholes
-        N = 1
-        boreField = boreholes.circle_field(N, self.R, self.H, self.D, self.r_b)
-        self.assertEqual(len(boreField), 1,
-                         msg=('Incorrect number of boreholes in '
-                              'circle_field with N1=1 and N2=1.'))
-
-    def test_circle(self):
-        """ Tests construction of circle field with with multiple boreholes.
-        """
-        from pygfunction import boreholes
-        N = 8
-        boreField = boreholes.circle_field(N, self.R, self.H, self.D, self.r_b)
-        self.assertEqual(len(boreField), N,
-                         msg=('Incorrect number of boreholes in '
-                              'circle_field.'))
+# Test U_shaped_field
+@pytest.mark.parametrize("N_1, N_2, B_1, B_2", [
+        (1, 1, 5., 5.),     # 1 by 1
+        (2, 1, 5., 5.),     # 2 by 1
+        (1, 2, 5., 5.),     # 1 by 2
+        (2, 2, 5., 7.5),    # 2 by 2 (different x/y spacings)
+        (10, 9, 7.5, 5.),   # 10 by 9 (different x/y spacings)
+    ])
+def test_U_shaped_field(N_1, N_2, B_1, B_2):
+    H = 150.        # Borehole length [m]
+    D = 4.          # Borehole buried depth [m]
+    r_b = 0.075     # Borehole radius [m]
+    # Generate the bore field
+    field = gt.boreholes.U_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b)
+    # Evaluate the borehole to borehole distances
+    x = np.array([b.x for b in field])
+    y = np.array([b.y for b in field])
+    dis = np.sqrt(
+        np.subtract.outer(x, x)**2 + np.subtract.outer(y, y)**2)[
+            ~np.eye(len(field), dtype=bool)]
+    assert np.all(
+        [len(field) == N_1 + 2 * N_2 - 2 if N_1 > 1 else N_2,
+         np.allclose(H, [b.H for b in field]),
+         np.allclose(D, [b.D for b in field]),
+         np.allclose(r_b, [b.r_b for b in field]),
+         len(field) == 1 or np.isclose(np.min(dis), min(B_1, B_2)),
+         ])
 
 
-if __name__ == '__main__' and __package__ is None:
-    from os import sys, path
-    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
-    unittest.main()
+# Test box_shaped_field
+@pytest.mark.parametrize("N_1, N_2, B_1, B_2", [
+        (1, 1, 5., 5.),     # 1 by 1
+        (2, 1, 5., 5.),     # 2 by 1
+        (1, 2, 5., 5.),     # 1 by 2
+        (2, 2, 5., 7.5),    # 2 by 2 (different x/y spacings)
+        (10, 9, 7.5, 5.),   # 10 by 9 (different x/y spacings)
+    ])
+def test_box_shaped_field(N_1, N_2, B_1, B_2):
+    H = 150.        # Borehole length [m]
+    D = 4.          # Borehole buried depth [m]
+    r_b = 0.075     # Borehole radius [m]
+    # Generate the bore field
+    field = gt.boreholes.box_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b)
+    # Evaluate the borehole to borehole distances
+    x = np.array([b.x for b in field])
+    y = np.array([b.y for b in field])
+    dis = np.sqrt(
+        np.subtract.outer(x, x)**2 + np.subtract.outer(y, y)**2)[
+            ~np.eye(len(field), dtype=bool)]
+    if N_1 == 1 and N_2 == 1:
+        nBoreholes_expected = 1
+    elif N_1 == 1:
+        nBoreholes_expected = N_2
+    elif N_2 == 1:
+        nBoreholes_expected = N_1
+    else:
+        nBoreholes_expected = 2 * (N_1 - 1) + 2 * (N_2 - 1)
+    assert np.all(
+        [len(field) == nBoreholes_expected,
+         np.allclose(H, [b.H for b in field]),
+         np.allclose(D, [b.D for b in field]),
+         np.allclose(r_b, [b.r_b for b in field]),
+         len(field) == 1 or np.isclose(np.min(dis), min(B_1, B_2)),
+         ])
+
+
+# Test circle_field
+@pytest.mark.parametrize("N, R", [
+        (1, 5.),    # 1 borehole
+        (2, 5.),    # 2 boreholes
+        (3, 7.5),   # 3 boreholes
+        (10, 9.),   # 10 boreholes
+    ])
+def test_circle_field(N, R):
+    H = 150.        # Borehole length [m]
+    D = 4.          # Borehole buried depth [m]
+    r_b = 0.075     # Borehole radius [m]
+    # Generate the bore field
+    field = gt.boreholes.circle_field(N, R, H, D, r_b)
+    # Evaluate the borehole to borehole distances
+    x = np.array([b.x for b in field])
+    y = np.array([b.y for b in field])
+    dis = np.sqrt(
+        np.subtract.outer(x, x)**2 + np.subtract.outer(y, y)**2)[
+            ~np.eye(len(field), dtype=bool)]
+    B_min = 2 * R * np.sin(np.pi / N)
+    assert np.all(
+        [len(field) == N,
+         np.allclose(H, [b.H for b in field]),
+         np.allclose(D, [b.D for b in field]),
+         np.allclose(r_b, [b.r_b for b in field]),
+         len(field) == 1 or np.isclose(np.min(dis), B_min),
+         len(field) == 1 or np.max(dis) <= (2 + 1e-6) * R,
+         ])
