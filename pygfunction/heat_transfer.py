@@ -122,7 +122,7 @@ def finite_line_source(
             dis, H1, D1, H2, D2, reaSource, imgSource)
 
         # Evaluate integral
-        if time == np.inf:
+        if time is np.inf:
             h = _finite_line_source_steady_state(
                 dis, H1, D1, H2, D2, reaSource, imgSource)
         elif isinstance(time, (np.floating, float)):

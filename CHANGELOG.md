@@ -20,6 +20,10 @@
 * [Issue 177](https://github.com/MassimoCimmino/pygfunction/issues/177) - Converted `setup.py` script to `setup.cfg` and `pyproject.toml` files. This is motivated by [PEP518](https://www.python.org/dev/peps/pep-0518/) and [PEP621](https://www.python.org/dev/peps/pep-0621/).
 * [Issue 180](https://github.com/MassimoCimmino/pygfunction/issues/180) - Configured `tox` and github actions for continuous integration.
 
+### Bug fixes
+
+* [Issue 192](https://github.com/MassimoCimmino/pygfunction/issues/192) - Fixed comparison of `time` with `numpy.inf` in `heat_transfer.finite_line_source` that caused the function to fail when `time` is an array.
+
 ## Version 2.1.0 (2021-11-12)
 
 ### New features
