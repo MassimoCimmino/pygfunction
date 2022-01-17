@@ -36,6 +36,13 @@ def ten_boreholes_rectangular():
     return gt.boreholes.rectangle_field(5, 2, B_1, B_2, H, D, r_b)
 
 
+@pytest.fixture
+def three_boreholes_unequal():
+    return [gt.boreholes.Borehole(150., 4., 0.075, -1., -2.),
+            gt.boreholes.Borehole(88., 2., 0.065, 5., 3.),
+            gt.boreholes.Borehole(177., 5., 0.085, -1., 7.),]
+
+
 # =============================================================================
 # gfunction fixtures
 # =============================================================================
