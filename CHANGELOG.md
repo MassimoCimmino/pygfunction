@@ -18,6 +18,7 @@
 * [Issue 172](https://github.com/MassimoCimmino/pygfunction/issues/172) - Refactored reports of calculation time to use `time.perf_counter()` instead of `time.time()`.
 * [Issue 173](https://github.com/MassimoCimmino/pygfunction/issues/173) - Refactored strings into f-strings instead of using `str.format()`.
 * [Issue 177](https://github.com/MassimoCimmino/pygfunction/issues/177) - Converted `setup.py` script to `setup.cfg` and `pyproject.toml` files. This is motivated by [PEP518](https://www.python.org/dev/peps/pep-0518/) and [PEP621](https://www.python.org/dev/peps/pep-0621/).
+* [Issue 179](https://github.com/MassimoCimmino/pygfunction/issues/179) - Refactored tests to use the `pytest` package instead of `unittests`.
 * [Issue 180](https://github.com/MassimoCimmino/pygfunction/issues/180) - Configured `tox` and github actions for continuous integration.
 
 ### Bug fixes
