@@ -790,7 +790,7 @@ def box_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b):
     return borefield
 
 
-def circle_field(N, R, H, D, r_b):
+def circle_field(N, R, H, D, r_b, tilt=0.):
     """
     Build a list of boreholes in a circular field configuration.
 
@@ -806,6 +806,9 @@ def circle_field(N, R, H, D, r_b):
         Borehole buried depth (in meters).
     r_b : float
         Borehole radius (in meters).
+    tilt : float
+        Angle (in radians) from vertical of the axis of the borehole. The
+        orientation of the tilt is towards the exterior of the bore field.
 
     Returns
     -------
@@ -832,8 +835,9 @@ def circle_field(N, R, H, D, r_b):
     borefield = []
 
     for i in range(N):
-        borefield.append(Borehole(H, D, r_b, x=R*np.cos(2*pi*i/N),
-                                  y=R*np.sin(2*pi*i/N)))
+        borefield.append(
+            Borehole(H, D, r_b, x=R*np.cos(2*pi*i/N), y=R*np.sin(2*pi*i/N),
+                     tilt=tilt, orientation=2*pi*i/N))
 
     return borefield
 
