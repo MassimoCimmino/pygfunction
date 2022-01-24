@@ -10,7 +10,8 @@ from scipy.interpolate import interp1d as interp1d
 
 from .boreholes import Borehole, _EquivalentBorehole, find_duplicates
 from .heat_transfer import finite_line_source, finite_line_source_vectorized, \
-    finite_line_source_equivalent_boreholes_vectorized
+    finite_line_source_equivalent_boreholes_vectorized, \
+    finite_line_source_inclined_vectorized
 from .networks import Network, _EquivalentNetwork, network_thermal_resistance
 from .utilities import _initialize_figure, _format_axes
 from . import utilities
@@ -110,6 +111,10 @@ class gFunction(object):
                 Number of terms in the approximation of the FLS solution. This
                 parameter is unused if `approximate_FLS` is set to False.
                 Default is 10. Maximum is 25.
+            mQuad : int, optional
+                Number of Gauss-Legendre sample points for the integral over
+                :math:`u` in the inclined FLS solution.
+                Default is 21.
             disp : bool, optional
                 Set to true to print progression messages.
                 Default is False.
@@ -843,6 +848,9 @@ class gFunction(object):
         assert type(self.method) is str and self.method in acceptable_methods, \
             f"Method '{self.method}' is not an acceptable method. \n" \
             f"Please provide one of the following inputs : {acceptable_methods}"
+        assert (np.all([b.is_vertical() for b in self.boreholes])
+                or self.method.lower()=='detailed'), \
+            "Inclined boreholes are only supported for the 'detailed' solver."
         return
 
 
@@ -1327,6 +1335,10 @@ class _BaseSolver(object):
         Number of terms in the approximation of the FLS solution. This
         parameter is unused if `approximate_FLS` is set to False.
         Default is 10. Maximum is 25.
+    mQuad : int, optional
+        Number of Gauss-Legendre sample points for the integral over :math:`u`
+        in the inclined FLS solution.
+        Default is 21.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -1346,8 +1358,9 @@ class _BaseSolver(object):
     """
     def __init__(self, boreholes, network, time, boundary_condition,
                  nSegments=8, segment_ratios=utilities.segment_ratios,
-                 approximate_FLS=False, nFLS=10, disp=False, profiles=False,
-                 kind='linear', dtype=np.double, **other_options):
+                 approximate_FLS=False, mQuad=21, nFLS=10, disp=False,
+                 profiles=False, kind='linear', dtype=np.double,
+                 **other_options):
         self.boreholes = boreholes
         self.network = network
         # Convert time to a 1d array
@@ -1382,6 +1395,7 @@ class _BaseSolver(object):
         self._i1Segments = [sum(self.nBoreSegments[0:(i + 1)])
                             for i in range(nBoreholes)]
         self.approximate_FLS = approximate_FLS
+        self.mQuad = mQuad
         self.nFLS = nFLS
         self.disp = disp
         self.profiles = profiles
@@ -1703,9 +1717,6 @@ class _BaseSolver(object):
         assert np.all([isinstance(b, Borehole) for b in self.boreholes]), \
             "The list of boreholes contains elements that are not Borehole " \
             "objects."
-        assert np.all(np.abs([b.tilt for b in self.boreholes]) <= 1e-6), \
-            "The current version of pygfunction only supports vertical " \
-            "boreholes."
         assert self.network is None or isinstance(self.network, Network), \
             "The network is not a valid 'Network' object."
         assert self.network is None or (self.network.m_flow_network is not None and self.network.cp_f is not None), \
@@ -1813,6 +1824,10 @@ class _Detailed(_BaseSolver):
         Number of terms in the approximation of the FLS solution. This
         parameter is unused if `approximate_FLS` is set to False.
         Default is 10. Maximum is 25.
+    mQuad : int, optional
+        Number of Gauss-Legendre sample points for the integral over :math:`u`
+        in the inclined FLS solution.
+        Default is 21.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -1929,7 +1944,7 @@ class _Detailed(_BaseSolver):
                 b1 = self.boreSegments[i1:]
                 h = finite_line_source(
                     time, alpha, b1, b2, approximation=self.approximate_FLS,
-                    N=self.nFLS)
+                    N=self.nFLS, M=self.mQuad)
                 # Broadcast values to h_ij matrix
                 for j, (j0, j1) in enumerate(
                         zip(self._i0Segments[i+1:], self._i1Segments[i+1:]),
@@ -1997,10 +2012,20 @@ class _Detailed(_BaseSolver):
             np.sqrt((x[i_segment] - x[j_segment])**2 + (y[i_segment] - y[j_segment])**2),
             r_b[i_segment])
         # FlS solution
-        h_ii = finite_line_source_vectorized(
-            time, alpha,
-            dis, H[i_segment], D[i_segment], H[j_segment], D[j_segment],
-            approximation=self.approximate_FLS, N=self.nFLS)
+        if np.all([b.is_vertical() for b in self.boreholes]):
+            h_ii = finite_line_source_vectorized(
+                time, alpha,
+                dis, H[i_segment], D[i_segment], H[j_segment], D[j_segment],
+                approximation=self.approximate_FLS, N=self.nFLS)
+        else:
+            tilt = np.array([b.tilt for b in self.boreSegments])
+            orientation = np.array([b.orientation for b in self.boreSegments])
+            h_ii = finite_line_source_inclined_vectorized(
+                time, alpha,
+                r_b[i_segment], x[i_segment], y[i_segment], H[i_segment],
+                D[i_segment], tilt[i_segment], orientation[i_segment],
+                x[j_segment], y[j_segment], H[j_segment], D[j_segment],
+                tilt[j_segment], orientation[j_segment], M=self.mQuad)
         return h_ii, i_segment, j_segment
         
 
@@ -2064,6 +2089,10 @@ class _Similarities(_BaseSolver):
         Number of terms in the approximation of the FLS solution. This
         parameter is unused if `approximate_FLS` is set to False.
         Default is 10. Maximum is 25.
+    mQuad : int, optional
+        Number of Gauss-Legendre sample points for the integral over :math:`u`
+        in the inclined FLS solution.
+        Default is 21.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -2782,6 +2811,10 @@ class _Equivalent(_BaseSolver):
         Number of terms in the approximation of the FLS solution. This
         parameter is unused if `approximate_FLS` is set to False.
         Default is 10. Maximum is 25.
+    mQuad : int, optional
+        Number of Gauss-Legendre sample points for the integral over :math:`u`
+        in the inclined FLS solution.
+        Default is 21.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.

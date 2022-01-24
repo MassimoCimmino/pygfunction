@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from scipy.integrate import quad, quad_vec
-from scipy.special import erfc
+from scipy.special import erfc, erf, roots_legendre
 
 from .boreholes import Borehole
 from .utilities import erfint, exp1, _erf_coeffs
@@ -9,19 +9,23 @@ from .utilities import erfint, exp1, _erf_coeffs
 
 def finite_line_source(
         time, alpha, borehole1, borehole2, reaSource=True, imgSource=True,
-        approximation=False, N=10):
+        approximation=False, M=21, N=10):
     """
     Evaluate the Finite Line Source (FLS) solution.
 
     This function uses a numerical quadrature to evaluate the one-integral form
-    of the FLS solution, as proposed by Claesson and Javed [#FLS-ClaJav2011]_
-    and extended to boreholes with different vertical positions by Cimmino and
-    Bernier [#FLS-CimBer2014]_. The FlS solution is given by:
+    of the FLS solution. For vertical boreholes, the FLS solution was proposed
+    by Claesson and Javed [#FLS-ClaJav2011]_ and extended to boreholes with
+    different vertical positions by Cimmino and Bernier [#FLS-CimBer2014]_.
+    The FlS solution is given by:
 
         .. math::
             h_{1\\rightarrow2}(t) &= \\frac{1}{2H_2}
             \\int_{\\frac{1}{\\sqrt{4\\alpha t}}}^{\\infty}
             e^{-d_{12}^2s^2}(I_{real}(s)+I_{imag}(s))ds
+
+
+            d_{12} &= \\sqrt{(x_1 - x_2)^2 + (y_1 - y_2)^2}
 
 
             I_{real}(s) &= erfint((D_2-D_1+H_2)s) - erfint((D_2-D_1)s)
@@ -36,6 +40,73 @@ def finite_line_source(
             erfint(X) &= \\int_{0}^{X} erf(x) dx
 
                       &= Xerf(X) - \\frac{1}{\\sqrt{\\pi}}(1-e^{-X^2})
+
+    For inclined boreholes, the FLS solution was proposed by Lazzarotto
+    [#FLS-Lazzar2016]_ and Lazzarotto and Björk [#FLS-LazBjo2016]_.
+    The FLS solution is given by:
+
+        .. math::
+            h_{1\\rightarrow2}(t) &= \\frac{H_1}{2H_2}
+            \\int_{\\frac{1}{\\sqrt{4\\alpha t}}}^{\\infty}
+            \\frac{1}{s}
+            \\int_{0}^{1} (I_{real}(u, s)+I_{imag}(u, s)) du ds
+
+
+            I_{real}(u, s) &=
+            e^{-((x_1 - x_2)^2 + (y_1 - y_2)^2 + (D_1 - D_2)^2) s^2}
+
+            &\\cdot (erf((u H_1 k_{0,real} + k_{2,real}) s)
+             - erf((u H_1 k_{0,real} + k_{2,real} - H_2) s))
+
+            &\\cdot  e^{(u^2 H_1^2 (k_{0,real}^2 - 1)
+                + 2 u H_1 (k_{0,real} k_{2,real} - k_{1,real}) + k_{2,real}^2) s^2}
+            du ds
+
+
+            I_{imag}(u, s) &=
+            -e^{-((x_1 - x_2)^2 + (y_1 - y_2)^2 + (D_1 + D_2)^2) s^2}
+
+            &\\cdot (erf((u H_1 k_{0,imag} + k_{2,imag}) s)
+             - erf((u H_1 k_{0,imag} + k_{2,imag} - H_2) s))
+
+            &\\cdot e^{(u^2 H_1^2 (k_{0,imag}^2 - 1)
+                + 2 u H_1 (k_{0,imag} k_{2,imag} - k_1) + k_{2,imag}^2) s^2}
+            du ds
+
+
+            k_{0,real} &=
+            sin(\\beta_1) sin(\\beta_2) cos(\\theta_1 - \\theta_2)
+            + cos(\\beta_1) cos(\\beta_2)
+
+
+            k_{0,imag} &=
+            sin(\\beta_1) sin(\\beta_2) cos(\\theta_1 - \\theta_2)
+            - cos(\\beta_1) cos(\\beta_2)
+
+
+            k_{1,real} &= sin(\\beta_1)
+            (cos(\\theta_1) (x_1 - x_2) + sin(\\theta_1) (y_1 - y_2))
+            + cos(\\beta_1) (D_1 - D_2)
+
+
+            k_{1,imag} &= sin(\\beta_1)
+            (cos(\\theta_1) (x_1 - x_2) + sin(\\theta_1) (y_1 - y_2))
+            + cos(\\beta_1) (D_1 + D_2)
+
+
+            k_{2,real} &= sin(\\beta_2)
+            (cos(\\theta_2) (x_1 - x_2) + sin(\\theta_2) (y_1 - y_2))
+            + cos(\\beta_2) (D_1 - D_2)
+
+
+            k_{2,imag} &= sin(\\beta_2)
+            (cos(\\theta_2) (x_1 - x_2) + sin(\\theta_2) (y_1 - y_2))
+            - cos(\\beta_2) (D_1 + D_2)
+
+    where :math:`\\beta_1` and :math:`\\beta_2` are the tilt angle of the
+    boreholes (relative to vertical), and :math:`\\theta_1` and
+    :math:`\\theta_2` are the orientation of the boreholes (relative to the
+    x-axis).
 
         .. Note::
             The reciprocal thermal response factor
@@ -66,6 +137,10 @@ def finite_line_source(
         (2021) [#FLS-Cimmin2021]_. This approximation does not require
         the numerical evaluation of any integral.
         Default is False.
+    M : int, optional
+        Number of Gauss-Legendre sample points for the quadrature over
+        :math:`u`. This is only used for inclined boreholes.
+        Default is 21.
     N : int, optional
         Number of terms in the approximation of the FLS solution. This
         parameter is unused if `approximation` is set to False.
@@ -97,6 +172,11 @@ def finite_line_source(
     >>> h = gt.heat_transfer.finite_line_source(
         4*168*3600., 1.0e-6, b1, b2, approximation=True, N=10)
     h = 0.0110474667731
+    >>> b3 = gt.boreholes.Borehole(
+        H=150., D=4., r_b=0.075, x=5., y=0., tilt=3.1415/15, orientation=0.)
+    >>> h = gt.heat_transfer.finite_line_source(
+        4*168*3600., 1.0e-6, b1, b3, M=21)
+    h = 0.0002017450051
 
     References
     ----------
@@ -110,16 +190,36 @@ def finite_line_source(
        finite line source solution to model thermal interactions between
        geothermal boreholes. International Communications in Heat and Mass
        Transfer, 127, 105496.
+    .. [#FLS-Lazzar2016] Lazzarotto, A. (2016). A methodology for the
+       calculation of response functions for geothermal fields with
+       arbitrarily oriented boreholes – Part 1, Renewable Energy, 86,
+       1380-1393.
+    .. [#FLS-LazBjo2016] Lazzarotto, A., & Björk, F. (2016). A methodology for
+       the calculation of response functions for geothermal fields with
+       arbitrarily oriented boreholes – Part 2, Renewable Energy, 86,
+       1353-1361.
 
     """
     if isinstance(borehole1, Borehole) and isinstance(borehole2, Borehole):
         # Unpack parameters
-        dis = borehole1.distance(borehole2)
         H1, D1 = borehole1.H, borehole1.D
         H2, D2 = borehole2.H, borehole2.D
-        # Integrand of the finite line source solution
-        f = _finite_line_source_integrand(
-            dis, H1, D1, H2, D2, reaSource, imgSource)
+        if borehole1.is_vertical() and borehole2.is_vertical():
+            dis = borehole1.distance(borehole2)
+            # Integrand of the finite line source solution
+            f = _finite_line_source_integrand(
+                dis, H1, D1, H2, D2, reaSource, imgSource)
+        else:
+            x1, y1 = borehole1.x, borehole1.y
+            rb1 = borehole1.r_b
+            tilt1, orientation1 = borehole1.tilt, borehole1.orientation
+            x2, y2 = borehole2.x, borehole2.y
+            tilt2, orientation2 = borehole2.tilt, borehole2.orientation
+            # Integrand of the inclined finite line source solution
+            f = _finite_line_source_inclined_integrand(
+                rb1, x1, y1, H1, D1, tilt1, orientation1,
+                x2, y2, H2, D2, tilt2, orientation2,
+                reaSource, imgSource, M)
 
         # Evaluate integral
         if time is np.inf:
@@ -168,10 +268,25 @@ def finite_line_source(
                 dis, H1, D1, H2, D2, reaSource, imgSource)
         else:
             if not approximation:
-                # Evaluate integral
-                h = finite_line_source_vectorized(
-                    time, alpha, dis, H1, D1, H2, D2,
-                    reaSource=reaSource, imgSource=imgSource)
+                if np.all([b.is_vertical() for b in borehole1]) and np.all([b.is_vertical() for b in borehole2]):
+                    # Evaluate integral
+                    h = finite_line_source_vectorized(
+                        time, alpha, dis, H1, D1, H2, D2,
+                        reaSource=reaSource, imgSource=imgSource)
+                else:
+                    x1 = x1.reshape(1, -1)
+                    y1 = y1.reshape(1, -1)
+                    tilt1 = np.array([b.tilt for b in borehole1]).reshape(1, -1)
+                    orientation1 = np.array([b.orientation for b in borehole1]).reshape(1, -1)
+                    x2 = x2.reshape(-1, 1)
+                    y2 = y2.reshape(-1, 1)
+                    tilt2 = np.array([b.tilt for b in borehole2]).reshape(-1, 1)
+                    orientation2 = np.array([b.orientation for b in borehole2]).reshape(-1, 1)
+                    r_b = r_b.reshape(1, -1)
+                    h = finite_line_source_inclined_vectorized(
+                        time, alpha,
+                        r_b, x1, y1, H1, D1, tilt1, orientation1, x2, y2, H2, D2, tilt2, orientation2,
+                        reaSource=reaSource, imgSource=imgSource, M=M)
             else:
                 h = finite_line_source_approximation(
                     time, alpha, dis, H1, D1, H2, D2,
@@ -526,6 +641,198 @@ def finite_line_source_equivalent_boreholes_vectorized(
     return h
 
 
+def finite_line_source_inclined_vectorized(
+        time, alpha,
+        rb1, x1, y1, H1, D1, tilt1, orientation1,
+        x2, y2, H2, D2, tilt2, orientation2,
+        reaSource=True, imgSource=True, M=21):
+    """
+    Evaluate the inclined Finite Line Source (FLS) solution.
+
+    This function uses a numerical quadrature to evaluate the inclined FLS
+    solution, as proposed by Lazzarotto [#incFLSVec-Lazzar2016]_.
+    The inclined FLS solution is given by:
+
+        .. math::
+            h_{1\\rightarrow2}(t) &= \\frac{H_1}{2H_2}
+            \\int_{\\frac{1}{\\sqrt{4\\alpha t}}}^{\\infty}
+            \\frac{1}{s}
+            \\int_{0}^{1} (I_{real}(u, s)+I_{imag}(u, s)) du ds
+
+
+            I_{real}(u, s) &=
+            e^{-((x_1 - x_2)^2 + (y_1 - y_2)^2 + (D_1 - D_2)^2) s^2}
+
+            &\\cdot (erf((u H_1 k_{0,real} + k_{2,real}) s)
+             - erf((u H_1 k_{0,real} + k_{2,real} - H_2) s))
+
+            &\\cdot  e^{(u^2 H_1^2 (k_{0,real}^2 - 1)
+                + 2 u H_1 (k_{0,real} k_{2,real} - k_{1,real}) + k_{2,real}^2) s^2}
+            du ds
+
+
+            I_{imag}(u, s) &=
+            -e^{-((x_1 - x_2)^2 + (y_1 - y_2)^2 + (D_1 + D_2)^2) s^2}
+
+            &\\cdot (erf((u H_1 k_{0,imag} + k_{2,imag}) s)
+             - erf((u H_1 k_{0,imag} + k_{2,imag} - H_2) s))
+
+            &\\cdot e^{(u^2 H_1^2 (k_{0,imag}^2 - 1)
+                + 2 u H_1 (k_{0,imag} k_{2,imag} - k_1) + k_{2,imag}^2) s^2}
+            du ds
+
+
+            k_{0,real} &=
+            sin(\\beta_1) sin(\\beta_2) cos(\\theta_1 - \\theta_2)
+            + cos(\\beta_1) cos(\\beta_2)
+
+
+            k_{0,imag} &=
+            sin(\\beta_1) sin(\\beta_2) cos(\\theta_1 - \\theta_2)
+            - cos(\\beta_1) cos(\\beta_2)
+
+
+            k_{1,real} &= sin(\\beta_1)
+            (cos(\\theta_1) (x_1 - x_2) + sin(\\theta_1) (y_1 - y_2))
+            + cos(\\beta_1) (D_1 - D_2)
+
+
+            k_{1,imag} &= sin(\\beta_1)
+            (cos(\\theta_1) (x_1 - x_2) + sin(\\theta_1) (y_1 - y_2))
+            + cos(\\beta_1) (D_1 + D_2)
+
+
+            k_{2,real} &= sin(\\beta_2)
+            (cos(\\theta_2) (x_1 - x_2) + sin(\\theta_2) (y_1 - y_2))
+            + cos(\\beta_2) (D_1 - D_2)
+
+
+            k_{2,imag} &= sin(\\beta_2)
+            (cos(\\theta_2) (x_1 - x_2) + sin(\\theta_2) (y_1 - y_2))
+            - cos(\\beta_2) (D_1 + D_2)
+
+    where :math:`\\beta_1` and :math:`\\beta_2` are the tilt angle of the
+    boreholes (relative to vertical), and :math:`\\theta_1` and
+    :math:`\\theta_2` are the orientation of the boreholes (relative to the
+    x-axis).
+
+        .. Note::
+            The reciprocal thermal response factor
+            :math:`h_{2\\rightarrow1}(t)` can be conveniently calculated by:
+
+                .. math::
+                    h_{2\\rightarrow1}(t) = \\frac{H_2}{H_1}
+                    h_{1\\rightarrow2}(t)
+
+    Parameters
+    ----------
+    time : float or array, shape (K)
+        Value of time (in seconds) for which the FLS solution is evaluated.
+    alpha : float
+        Soil thermal diffusivity (in m2/s).
+    rb1 : array
+        Radii of the emitting heat sources.
+    x1 : float or array
+        x-Positions of the emitting heat sources.
+    y1 : float or array
+        y-Positions of the emitting heat sources.
+    H1 : float or array
+        Lengths of the emitting heat sources.
+    D1 : float or array
+        Buried depths of the emitting heat sources.
+    tilt1 : float or array
+        Angles (in radians) from vertical of the emitting heat sources.
+    orientation1 : float or array
+        Directions (in radians) of the tilt the emitting heat sources.
+    x2 : array
+        x-Positions of the receiving heat sources.
+    y2 : array
+        y-Positions of the receiving heat sources.
+    H2 : float or array
+        Lengths of the receiving heat sources.
+    D2 : float or array
+        Buried depths of the receiving heat sources.
+    tilt2 : float or array
+        Angles (in radians) from vertical of the receiving heat sources.
+    orientation2 : float or array
+        Directions (in radians) of the tilt the receiving heat sources.
+    reaSource : bool, optional
+        True if the real part of the FLS solution is to be included.
+        Default is True.
+    imgSource : bool, optional
+        True if the image part of the FLS solution is to be included.
+        Default is true.
+    M : int, optional
+        Number of points for the Gauss-Legendre quadrature rule along the
+        receiving heat sources.
+        Default is 21.
+
+    Returns
+    -------
+    f : callable
+        Integrand of the finite line source solution. Can be vector-valued.
+
+    Notes
+    -----
+    This is a vectorized version of the :func:`finite_line_source` function
+    using scipy.integrate.quad_vec to speed up calculations. All arrays
+    (x1, y1, H1, D1, tilt1, orientation1, x2, y2, H2, D2, tilt2,
+    orientation2) must follow numpy array broadcasting rules.
+
+    References
+    ----------
+    .. [#incFLSVec-Lazzar2016] Lazzarotto, A. (2016). A methodology for the
+       calculation of response functions for geothermal fields with
+       arbitrarily oriented boreholes – Part 1, Renewable Energy, 86,
+       1380-1393.
+
+    """
+    # Integrand of the inclined finite line source solution
+    # Real part
+    fRea = _finite_line_source_inclined_integrand(
+        rb1, x1, y1, H1, D1, tilt1, orientation1,
+        x2, y2, H2, D2, tilt2, orientation2,
+        reaSource, False, M)
+    # Image part
+    fImg = _finite_line_source_inclined_integrand(
+        rb1, x1, y1, H1, D1, tilt1, orientation1,
+        x2, y2, H2, D2, tilt2, orientation2,
+        False, imgSource, M)
+    # Both parts
+    fReaImg = _finite_line_source_inclined_integrand(
+        rb1, x1, y1, H1, D1, tilt1, orientation1,
+        x2, y2, H2, D2, tilt2, orientation2,
+        reaSource, imgSource, M)
+
+    # Evaluate integral
+    if isinstance(time, (np.floating, float)):
+        # Lower bound of integration
+        a = 1.0 / np.sqrt(4.0*alpha*time)
+        h = 0.5 / H2 * (quad_vec(fRea, a, np.inf, epsabs=1e-4, epsrel=1e-6)[0] \
+            + quad_vec(fImg, a, np.inf, epsabs=1e-4, epsrel=1e-6)[0])
+    else:
+        # The real and image parts are split to avoid overflow in the integrand
+        # function
+        # Lower bound of integration
+        a = 1.0 / np.sqrt(4.0*alpha*time)
+        # Upper bound of integration
+        b = np.concatenate(([np.inf], a[:-1]))
+        h = np.cumsum(
+            np.stack(
+                [0.5 / H2 * (
+                    quad_vec(
+                        fRea, a_i, b_i, epsabs=1e-4, epsrel=1e-6)[0]
+                    + quad_vec(
+                        fImg, a_i, b_i, epsabs=1e-4, epsrel=1e-6)[0])
+                 if i==0
+                 else 0.5 / H2 * quad_vec(
+                     fReaImg, a_i, b_i, epsabs=1e-4, epsrel=1e-6)[0]
+                 for i, (a_i, b_i) in enumerate(zip(a, b))],
+                axis=-1),
+            axis=-1)
+    return h
+
+
 def _finite_line_source_integrand(dis, H1, D1, H2, D2, reaSource, imgSource):
     """
     Integrand of the finite line source solution.
@@ -593,6 +900,117 @@ def _finite_line_source_integrand(dis, H1, D1, H2, D2, reaSource, imgSource):
         # No heat source
         f = lambda s: np.zeros(np.broadcast_shapes(
             *[np.shape(arg) for arg in (dis, H1, D1, H2, D2)]))
+    return f
+
+
+def _finite_line_source_inclined_integrand(
+        rb1, x1, y1, H1, D1, tilt1, orientation1, x2, y2, H2, D2, tilt2, orientation2,
+        reaSource, imgSource, M):
+    """
+    Integrand of the inclined Finite Line Source (FLS) solution.
+
+    Parameters
+    ----------
+    rb1 : array
+        Radii of the emitting heat sources.
+    x1 : float or array
+        x-Positions of the emitting heat sources.
+    y1 : float or array
+        y-Positions of the emitting heat sources.
+    H1 : float or array
+        Lengths of the emitting heat sources.
+    D1 : float or array
+        Buried depths of the emitting heat sources.
+    tilt1 : float or array
+        Angles (in radians) from vertical of the emitting heat sources.
+    orientation1 : float or array
+        Directions (in radians) of the tilt the emitting heat sources.
+    x2 : array
+        x-Positions of the receiving heat sources.
+    y2 : array
+        y-Positions of the receiving heat sources.
+    H2 : float or array
+        Lengths of the receiving heat sources.
+    D2 : float or array
+        Buried depths of the receiving heat sources.
+    tilt2 : float or array
+        Angles (in radians) from vertical of the receiving heat sources.
+    orientation2 : float or array
+        Directions (in radians) of the tilt the receiving heat sources.
+    reaSource : bool
+        True if the real part of the FLS solution is to be included.
+        Default is True.
+    imgSource : bool
+        True if the image part of the FLS solution is to be included.
+    M : int
+        Number of points for the Gauss-Legendre quadrature rule along the
+        receiving heat sources.
+
+    Returns
+    -------
+    f : callable
+        Integrand of the finite line source solution. Can be vector-valued.
+
+    Notes
+    -----
+    All arrays (x1, y1, H1, D1, tilt1, orientation1, x2, y2, H2, D2, tilt2,
+    orientation2) must follow numpy array broadcasting rules.
+
+    """
+    output_shape = np.broadcast_shapes(
+            *[np.shape(arg) for arg in (
+                rb1, x1, y1, H1, D1, tilt1, orientation1,
+                x2, y2, H2, D2, tilt2, orientation2)])
+    # Roots
+    x, w = roots_legendre(M)
+    u = (0.5 * x + 0.5).reshape((-1,) + (1,) * len(output_shape))
+    w = w / 2
+    # Params
+    sb1 = np.sin(tilt1)
+    sb2 = np.sin(tilt2)
+    cb1 = np.cos(tilt1)
+    cb2 = np.cos(tilt2)
+    dx = x1 - x2
+    dy = y1 - y2
+    if reaSource and imgSource:
+        # Full (real + image) FLS solution
+        dzRea = D1 - D2
+        dzImg = D1 + D2
+        rr = np.maximum(dx**2 + dy**2, rb1**2)
+        kRea_0 = sb1 * sb2 * np.cos(orientation1 - orientation2) + cb1 * cb2
+        kImg_0 = sb1 * sb2 * np.cos(orientation1 - orientation2) - cb1 * cb2
+        kRea_1 = sb1 * (np.cos(orientation1) * dx + np.sin(orientation1) * dy) + cb1 * dzRea
+        kImg_1 = sb1 * (np.cos(orientation1) * dx + np.sin(orientation1) * dy) + cb1 * dzImg
+        kRea_2 = sb2 * (np.cos(orientation2) * dx + np.sin(orientation2) * dy) + cb2 * dzRea
+        kImg_2 = sb2 * (np.cos(orientation2) * dx + np.sin(orientation2) * dy) - cb2 * dzImg
+        f = lambda s: \
+            ((H1 / s * (
+                np.exp(-(rr + dzRea**2) * s**2 + s**2 * (u**2 * H1**2 * (kRea_0**2 - 1) + 2 * u * H1 * (kRea_0 * kRea_2 - kRea_1) + kRea_2**2)) \
+                    * (erf((u *  H1 * kRea_0 + kRea_2) * s) - erf((u * H1 * kRea_0 + kRea_2 - H2) * s))
+                - np.exp(-(rr + dzImg**2) * s**2 + s**2 * (u**2 * H1**2 * (kImg_0**2 - 1) + 2 * u * H1 * (kImg_0 * kImg_2 - kImg_1) + kImg_2**2)) \
+                    * (erf((u *  H1 * kImg_0 + kImg_2) * s) - erf((u * H1 * kImg_0 + kImg_2 - H2) * s)))).T @ w).T
+    elif reaSource:
+        # Real FLS solution
+        dzRea = D1 - D2
+        rr = np.maximum(dx**2 + dy**2, rb1**2)
+        kRea_0 = sb1 * sb2 * np.cos(orientation1 - orientation2) + cb1 * cb2
+        kRea_1 = sb1 * (np.cos(orientation1) * dx + np.sin(orientation1) * dy) + cb1 * dzRea
+        kRea_2 = sb2 * (np.cos(orientation2) * dx + np.sin(orientation2) * dy) + cb2 * dzRea
+        f = lambda s: \
+            ((H1 / s * np.exp(-(rr + dzRea**2) * s**2 + s**2 * (u**2 * H1**2 * (kRea_0**2 - 1) + 2 * u * H1 * (kRea_0 * kRea_2 - kRea_1) + kRea_2**2)) \
+                * (erf((u *  H1 * kRea_0 + kRea_2) * s) - erf((u * H1 * kRea_0 + kRea_2 - H2) * s))).T @ w).T
+    elif imgSource:
+        # Image FLS solution
+        dzImg = D1 + D2
+        kImg_0 = sb1 * sb2 * np.cos(orientation1 - orientation2) - cb1 * cb2
+        kImg_1 = sb1 * (np.cos(orientation1) * dx + np.sin(orientation1) * dy) + cb1 * dzImg
+        kImg_2 = sb2 * (np.cos(orientation2) * dx + np.sin(orientation2) * dy) - cb2 * dzImg
+        f = lambda s: \
+            -((H1 / s * np.exp(-(dx**2 + dy**2 + dzImg**2) * s**2 + s**2 * (u**2 * H1**2 * (kImg_0**2 - 1) + 2 * u * H1 * (kImg_0 * kImg_2 - kImg_1) + kImg_2**2)) \
+                * (erf((u *  H1 * kImg_0 + kImg_2) * s) - erf((u * H1 * kImg_0 + kImg_2 - H2) * s))).T @ w).T
+    else:
+        # No heat source
+        f = lambda s: np.zeros(output_shape)
     return f
 
 

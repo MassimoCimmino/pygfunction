@@ -34,8 +34,12 @@ class Borehole(object):
         self.r_b = float(r_b)  # Borehole radius
         self.x = float(x)      # Borehole x coordinate position
         self.y = float(y)      # Borehole y coordinate position
+        # Borehole inclination
         self.tilt = float(tilt)
+        # Borehole orientation
         self.orientation = float(orientation)
+        # Check if borehole is inclined
+        self._is_tilted = np.abs(self.tilt) > 1.0e-6
 
     def __repr__(self):
         s = (f'Borehole(H={self.H}, D={self.D}, r_b={self.r_b}, x={self.x},'
@@ -74,6 +78,30 @@ class Borehole(object):
         dis = max(self.r_b,
                   np.sqrt((self.x - target.x)**2 + (self.y - target.y)**2))
         return dis
+
+    def is_tilted(self):
+        """
+        Returns true if the borehole is inclined.
+
+        Returns
+        -------
+        bool
+            True if borehole is inclined.
+
+        """
+        return self._is_tilted
+
+    def is_vertical(self):
+        """
+        Returns true if the borehole is vertical.
+
+        Returns
+        -------
+        bool
+            True if borehole is vertical.
+
+        """
+        return not self._is_tilted
 
     def position(self):
         """
