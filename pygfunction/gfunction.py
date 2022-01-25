@@ -1904,6 +1904,18 @@ class _Detailed(_BaseSolver):
         nBoreholes = len(self.boreholes)
         segment_lengths = self.segment_lengths()
 
+        # ---------------------------------------------------------------------
+        # Segment-to-segment thermal response factors for same-borehole
+        # thermal interactions
+        # ---------------------------------------------------------------------
+        h_ii, i_segment, j_segment = \
+            self._thermal_response_factors_borehole_to_self(time, alpha)
+        # Broadcast values to h_ij matrix
+        h_ij[j_segment, i_segment, 1:] = h_ii
+        # ---------------------------------------------------------------------
+        # Segment-to-segment thermal response factors for
+        # borehole-to-borehole thermal interactions
+        # ---------------------------------------------------------------------
         for i, (borehole, nSegments, ratios, i0, i1) in enumerate(
                 zip(self.boreholes,
                     self.nBoreSegments,
@@ -1912,29 +1924,9 @@ class _Detailed(_BaseSolver):
                     self._i1Segments)):
             # Segments of the receiving borehole
             b2 = borehole.segments(nSegments, segment_ratios=ratios)
-            # -----------------------------------------------------------------
-            # Segment-to-segment thermal response factors for same-borehole
-            # thermal interactions
-            # -----------------------------------------------------------------
-            b1 = b2
-            h = finite_line_source(
-                time, alpha, b1, b2, approximation=self.approximate_FLS,
-                N=self.nFLS)
-            # Broadcast values to h_ij matrix
-            h_ij[i0:i1, i0:i1, 1:] = h
-
-            # -----------------------------------------------------------------
-            # Segment-to-segment thermal response factors for
-            # borehole-to-borehole thermal interactions
-            # -----------------------------------------------------------------
             if i+1 < nBoreholes:
                 # Segments of the emitting borehole
-                b1 = [seg
-                      for b, nSeg, rat in zip(
-                              self.boreholes[i+1:],
-                              self.nBoreSegments[i+1:],
-                              self.segment_ratios[i+1:])
-                      for seg in b.segments(nSeg, segment_ratios=rat)]
+                b1 = self.boreSegments[i1:]
                 h = finite_line_source(
                     time, alpha, b1, b2, approximation=self.approximate_FLS,
                     N=self.nFLS)
@@ -1961,6 +1953,56 @@ class _Detailed(_BaseSolver):
         if self.disp: print(f' {toc - tic:.3f} sec')
 
         return h_ij
+
+    def _thermal_response_factors_borehole_to_self(self, time, alpha):
+        """
+        Evaluate the segment-to-segment thermal response factors for all pairs
+        of segments between each borehole and itself.
+
+        Attributes
+        ----------
+        time : float or array
+            Values of time (in seconds) for which the g-function is evaluated.
+        alpha : float
+            Soil thermal diffusivity (in m2/s).
+
+        Returns
+        -------
+        h_ii : array
+            Finite line source solution.
+        i_segment : list
+            Indices of the emitting segments in the bore field.
+        j_segment : list
+            Indices of the receiving segments in the bore field.
+        """
+        # Indices of the thermal response factors into h_ij
+        i_segment = np.concatenate(
+            [np.repeat(np.arange(i0, i1), nSegments)
+             for i0, i1, nSegments in zip(
+                     self._i0Segments, self._i1Segments, self.nBoreSegments)
+            ])
+        j_segment = np.concatenate(
+            [np.tile(np.arange(i0, i1), nSegments)
+             for i0, i1, nSegments in zip(
+                     self._i0Segments, self._i1Segments, self.nBoreSegments)
+            ])
+        # Unpack parameters
+        x = np.array([b.x for b in self.boreSegments])
+        y = np.array([b.y for b in self.boreSegments])
+        H = np.array([b.H for b in self.boreSegments])
+        D = np.array([b.D for b in self.boreSegments])
+        r_b = np.array([b.r_b for b in self.boreSegments])
+        # Distances between boreholes
+        dis = np.maximum(
+            np.sqrt((x[i_segment] - x[j_segment])**2 + (y[i_segment] - y[j_segment])**2),
+            r_b[i_segment])
+        # FlS solution
+        h_ii = finite_line_source_vectorized(
+            time, alpha,
+            dis, H[i_segment], D[i_segment], H[j_segment], D[j_segment],
+            approximation=self.approximate_FLS, N=self.nFLS)
+        return h_ii, i_segment, j_segment
+        
 
 
 class _Similarities(_BaseSolver):
