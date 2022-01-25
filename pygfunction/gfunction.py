@@ -295,7 +295,7 @@ class gFunction(object):
         plt.tight_layout()
         return fig
 
-    def visualize_heat_extraction_rates(self, iBoreholes=None):
+    def visualize_heat_extraction_rates(self, iBoreholes=None, showTilt=True):
         """
         Plot the time-variation of the average heat extraction rates.
 
@@ -306,6 +306,9 @@ class gFunction(object):
             If iBoreholes is None, heat extraction rates are plotted for all
             boreholes.
             Default is None.
+        showTilt : bool
+            Set to True to show borehole inclination.
+            Default is True
 
         Returns
         -------
@@ -342,6 +345,13 @@ class gFunction(object):
                 line = ax2.plot(lntts, Q_t[iBoreholes.index(i)])
                 color = line[-1]._color
                 # Draw colored marker for borehole position
+                if showTilt:
+                    ax1.plot(
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                         linestyle='--',
+                         marker='None',
+                         color=color)
                 ax1.plot(borehole.x,
                          borehole.y,
                          linestyle='None',
@@ -349,6 +359,13 @@ class gFunction(object):
                          color=color)
             else:
                 # Draw black marker for borehole position
+                if showTilt:
+                    ax1.plot(
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                         linestyle='--',
+                         marker='None',
+                         color='k')
                 ax1.plot(borehole.x,
                          borehole.y,
                          linestyle='None',
@@ -360,7 +377,7 @@ class gFunction(object):
         return fig
 
     def visualize_heat_extraction_rate_profiles(
-            self, time=None, iBoreholes=None):
+            self, time=None, iBoreholes=None, showTilt=True):
         """
         Plot the heat extraction rate profiles at chosen time.
 
@@ -376,6 +393,9 @@ class gFunction(object):
             If iBoreholes is None, heat extraction rates are plotted for all
             boreholes.
             Default is None.
+        showTilt : bool
+            Set to True to show borehole inclination.
+            Default is True
 
         Returns
         -------
@@ -410,6 +430,13 @@ class gFunction(object):
                     Q_b[iBoreholes.index(i)], z[iBoreholes.index(i)])
                 color = line[-1]._color
                 # Draw colored marker for borehole position
+                if showTilt:
+                    ax1.plot(
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                         linestyle='--',
+                         marker='None',
+                         color=color)
                 ax1.plot(borehole.x,
                          borehole.y,
                          linestyle='None',
@@ -417,6 +444,13 @@ class gFunction(object):
                          color=color)
             else:
                 # Draw black marker for borehole position
+                if showTilt:
+                    ax1.plot(
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                         linestyle='--',
+                         marker='None',
+                         color='k')
                 ax1.plot(borehole.x,
                          borehole.y,
                          linestyle='None',
@@ -426,7 +460,7 @@ class gFunction(object):
         plt.tight_layout()
         return fig
 
-    def visualize_temperatures(self, iBoreholes=None):
+    def visualize_temperatures(self, iBoreholes=None, showTilt=True):
         """
         Plot the time-variation of the average borehole wall temperatures.
 
@@ -436,6 +470,9 @@ class gFunction(object):
             Borehole indices to plot temperatures.
             If iBoreholes is None, temperatures are plotted for all boreholes.
             Default is None.
+        showTilt : bool
+            Set to True to show borehole inclination.
+            Default is True
 
         Returns
         -------
@@ -472,6 +509,13 @@ class gFunction(object):
                 line = ax2.plot(lntts, T_b[iBoreholes.index(i)])
                 color = line[-1]._color
                 # Draw colored marker for borehole position
+                if showTilt:
+                    ax1.plot(
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                         linestyle='--',
+                         marker='None',
+                         color=color)
                 ax1.plot(borehole.x,
                          borehole.y,
                          linestyle='None',
@@ -479,6 +523,13 @@ class gFunction(object):
                          color=color)
             else:
                 # Draw black marker for borehole position
+                if showTilt:
+                    ax1.plot(
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                         linestyle='--',
+                         marker='None',
+                         color='k')
                 ax1.plot(borehole.x,
                          borehole.y,
                          linestyle='None',
@@ -489,7 +540,8 @@ class gFunction(object):
         plt.tight_layout()
         return fig
 
-    def visualize_temperature_profiles(self, time=None, iBoreholes=None):
+    def visualize_temperature_profiles(
+            self, time=None, iBoreholes=None, showTilt=True):
         """
         Plot the borehole wall temperature profiles at chosen time.
 
@@ -503,6 +555,9 @@ class gFunction(object):
             Borehole indices to plot temperature profiles.
             If iBoreholes is None, temperatures are plotted for all boreholes.
             Default is None.
+        showTilt : bool
+            Set to True to show borehole inclination.
+            Default is True
 
         Returns
         -------
@@ -537,6 +592,13 @@ class gFunction(object):
                     T_b[iBoreholes.index(i)], z[iBoreholes.index(i)])
                 color = line[-1]._color
                 # Draw colored marker for borehole position
+                if showTilt:
+                    ax1.plot(
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                         linestyle='--',
+                         marker='None',
+                         color=color)
                 ax1.plot(borehole.x,
                          borehole.y,
                          linestyle='None',
@@ -544,6 +606,13 @@ class gFunction(object):
                          color=color)
             else:
                 # Draw black marker for borehole position
+                if showTilt:
+                    ax1.plot(
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                         linestyle='--',
+                         marker='None',
+                         color='k')
                 ax1.plot(borehole.x,
                          borehole.y,
                          linestyle='None',

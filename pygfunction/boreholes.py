@@ -884,7 +884,8 @@ def field_from_file(filename):
     return borefield
 
 
-def visualize_field(borefield, viewTop=True, view3D=True, labels=True):
+def visualize_field(
+        borefield, viewTop=True, view3D=True, labels=True, showTilt=True):
     """
     Plot the top view and 3D view of borehole positions.
 
@@ -900,6 +901,9 @@ def visualize_field(borefield, viewTop=True, view3D=True, labels=True):
         Default is True
     labels : bool
         Set to True to annotate borehole indices to top view plot.
+        Default is True
+    showTilt : bool
+        Set to True to show borehole inclination on top view plot.
         Default is True
 
     Returns
@@ -939,6 +943,10 @@ def visualize_field(borefield, viewTop=True, view3D=True, labels=True):
         for borehole in borefield:
             (x, y) = borehole.position()    # Extract borehole position
             # Add current borehole to the figure
+            if showTilt:
+                ax1.plot([x, x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                         [y, y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                         'k--')
             ax1.plot(x, y, 'ko')
             if labels: ax1.text(x, y,
                                 f' {i}',
