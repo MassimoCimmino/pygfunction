@@ -12,6 +12,7 @@
 * [Issue 152](https://github.com/MassimoCimmino/pygfunction/issues/152) - Vectorized `coefficients_temperature` and `_general_solution` in `pipe` objects to accept depths `z` as an array. This speeds up calculations for `get_temperature` and `get_borehole_heat_extraction_rate` class methods.
 * [Issue 183](https://github.com/MassimoCimmino/pygfunction/issues/183) - Vectorized `pipes.multipole()` and `pipes._Fmk()` to decrease the calculation time of `pipes.thermal_resistances()`. A `memoization` technique is implemented to reduce computation time for repeated function calls to further speed-up the initialization of `Pipe` and `Network` objects.
 * [Issue 198](https://github.com/MassimoCimmino/pygfunction/issues/198) - Refactored the `'detailed'` solver to evaluate same-borehole thermal response factors in a single call to `finite_line_source_vectorized()`. This speeds up calculations of *g*-functions using the `'detailed'` solver.
+* [Issue 199](https://github.com/MassimoCimmino/pygfunction/issues/199) - Changed the integral bounds to avoid repeated evaluation of integrals over semi-infinite intervals. This speeds up calculations of *g*-functions using all solvers and the evaluation of the finite line source solution with `time` as an array.
 
 ### Other changes
 
