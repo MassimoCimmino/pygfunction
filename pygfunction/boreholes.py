@@ -251,7 +251,7 @@ class _EquivalentBorehole(object):
     ----------
     boreholes : list of Borehole objects, or tuple
         Boreholes to be represented by the equivalent borehole. Alternatively,
-        tuple of attributes (H, D, r_b, x, y).
+        tuple of attributes (H, D, r_b, x, y, tilt=0., orientation=0.).
 
     Attributes
     ----------
@@ -265,6 +265,10 @@ class _EquivalentBorehole(object):
         Position (in meters) of the head of each borehole along the x-axis.
     y : (nBoreholes,) array
         Position (in meters) of the head of each borehole along the y-axis.
+    tilt : float
+        Angle (in radians) from vertical of the axis of the borehole.
+    orientation : (nBoreholes,) array
+        Direction (in radians) of the tilt of the borehole.
     nBoreholes : int
         Number of boreholes represented by the equivalent borehole.
     
@@ -283,18 +287,27 @@ class _EquivalentBorehole(object):
             self.r_b = boreholes[0].r_b
             self.x = np.array([b.x for b in boreholes])
             self.y = np.array([b.y for b in boreholes])
+            self.tilt = boreholes[0].tilt
+            self.orientation = np.array([b.orientation for b in boreholes])
         elif isinstance(boreholes[0], _EquivalentBorehole):
             self.H = boreholes[0].H
             self.D = boreholes[0].D
             self.r_b = boreholes[0].r_b
             self.x = np.concatenate([b.x for b in boreholes])
             self.y = np.concatenate([b.y for b in boreholes])
+            self.tilt = boreholes[0].tilt
+            self.orientation = np.concatenate(
+                [b.orientation for b in boreholes])
         elif type(boreholes) is tuple:
-            self.H, self.D, self.r_b, self.x, self.y = boreholes
+            self.H, self.D, self.r_b, self.x, self.y = boreholes[:5]
             self.x = np.atleast_1d(self.x)
             self.y = np.atleast_1d(self.y)
+            if len(boreholes)==7:
+                self.tilt, self.orientation = boreholes[5:]
 
         self.nBoreholes = len(self.x)
+        # Check if borehole is inclined
+        self._is_tilted = np.abs(self.tilt) > 1.0e-6
 
     def distance(self, target):
         """
@@ -329,6 +342,30 @@ class _EquivalentBorehole(object):
                 np.add.outer(target.x, -self.x)**2 + np.add.outer(target.y, -self.y)**2),
             self.r_b)
         return dis
+
+    def is_tilted(self):
+        """
+        Returns true if the borehole is inclined.
+
+        Returns
+        -------
+        bool
+            True if borehole is inclined.
+
+        """
+        return self._is_tilted
+
+    def is_vertical(self):
+        """
+        Returns true if the borehole is vertical.
+
+        Returns
+        -------
+        bool
+            True if borehole is vertical.
+
+        """
+        return not self._is_tilted
 
     def position(self):
         """
@@ -377,7 +414,16 @@ class _EquivalentBorehole(object):
         if segment_ratios is None:
             segment_ratios = np.full(nSegments, 1. / nSegments)
         z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1]
-        return [_EquivalentBorehole((ratios * self.H, z_i + self.D, self.r_b, self.x, self.y)) for z_i, ratios in zip(z, segment_ratios)]
+        segments = [_EquivalentBorehole(
+            (ratios * self.H,
+             self.D + z_i * np.cos(self.tilt),
+             self.r_b,
+             self.x + z_i * np.sin(self.tilt) * np.cos(self.orientation),
+             self.y + z_i * np.sin(self.tilt) * np.sin(self.orientation),
+             self.tilt,
+             self.orientation)
+            ) for z_i, ratios in zip(z, segment_ratios)]
+        return segments
 
     def unique_distance(self, target, disTol=0.01):
         """
