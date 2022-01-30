@@ -205,49 +205,71 @@ def finite_line_source(
         H1, D1 = borehole1.H, borehole1.D
         H2, D2 = borehole2.H, borehole2.D
         if borehole1.is_vertical() and borehole2.is_vertical():
+            # Boreholes are vertical
             dis = borehole1.distance(borehole2)
-            # Integrand of the finite line source solution
-            f = _finite_line_source_integrand(
-                dis, H1, D1, H2, D2, reaSource, imgSource)
+            if time is np.inf:
+                # Steady-state solution
+                h = _finite_line_source_steady_state(
+                    dis, H1, D1, H2, D2, reaSource, imgSource)
+            elif approximation:
+                # Approximation
+                h = finite_line_source_approximation(
+                    time, alpha, dis, H1, D1, H2, D2,
+                    reaSource=reaSource, imgSource=imgSource, N=N)
+            else:
+                # Integrand of the finite line source solution
+                f = _finite_line_source_integrand(
+                    dis, H1, D1, H2, D2, reaSource, imgSource)
+                # Evaluate integral
+                if isinstance(time, (np.floating, float)):
+                    # Lower bound of integration
+                    a = 1.0 / np.sqrt(4.0*alpha*time)
+                    h = 0.5 / H2 * quad(f, a, np.inf)[0]
+                else:
+                    # Lower bound of integration
+                    a = 1.0 / np.sqrt(4.0*alpha*time)
+                    # Upper bound of integration
+                    b = np.concatenate(([np.inf], a[:-1]))
+                    h = np.cumsum(np.stack(
+                        [0.5 / H2 * quad(f, a_i, b_i)[0]
+                         for t, a_i, b_i in zip(time, a, b)],
+                        axis=-1), axis=-1)
         else:
+            # At least one borehole is tilted
+            # Unpack parameters
             x1, y1 = borehole1.x, borehole1.y
             rb1 = borehole1.r_b
             tilt1, orientation1 = borehole1.tilt, borehole1.orientation
             x2, y2 = borehole2.x, borehole2.y
             tilt2, orientation2 = borehole2.tilt, borehole2.orientation
-            # Integrand of the inclined finite line source solution
-            f = _finite_line_source_inclined_integrand(
-                rb1, x1, y1, H1, D1, tilt1, orientation1,
-                x2, y2, H2, D2, tilt2, orientation2,
-                reaSource, imgSource, M)
+            if time is np.inf:
+                # Steady-state solution
+                h = _finite_line_source_inclined_steady_state(
+                    rb1, x1, y1, H1, D1, tilt1, orientation1,
+                    x2, y2, H2, D2, tilt2, orientation2,
+                    reaSource, imgSource, M)
+            else:
+                # Integrand of the inclined finite line source solution
+                f = _finite_line_source_inclined_integrand(
+                    rb1, x1, y1, H1, D1, tilt1, orientation1,
+                    x2, y2, H2, D2, tilt2, orientation2,
+                    reaSource, imgSource, M)
 
-        # Evaluate integral
-        if time is np.inf:
-            h = _finite_line_source_steady_state(
-                dis, H1, D1, H2, D2, reaSource, imgSource)
-        elif isinstance(time, (np.floating, float)):
-            if not approximation:
-                # Lower bound of integration
-                a = 1.0 / np.sqrt(4.0*alpha*time)
-                h = 0.5 / H2 * quad(f, a, np.inf)[0]
-            else:
-                h = finite_line_source_approximation(
-                    time, alpha, dis, H1, D1, H2, D2,
-                    reaSource=reaSource, imgSource=imgSource, N=N)
-        else:
-            if not approximation:
-                # Lower bound of integration
-                a = 1.0 / np.sqrt(4.0*alpha*time)
-                # Upper bound of integration
-                b = np.concatenate(([np.inf], a[:-1]))
-                h = np.cumsum(np.stack(
-                    [0.5 / H2 * quad(f, a_i, b_i)[0]
-                     for t, a_i, b_i in zip(time, a, b)],
-                    axis=-1), axis=-1)
-            else:
-                h = finite_line_source_approximation(
-                    time, alpha, dis, H1, D1, H2, D2,
-                    reaSource=reaSource, imgSource=imgSource, N=N)
+                # Evaluate integral
+                if isinstance(time, (np.floating, float)):
+                    # Lower bound of integration
+                    a = 1.0 / np.sqrt(4.0*alpha*time)
+                    h = 0.5 / H2 * quad(f, a, np.inf)[0]
+                else:
+                    # Lower bound of integration
+                    a = 1.0 / np.sqrt(4.0*alpha*time)
+                    # Upper bound of integration
+                    b = np.concatenate(([np.inf], a[:-1]))
+                    h = np.cumsum(np.stack(
+                        [0.5 / H2 * quad(f, a_i, b_i)[0]
+                         for t, a_i, b_i in zip(time, a, b)],
+                        axis=-1), axis=-1)
+
     else:
         # Unpack parameters
         if isinstance(borehole1, Borehole): borehole1 = [borehole1]
@@ -257,40 +279,56 @@ def finite_line_source(
         x2 = np.array([b.x for b in borehole2])
         y2 = np.array([b.y for b in borehole2])
         r_b = np.array([b.r_b for b in borehole1])
-        dis = np.maximum(np.sqrt(np.add.outer(x2, -x1)**2 + np.add.outer(y2, -y1)**2), r_b)
+        dis = np.maximum(
+            np.sqrt(np.add.outer(x2, -x1)**2 + np.add.outer(y2, -y1)**2),
+            r_b)
         D1 = np.array([b.D for b in borehole1]).reshape(1, -1)
         H1 = np.array([b.H for b in borehole1]).reshape(1, -1)
         D2 = np.array([b.D for b in borehole2]).reshape(-1, 1)
         H2 = np.array([b.H for b in borehole2]).reshape(-1, 1)
 
-        if time is np.inf:
-            h = _finite_line_source_steady_state(
-                dis, H1, D1, H2, D2, reaSource, imgSource)
-        else:
-            if not approximation:
-                if np.all([b.is_vertical() for b in borehole1]) and np.all([b.is_vertical() for b in borehole2]):
-                    # Evaluate integral
-                    h = finite_line_source_vectorized(
-                        time, alpha, dis, H1, D1, H2, D2,
-                        reaSource=reaSource, imgSource=imgSource)
-                else:
-                    x1 = x1.reshape(1, -1)
-                    y1 = y1.reshape(1, -1)
-                    tilt1 = np.array([b.tilt for b in borehole1]).reshape(1, -1)
-                    orientation1 = np.array([b.orientation for b in borehole1]).reshape(1, -1)
-                    x2 = x2.reshape(-1, 1)
-                    y2 = y2.reshape(-1, 1)
-                    tilt2 = np.array([b.tilt for b in borehole2]).reshape(-1, 1)
-                    orientation2 = np.array([b.orientation for b in borehole2]).reshape(-1, 1)
-                    r_b = r_b.reshape(1, -1)
-                    h = finite_line_source_inclined_vectorized(
-                        time, alpha,
-                        r_b, x1, y1, H1, D1, tilt1, orientation1, x2, y2, H2, D2, tilt2, orientation2,
-                        reaSource=reaSource, imgSource=imgSource, M=M)
-            else:
+        if (np.all([b.is_vertical() for b in borehole1])
+            and np.all([b.is_vertical() for b in borehole2])):
+            # All boreholes are vertical
+            if time is np.inf:
+                # Steady-state solution
+                h = _finite_line_source_steady_state(
+                    dis, H1, D1, H2, D2, reaSource, imgSource)
+            elif approximation:
+                # Approximation
                 h = finite_line_source_approximation(
                     time, alpha, dis, H1, D1, H2, D2,
                     reaSource=reaSource, imgSource=imgSource, N=N)
+            else:
+                # Evaluate integral
+                h = finite_line_source_vectorized(
+                    time, alpha, dis, H1, D1, H2, D2,
+                    reaSource=reaSource, imgSource=imgSource)
+        else:
+            # At least one borehole is tilted
+            # Unpack parameters
+            x1 = x1.reshape(1, -1)
+            y1 = y1.reshape(1, -1)
+            tilt1 = np.array([b.tilt for b in borehole1]).reshape(1, -1)
+            orientation1 = np.array([b.orientation for b in borehole1]).reshape(1, -1)
+            x2 = x2.reshape(-1, 1)
+            y2 = y2.reshape(-1, 1)
+            tilt2 = np.array([b.tilt for b in borehole2]).reshape(-1, 1)
+            orientation2 = np.array([b.orientation for b in borehole2]).reshape(-1, 1)
+            r_b = r_b.reshape(1, -1)
+            if time is np.inf:
+                # Steady-state solution
+                h = _finite_line_source_inclined_steady_state(
+                    r_b, x1, y1, H1, D1, tilt1, orientation1,
+                    x2, y2, H2, D2, tilt2, orientation2,
+                    reaSource, imgSource, M)
+            else:
+                # Evaluate integral
+                h = finite_line_source_inclined_vectorized(
+                    time, alpha,
+                    r_b, x1, y1, H1, D1, tilt1, orientation1,
+                    x2, y2, H2, D2, tilt2, orientation2,
+                    reaSource=reaSource, imgSource=imgSource, M=M)
     return h
 
 
@@ -1090,7 +1128,7 @@ def _finite_line_source_equivalent_boreholes_integrand(dis, wDis, H1, D1, H2, D2
 
 def _finite_line_source_steady_state(dis, H1, D1, H2, D2, reaSource, imgSource):
     """
-    Integrand of the finite line source solution.
+    Steady-state finite line source solution.
 
     Parameters
     ----------
@@ -1158,4 +1196,113 @@ def _finite_line_source_steady_state(dis, H1, D1, H2, D2, reaSource, imgSource):
         # No heat source
         h = np.zeros(np.broadcast_shapes(
             *[np.shape(arg) for arg in (dis, H1, D1, H2, D2)]))
+    return h
+
+
+def _finite_line_source_inclined_steady_state(
+        rb1, x1, y1, H1, D1, tilt1, orientation1, x2, y2, H2, D2, tilt2,
+        orientation2, reaSource, imgSource, M):
+    """
+    Steady-state inclined Finite Line Source (FLS) solution.
+
+    Parameters
+    ----------
+    rb1 : array
+        Radii of the emitting heat sources.
+    x1 : float or array
+        x-Positions of the emitting heat sources.
+    y1 : float or array
+        y-Positions of the emitting heat sources.
+    H1 : float or array
+        Lengths of the emitting heat sources.
+    D1 : float or array
+        Buried depths of the emitting heat sources.
+    tilt1 : float or array
+        Angles (in radians) from vertical of the emitting heat sources.
+    orientation1 : float or array
+        Directions (in radians) of the tilt the emitting heat sources.
+    x2 : array
+        x-Positions of the receiving heat sources.
+    y2 : array
+        y-Positions of the receiving heat sources.
+    H2 : float or array
+        Lengths of the receiving heat sources.
+    D2 : float or array
+        Buried depths of the receiving heat sources.
+    tilt2 : float or array
+        Angles (in radians) from vertical of the receiving heat sources.
+    orientation2 : float or array
+        Directions (in radians) of the tilt the receiving heat sources.
+    reaSource : bool
+        True if the real part of the FLS solution is to be included.
+        Default is True.
+    imgSource : bool
+        True if the image part of the FLS solution is to be included.
+    M : int
+        Number of points for the Gauss-Legendre quadrature rule along the
+        receiving heat sources.
+
+    Returns
+    -------
+    h : Steady-state inclined finite line source solution.
+
+    Notes
+    -----
+    All arrays (dis, H1, D1, H2, D2) must follow numpy array broadcasting
+    rules.
+
+    """
+    output_shape = np.broadcast_shapes(
+            *[np.shape(arg) for arg in (
+                rb1, x1, y1, H1, D1, tilt1, orientation1,
+                x2, y2, H2, D2, tilt2, orientation2)])
+    # Roots
+    x, w = roots_legendre(M)
+    u = (0.5 * x + 0.5).reshape((-1,) + (1,) * len(output_shape))
+    w = w / 2
+    # Params
+    sb1 = np.sin(tilt1)
+    sb2 = np.sin(tilt2)
+    cb1 = np.cos(tilt1)
+    cb2 = np.cos(tilt2)
+    dx = x1 - x2
+    dy = y1 - y2
+    # Steady-state solution
+    if reaSource and imgSource:
+        # Full (real + image) FLS solution
+        dzRea = D1 - D2
+        dzImg = D1 + D2
+        rr = np.maximum(dx**2 + dy**2, rb1**2)
+        kRea_0 = sb1 * sb2 * np.cos(orientation1 - orientation2) + cb1 * cb2
+        kImg_0 = sb1 * sb2 * np.cos(orientation1 - orientation2) - cb1 * cb2
+        kRea_1 = sb1 * (np.cos(orientation1) * dx + np.sin(orientation1) * dy) + cb1 * dzRea
+        kImg_1 = sb1 * (np.cos(orientation1) * dx + np.sin(orientation1) * dy) + cb1 * dzImg
+        kRea_2 = sb2 * (np.cos(orientation2) * dx + np.sin(orientation2) * dy) + cb2 * dzRea
+        kImg_2 = sb2 * (np.cos(orientation2) * dx + np.sin(orientation2) * dy) - cb2 * dzImg
+        h = 0.5 * H1 / H2 * ((
+            np.log((2 * H2 * np.sqrt(rr + dzRea**2 + u**2*H1**2 + H2**2 + 2*u*H1*kRea_1 - 2*H2*kRea_2 - 2*u*H1*H2*kRea_0) + 2*H2**2 - 2*H2*kRea_2 - 2*u*H1*H2*kRea_0) / ((2 * H2 * np.sqrt(rr + dzRea**2 + u**2*H1**2 + 2*u*H1*kRea_1) - 2*H2*kRea_2 - 2*u*H1*H2*kRea_0)))
+            - np.log((2 * H2 * np.sqrt(dx**2 + dy**2 + dzImg**2 + u**2*H1**2 + H2**2 + 2*u*H1*kImg_1 - 2*H2*kImg_2 - 2*u*H1*H2*kImg_0) + 2*H2**2 - 2*H2*kImg_2 - 2*u*H1*H2*kImg_0) / ((2 * H2 * np.sqrt(dx**2 + dy**2 + dzImg**2 + u**2*H1**2 + 2*u*H1*kImg_1) - 2*H2*kImg_2 - 2*u*H1*H2*kImg_0)))
+            ).T @ w).T
+    elif reaSource:
+        # Real FLS solution
+        dzRea = D1 - D2
+        rr = np.maximum(dx**2 + dy**2, rb1**2)
+        kRea_0 = sb1 * sb2 * np.cos(orientation1 - orientation2) + cb1 * cb2
+        kRea_1 = sb1 * (np.cos(orientation1) * dx + np.sin(orientation1) * dy) + cb1 * dzRea
+        kRea_2 = sb2 * (np.cos(orientation2) * dx + np.sin(orientation2) * dy) + cb2 * dzRea
+        h = 0.5 * H1 / H2 * ((
+            np.log((2 * H2 * np.sqrt(rr + dzRea**2 + u**2*H1**2 + H2**2 + 2*u*H1*kRea_1 - 2*H2*kRea_2 - 2*u*H1*H2*kRea_0) + 2*H2**2 - 2*H2*kRea_2 - 2*u*H1*H2*kRea_0) / ((2 * H2 * np.sqrt(rr + dzRea**2 + u**2*H1**2 + 2*u*H1*kRea_1) - 2*H2*kRea_2 - 2*u*H1*H2*kRea_0)))
+            ).T @ w).T
+    elif imgSource:
+        # Image FLS solution
+        dzImg = D1 + D2
+        kImg_0 = sb1 * sb2 * np.cos(orientation1 - orientation2) - cb1 * cb2
+        kImg_1 = sb1 * (np.cos(orientation1) * dx + np.sin(orientation1) * dy) + cb1 * dzImg
+        kImg_2 = sb2 * (np.cos(orientation2) * dx + np.sin(orientation2) * dy) - cb2 * dzImg
+        h = 0.5 * H1 / H2 * ((
+            - np.log((2 * H2 * np.sqrt(dx**2 + dy**2 + dzImg**2 + u**2*H1**2 + H2**2 + 2*u*H1*kImg_1 - 2*H2*kImg_2 - 2*u*H1*H2*kImg_0) + 2*H2**2 - 2*H2*kImg_2 - 2*u*H1*H2*kImg_0) / ((2 * H2 * np.sqrt(dx**2 + dy**2 + dzImg**2 + u**2*H1**2 + 2*u*H1*kImg_1) - 2*H2*kImg_2 - 2*u*H1*H2*kImg_0)))
+            ).T @ w).T
+    else:
+        # No heat source
+        h = np.zeros(output_shape)
     return h
