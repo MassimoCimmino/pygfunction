@@ -136,9 +136,14 @@ def finite_line_source(
                     reaSource=reaSource, imgSource=imgSource, N=N)
         else:
             if not approximation:
-                h = np.stack(
-                    [0.5 / H2 * quad(f, 1.0 / np.sqrt(4.0*alpha*t), np.inf)[0] for t in time],
-                    axis=-1)
+                # Lower bound of integration
+                a = 1.0 / np.sqrt(4.0*alpha*time)
+                # Upper bound of integration
+                b = np.concatenate(([np.inf], a[:-1]))
+                h = np.cumsum(np.stack(
+                    [0.5 / H2 * quad(f, a_i, b_i)[0]
+                     for t, a_i, b_i in zip(time, a, b)],
+                    axis=-1), axis=-1)
             else:
                 h = finite_line_source_approximation(
                     time, alpha, dis, H1, D1, H2, D2,
@@ -396,10 +401,14 @@ def finite_line_source_vectorized(
             a = 1.0 / np.sqrt(4.0*alpha*time)
             h = 0.5 / H2 * quad_vec(f, a, np.inf)[0]
         else:
-            h = np.stack(
-                [0.5 / H2 * quad_vec(f, 1.0 / np.sqrt(4.0*alpha*t), np.inf)[0]
-                 for t in time],
-                axis=-1)
+            # Lower bound of integration
+            a = 1.0 / np.sqrt(4.0*alpha*time)
+            # Upper bound of integration
+            b = np.concatenate(([np.inf], a[:-1]))
+            h = np.cumsum(np.stack(
+                [0.5 / H2 * quad_vec(f, a_i, b_i)[0]
+                 for t, a_i, b_i in zip(time, a, b)],
+                axis=-1), axis=-1)
     else:
         h = finite_line_source_approximation(
             time, alpha, dis, H1, D1, H2, D2, reaSource=reaSource,
@@ -506,10 +515,14 @@ def finite_line_source_equivalent_boreholes_vectorized(
         a = 1.0 / np.sqrt(4.0*alpha*time)
         h = 0.5 / (N2*H2) * quad_vec(f, a, np.inf)[0]
     else:
-        h = np.stack(
-            [0.5 / (N2*H2) * quad_vec(f, 1.0 / np.sqrt(4.0*alpha*t), np.inf)[0]
-             for t in time],
-            axis=-1)
+        # Lower bound of integration
+        a = 1.0 / np.sqrt(4.0*alpha*time)
+        # Upper bound of integration
+        b = np.concatenate(([np.inf], a[:-1]))
+        h = np.cumsum(np.stack(
+            [0.5 / (N2*H2) * quad_vec(f, a_i, b_i)[0]
+             for t, a_i, b_i in zip(time, a, b)],
+            axis=-1), axis=-1)
     return h
 
 
