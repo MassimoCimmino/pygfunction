@@ -248,6 +248,12 @@ def finite_line_source(
                     rb1, x1, y1, H1, D1, tilt1, orientation1,
                     x2, y2, H2, D2, tilt2, orientation2,
                     reaSource, imgSource, M)
+            elif approximation:
+                # Approximation
+                h = finite_line_source_inclined_approximation(
+                    time, alpha, rb1, x1, y1, H1, D1, tilt1, orientation1,
+                    x2, y2, H2, D2, tilt2, orientation2,
+                    reaSource=reaSource, imgSource=imgSource, M=M, N=N)
             else:
                 # Integrand of the inclined finite line source solution
                 f = _finite_line_source_inclined_integrand(
@@ -322,6 +328,12 @@ def finite_line_source(
                     r_b, x1, y1, H1, D1, tilt1, orientation1,
                     x2, y2, H2, D2, tilt2, orientation2,
                     reaSource, imgSource, M)
+            elif approximation:
+                # Approximation
+                h = finite_line_source_inclined_approximation(
+                    time, alpha, r_b, x1, y1, H1, D1, tilt1, orientation1,
+                    x2, y2, H2, D2, tilt2, orientation2,
+                    reaSource=reaSource, imgSource=imgSource, M=M, N=N)
             else:
                 # Evaluate integral
                 h = finite_line_source_inclined_vectorized(
@@ -438,6 +450,195 @@ def finite_line_source_approximation(
     G3 = np.inner(p, np.exp(-x3**2) / np.sqrt(np.pi) - x3 * erfc(x3))
 
     h = 0.5 / H2 * (G1 + G3)
+    return h
+
+
+def finite_line_source_inclined_approximation(
+        time, alpha, 
+        rb1, x1, y1, H1, D1, tilt1, orientation1,
+        x2, y2, H2, D2, tilt2, orientation2,
+        reaSource=True, imgSource=True, M=21, N=10):
+    """
+    Evaluate the inclined Finite Line Source (FLS) solution using the
+    approximation method of Cimmino (2021) [#IncFLSApprox-Cimmin2021]_.
+
+    Parameters
+    ----------
+    time : float or array, shape (K)
+        Value of time (in seconds) for which the FLS solution is evaluated.
+    alpha : float
+        Soil thermal diffusivity (in m2/s).
+    rb1 : array
+        Radii of the emitting heat sources.
+    x1 : float or array
+        x-Positions of the emitting heat sources.
+    y1 : float or array
+        y-Positions of the emitting heat sources.
+    H1 : float or array
+        Lengths of the emitting heat sources.
+    D1 : float or array
+        Buried depths of the emitting heat sources.
+    tilt1 : float or array
+        Angles (in radians) from vertical of the emitting heat sources.
+    orientation1 : float or array
+        Directions (in radians) of the tilt the emitting heat sources.
+    x2 : array
+        x-Positions of the receiving heat sources.
+    y2 : array
+        y-Positions of the receiving heat sources.
+    H2 : float or array
+        Lengths of the receiving heat sources.
+    D2 : float or array
+        Buried depths of the receiving heat sources.
+    tilt2 : float or array
+        Angles (in radians) from vertical of the receiving heat sources.
+    orientation2 : float or array
+        Directions (in radians) of the tilt the receiving heat sources.
+    reaSource : bool, optional
+        True if the real part of the FLS solution is to be included.
+        Default is True.
+    imgSource : bool, optional
+        True if the image part of the FLS solution is to be included.
+        Default is true.
+    M : int, optional
+        Number of points for the Gauss-Legendre quadrature rule along the
+        receiving heat sources.
+        Default is 21.
+    N : int, optional
+        Number of terms in the approximation of the FLS solution.
+        Default is 10. Maximum is 25.
+
+    Returns
+    -------
+    h : float
+        Value of the FLS solution. The average (over the length) temperature
+        drop on the wall of borehole2 due to heat extracted from borehole1 is:
+
+        .. math:: \\Delta T_{b,2} = T_g - \\frac{Q_1}{2\\pi k_s H_2} h
+
+    References
+    ----------
+    .. [#IncFLSApprox-Cimmin2021] Cimmino, M. (2021). An approximation of the
+       finite line source solution to model thermal interactions between
+       geothermal boreholes. International Communications in Heat and Mass
+       Transfer, 127, 105496.
+
+    """
+    output_shape = np.broadcast_shapes(
+            *[np.shape(arg) for arg in (
+                rb1, x1, y1, H1, D1, tilt1, orientation1,
+                x2, y2, H2, D2, tilt2, orientation2)])
+    time_shape = np.shape(time)
+    # Roots for Gauss-Legendre quadrature
+    x, w = roots_legendre(M)
+    u = (0.5 * x + 0.5).reshape((-1, 1) + (1,) * len(output_shape))
+    w = w / 2
+    # Coefficients of the approximation of the error function
+    a, b = _erf_coeffs(N)
+    b = b.reshape((1, -1) + (1,) * len(output_shape))
+    # Sines and cosines of tilt (b: beta) and orientation (t: theta)
+    sb1 = np.sin(tilt1)
+    sb2 = np.sin(tilt2)
+    cb1 = np.cos(tilt1)
+    cb2 = np.cos(tilt2)
+    st1 = np.sin(orientation1)
+    st2 = np.sin(orientation2)
+    ct1 = np.cos(orientation1)
+    ct2 = np.cos(orientation2)
+    ct12 = np.cos(orientation1 - orientation2)
+    # Horizontal distances
+    dx = x1 - x2
+    dy = y1 - y2
+    rr = dx**2 + dy**2  # Squared radial distance
+    # Length ratios
+    H_ratio = H1 / H2
+    H_ratio = np.reshape(H_ratio, np.shape(H_ratio) + (1,) * len(time_shape))
+    # Approximation
+    ss = 1. / (4 * alpha * time)
+    if reaSource and imgSource:
+        # Full (real + image) FLS solution
+        # Axial distances
+        dzRea = D1 - D2
+        dzImg = D1 + D2
+        # FLS-inclined coefficients
+        kRea_0 = sb1 * sb2 * ct12 + cb1 * cb2
+        kImg_0 = sb1 * sb2 * ct12 - cb1 * cb2
+        kRea_1 = sb1 * (ct1 * dx + st1 * dy) + cb1 * dzRea
+        kImg_1 = sb1 * (ct1 * dx + st1 * dy) + cb1 * dzImg
+        kRea_2 = sb2 * (ct2 * dx + st2 * dy) + cb2 * dzRea
+        kImg_2 = sb2 * (ct2 * dx + st2 * dy) - cb2 * dzImg
+        dRea_1 = u * H1 * kRea_0 + kRea_2
+        dImg_1 = u * H1 * kImg_0 + kImg_2
+        dRea_2 = u * H1 * kRea_0 + kRea_2 - H2
+        dImg_2 = u * H1 * kImg_0 + kImg_2 - H2
+        cRea = np.maximum(
+            rr + dzRea**2 - dRea_1**2 + (kRea_1 + u * H1)**2 - kRea_1**2,
+            rb1**2)
+        cImg = np.maximum(
+            rr + dzImg**2 - dImg_1**2 + (kImg_1 + u * H1)**2 - kImg_1**2,
+            rb1**2)
+        # Signs for summation
+        pRea_1 = np.sign(dRea_1)
+        pRea_1 = np.reshape(pRea_1, np.shape(pRea_1) + (1,) * len(time_shape))
+        pRea_2 = np.sign(dRea_2)
+        pRea_2 = np.reshape(pRea_2, np.shape(pRea_2) + (1,) * len(time_shape))
+        pImg_1 = np.sign(dImg_1)
+        pImg_1 = np.reshape(pImg_1, np.shape(pImg_1) + (1,) * len(time_shape))
+        pImg_2 = np.sign(dImg_2)
+        pImg_2 = np.reshape(pImg_2, np.shape(pImg_2) + (1,) * len(time_shape))
+        # FLS-inclined approximation
+        h = 0.25 * H_ratio * np.einsum('i,j,ij...', w, a,
+            (pRea_1 * exp1(np.multiply.outer(cRea + b * dRea_1**2, ss)) \
+            - pRea_2 * exp1(np.multiply.outer(cRea + b * dRea_2**2, ss)) \
+            - pImg_1 * exp1(np.multiply.outer(cImg + b * dImg_1**2, ss)) \
+            + pImg_2 * exp1(np.multiply.outer(cImg + b * dImg_2**2, ss))) )
+    elif reaSource:
+        # Real FLS solution
+        # Axial distance
+        dzRea = D1 - D2
+        # FLS-inclined coefficients
+        kRea_0 = sb1 * sb2 * ct12 + cb1 * cb2
+        kRea_1 = sb1 * (ct1 * dx + st1 * dy) + cb1 * dzRea
+        kRea_2 = sb2 * (ct2 * dx + st2 * dy) + cb2 * dzRea
+        dRea_1 = u * H1 * kRea_0 + kRea_2
+        dRea_2 = u * H1 * kRea_0 + kRea_2 - H2
+        cRea = np.maximum(
+            rr + dzRea**2 - dRea_1**2 + (kRea_1 + u * H1)**2 - kRea_1**2,
+            rb1**2)
+        # Signs for summation
+        pRea_1 = np.sign(dRea_1)
+        pRea_1 = np.reshape(pRea_1, np.shape(pRea_1) + (1,) * len(time_shape))
+        pRea_2 = np.sign(dRea_2)
+        pRea_2 = np.reshape(pRea_2, np.shape(pRea_2) + (1,) * len(time_shape))
+        # FLS-inclined approximation
+        h = 0.25 * H_ratio * np.einsum('i,j,ij...', w, a,
+            (pRea_1 * exp1(np.multiply.outer(cRea + b * dRea_1**2, ss)) \
+            - pRea_2 * exp1(np.multiply.outer(cRea + b * dRea_2**2, ss))) )
+    elif imgSource:
+        # Image FLS solution
+        # Axial distance
+        dzImg = D1 + D2
+        # FLS-inclined coefficients
+        kImg_0 = sb1 * sb2 * ct12 - cb1 * cb2
+        kImg_1 = sb1 * (ct1 * dx + st1 * dy) + cb1 * dzImg
+        kImg_2 = sb2 * (ct2 * dx + st2 * dy) - cb2 * dzImg
+        dImg_1 = u * H1 * kImg_0 + kImg_2
+        dImg_2 = u * H1 * kImg_0 + kImg_2 - H2
+        cImg = np.maximum(
+            rr + dzImg**2 - dImg_1**2 + (kImg_1 + u * H1)**2 - kImg_1**2,
+            rb1**2)
+        # Signs for summation
+        pImg_1 = np.sign(dImg_1)
+        pImg_1 = np.reshape(pImg_1, np.shape(pImg_1) + (1,) * len(time_shape))
+        pImg_2 = np.sign(dImg_2)
+        pImg_2 = np.reshape(pImg_2, np.shape(pImg_2) + (1,) * len(time_shape))
+        # FLS-inclined approximation
+        h = 0.25 * H_ratio * np.einsum('i,j,ij...', w, a,
+            (-pImg_1 * exp1(np.multiply.outer(cImg + b * dImg_1**2, ss)) \
+            + pImg_2 * exp1(np.multiply.outer(cImg + b * dImg_2**2, ss))) )
+    else:
+        # No heat source
+        h = np.zeros(output_shape + np.shape(time))
     return h
 
 
@@ -683,7 +884,7 @@ def finite_line_source_inclined_vectorized(
         time, alpha,
         rb1, x1, y1, H1, D1, tilt1, orientation1,
         x2, y2, H2, D2, tilt2, orientation2,
-        reaSource=True, imgSource=True, M=21):
+        reaSource=True, imgSource=True, M=21, approximation=False, N=10):
     """
     Evaluate the inclined Finite Line Source (FLS) solution.
 
@@ -804,6 +1005,15 @@ def finite_line_source_inclined_vectorized(
         Number of points for the Gauss-Legendre quadrature rule along the
         receiving heat sources.
         Default is 21.
+    approximation : bool, optional
+        Set to true to use the approximation of the FLS solution of Cimmino
+        (2021) [#FLSVec-Cimmin2021]_. This approximation does not require
+        the numerical evaluation of any integral.
+        Default is False.
+    N : int, optional
+        Number of terms in the approximation of the FLS solution. This
+        parameter is unused if `approximation` is set to False.
+        Default is 10. Maximum is 25.
 
     Returns
     -------
@@ -825,49 +1035,55 @@ def finite_line_source_inclined_vectorized(
        1380-1393.
 
     """
-    # Integrand of the inclined finite line source solution
-    # Real part
-    fRea = _finite_line_source_inclined_integrand(
-        rb1, x1, y1, H1, D1, tilt1, orientation1,
-        x2, y2, H2, D2, tilt2, orientation2,
-        reaSource, False, M)
-    # Image part
-    fImg = _finite_line_source_inclined_integrand(
-        rb1, x1, y1, H1, D1, tilt1, orientation1,
-        x2, y2, H2, D2, tilt2, orientation2,
-        False, imgSource, M)
-    # Both parts
-    fReaImg = _finite_line_source_inclined_integrand(
-        rb1, x1, y1, H1, D1, tilt1, orientation1,
-        x2, y2, H2, D2, tilt2, orientation2,
-        reaSource, imgSource, M)
-
-    # Evaluate integral
-    if isinstance(time, (np.floating, float)):
-        # Lower bound of integration
-        a = 1.0 / np.sqrt(4.0*alpha*time)
-        h = 0.5 / H2 * (quad_vec(fRea, a, np.inf, epsabs=1e-4, epsrel=1e-6)[0] \
-            + quad_vec(fImg, a, np.inf, epsabs=1e-4, epsrel=1e-6)[0])
+    if not approximation:
+        # Integrand of the inclined finite line source solution
+        # Real part
+        fRea = _finite_line_source_inclined_integrand(
+            rb1, x1, y1, H1, D1, tilt1, orientation1,
+            x2, y2, H2, D2, tilt2, orientation2,
+            reaSource, False, M)
+        # Image part
+        fImg = _finite_line_source_inclined_integrand(
+            rb1, x1, y1, H1, D1, tilt1, orientation1,
+            x2, y2, H2, D2, tilt2, orientation2,
+            False, imgSource, M)
+        # Both parts
+        fReaImg = _finite_line_source_inclined_integrand(
+            rb1, x1, y1, H1, D1, tilt1, orientation1,
+            x2, y2, H2, D2, tilt2, orientation2,
+            reaSource, imgSource, M)
+    
+        # Evaluate integral
+        if isinstance(time, (np.floating, float)):
+            # Lower bound of integration
+            a = 1.0 / np.sqrt(4.0*alpha*time)
+            h = 0.5 / H2 * (quad_vec(fRea, a, np.inf, epsabs=1e-4, epsrel=1e-6)[0] \
+                + quad_vec(fImg, a, np.inf, epsabs=1e-4, epsrel=1e-6)[0])
+        else:
+            # The real and image parts are split to avoid overflow in the integrand
+            # function
+            # Lower bound of integration
+            a = 1.0 / np.sqrt(4.0*alpha*time)
+            # Upper bound of integration
+            b = np.concatenate(([np.inf], a[:-1]))
+            h = np.cumsum(
+                np.stack(
+                    [0.5 / H2 * (
+                        quad_vec(
+                            fRea, a_i, b_i, epsabs=1e-4, epsrel=1e-6)[0]
+                        + quad_vec(
+                            fImg, a_i, b_i, epsabs=1e-4, epsrel=1e-6)[0])
+                     if i==0
+                     else 0.5 / H2 * quad_vec(
+                         fReaImg, a_i, b_i, epsabs=1e-4, epsrel=1e-6)[0]
+                     for i, (a_i, b_i) in enumerate(zip(a, b))],
+                    axis=-1),
+                axis=-1)
     else:
-        # The real and image parts are split to avoid overflow in the integrand
-        # function
-        # Lower bound of integration
-        a = 1.0 / np.sqrt(4.0*alpha*time)
-        # Upper bound of integration
-        b = np.concatenate(([np.inf], a[:-1]))
-        h = np.cumsum(
-            np.stack(
-                [0.5 / H2 * (
-                    quad_vec(
-                        fRea, a_i, b_i, epsabs=1e-4, epsrel=1e-6)[0]
-                    + quad_vec(
-                        fImg, a_i, b_i, epsabs=1e-4, epsrel=1e-6)[0])
-                 if i==0
-                 else 0.5 / H2 * quad_vec(
-                     fReaImg, a_i, b_i, epsabs=1e-4, epsrel=1e-6)[0]
-                 for i, (a_i, b_i) in enumerate(zip(a, b))],
-                axis=-1),
-            axis=-1)
+        h = finite_line_source_inclined_approximation(
+            time, alpha, rb1, x1, y1, H1, D1, tilt1, orientation1,
+            x2, y2, H2, D2, tilt2, orientation2,
+            reaSource=reaSource, imgSource=imgSource, M=M, N=N)
     return h
 
 

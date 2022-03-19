@@ -2095,7 +2095,8 @@ class _Detailed(_BaseSolver):
                 r_b[i_segment], x[i_segment], y[i_segment], H[i_segment],
                 D[i_segment], tilt[i_segment], orientation[i_segment],
                 x[j_segment], y[j_segment], H[j_segment], D[j_segment],
-                tilt[j_segment], orientation[j_segment], M=self.mQuad)
+                tilt[j_segment], orientation[j_segment], M=self.mQuad,
+                approximation=self.approximate_FLS, N=self.nFLS)
         return h_ii, i_segment, j_segment
         
 
@@ -2355,7 +2356,8 @@ class _Similarities(_BaseSolver):
         # Evaluate FLS at all time steps
         h = finite_line_source_inclined_vectorized(
             time, alpha, rb1, x1, y1, H1, D1, tilt1, orientation1,
-            x2, y2, H2, D2, tilt2, orientation2, M=self.mQuad)
+            x2, y2, H2, D2, tilt2, orientation2, M=self.mQuad,
+            approximation=self.approximate_FLS, N=self.nFLS)
         # Broadcast values to h_ij matrix
         h_ij[j_segment, i_segment, 1:] = h[k_segment, :]
         # ---------------------------------------------------------------------
@@ -2446,7 +2448,8 @@ class _Similarities(_BaseSolver):
         # Evaluate FLS at all time steps
         h = finite_line_source_inclined_vectorized(
             time, alpha, rb1, x1, y1, H1, D1, tilt1, orientation1,
-            x2, y2, H2, D2, tilt2, orientation2, M=self.mQuad)
+            x2, y2, H2, D2, tilt2, orientation2, M=self.mQuad,
+            approximation=self.approximate_FLS, N=self.nFLS)
         # Broadcast values to h_ij matrix
         h_ij[j_segment, i_segment, 1:] = h[k_segment, :]
         h_ij[i_segment, j_segment, 1:] = (h.T * H2 / H1).T[k_segment, :]
