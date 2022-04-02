@@ -2517,7 +2517,7 @@ class _Similarities(_BaseSolver):
         if (abs((borehole1.H - borehole2.H)/borehole1.H) < self.tol and
             abs((borehole1.r_b - borehole2.r_b)/borehole1.r_b) < self.tol and
             abs((borehole1.D - borehole2.D)/(borehole1.D + 1e-30)) < self.tol and
-            abs((borehole1.tilt - borehole2.tilt)/(borehole1.tilt + 1e-30)) < self.tol):
+            abs(abs(borehole1.tilt) - abs(borehole2.tilt))/(abs(borehole1.tilt) + 1e-30) < self.tol):
             similarity = True
         else:
             similarity = False
