@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.constants import pi
 
-from .utilities import _initialize_figure, _format_axes, _format_axes_3d
+from .utilities import _initialize_figure, _format_axes, _format_axes_3d, compute_angle_to
 
 
 class Borehole(object):
@@ -628,7 +628,7 @@ def remove_duplicates(boreField, disp=False):
     return new_boreField
 
 
-def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b):
+def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0.):
     """
     Build a list of boreholes in a rectangular bore field configuration.
 
@@ -648,6 +648,9 @@ def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b):
         Borehole buried depth (in meters).
     r_b : float
         Borehole radius (in meters).
+    tilt : float
+        Angle (in radians) from vertical of the axis of the borehole. The
+        orientation of the tilt is towards the exterior of the bore field.
 
     Returns
     -------
@@ -669,9 +672,21 @@ def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b):
     """
     borefield = []
 
+    # Compute additional parameters for tilt
+    length_1 = (N_1 - 1) * B_1  # Total length in the "1" direction
+    length_2 = (N_2 - 1) * B_2  # Total length in the "2" direction
+    center = (length_1 / 2., length_2 / 2.)  # Compute the center point that all boreholes will orient away from
+
     for j in range(N_2):
         for i in range(N_1):
-            borefield.append(Borehole(H, D, r_b, x=i*B_1, y=j*B_2))
+            x = i * B_1
+            y = j * B_2
+            orientation = compute_angle_to((x, y), origin=center)
+            if orientation == 0.0:
+                # Don't apply a tilt to the borehole if it's at the center
+                borefield.append(Borehole(H, D, r_b, x=i*B_1, y=j*B_2, tilt=0., orientation=orientation))
+            else:
+                borefield.append(Borehole(H, D, r_b, x=i * B_1, y=j * B_2, tilt=tilt, orientation=orientation))
 
     return borefield
 

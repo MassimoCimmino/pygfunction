@@ -7,6 +7,7 @@
 
 import pygfunction as gt
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def main():
@@ -14,8 +15,6 @@ def main():
     # Simulation parameters
     # -------------------------------------------------------------------------
 
-    # Number of boreholes
-    nBoreholes = 5
     # Borehole dimensions
     D = 4.0  # Borehole buried depth (m)
     # Borehole length (m)
@@ -23,34 +22,71 @@ def main():
     r_b = 0.075  # Borehole radius (m)
     B = 7.5  # Borehole spacing (m)
 
-    # Pipe dimensions
-    r_out = 0.02  # Pipe outer radius (m)
-    r_in = 0.015  # Pipe inner radius (m)
-    D_s = 0.05  # Shank spacing (m)
-    epsilon = 1.0e-6  # Pipe roughness (m)
+    # Inclination parameters
+    tilt = 15.  # Angle (in radians) from vertical of the axis of the borehole
+    # Orientation is computed later in this example
 
-    # Pipe positions
-    # Single U-tube [(x_in, y_in), (x_out, y_out)]
-    pos_pipes = [(-D_s, 0.), (D_s, 0.)]
+    # Thermal properties
+    alpha = 1.0e-6      # Ground thermal diffusivity (m2/s)
 
-    # Ground properties
-    k_s = 2.0  # Ground thermal conductivity (W/m.K)
+    # g-Function calculation options
+    options = {'nSegments': 8, 'disp': True}
 
-    # Grout properties
-    k_g = 1.0  # Grout thermal conductivity (W/m.K)
+    # Geometrically expanding time vector.
+    dt = 100*3600.                  # Time step
+    tmax = 3000. * 8760. * 3600.    # Maximum time
+    Nt = 15                         # Number of time steps
+    ts = H**2/(9.*alpha)            # Bore field characteristic time
+    time = gt.utilities.time_geometric(dt, tmax, Nt)
+    lntts = np.log(time/ts)  # Unused in this script
 
-    # Pipe properties
-    k_p = 0.4  # Pipe thermal conductivity (W/m.K)
+    # ------------------------------------------------------------------------------------------------------------------
+    # Custom tilted field creation
+    # ------------------------------------------------------------------------------------------------------------------
+    # Create a "diamond" or rhombus shaped field with each borehole tilting 15 degrees with an orientation based on the
+    # cardinal direction. For example, the top borehole will orient north, the right borehole will orient east, etc.
 
-    # Fluid properties
-    # Total fluid mass flow rate per borehole (kg/s)
-    m_flow_borehole = 1.0
-    # The fluid is propylene-glycol (20 %) at 20 degC
-    fluid = gt.media.Fluid('MPG', 20.)
-    cp_f = fluid.cp  # Fluid specific isobaric heat capacity (J/kg.K)
-    rho_f = fluid.rho  # Fluid density (kg/m3)
-    mu_f = fluid.mu  # Fluid dynamic viscosity (kg/m.s)
-    k_f = fluid.k  # Fluid thermal conductivity (W/m.K)
+    north = np.pi / 2.  # Northern orientation in radians
+    east = 0.  # Eastern orientation in radians
+    south = -np.pi / 2.  # Southern orientation in radians
+    west = np.pi  # Western orientation in radians
+
+    # A borehole field is a list of boreholes
+    diamond_field = [gt.boreholes.Borehole(H, D, r_b, 0., B, tilt=tilt, orientation=north),
+                     gt.boreholes.Borehole(H, D, r_b, B, 0., tilt=tilt, orientation=east),
+                     gt.boreholes.Borehole(H, D, r_b, 0., -B, tilt=tilt, orientation=south),
+                     gt.boreholes.Borehole(H, D, r_b, -B, 0., tilt=tilt, orientation=west)]
+
+    # Visualize the borehole field
+    fig = gt.boreholes.visualize_field(diamond_field)
+    # fig.show() will show the plot in a temporary window
+    # fig.savefig('diamond_field.png') will save a high resolution png to the current directory
+    plt.close(fig)  # Closing the figure given that several more figures will be opened in the example
+
+    # Compute a uniform borehole wall temperature g-function with the custom borehole field
+    # NOTE: Inclined boreholes currently are only supported with the detailed solver method
+    gfunc = gt.gfunction.gFunction(
+        diamond_field, alpha, time=time, boundary_condition='UBWT', options=options, method='detailed')
+    # Visualize the g-function
+    fig = gfunc.visualize_g_function()
+    plt.close(fig)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # Utilize pygfunction tilted field creation
+    # ------------------------------------------------------------------------------------------------------------------
+    # NOTE: The built in borehole field creation functions automatically compute orientation.
+
+    # Rectangular field (2 x 2)
+    rectangular_field = gt.boreholes.rectangle_field(2, 2, B, B, H, D, r_b, tilt=tilt)
+
+    fig = gt.boreholes.visualize_field(rectangular_field)
+    plt.close(fig)
+
+    # Compute a uniform borehole wall temperature g-function for the rectangular borehole field
+    gfunc = gt.gfunction.gFunction(
+        rectangular_field, alpha, time=time, boundary_condition='UBWT', options=options, method='detailed')
+    fig = gfunc.visualize_g_function()
+    plt.close(fig)
 
 
 # Main function
