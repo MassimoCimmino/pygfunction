@@ -22,6 +22,11 @@ def cardinal_point(direction):
     return compass[direction]
 
 
+def length_of_side(N, B):
+    L = (N - 1) * B
+    return L
+
+
 def erfint(x):
     """
     Integral of the error function.
