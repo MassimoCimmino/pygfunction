@@ -6,48 +6,20 @@ from scipy.special import erf
 import warnings
 
 
-def compute_angle_to(coordinate, origin=(0., 0.)):
-    """
-    Compute the angle from the origin to a requested coordinate.
-
-    Parameters
-    ----------
-    coordinate : tuple
-               A coordinate in the (x, y) plane.
-    origin : tuple
-           The origin coordinate to calculate the angle from.
-
-    Returns
-    -------
-    angle : float
-          The angle from the origin to the coordinate in radians.
-    """
-    delta_x = (coordinate[0] - origin[0])
-    delta_y = (coordinate[1] - origin[1])
-
-    # Make sure the inverse tangent don't get a divisible by 0.0 error
-    if delta_x == 0.0:
-        delta_x = 1.0e-15  # Very small number
-
-    # Check to see if the coordinate is at the origin, in which case don't apply an orientation
-    if abs(delta_x) < 1.0e-6 and abs(delta_y) < 1.0e-6:
-        return 0.0
-
-    angle = np.arctan(delta_y / delta_x)
-
-    # Quadrant check
-    if delta_x > 0. and delta_y > 0.:
-        # Quadrant 1
-        return angle
-    elif delta_x > 0. and delta_y < 0.:
-        # Quadrant 2
-        return angle
-    elif delta_x < 0. and delta_y < 0.:
-        # Quadrant 3
-        return angle + np.pi
-    else:
-        # Quadrant 4
-        return angle + np.pi
+def cardinal_point(direction):
+    accepted_inputs = ['E', 'ENE', 'NE', 'NNE',
+                       'N', 'NNW', 'NW', 'WNW',
+                       'W', 'WSW', 'SW', 'SSW',
+                       'S', 'SSE', 'SE', 'ESE']
+    direction = direction.upper()
+    if direction not in accepted_inputs:
+        raise ValueError("The indicated direction {} is not encompassed in the "
+                         "cardinal point function.".format(direction))
+    # Create the cardinal compass
+    compass = {}
+    for i, pointer in enumerate(accepted_inputs):
+        compass[pointer] = float(i) * np.pi / 8.
+    return compass[direction]
 
 
 def erfint(x):

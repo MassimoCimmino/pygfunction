@@ -23,7 +23,7 @@ def main():
     B = 7.5  # Borehole spacing (m)
 
     # Inclination parameters
-    tilt = 15.  # Angle (in radians) from vertical of the axis of the borehole
+    tilt = 20. * np.pi / 180.  # Angle (in radians) from vertical of the axis of the borehole
     # Orientation is computed later in this example
 
     # Thermal properties
@@ -43,30 +43,38 @@ def main():
     # ------------------------------------------------------------------------------------------------------------------
     # Custom tilted field creation
     # ------------------------------------------------------------------------------------------------------------------
-    # Create a "diamond" or rhombus shaped field with each borehole tilting 15 degrees with an orientation based on the
-    # cardinal direction. For example, the top borehole will orient north, the right borehole will orient east, etc.
+    """
+    This field is an optimal configuration discussed in Claesson and Eskilson (1987).
+    
+    Claesson, J. and Eskilson, P. (1987). Conductive Heat Extraction by Thermally Interacting Deep Boreholes. Lund 
+    Institute of Technology, Lund, Sweden. PhD Thesis Chapter 3.   
+    """
+    # Make a list of angles utilized in Figure 5J on page 22 going from left to right.
+    west = gt.utilities.cardinal_point('W')  # Western orientation in radians
+    northwest = gt.utilities.cardinal_point('NW')
+    southwest = gt.utilities.cardinal_point('SW')
+    north = gt.utilities.cardinal_point('N')  # Northern orientation in radians
+    south = gt.utilities.cardinal_point('S')  # Southern orientation in radians
+    northeast = gt.utilities.cardinal_point('NE')
+    southeast = gt.utilities.cardinal_point('SE')
+    east = gt.utilities.cardinal_point('E')  # Eastern orientation in radians
+    bore_orientations = [west, northwest, southwest, north, south, northeast, southeast, east]
 
-    north = np.pi / 2.  # Northern orientation in radians
-    east = 0.  # Eastern orientation in radians
-    south = -np.pi / 2.  # Southern orientation in radians
-    west = np.pi  # Western orientation in radians
-
-    # A borehole field is a list of boreholes
-    diamond_field = [gt.boreholes.Borehole(H, D, r_b, 0., B, tilt=tilt, orientation=north),
-                     gt.boreholes.Borehole(H, D, r_b, B, 0., tilt=tilt, orientation=east),
-                     gt.boreholes.Borehole(H, D, r_b, 0., -B, tilt=tilt, orientation=south),
-                     gt.boreholes.Borehole(H, D, r_b, -B, 0., tilt=tilt, orientation=west)]
+    optimal_field = []
+    for i, orientation in enumerate(bore_orientations):
+        borehole = gt.boreholes.Borehole(H, D, r_b, float(i) * B, 0., tilt=tilt, orientation=orientation)
+        optimal_field.append(borehole)
 
     # Visualize the borehole field
-    fig = gt.boreholes.visualize_field(diamond_field)
+    fig = gt.boreholes.visualize_field(optimal_field)
     # fig.show() will show the plot in a temporary window
     # fig.savefig('diamond_field.png') will save a high resolution png to the current directory
     plt.close(fig)  # Closing the figure given that several more figures will be opened in the example
 
     # Compute a uniform borehole wall temperature g-function with the custom borehole field
-    # NOTE: Inclined boreholes currently are only supported with the detailed solver method
+    # NOTE: Inclined boreholes currently are only supported with the detailed and similarities solver methods.
     gfunc = gt.gfunction.gFunction(
-        diamond_field, alpha, time=time, boundary_condition='UBWT', options=options, method='detailed')
+        optimal_field, alpha, time=time, boundary_condition='UBWT', options=options, method='similarities')
     # Visualize the g-function
     fig = gfunc.visualize_g_function()
     plt.close(fig)
