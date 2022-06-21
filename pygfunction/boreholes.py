@@ -852,9 +852,10 @@ def circle_field(N, R, H, D, r_b, tilt=0.):
         Borehole buried depth (in meters).
     r_b : float
         Borehole radius (in meters).
-    tilt : float
+    tilt : float, optional
         Angle (in radians) from vertical of the axis of the borehole. The
         orientation of the tilt is towards the exterior of the bore field.
+        Default is 0.
 
     Returns
     -------
@@ -882,8 +883,14 @@ def circle_field(N, R, H, D, r_b, tilt=0.):
 
     for i in range(N):
         borefield.append(
-            Borehole(H, D, r_b, x=R*np.cos(2*pi*i/N), y=R*np.sin(2*pi*i/N),
-                     tilt=tilt, orientation=2*pi*i/N))
+            Borehole(
+                H,
+                D,
+                r_b,
+                x=R*np.cos(2*pi*i/N),
+                y=R*np.sin(2*pi*i/N),
+                tilt=tilt,
+                orientation=2*pi*i/N))
 
     return borefield
 
@@ -939,16 +946,16 @@ def visualize_field(
     ----------
     borefield : list
         List of boreholes in the bore field.
-    viewTop : bool
+    viewTop : bool, optional
         Set to True to plot top view.
         Default is True
-    view3D : bool
+    view3D : bool, optional
         Set to True to plot 3D view.
         Default is True
-    labels : bool
+    labels : bool, optional
         Set to True to annotate borehole indices to top view plot.
         Default is True
-    showTilt : bool
+    showTilt : bool, optional
         Set to True to show borehole inclination on top view plot.
         Default is True
 
@@ -987,12 +994,17 @@ def visualize_field(
     if viewTop:
         i = 0   # Initialize borehole index
         for borehole in borefield:
-            (x, y) = borehole.position()    # Extract borehole position
+            # Extract borehole parameters
+            (x, y) = borehole.position()
+            H = borehole.H
+            tilt = borehole.tilt
+            orientation = borehole.orientation
             # Add current borehole to the figure
             if showTilt:
-                ax1.plot([x, x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
-                         [y, y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
-                         'k--')
+                ax1.plot(
+                    [x, x + H * np.sin(tilt) * np.cos(orientation)],
+                    [y, y + H * np.sin(tilt) * np.sin(orientation)],
+                    'k--')
             ax1.plot(x, y, 'ko')
             if labels: ax1.text(x, y,
                                 f' {i}',

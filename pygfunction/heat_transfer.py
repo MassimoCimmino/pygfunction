@@ -237,11 +237,13 @@ def finite_line_source(
         else:
             # At least one borehole is tilted
             # Unpack parameters
-            x1, y1 = borehole1.x, borehole1.y
+            x1, y1 = borehole1.position()
             rb1 = borehole1.r_b
-            tilt1, orientation1 = borehole1.tilt, borehole1.orientation
-            x2, y2 = borehole2.x, borehole2.y
-            tilt2, orientation2 = borehole2.tilt, borehole2.orientation
+            tilt1 = borehole1.tilt
+            orientation1 = borehole1.orientation
+            x2, y2 = borehole2.position()
+            tilt2 = borehole2.tilt
+            orientation2 = borehole2.orientation
             if time is np.inf:
                 # Steady-state solution
                 h = _finite_line_source_inclined_steady_state(
@@ -367,10 +369,10 @@ def finite_line_source_approximation(
         Lengths of the receiving heat sources.
     D2 : float or array
         Buried depths of the receiving heat sources.
-    reaSource : bool
+    reaSource : bool, optional
         True if the real part of the FLS solution is to be included.
         Default is True.
-    imgSource : bool
+    imgSource : bool, optional
         True if the image part of the FLS solution is to be included.
         Default is True.
     N : int, optional
@@ -524,18 +526,24 @@ def finite_line_source_inclined_approximation(
        Transfer, 127, 105496.
 
     """
+    # Expected output shape of h, excluding time
     output_shape = np.broadcast_shapes(
             *[np.shape(arg) for arg in (
                 rb1, x1, y1, H1, D1, tilt1, orientation1,
                 x2, y2, H2, D2, tilt2, orientation2)])
+    # Number of dimensions of the output, excluding time
+    ouput_ndim = len(output_shape)
+    # Shape of the time variable
     time_shape = np.shape(time)
+    # Number of dimensions of the time variable
+    time_ndim = len(time_shape)
     # Roots for Gauss-Legendre quadrature
     x, w = roots_legendre(M)
-    u = (0.5 * x + 0.5).reshape((-1, 1) + (1,) * len(output_shape))
+    u = (0.5 * x + 0.5).reshape((-1, 1) + (1,) * ouput_ndim)
     w = w / 2
     # Coefficients of the approximation of the error function
     a, b = _erf_coeffs(N)
-    b = b.reshape((1, -1) + (1,) * len(output_shape))
+    b = b.reshape((1, -1) + (1,) * ouput_ndim)
     # Sines and cosines of tilt (b: beta) and orientation (t: theta)
     sb1 = np.sin(tilt1)
     sb2 = np.sin(tilt2)
@@ -552,7 +560,7 @@ def finite_line_source_inclined_approximation(
     rr = dx**2 + dy**2  # Squared radial distance
     # Length ratios
     H_ratio = H1 / H2
-    H_ratio = np.reshape(H_ratio, np.shape(H_ratio) + (1,) * len(time_shape))
+    H_ratio = np.reshape(H_ratio, np.shape(H_ratio) + (1,) * time_ndim)
     # Approximation
     ss = 1. / (4 * alpha * time)
     if reaSource and imgSource:
@@ -579,13 +587,13 @@ def finite_line_source_inclined_approximation(
             rb1**2)
         # Signs for summation
         pRea_1 = np.sign(dRea_1)
-        pRea_1 = np.reshape(pRea_1, np.shape(pRea_1) + (1,) * len(time_shape))
+        pRea_1 = np.reshape(pRea_1, np.shape(pRea_1) + (1,) * time_ndim)
         pRea_2 = np.sign(dRea_2)
-        pRea_2 = np.reshape(pRea_2, np.shape(pRea_2) + (1,) * len(time_shape))
+        pRea_2 = np.reshape(pRea_2, np.shape(pRea_2) + (1,) * time_ndim)
         pImg_1 = np.sign(dImg_1)
-        pImg_1 = np.reshape(pImg_1, np.shape(pImg_1) + (1,) * len(time_shape))
+        pImg_1 = np.reshape(pImg_1, np.shape(pImg_1) + (1,) * time_ndim)
         pImg_2 = np.sign(dImg_2)
-        pImg_2 = np.reshape(pImg_2, np.shape(pImg_2) + (1,) * len(time_shape))
+        pImg_2 = np.reshape(pImg_2, np.shape(pImg_2) + (1,) * time_ndim)
         # FLS-inclined approximation
         h = 0.25 * H_ratio * np.einsum('i,j,ij...', w, a,
             (pRea_1 * exp1(np.multiply.outer(cRea + b * dRea_1**2, ss)) \
@@ -607,9 +615,9 @@ def finite_line_source_inclined_approximation(
             rb1**2)
         # Signs for summation
         pRea_1 = np.sign(dRea_1)
-        pRea_1 = np.reshape(pRea_1, np.shape(pRea_1) + (1,) * len(time_shape))
+        pRea_1 = np.reshape(pRea_1, np.shape(pRea_1) + (1,) * time_ndim)
         pRea_2 = np.sign(dRea_2)
-        pRea_2 = np.reshape(pRea_2, np.shape(pRea_2) + (1,) * len(time_shape))
+        pRea_2 = np.reshape(pRea_2, np.shape(pRea_2) + (1,) * time_ndim)
         # FLS-inclined approximation
         h = 0.25 * H_ratio * np.einsum('i,j,ij...', w, a,
             (pRea_1 * exp1(np.multiply.outer(cRea + b * dRea_1**2, ss)) \
@@ -629,16 +637,16 @@ def finite_line_source_inclined_approximation(
             rb1**2)
         # Signs for summation
         pImg_1 = np.sign(dImg_1)
-        pImg_1 = np.reshape(pImg_1, np.shape(pImg_1) + (1,) * len(time_shape))
+        pImg_1 = np.reshape(pImg_1, np.shape(pImg_1) + (1,) * time_ndim)
         pImg_2 = np.sign(dImg_2)
-        pImg_2 = np.reshape(pImg_2, np.shape(pImg_2) + (1,) * len(time_shape))
+        pImg_2 = np.reshape(pImg_2, np.shape(pImg_2) + (1,) * time_ndim)
         # FLS-inclined approximation
         h = 0.25 * H_ratio * np.einsum('i,j,ij...', w, a,
             (-pImg_1 * exp1(np.multiply.outer(cImg + b * dImg_1**2, ss)) \
             + pImg_2 * exp1(np.multiply.outer(cImg + b * dImg_2**2, ss))) )
     else:
         # No heat source
-        h = np.zeros(output_shape + np.shape(time))
+        h = np.zeros(ouput_ndim + np.shape(time))
     return h
 
 
@@ -1060,8 +1068,8 @@ def finite_line_source_inclined_vectorized(
             h = 0.5 / H2 * (quad_vec(fRea, a, np.inf, epsabs=1e-4, epsrel=1e-6)[0] \
                 + quad_vec(fImg, a, np.inf, epsabs=1e-4, epsrel=1e-6)[0])
         else:
-            # The real and image parts are split to avoid overflow in the integrand
-            # function
+            # The real and image parts are split to avoid overflow in the
+            # integrand function
             # Lower bound of integration
             a = 1.0 / np.sqrt(4.0*alpha*time)
             # Upper bound of integration
