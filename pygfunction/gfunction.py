@@ -169,6 +169,10 @@ class gFunction(object):
                 method.
                 Default is 1.
 
+    Notes
+    -----
+    The 'equivalent' solver does not support inclined boreholes.
+
     References
     ----------
     .. [#gFunction-CimBer2014] Cimmino, M., & Bernier, M. (2014). A
@@ -4056,6 +4060,8 @@ class _Equivalent(_BaseSolver):
             "Solver 'equivalent' can only handle equal numbers of segments."
         assert np.all([np.allclose(segment_ratios, self.segment_ratios[0]) for segment_ratios in self.segment_ratios]), \
             "Solver 'equivalent' can only handle identical segment_ratios for all boreholes."
+        assert not np.any([b.is_tilted() for b in self.boreholes]), \
+            "Solver 'equivalent' can only handle vertical boreholes."
         if self.boundary_condition == 'MIFT':
             assert np.all(np.array(self.network.c, dtype=int) == -1), \
                 "Solver 'equivalent' is only valid for parallel-connected " \
