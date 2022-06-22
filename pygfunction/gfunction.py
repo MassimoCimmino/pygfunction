@@ -1960,7 +1960,7 @@ class _Detailed(_BaseSolver):
         of thermal response factors, containing a copy of the matrix accessible
         by h_ij.y[:nSources,:nSources,:nt+1]. The first index along the
         third axis corresponds to time t=0. The interp1d object can be used to
-        obtain thermal response factors at any intermediat time by
+        obtain thermal response factors at any intermediate time by
         h_ij(t)[:nSources,:nSources].
 
         Attributes
@@ -1997,22 +1997,17 @@ class _Detailed(_BaseSolver):
         # Segment-to-segment thermal response factors for same-borehole
         # thermal interactions
         # ---------------------------------------------------------------------
-        h_ii, i_segment, j_segment = \
+        h, i_segment, j_segment = \
             self._thermal_response_factors_borehole_to_self(time, alpha)
         # Broadcast values to h_ij matrix
-        h_ij[j_segment, i_segment, 1:] = h_ii
+        h_ij[j_segment, i_segment, 1:] = h
         # ---------------------------------------------------------------------
         # Segment-to-segment thermal response factors for
         # borehole-to-borehole thermal interactions
         # ---------------------------------------------------------------------
-        for i, (borehole, nSegments, ratios, i0, i1) in enumerate(
-                zip(self.boreholes,
-                    self.nBoreSegments,
-                    self.segment_ratios,
-                    self._i0Segments,
-                    self._i1Segments)):
+        for i, (i0, i1) in enumerate(zip(self._i0Segments, self._i1Segments)):
             # Segments of the receiving borehole
-            b2 = borehole.segments(nSegments, segment_ratios=ratios)
+            b2 = self.boreSegments[i0:i1]
             if i+1 < nBoreholes:
                 # Segments of the emitting borehole
                 b1 = self.boreSegments[i1:]
@@ -2020,16 +2015,11 @@ class _Detailed(_BaseSolver):
                     time, alpha, b1, b2, approximation=self.approximate_FLS,
                     N=self.nFLS, M=self.mQuad)
                 # Broadcast values to h_ij matrix
-                for j, (j0, j1) in enumerate(
-                        zip(self._i0Segments[i+1:], self._i1Segments[i+1:]),
-                        start=i+1):
-                    h_ij[i0:i1, j0:j1, 1:] = h[:, j0-i1:j1-i1, :]
-                    if j > i:
-                        h_ij[j0:j1, i0:i1, 1:] = np.einsum(
-                            'ijk,i,j->jik',
-                            h[:, j0-i1:j1-i1, :],
-                            segment_lengths[i0:i1],
-                            1/segment_lengths[j0:j1])
+                h_ij[i0:i1, i1:, 1:] = h
+                h_ij[i1:, i0:i1, 1:] = \
+                    np.swapaxes(h, 0, 1) * np.divide.outer(
+                        segment_lengths[i0:i1],
+                        segment_lengths[i1:]).T[:,:,np.newaxis]
 
         # Return 2d array if time is a scalar
         if np.isscalar(time):
@@ -2057,7 +2047,7 @@ class _Detailed(_BaseSolver):
 
         Returns
         -------
-        h_ii : array
+        h : array
             Finite line source solution.
         i_segment : list
             Indices of the emitting segments in the bore field.
@@ -2087,21 +2077,21 @@ class _Detailed(_BaseSolver):
             r_b[i_segment])
         # FlS solution
         if np.all([b.is_vertical() for b in self.boreholes]):
-            h_ii = finite_line_source_vectorized(
+            h = finite_line_source_vectorized(
                 time, alpha,
                 dis, H[i_segment], D[i_segment], H[j_segment], D[j_segment],
                 approximation=self.approximate_FLS, N=self.nFLS)
         else:
             tilt = np.array([b.tilt for b in self.boreSegments])
             orientation = np.array([b.orientation for b in self.boreSegments])
-            h_ii = finite_line_source_inclined_vectorized(
+            h = finite_line_source_inclined_vectorized(
                 time, alpha,
                 r_b[i_segment], x[i_segment], y[i_segment], H[i_segment],
                 D[i_segment], tilt[i_segment], orientation[i_segment],
                 x[j_segment], y[j_segment], H[j_segment], D[j_segment],
                 tilt[j_segment], orientation[j_segment], M=self.mQuad,
                 approximation=self.approximate_FLS, N=self.nFLS)
-        return h_ii, i_segment, j_segment
+        return h, i_segment, j_segment
         
 
 
@@ -2279,37 +2269,192 @@ class _Similarities(_BaseSolver):
         tic = perf_counter()
         # Initialize segment-to-segment response factors
         h_ij = np.zeros((self.nSources, self.nSources, nt+1), dtype=self.dtype)
-        segment_lengths = self.segment_lengths()
 
         # ---------------------------------------------------------------------
         # Segment-to-segment thermal response factors for same-borehole thermal
         # interactions (vertical boreholes)
         # ---------------------------------------------------------------------
-        for group in self.borehole_to_self_vertical:
-            # Index of first borehole in group
-            i = group[0]
-            # Find segment-to-segment similarities
-            H1, D1, H2, D2, i_pair, j_pair, k_pair = \
-                self._map_axial_segment_pairs_vertical(i, i)
-            # Locate thermal response factors in the h_ij matrix
-            i_segment, j_segment, k_segment, l_segment = \
-                self._map_segment_pairs_vertical(
-                    i_pair, j_pair, k_pair, [(n, n) for n in group], [0])
-            # Evaluate FLS at all time steps
-            H1 = H1.reshape(1, -1)
-            H2 = H2.reshape(1, -1)
-            D1 = D1.reshape(1, -1)
-            D2 = D2.reshape(1, -1)
-            dis = self.boreholes[i].r_b
-            h = finite_line_source_vectorized(
-                time, alpha, dis, H1, D1, H2, D2,
-                approximation=self.approximate_FLS, N=self.nFLS)
-            # Broadcast values to h_ij matrix
-            h_ij[j_segment, i_segment, 1:] = h[0, k_segment, :]
+        # Evaluate FLS at all time steps
+        h, i_segment, j_segment, k_segment = \
+            self._thermal_response_factors_borehole_to_self_vertical(
+                time, alpha)
+        # Broadcast values to h_ij matrix
+        h_ij[j_segment, i_segment, 1:] = h[k_segment, :]
         # ---------------------------------------------------------------------
         # Segment-to-segment thermal response factors for same-borehole thermal
         # interactions (inclined boreholes)
         # ---------------------------------------------------------------------
+        # Evaluate FLS at all time steps
+        h, i_segment, j_segment, k_segment = \
+            self._thermal_response_factors_borehole_to_self_inclined(
+                time, alpha)
+        # Broadcast values to h_ij matrix
+        h_ij[j_segment, i_segment, 1:] = h[k_segment, :]
+        # ---------------------------------------------------------------------
+        # Segment-to-segment thermal response factors for borehole-to-borehole
+        # thermal interactions (vertical boreholes)
+        # ---------------------------------------------------------------------
+        for pairs, distances, distance_indices in zip(
+                self.borehole_to_borehole_vertical,
+                self.borehole_to_borehole_distances_vertical,
+                self.borehole_to_borehole_indices_vertical):
+            # Index of first borehole pair in group
+            i, j = pairs[0]
+            # Find segment-to-segment similarities
+            H1, D1, H2, D2, i_pair, j_pair, k_pair = \
+                self._map_axial_segment_pairs_vertical(i, j)
+            # Locate thermal response factors in the h_ij matrix
+            i_segment, j_segment, k_segment, l_segment = \
+                self._map_segment_pairs_vertical(
+                    i_pair, j_pair, k_pair, pairs, distance_indices)
+            # Evaluate FLS at all time steps
+            dis = np.reshape(distances, (-1, 1))
+            H1 = H1.reshape(1, -1)
+            H2 = H2.reshape(1, -1)
+            D1 = D1.reshape(1, -1)
+            D2 = D2.reshape(1, -1)
+            h = finite_line_source_vectorized(
+                time, alpha, dis, H1, D1, H2, D2,
+                approximation=self.approximate_FLS, N=self.nFLS)
+            # Broadcast values to h_ij matrix
+            h_ij[j_segment, i_segment, 1:] = h[l_segment, k_segment, :]
+            if (self._compare_boreholes(self.boreholes[j], self.boreholes[i]) and
+                self.nBoreSegments[i] == self.nBoreSegments[j] and
+                self._uniform_segment_ratios[i] and
+                self._uniform_segment_ratios[j]):
+                h_ij[i_segment, j_segment, 1:] = h[l_segment, k_segment, :]
+            else:
+                h_ij[i_segment, j_segment, 1:] = (h * H2.T / H1.T)[l_segment, k_segment, :]
+        # ---------------------------------------------------------------------
+        # Segment-to-segment thermal response factors for borehole-to-borehole
+        # thermal interactions (inclined boreholes)
+        # ---------------------------------------------------------------------
+        # Evaluate FLS at all time steps
+        h, hT, i_segment, j_segment, k_segment = \
+            self._thermal_response_factors_borehole_to_borehole_inclined(
+                time, alpha)
+        # Broadcast values to h_ij matrix
+        h_ij[j_segment, i_segment, 1:] = h[k_segment, :]
+        h_ij[i_segment, j_segment, 1:] = hT[k_segment, :]
+
+        # Return 2d array if time is a scalar
+        if np.isscalar(time):
+            h_ij = h_ij[:,:,1]
+
+        # Interp1d object for thermal response factors
+        h_ij = interp1d(
+            np.hstack((0., time)), h_ij,
+            kind=kind, copy=True, assume_sorted=True, axis=2)
+        toc = perf_counter()
+        if self.disp: print(f' {toc - tic:.3f} sec')
+
+        return h_ij
+
+    def _thermal_response_factors_borehole_to_borehole_inclined(
+            self, time, alpha):
+        """
+        Evaluate the segment-to-segment thermal response factors for all pairs
+        of inclined segments.
+
+        Attributes
+        ----------
+        time : float or array
+            Values of time (in seconds) for which the g-function is evaluated.
+        alpha : float
+            Soil thermal diffusivity (in m2/s).
+
+        Returns
+        -------
+        h : array
+            Finite line source solution.
+        hT : array
+            Reciprocal finite line source solution.
+        i_segment : list
+            Indices of the emitting segments in the bore field.
+        j_segment : list
+            Indices of the receiving segments in the bore field.
+        k_segment : list
+            Indices of unique segment pairs in the (H1, D1, H2, D2) dimensions
+            corresponding to all pairs in (i_pair, j_pair) in the bore field.
+        """
+        rb1 = np.array([])
+        x1 = np.array([])
+        y1 = np.array([])
+        H1 = np.array([])
+        D1 = np.array([])
+        tilt1 = np.array([])
+        orientation1 = np.array([])
+        x2 = np.array([])
+        y2 = np.array([])
+        H2 = np.array([])
+        D2 = np.array([])
+        tilt2 = np.array([])
+        orientation2 = np.array([])
+        i_segment = np.array([], dtype=np.uint)
+        j_segment = np.array([], dtype=np.uint)
+        k_segment = np.array([], dtype=np.uint)
+        k0 = 0
+        for pairs in self.borehole_to_borehole_inclined:
+            # Index of first borehole pair in group
+            i, j = pairs[0]
+            # Find segment-to-segment similarities
+            rb1_i, x1_i, y1_i, H1_i, D1_i, tilt1_i, orientation1_i, \
+                x2_i, y2_i, H2_i, D2_i, tilt2_i, orientation2_i, \
+                i_pair, j_pair, k_pair = \
+                    self._map_axial_segment_pairs_inclined(i, j)
+            # Locate thermal response factors in the h_ij matrix
+            i_segment_i, j_segment_i, k_segment_i = \
+                self._map_segment_pairs_inclined(i_pair, j_pair, k_pair, pairs)
+            # Append lists
+            rb1 = np.append(rb1, rb1_i)
+            x1 = np.append(x1, x1_i)
+            y1 = np.append(y1, y1_i)
+            H1 = np.append(H1, H1_i)
+            D1 = np.append(D1, D1_i)
+            tilt1 = np.append(tilt1, tilt1_i)
+            orientation1 = np.append(orientation1, orientation1_i)
+            x2 = np.append(x2, x2_i)
+            y2 = np.append(y2, y2_i)
+            H2 = np.append(H2, H2_i)
+            D2 = np.append(D2, D2_i)
+            tilt2 = np.append(tilt2, tilt2_i)
+            orientation2 = np.append(orientation2, orientation2_i)
+            i_segment = np.append(i_segment, i_segment_i)
+            j_segment = np.append(j_segment, j_segment_i)
+            k_segment = np.append(k_segment, k_segment_i + k0)
+            k0 += len(k_pair)
+        # Evaluate FLS at all time steps
+        h = finite_line_source_inclined_vectorized(
+            time, alpha, rb1, x1, y1, H1, D1, tilt1, orientation1,
+            x2, y2, H2, D2, tilt2, orientation2, M=self.mQuad,
+            approximation=self.approximate_FLS, N=self.nFLS)
+        hT = (h.T * H2 / H1).T
+        return h, hT, i_segment, j_segment, k_segment
+
+    def _thermal_response_factors_borehole_to_self_inclined(self, time, alpha):
+        """
+        Evaluate the segment-to-segment thermal response factors for all pairs
+        of segments between each inclined borehole and itself.
+
+        Attributes
+        ----------
+        time : float or array
+            Values of time (in seconds) for which the g-function is evaluated.
+        alpha : float
+            Soil thermal diffusivity (in m2/s).
+
+        Returns
+        -------
+        h : array
+            Finite line source solution.
+        i_segment : list
+            Indices of the emitting segments in the bore field.
+        j_segment : list
+            Indices of the receiving segments in the bore field.
+        k_segment : list
+            Indices of unique segment pairs in the (H1, D1, H2, D2) dimensions
+            corresponding to all pairs in (i_pair, j_pair) in the bore field.
+        """
         rb1 = np.array([])
         x1 = np.array([])
         y1 = np.array([])
@@ -2362,114 +2507,69 @@ class _Similarities(_BaseSolver):
             time, alpha, rb1, x1, y1, H1, D1, tilt1, orientation1,
             x2, y2, H2, D2, tilt2, orientation2, M=self.mQuad,
             approximation=self.approximate_FLS, N=self.nFLS)
-        # Broadcast values to h_ij matrix
-        h_ij[j_segment, i_segment, 1:] = h[k_segment, :]
-        # ---------------------------------------------------------------------
-        # Segment-to-segment thermal response factors for borehole-to-borehole
-        # thermal interactions (vertical boreholes)
-        # ---------------------------------------------------------------------
-        for pairs, distances, distance_indices in zip(
-                self.borehole_to_borehole_vertical,
-                self.borehole_to_borehole_distances_vertical,
-                self.borehole_to_borehole_indices_vertical):
-            # Index of first borehole pair in group
-            i, j = pairs[0]
-            # Find segment-to-segment similarities
-            H1, D1, H2, D2, i_pair, j_pair, k_pair = \
-                self._map_axial_segment_pairs_vertical(i, j)
-            # Locate thermal response factors in the h_ij matrix
-            i_segment, j_segment, k_segment, l_segment = \
-                self._map_segment_pairs_vertical(
-                    i_pair, j_pair, k_pair, pairs, distance_indices)
-            # Evaluate FLS at all time steps
-            dis = np.reshape(distances, (-1, 1))
-            H1 = H1.reshape(1, -1)
-            H2 = H2.reshape(1, -1)
-            D1 = D1.reshape(1, -1)
-            D2 = D2.reshape(1, -1)
-            h = finite_line_source_vectorized(
-                time, alpha, dis, H1, D1, H2, D2,
-                approximation=self.approximate_FLS, N=self.nFLS)
-            # Broadcast values to h_ij matrix
-            h_ij[j_segment, i_segment, 1:] = h[l_segment, k_segment, :]
-            if (self._compare_boreholes(self.boreholes[j], self.boreholes[i]) and
-                self.nBoreSegments[i] == self.nBoreSegments[j] and
-                self._uniform_segment_ratios[i] and
-                self._uniform_segment_ratios[j]):
-                h_ij[i_segment, j_segment, 1:] = h[l_segment, k_segment, :]
-            else:
-                h_ij[i_segment, j_segment, 1:] = (h * H2.T / H1.T)[l_segment, k_segment, :]
-        # ---------------------------------------------------------------------
-        # Segment-to-segment thermal response factors for borehole-to-borehole
-        # thermal interactions (inclined boreholes)
-        # ---------------------------------------------------------------------
-        rb1 = np.array([])
-        x1 = np.array([])
-        y1 = np.array([])
+        return h, i_segment, j_segment, k_segment
+
+    def _thermal_response_factors_borehole_to_self_vertical(self, time, alpha):
+        """
+        Evaluate the segment-to-segment thermal response factors for all pairs
+        of segments between each vertical borehole and itself.
+
+        Attributes
+        ----------
+        time : float or array
+            Values of time (in seconds) for which the g-function is evaluated.
+        alpha : float
+            Soil thermal diffusivity (in m2/s).
+
+        Returns
+        -------
+        h : array
+            Finite line source solution.
+        i_segment : list
+            Indices of the emitting segments in the bore field.
+        j_segment : list
+            Indices of the receiving segments in the bore field.
+        k_segment : list
+            Indices of unique segment pairs in the (H1, D1, H2, D2) dimensions
+            corresponding to all pairs in (i_pair, j_pair) in the bore field.
+        """
         H1 = np.array([])
         D1 = np.array([])
-        tilt1 = np.array([])
-        orientation1 = np.array([])
-        x2 = np.array([])
-        y2 = np.array([])
         H2 = np.array([])
         D2 = np.array([])
-        tilt2 = np.array([])
-        orientation2 = np.array([])
+        dis = np.array([])
         i_segment = np.array([], dtype=np.uint)
         j_segment = np.array([], dtype=np.uint)
         k_segment = np.array([], dtype=np.uint)
         k0 = 0
-        for pairs in self.borehole_to_borehole_inclined:
-            # Index of first borehole pair in group
-            i, j = pairs[0]
+        for group in self.borehole_to_self_vertical:
+            # Index of first borehole in group
+            i = group[0]
             # Find segment-to-segment similarities
-            rb1_i, x1_i, y1_i, H1_i, D1_i, tilt1_i, orientation1_i, \
-                x2_i, y2_i, H2_i, D2_i, tilt2_i, orientation2_i, \
-                i_pair, j_pair, k_pair = \
-                    self._map_axial_segment_pairs_inclined(i, j)
+            H1_i, D1_i, H2_i, D2_i, i_pair, j_pair, k_pair = \
+                self._map_axial_segment_pairs_vertical(i, i)
             # Locate thermal response factors in the h_ij matrix
-            i_segment_i, j_segment_i, k_segment_i = \
-                self._map_segment_pairs_inclined(i_pair, j_pair, k_pair, pairs)
+            i_segment_i, j_segment_i, k_segment_i, l_segment_i = \
+                self._map_segment_pairs_vertical(
+                    i_pair, j_pair, k_pair, [(n, n) for n in group], [0])
             # Append lists
-            rb1 = np.append(rb1, rb1_i)
-            x1 = np.append(x1, x1_i)
-            y1 = np.append(y1, y1_i)
             H1 = np.append(H1, H1_i)
             D1 = np.append(D1, D1_i)
-            tilt1 = np.append(tilt1, tilt1_i)
-            orientation1 = np.append(orientation1, orientation1_i)
-            x2 = np.append(x2, x2_i)
-            y2 = np.append(y2, y2_i)
             H2 = np.append(H2, H2_i)
             D2 = np.append(D2, D2_i)
-            tilt2 = np.append(tilt2, tilt2_i)
-            orientation2 = np.append(orientation2, orientation2_i)
+            if len(self.borehole_to_self_vertical) > 1:
+                dis = np.append(dis, np.full(len(H1_i), self.boreholes[i].r_b))
+            else:
+                dis = self.boreholes[i].r_b
             i_segment = np.append(i_segment, i_segment_i)
             j_segment = np.append(j_segment, j_segment_i)
             k_segment = np.append(k_segment, k_segment_i + k0)
-            k0 += len(k_pair)
+            k0 += np.max(k_pair) + 1
         # Evaluate FLS at all time steps
-        h = finite_line_source_inclined_vectorized(
-            time, alpha, rb1, x1, y1, H1, D1, tilt1, orientation1,
-            x2, y2, H2, D2, tilt2, orientation2, M=self.mQuad,
+        h = finite_line_source_vectorized(
+            time, alpha, dis, H1, D1, H2, D2,
             approximation=self.approximate_FLS, N=self.nFLS)
-        # Broadcast values to h_ij matrix
-        h_ij[j_segment, i_segment, 1:] = h[k_segment, :]
-        h_ij[i_segment, j_segment, 1:] = (h.T * H2 / H1).T[k_segment, :]
-
-        # Return 2d array if time is a scalar
-        if np.isscalar(time):
-            h_ij = h_ij[:,:,1]
-
-        # Interp1d object for thermal response factors
-        h_ij = interp1d(
-            np.hstack((0., time)), h_ij,
-            kind=kind, copy=True, assume_sorted=True, axis=2)
-        toc = perf_counter()
-        if self.disp: print(f' {toc - tic:.3f} sec')
-
-        return h_ij
+        return h, i_segment, j_segment, k_segment
 
     def find_similarities(self):
         """
