@@ -85,7 +85,7 @@ class ClaessonJaved(_LoadAggregation):
         ----------
         g_d : array
             Matrix of **dimensional** thermal response factors for temporal
-            superposition (:math:`g/(2 \pi k_s)`).
+            superposition (:math:`g/(2 \\pi k_s)`).
             The expected size is (nSources, nSources, Nt), where Nt is the
             number of time values at which the thermal response factors are
             required. The time values are returned by
@@ -121,7 +121,7 @@ class ClaessonJaved(_LoadAggregation):
         dg : array
             Array of **dimensional** thermal response factor increments used
             for temporal superposition 
-            (:math:`g(t_{i+1})/(2 \pi k_s) - g(t_{i})/(2 \pi k_s)`),
+            (:math:`g(t_{i+1})/(2 \\pi k_s) - g(t_{i})/(2 \\pi k_s)`),
             in correspondance with the intialized values of the thermal
             response factors in 
             :func:`~load_aggregation.ClaessonJaved.initialize`.
@@ -177,7 +177,7 @@ class ClaessonJaved(_LoadAggregation):
            *pygfunction* assumes positive values for heat
            **extraction** and for borehole wall temperature **drops**. The
            borehole wall temperature are thus given by :
-           :math:`T_b = T_g - \Delta T_b`.
+           :math:`T_b = T_g - \\Delta T_b`.
 
         """
         # Use numpy.einsum for spatial and temporal superposition
@@ -272,7 +272,7 @@ class MLAA(_LoadAggregation):
         ----------
         g_d : array
             Matrix of **dimensional** thermal response factors for temporal
-            superposition (:math:`g/(2 \pi k_s)`).
+            superposition (:math:`g/(2 \\pi k_s)`).
             The expected size is (nSources, nSources, Nt), where Nt is the
             number of time values at which the thermal response factors are
             required. The time values are returned by
@@ -391,7 +391,7 @@ class MLAA(_LoadAggregation):
            *pygfunction* assumes positive values for heat
            **extraction** and for borehole wall temperature **drops**. The
            borehole wall temperature are thus given by :
-           :math:`T_b = T_g - \Delta T_b`.
+           :math:`T_b = T_g - \\Delta T_b`.
 
         """
         # Non-aggregated loads
@@ -524,7 +524,7 @@ class Liu(_LoadAggregation):
         ----------
         g_d : array
             Matrix of **dimensional** thermal response factors for temporal
-            superposition (:math:`g/(2 \pi k_s)`).
+            superposition (:math:`g/(2 \\pi k_s)`).
             The expected size is (nSources, nSources, Nt), where Nt is the
             number of time values at which the thermal response factors are
             required. The time values are returned by
@@ -638,7 +638,7 @@ class Liu(_LoadAggregation):
            *pygfunction* assumes positive values for heat
            **extraction** and for borehole wall temperature **drops**. The
            borehole wall temperature are thus given by :
-           :math:`T_b = T_g - \Delta T_b`.
+           :math:`T_b = T_g - \\Delta T_b`.
 
         """
         deltaT = 0.

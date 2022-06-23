@@ -2761,7 +2761,7 @@ def convective_heat_transfer_coefficient_concentric_annulus(
     region of a concentric pipe arrangement.
 
     The following is valid for :math:`Re < 2300` and
-    :math:`0.1 \leq Pr \leq 1000` :
+    :math:`0.1 \\leq Pr \\leq 1000` :
 
         .. math::
             \\text{Nu}_{a,in} = 3.66 + 1.2(r^*)^{-0.8}
@@ -3130,7 +3130,7 @@ def _Nusselt_number_turbulent_flow(Re, Pr, fDarcy):
         	{1 + 12.7(f/8)^{0.5} (\\text{Pr}^{2/3}-1)} \\;\\;\\;
         	\\bigg(
             \\begin{array}{c}
-                0.5 \leq \\text{Pr} \leq 2000 \\\\
+                0.5 \\leq \\text{Pr} \\leq 2000 \\\\
                 3 \\times 10^5 <  \\text{Re} < 5 \\times 10^6
             \\end{array}
             \\bigg)
