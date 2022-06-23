@@ -646,7 +646,7 @@ def finite_line_source_inclined_approximation(
             + pImg_2 * exp1(np.multiply.outer(cImg + b * dImg_2**2, ss))) )
     else:
         # No heat source
-        h = np.zeros(ouput_ndim + np.shape(time))
+        h = np.zeros(output_shape + np.shape(time))
     return h
 
 
