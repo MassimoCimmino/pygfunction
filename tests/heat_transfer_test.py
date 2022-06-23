@@ -9,7 +9,7 @@ import pygfunction as gt
 
 
 # =============================================================================
-# Test finite_line_source
+# Test finite_line_source (vertical boreholes)
 # =============================================================================
 # Test finite_line_source for single borehole to single borehole solution over
 # a single time step, using different combinations of reaSource, imgSource, and
@@ -36,7 +36,7 @@ import pygfunction as gt
         ('single_borehole', 'single_borehole_short', False, True, True, 10, -0.36968273),
         ('single_borehole', 'single_borehole_short', False, False, True, 10, 0.),
     ])
-def test_finite_line_source_one_to_one_single_time_step(
+def test_finite_line_source_vertical_to_vertical_single_time_step(
         borehole1, borehole2, reaSource, imgSource, approximation, N, expected,
         request):
         # Extract boreholes from fixtures
@@ -54,7 +54,7 @@ def test_finite_line_source_one_to_one_single_time_step(
 
 
 # Test finite_line_source for single borehole to single borehole solution over
-# a multiple time steps, using different combinations of reaSource, imgSource,
+# multiple time steps, using different combinations of reaSource, imgSource,
 # and with/without the FLS approximation
 @pytest.mark.parametrize("borehole1, borehole2, reaSource, imgSource, approximation, N, expected", [
         # Same borehole
@@ -78,7 +78,7 @@ def test_finite_line_source_one_to_one_single_time_step(
         ('single_borehole', 'single_borehole_short', False, True, True, 10, np.array([-0.07114505, -0.36968273, -0.74142343])),
         ('single_borehole', 'single_borehole_short', False, False, True, 10, np.array([0., 0., 0.])),
     ])
-def test_finite_line_source_one_to_one_multiple_time_steps(
+def test_finite_line_source_vertical_to_vertical_multiple_time_steps(
         borehole1, borehole2, reaSource, imgSource, approximation, N, expected,
         request):
         # Extract boreholes from fixtures
@@ -109,7 +109,7 @@ def test_finite_line_source_one_to_one_multiple_time_steps(
         ('single_borehole', 'single_borehole_short', False, True, -0.9988295508738515),
         ('single_borehole', 'single_borehole_short', False, False, 0.),
     ])
-def test_finite_line_source_one_to_one_steady_state(
+def test_finite_line_source_vertical_to_vertical_steady_state(
         borehole1, borehole2, reaSource, imgSource, expected, request):
         b1 = request.getfixturevalue(borehole1)[0]
         b2 = request.getfixturevalue(borehole2)[0]
@@ -155,7 +155,7 @@ def test_finite_line_source_one_to_one_steady_state(
              [-0.08137532, -0.08865631, -0.08193464]])),
         (False, False, True, 10, np.zeros((3, 3))),
     ])
-def test_finite_line_source_multiple_boreholes_single_time_step(
+def test_finite_line_source_multiple_vertical_boreholes_single_time_step(
         three_boreholes_unequal, reaSource, imgSource, approximation, N,
         expected):
         # Extract boreholes from fixture
@@ -241,7 +241,7 @@ def test_finite_line_source_multiple_boreholes_single_time_step(
               [-0.01030019, -0.08193464, -0.30431902]]])),
         (False, False, True, 10, np.zeros((3, 3, 3))),
     ])
-def test_finite_line_source_multiple_boreholes_multiple_time_steps(
+def test_finite_line_source_multiple_vertical_boreholes_multiple_time_steps(
         three_boreholes_unequal, reaSource, imgSource, approximation, N,
         expected):
         # Extract boreholes from fixture
@@ -275,7 +275,7 @@ def test_finite_line_source_multiple_boreholes_multiple_time_steps(
              [-0.54949639, -0.40882024, -0.60213297]])),
         (False, False, np.zeros((3, 3))),
     ])
-def test_finite_line_source_multiple_boreholes_steady_state(
+def test_finite_line_source_multiple_vertical_boreholes_steady_state(
         three_boreholes_unequal, reaSource, imgSource, expected):
         # Extract boreholes from fixture
         boreholes = three_boreholes_unequal
@@ -286,4 +286,241 @@ def test_finite_line_source_multiple_boreholes_steady_state(
         h = gt.heat_transfer.finite_line_source(
             time, alpha, boreholes, boreholes, reaSource=reaSource,
             imgSource=imgSource)
+        assert np.allclose(h, expected)
+
+
+# =============================================================================
+# Test finite_line_source (inclined boreholes)
+# =============================================================================
+# Test finite_line_source for the test case of Lazzarotto (2016) over a single
+# and multiple time steps, using different combinations of reaSource,
+# imgSource, and with/without the FLS approximation
+@pytest.mark.parametrize("tts, reaSource, imgSource, approximation, M, N, expected", [
+        # One time step
+        (1., True, True, False, 21, 10, 0.055792623436062005),
+        (1., True, False, False, 21, 10, 0.055798508426994645),
+        (1., False, True, False, 21, 10, -5.884990932696544e-06),
+        (1., False, False, False, 21, 10, 0.),
+        # One time step - FLS approximation
+        (1., True, True, True, 21, 10, 0.055807785298494346),
+        (1., True, False, True, 21, 10, 0.05581324608019175),
+        (1., False, True, True, 21, 10, -5.4607816973996686e-06),
+        (1., False, False, True, 21, 10, 0.),
+        # Multiple time steps
+        (np.array([0.1, 1., 10., 100.]), True, True, False, 21, 10, np.array(
+            [2.03508637e-04, 5.57926234e-02, 2.65993224e-01, 3.25925673e-01])),
+        (np.array([0.1, 1., 10., 100.]), True, False, False, 21, 10, np.array(
+            [2.03508637e-04, 5.57985084e-02, 2.89690224e-01, 4.50763618e-01])),
+        (np.array([0.1, 1., 10., 100.]), False, True, False, 21, 10, np.array(
+            [0., -5.88499093e-06, -2.36969998e-02, -1.24837945e-01])),
+        (np.array([0.1, 1., 10., 100.]), False, False, False, 21, 10, np.array(
+            [0., 0., 0., 0.])),
+        # Multiple time steps - FLS approximation
+        (np.array([0.1, 1., 10., 100.]), True, True, True, 21, 10, np.array(
+            [2.03364838e-04, 5.58077853e-02, 2.65949066e-01, 3.26037282e-01])),
+        (np.array([0.1, 1., 10., 100.]), True, False, True, 21, 10, np.array(
+            [2.03364838e-04, 5.58132461e-02, 2.89638257e-01, 4.50797447e-01])),
+        (np.array([0.1, 1., 10., 100.]), False, True, True, 21, 10, np.array(
+            [0., -5.46078170e-06, -2.36891904e-02, -1.24760165e-01])),
+        (np.array([0.1, 1., 10., 100.]), False, False, True, 21, 10, np.array(
+            [0., 0., 0., 0.])),
+    ])
+def test_finite_line_source_Lazzarotto(
+        tts, reaSource, imgSource, approximation, M, N, expected):
+        # Extract boreholes from fixtures
+        b1 = gt.boreholes.Borehole(
+            20., 5., 0.075, 3., 1.5, tilt=np.pi/15, orientation=0.)
+        b2 = gt.boreholes.Borehole(
+            20., 25., 0.075, 0., 5., tilt=np.pi/15, orientation=4*np.pi/3)
+        alpha = 1e-6                # Ground thermal diffusivity [m2/s]
+        ts = b1.H**2 / (9 * alpha)  # Borehole characteristic time [s]
+        # Time for FLS calculation [s]
+        time = ts * tts
+        # Evaluate FLS
+        h = gt.heat_transfer.finite_line_source(
+            time, alpha, b1, b2, reaSource=reaSource, imgSource=imgSource,
+            approximation=approximation, M=M, N=N)
+        assert np.allclose(h, expected)
+
+
+# Test finite_line_source for the test case of Lazzarotto (2016) at
+# steady-state, using different combinations of reaSource and imgSource
+@pytest.mark.parametrize("reaSource, imgSource, M, expected", [
+        (True, True, 21, 0.32901256907275805),
+        (True, False, 21, 0.5345970978237233),
+        (False, True, 21, -0.2055845287509652),
+        (False, False, 21, 0.),
+    ])
+def test_finite_line_source_Lazzarotto_steady_state(
+        reaSource, imgSource, M, expected):
+        # Configure boreholes
+        b1 = gt.boreholes.Borehole(
+            20., 5., 0.075, 3., 1.5, tilt=np.pi/15, orientation=0.)
+        b2 = gt.boreholes.Borehole(
+            20., 25., 0.075, 0., 5., tilt=np.pi/15, orientation=4*np.pi/3)
+        alpha = 1e-6                # Ground thermal diffusivity [m2/s]
+        # Time for FLS calculation [s]
+        time = np.inf
+        # Evaluate FLS
+        h = gt.heat_transfer.finite_line_source(
+            time, alpha, b1, b2, reaSource=reaSource, imgSource=imgSource, M=M)
+        assert np.isclose(h, expected)
+
+
+# Test finite_line_source for an inclined borehole on itself for a single
+# and multiple time steps, using different combinations of reaSource,
+# imgSource, and with/without the FLS approximation
+@pytest.mark.parametrize("tts, reaSource, imgSource, approximation, M, N, expected", [
+        # One time step
+        (1., True, True, False, 21, 10, 6.387924910257989),
+        (1., True, False, False, 21, 10, 6.5328321472166095),
+        (1., False, True, False, 21, 10, -0.14490784205005186),
+        (1., False, False, False, 21, 10, 0.),
+        # One time step - FLS approximation
+        (1., True, True, True, 21, 10, 6.387924910257989),
+        (1., True, False, True, 21, 10, 6.5328321472166095),
+        (1., False, True, True, 21, 10, -0.14490784205005186),
+        (1., False, False, True, 21, 10, 0.),
+        # Multiple time steps
+        (np.array([0.1, 1., 10.]), True, True, False, 21, 10, np.array(
+            [5.61499596, 6.38792491, 6.61329376])),
+        (np.array([0.1, 1., 10.]), True, False, False, 21, 10, np.array(
+            [5.63802126, 6.53283215, 7.03111215])),
+        (np.array([0.1, 1., 10.]), False, True, False, 21, 10, np.array(
+            [-0.0230257 , -0.14490784, -0.41781906])),
+        (np.array([0.1, 1., 10.]), False, False, False, 21, 10, np.array(
+            [0., 0., 0.])),
+        # Multiple time steps - FLS approximation
+        (np.array([0.1, 1., 10.]), True, True, True, 21, 10, np.array(
+            [5.61499596, 6.38792491, 6.61329376])),
+        (np.array([0.1, 1., 10.]), True, False, True, 21, 10, np.array(
+            [5.63802126, 6.53283215, 7.03111215])),
+        (np.array([0.1, 1., 10.]), False, True, True, 21, 10, np.array(
+            [-0.0230257 , -0.14490784, -0.41781906])),
+        (np.array([0.1, 1., 10.]), False, False, True, 21, 10, np.array(
+            [0., 0., 0.])),
+    ])
+def test_finite_line_source_inclined_to_self(
+        single_borehole_inclined, tts, reaSource, imgSource, approximation,
+        M, N, expected):
+        # Extract borehole from fixtures
+        b1 = single_borehole_inclined[0]
+        alpha = 1e-6                # Ground thermal diffusivity [m2/s]
+        ts = b1.H**2 / (9 * alpha)  # Borehole characteristic time [s]
+        # Time for FLS calculation [s]
+        time = ts * tts
+        # Evaluate FLS
+        h = gt.heat_transfer.finite_line_source(
+            time, alpha, b1, b1, reaSource=reaSource, imgSource=imgSource, M=M)
+        assert np.allclose(h, expected)
+
+
+# Test finite_line_source for the test case of Lazzarotto (2016) at
+# steady-state, using different combinations of reaSource and imgSource
+@pytest.mark.parametrize("reaSource, imgSource, M, expected", [
+        (True, True, 21, 6.628532759512739),
+        (True, False, 21, 7.295473329568198),
+        (False, True, 21, -0.6669405700554597),
+        (False, False, 21, 0.),
+    ])
+def test_finite_line_source_inclined_to_self_steady_state(
+        single_borehole_inclined, reaSource, imgSource, M, expected):
+        # Extract borehole from fixtures
+        b1 = single_borehole_inclined[0]
+        alpha = 1e-6                # Ground thermal diffusivity [m2/s]
+        # Time for FLS calculation [s]
+        time = np.inf
+        # Evaluate FLS
+        h = gt.heat_transfer.finite_line_source(
+            time, alpha, b1, b1, reaSource=reaSource, imgSource=imgSource, M=M)
+        assert np.isclose(h, expected)
+
+
+# Test finite_line_source for multiple inclined boreholes to multiple inclined
+# boreholes solution over a single or multiple time steps, using different
+# combinations of reaSource, imgSource, and with/without the FLS approximation
+@pytest.mark.parametrize("tts, reaSource, imgSource, approximation, M, N, expected", [
+        # One time step
+        (1., True, True, False, 21, 10, np.array(
+            [[6.40344545, 0.38333631],
+             [0.38333631, 6.40344545]])),
+        (1., True, False, False, 21, 10, np.array(
+            [[6.53283215, 0.48927282],
+             [0.48927282, 6.53283215]])),
+        (1., False, True, False, 21, 10, np.array(
+            [[-0.1293867 , -0.10593651],
+             [-0.10593651, -0.1293867]])),
+        (1., False, False, False, 21, 10, np.zeros((2, 2))),
+        # One time step - FLS approximation
+        (1., True, True, True, 21, 10, np.array(
+            [[6.40347323, 0.3833017],
+             [0.3833017 , 6.40347323]])),
+        (1., True, False, True, 21, 10, np.array(
+            [[6.53285537, 0.48923122],
+             [0.48923122, 6.53285537]])),
+        (1., False, True, True, 21, 10, np.array(
+            [[-0.12938214, -0.10592953],
+             [-0.10592953, -0.12938214]])),
+        (1., False, False, True, 21, 10, np.zeros((2, 2))),
+        # Multiple time steps
+        (np.array([0.1, 1., 10.]), True, True, False, 21, 10, np.array(
+            [[[5.61764541, 0.0739292],
+              [0.0739292, 5.61764541]],
+             [[6.40344545, 0.38333631],
+              [0.38333631, 6.40344545]],
+             [[6.64617823, 0.5812878],
+              [0.5812878, 6.64617823]]]).transpose((1, 2, 0))),
+        (np.array([0.1, 1., 10.]), True, False, False, 21, 10, np.array(
+            [[[5.63802126, 0.08504218],
+              [0.08504218, 5.63802126]],
+             [[6.53283215, 0.48927282],
+              [0.48927282, 6.53283215]],
+             [[7.03111215, 0.9284482],
+              [0.9284482, 7.03111215]]]).transpose((1, 2, 0))),
+        (np.array([0.1, 1., 10.]), False, True, False, 21, 10, np.array(
+            [[[-0.02037585, -0.01111298],
+              [-0.01111298, -0.02037585]],
+             [[-0.1293867, -0.10593651],
+              [-0.10593651, -0.1293867]],
+             [[-0.38493416, -0.34716039],
+              [-0.34716039, -0.38493416]]]).transpose((1, 2, 0))),
+        (np.array([0.1, 1., 10.]), False, False, False, 21, 10, np.zeros((2, 2, 3))),
+        # Multiple time steps - FLS approximation
+        (np.array([0.1, 1., 10.]), True, True, True, 21, 10, np.array(
+            [[[5.61765526, 0.07394688],
+              [0.07394688, 5.61765526]],
+             [[6.40347323, 0.3833017],
+              [0.3833017, 6.40347323]],
+             [[6.64629192, 0.58122997],
+              [0.58122997, 6.64629192]]]).transpose((1, 2, 0))),
+        (np.array([0.1, 1., 10.]), True, False, True, 21, 10, np.array(
+            [[[5.63803137, 0.08506054],
+              [0.08506054, 5.63803137]],
+             [[6.53285537, 0.48923122],
+              [0.48923122, 6.53285537]],
+             [[7.03118607, 0.9283558],
+              [0.9283558, 7.03118607]]]).transpose((1, 2, 0))),
+        (np.array([0.1, 1., 10.]), False, True, True, 21, 10, np.array(
+            [[[-0.02037611, -0.01111366],
+              [-0.01111366, -0.02037611]],
+             [[-0.12938214, -0.10592953],
+              [-0.10592953, -0.12938214]],
+             [[-0.38489415, -0.34712584],
+              [-0.34712584, -0.38489415]]]).transpose((1, 2, 0))),
+        (np.array([0.1, 1., 10.]), False, False, True, 21, 10, np.zeros((2, 2, 3))),
+    ])
+def test_finite_line_source_multiple_inclined_to_multiple_inclined(
+        two_boreholes_inclined, tts, reaSource, imgSource, approximation, M, N,
+        expected):
+        # Extract boreholes from fixture
+        boreholes = two_boreholes_inclined
+        alpha = 1e-6    # Ground thermal diffusivity [m2/s]
+        # Bore field characteristic time [s]
+        ts = np.mean([b.H for b in boreholes])**2 / (9 * alpha)
+        # Times for FLS calculation [s]
+        time = ts * tts
+        # Evaluate FLS
+        h = gt.heat_transfer.finite_line_source(
+            time, alpha, boreholes, boreholes, reaSource=reaSource,
+            imgSource=imgSource, approximation=approximation, N=N)
         assert np.allclose(h, expected)

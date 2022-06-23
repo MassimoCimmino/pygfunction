@@ -28,6 +28,19 @@ def single_borehole_short():
 
 
 @pytest.fixture
+def single_borehole_inclined():
+    H = 150.        # Borehole length [m]
+    D = 4.          # Borehole buried depth [m]
+    r_b = 0.075     # Borehole radius [m]
+    x = 0.          # Borehole x-position [m]
+    y = 0.          # Borehole y-position [m]
+    tilt = np.pi/6          # Borehole inclination [rad]
+    orientation = np.pi/3   # Borehole orientation [rad]
+    return [gt.boreholes.Borehole(
+        H, D, r_b, x, y, tilt=tilt, orientation=orientation)]
+
+
+@pytest.fixture
 def ten_boreholes_rectangular():
     H = 150.            # Borehole length [m]
     D = 4.              # Borehole buried depth [m]
@@ -43,6 +56,12 @@ def three_boreholes_unequal():
             gt.boreholes.Borehole(177., 5., 0.085, -1., 7.),]
 
 
+@pytest.fixture
+def two_boreholes_inclined():
+    return [gt.boreholes.Borehole(150., 4., 0.075, 0., 0., tilt=np.radians(20.), orientation=np.pi/2),
+            gt.boreholes.Borehole(150., 4., 0.075, 15., 0., tilt=np.radians(20.), orientation=3*np.pi/2),]
+
+
 # =============================================================================
 # gfunction fixtures
 # =============================================================================
@@ -50,6 +69,7 @@ def three_boreholes_unequal():
 def uniform_segments():
     options = {'nSegments': 12,
                'segment_ratios': None,
+               'mQuad': 21,
                'approximate_FLS': False}
     return options
 
@@ -58,6 +78,7 @@ def uniform_segments():
 def uniform_segments_approx():
     options = {'nSegments': 12,
                'segment_ratios': None,
+               'mQuad': 21,
                'approximate_FLS': True,
                'nFLS': 10}
     return options
@@ -68,6 +89,7 @@ def unequal_segments():
     segment_ratios = gt.utilities.segment_ratios(8, end_length_ratio=0.02)
     options = {'nSegments': 8,
                'segment_ratios': segment_ratios,
+               'mQuad': 21,
                'approximate_FLS': False}
     return options
 
@@ -77,6 +99,7 @@ def unequal_segments_approx():
     segment_ratios = gt.utilities.segment_ratios(8, end_length_ratio=0.02)
     options = {'nSegments': 8,
                'segment_ratios': segment_ratios,
+               'mQuad': 21,
                'approximate_FLS': True,
                'nFLS': 10}
     return options
