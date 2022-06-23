@@ -28,6 +28,7 @@
 
 * [Issue 192](https://github.com/MassimoCimmino/pygfunction/issues/192) - Fixed comparison of `time` with `numpy.inf` in `heat_transfer.finite_line_source` that caused the function to fail when `time` is an array.
 * [Issue 193](https://github.com/MassimoCimmino/pygfunction/issues/193) - Fixed `heat_transfer._finite_line_source_integrand`, `heat_transfer._finite_line_source_equivalent_boreholes_integrand`, and `heat_transfer._finite_line_source_steady_state` to return an array of zeros of the expected shape when `reaSource==False and imgSource==False`.
+* [Issue 196](https://github.com/MassimoCimmino/pygfunction/issues/196) - Fixed "invalid escape sequence" warnings when running tests on github actions.
 
 ## Version 2.1.0 (2021-11-12)
 
