@@ -846,7 +846,7 @@ def field_from_file(filename):
 
     """
     # Load data from file
-    data = np.loadtxt(filename)
+    data = np.loadtxt(filename, ndmin=2)
     # Build the bore field
     borefield = []
     for line in data:
