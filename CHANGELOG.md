@@ -13,6 +13,7 @@
 * [Issue 183](https://github.com/MassimoCimmino/pygfunction/issues/183) - Vectorized `pipes.multipole()` and `pipes._Fmk()` to decrease the calculation time of `pipes.thermal_resistances()`. A `memoization` technique is implemented to reduce computation time for repeated function calls to further speed-up the initialization of `Pipe` and `Network` objects.
 * [Issue 198](https://github.com/MassimoCimmino/pygfunction/issues/198) - Refactored the `'detailed'` solver to evaluate same-borehole thermal response factors in a single call to `finite_line_source_vectorized()`. This speeds up calculations of *g*-functions using the `'detailed'` solver.
 * [Issue 199](https://github.com/MassimoCimmino/pygfunction/issues/199) - Changed the integral bounds to avoid repeated evaluation of integrals over semi-infinite intervals. This speeds up calculations of *g*-functions using all solvers and the evaluation of the finite line source solution with `time` as an array.
+* [Issue 206](https://github.com/MassimoCimmino/pygfunction/issues/206) - Refactored `boreholes.find_duplicates()` to use `scipy.spatial.distance.pdist()` for the calculation of distances between boreholes. This leads to faster initialization of the `gFunction` class for large borefields.
 
 ### Other changes
 
@@ -27,6 +28,9 @@
 
 * [Issue 192](https://github.com/MassimoCimmino/pygfunction/issues/192) - Fixed comparison of `time` with `numpy.inf` in `heat_transfer.finite_line_source` that caused the function to fail when `time` is an array.
 * [Issue 193](https://github.com/MassimoCimmino/pygfunction/issues/193) - Fixed `heat_transfer._finite_line_source_integrand`, `heat_transfer._finite_line_source_equivalent_boreholes_integrand`, and `heat_transfer._finite_line_source_steady_state` to return an array of zeros of the expected shape when `reaSource==False and imgSource==False`.
+* [Issue 196](https://github.com/MassimoCimmino/pygfunction/issues/196) - Fixed "invalid escape sequence" warnings when running tests on github actions.
+* [Issue 202](https://github.com/MassimoCimmino/pygfunction/issues/202) - Added missing package `recommonmark` to requirements for documentation and development.
+* [Issue 208](https://github.com/MassimoCimmino/pygfunction/issues/208) - Fixed an issue where `boreholes.field_from_file()` failed when the text file only contained 1 borehole.
 
 ## Version 2.1.0 (2021-11-12)
 

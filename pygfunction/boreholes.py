@@ -2,6 +2,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.constants import pi
+from scipy.spatial.distance import pdist
 
 from .utilities import _initialize_figure, _format_axes, _format_axes_3d
 
@@ -577,14 +578,21 @@ def find_duplicates(boreField, disp=False):
     duplicate_pairs : list
         A list of tuples where the tuples are pairs of duplicates
     """
-    # Initialize an empty list of duplicate pairs
-    duplicate_pairs = []
-    for i, borehole_1 in enumerate(boreField):
-        # Only loop unique interactions
-        for j, borehole_2 in enumerate(boreField[i+1:], start=i+1):
-            dist = borehole_1.distance(borehole_2)
-            if abs(dist - borehole_1.r_b) < borehole_1.r_b:
-                duplicate_pairs.append((i, j))
+    # Number of boreholes
+    n = len(boreField)
+    # Max. borehole radius
+    r_b = np.max([b.r_b for b in boreField])
+    # Array of coordinates
+    coordinates = np.array([[b.x, b.y] for b in boreField])
+    # Find distance between each pair of boreholes
+    distances = pdist(coordinates, 'euclidean')
+    # Find duplicate boreholes
+    duplicate_index = np.argwhere(distances < r_b)
+    i = n - 2 - np.floor(
+        np.sqrt(-8 * duplicate_index + 4 * n * (n - 1) - 7) / 2 - 0.5)
+    j = duplicate_index + i + 1 - n * (n - 1) / 2 + (n - i) * ((n - i) - 1) / 2
+    duplicate_pairs = [(int(ii), int(jj)) for (ii, jj) in zip(i, j)]
+
     if disp:
         print(' gt.boreholes.find_duplicates() '.center(50, '-'))
         print(f'The duplicate pairs of boreholes found:\n{duplicate_pairs}')
@@ -1111,7 +1119,7 @@ def field_from_file(filename):
 
     """
     # Load data from file
-    data = np.loadtxt(filename)
+    data = np.loadtxt(filename, ndmin=2)
     # Build the bore field
     borefield = []
     for line in data:
