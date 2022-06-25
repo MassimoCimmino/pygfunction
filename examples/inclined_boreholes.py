@@ -1,8 +1,17 @@
 # -*- coding: utf-8 -*-
-""" Example of calculation of g-functions with inclined boreholes
+""" Example of calculation of g-functions with inclined boreholesusing uniform
+    and equal borehole wall temperatures.
 
-    <<<Enter description of what fields are computed.>>>
-
+    The g-functions of two fields of 8 boreholes are calculated for boundary
+    condition of uniform borehole wall temperature along the boreholes, equal
+    for all boreholes. The first field corresponds to the "optimum"
+    configuration presented by Claesson and Eskilson (1987) and the second
+    field corresponds to the configuration comprised of 8 boreholes in a
+    circle.
+    
+    Claesson J, and Eskilson, P. (1987). Conductive heat extraction by
+    thermally interacting deep boreholes, in "Thermal analysis of heat
+    extraction boreholes". Ph.D. Thesis, University of Lund, Lund, Sweden. 
 """
 
 import pygfunction as gt
@@ -16,85 +25,88 @@ def main():
     # -------------------------------------------------------------------------
 
     # Borehole dimensions
-    D = 4.0  # Borehole buried depth (m)
-    # Borehole length (m)
-    H = 150.
-    r_b = 0.075  # Borehole radius (m)
-    B = 7.5  # Borehole spacing (m)
-
-    # Inclination parameters
-    tilt = 20. * np.pi / 180.  # Angle (in radians) from vertical of the axis of the borehole
-    # Orientation is computed later in this example
+    D = 4.0             # Borehole buried depth (m)
+    H = 150.0           # Borehole length (m)
+    r_b = 0.075         # Borehole radius (m)
+    tilt = np.radians(20.)  # Borehole inclination (rad)
 
     # Thermal properties
     alpha = 1.0e-6      # Ground thermal diffusivity (m2/s)
 
     # g-Function calculation options
-    options = {'nSegments': 8, 'disp': True}
+    options = {'disp': True}
 
     # Geometrically expanding time vector.
     dt = 100*3600.                  # Time step
     tmax = 3000. * 8760. * 3600.    # Maximum time
-    Nt = 15                         # Number of time steps
+    Nt = 25                         # Number of time steps
     ts = H**2/(9.*alpha)            # Bore field characteristic time
     time = gt.utilities.time_geometric(dt, tmax, Nt)
-    lntts = np.log(time/ts)  # Unused in this script
+    lntts = np.log(time/ts)
 
-    # ------------------------------------------------------------------------------------------------------------------
-    # Custom tilted field creation
-    # ------------------------------------------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # Borehole fields
+    # -------------------------------------------------------------------------
     """
-    This field is an optimal configuration discussed in Claesson and Eskilson (1987).
-    
-    Claesson, J. and Eskilson, P. (1987). Conductive Heat Extraction by Thermally Interacting Deep Boreholes. Lund 
-    Institute of Technology, Lund, Sweden. PhD Thesis Chapter 3.   
-    """
-    # Make a list of angles utilized in Figure 5J on page 22 going from left to right.
-    west = gt.utilities.cardinal_point('W')  # Western orientation in radians
-    northwest = gt.utilities.cardinal_point('NW')
-    southwest = gt.utilities.cardinal_point('SW')
-    north = gt.utilities.cardinal_point('N')  # Northern orientation in radians
-    south = gt.utilities.cardinal_point('S')  # Southern orientation in radians
-    northeast = gt.utilities.cardinal_point('NE')
-    southeast = gt.utilities.cardinal_point('SE')
-    east = gt.utilities.cardinal_point('E')  # Eastern orientation in radians
-    bore_orientations = [west, northwest, southwest, north, south, northeast, southeast, east]
+    Bore field #1
 
-    optimal_field = []
-    for i, orientation in enumerate(bore_orientations):
-        borehole = gt.boreholes.Borehole(H, D, r_b, float(i) * B, 0., tilt=tilt, orientation=orientation)
-        optimal_field.append(borehole)
+    This field is corresponds to the optimal configuration presented by
+    Claesson and Eskilson (1987). The field is built using the `cardinal_point`
+    function to define the orientation of each borehole, individually.
+    """
+    B = 7.5 # Borehole spacing (m)
+    # Orientation of the boreholes
+    borehole_orientations = [
+        gt.utilities.cardinal_point('W'),
+        gt.utilities.cardinal_point('NW'),
+        gt.utilities.cardinal_point('SW'),
+        gt.utilities.cardinal_point('N'),
+        gt.utilities.cardinal_point('S'),
+        gt.utilities.cardinal_point('NE'),
+        gt.utilities.cardinal_point('SE'),
+        gt.utilities.cardinal_point('E')]
+
+    # "Optimal" field of 8 boreholes
+    boreField1 = []
+    for i, orientation in enumerate(borehole_orientations):
+        borehole = gt.boreholes.Borehole(
+            H, D, r_b, i * B, 0., tilt=tilt, orientation=orientation)
+        boreField1.append(borehole)
 
     # Visualize the borehole field
-    fig = gt.boreholes.visualize_field(optimal_field)
-    # fig.show() will show the plot in a temporary window
-    # fig.savefig('diamond_field.png') will save a high resolution png to the current directory
-    plt.close(fig)  # Closing the figure given that several more figures will be opened in the example
+    fig1 = gt.boreholes.visualize_field(boreField1)
 
-    # Compute a uniform borehole wall temperature g-function with the custom borehole field
-    # NOTE: Inclined boreholes currently are only supported with the detailed and similarities solver methods.
-    gfunc = gt.gfunction.gFunction(
-        optimal_field, alpha, time=time, boundary_condition='UBWT', options=options, method='similarities')
-    # Visualize the g-function
-    fig = gfunc.visualize_g_function()
-    plt.close(fig)
+    """
+    Bore field #2
 
-    # ------------------------------------------------------------------------------------------------------------------
-    # Utilize pygfunction tilted field creation
-    # ------------------------------------------------------------------------------------------------------------------
-    # NOTE: The built in borehole field creation functions automatically compute orientation.
+    This field is corresponds to the configuration comprised of 8 boreholes in
+    a circle presented by Claesson and Eskilson (1987). The field is built
+    using the `circle_field` function.
+    """
+    N = 8   # Number of boreholes
+    R = 3.  # Borehole spacing from the center of the field (m)
 
-    # Rectangular field (2 x 2)
-    rectangular_field = gt.boreholes.rectangle_field(2, 2, B, B, H, D, r_b, tilt=tilt)
+    # Field of 6 boreholes in a circle
+    boreField2 = gt.boreholes.circle_field(N, R, H, D, r_b, tilt=tilt)
 
-    fig = gt.boreholes.visualize_field(rectangular_field)
-    plt.close(fig)
+    # Visualize the borehole field
+    fig2 = gt.boreholes.visualize_field(boreField2)
 
-    # Compute a uniform borehole wall temperature g-function for the rectangular borehole field
-    gfunc = gt.gfunction.gFunction(
-        rectangular_field, alpha, time=time, boundary_condition='UBWT', options=options, method='detailed')
-    fig = gfunc.visualize_g_function()
-    plt.close(fig)
+    # -------------------------------------------------------------------------
+    # Evaluate g-functions for all fields
+    # -------------------------------------------------------------------------
+    # Bore field #1
+    gfunc1 = gt.gfunction.gFunction(
+        boreField1, alpha, time=time, options=options, method='similarities')
+    fig3 = gfunc1.visualize_g_function()
+    fig3.suptitle('"Optimal" field of 8 boreholes')
+    fig3.tight_layout()
+    # Bore field #2
+    gfunc2 = gt.gfunction.gFunction(
+        boreField2, alpha, time=time, options=options, method='similarities')
+    fig4 = gfunc2.visualize_g_function()
+    fig4.suptitle(f'Field of {N} boreholes in a circle')
+    fig4.tight_layout()
 
 
 # Main function
