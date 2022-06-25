@@ -114,7 +114,7 @@ class gFunction(object):
             mQuad : int, optional
                 Number of Gauss-Legendre sample points for the integral over
                 :math:`u` in the inclined FLS solution.
-                Default is 21.
+                Default is 11.
             disp : bool, optional
                 Set to true to print progression messages.
                 Default is False.
@@ -1412,7 +1412,7 @@ class _BaseSolver(object):
     mQuad : int, optional
         Number of Gauss-Legendre sample points for the integral over :math:`u`
         in the inclined FLS solution.
-        Default is 21.
+        Default is 11.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -1432,7 +1432,7 @@ class _BaseSolver(object):
     """
     def __init__(self, boreholes, network, time, boundary_condition,
                  nSegments=8, segment_ratios=utilities.segment_ratios,
-                 approximate_FLS=False, mQuad=21, nFLS=10, disp=False,
+                 approximate_FLS=False, mQuad=11, nFLS=10, disp=False,
                  profiles=False, kind='linear', dtype=np.double,
                  **other_options):
         self.boreholes = boreholes
@@ -1901,7 +1901,7 @@ class _Detailed(_BaseSolver):
     mQuad : int, optional
         Number of Gauss-Legendre sample points for the integral over :math:`u`
         in the inclined FLS solution.
-        Default is 21.
+        Default is 11.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -2157,7 +2157,7 @@ class _Similarities(_BaseSolver):
     mQuad : int, optional
         Number of Gauss-Legendre sample points for the integral over :math:`u`
         in the inclined FLS solution.
-        Default is 21.
+        Default is 11.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -3454,7 +3454,7 @@ class _Equivalent(_BaseSolver):
     mQuad : int, optional
         Number of Gauss-Legendre sample points for the integral over :math:`u`
         in the inclined FLS solution.
-        Default is 21.
+        Default is 11.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.

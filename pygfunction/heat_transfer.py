@@ -9,7 +9,7 @@ from .utilities import erfint, exp1, _erf_coeffs
 
 def finite_line_source(
         time, alpha, borehole1, borehole2, reaSource=True, imgSource=True,
-        approximation=False, M=21, N=10):
+        approximation=False, M=11, N=10):
     """
     Evaluate the Finite Line Source (FLS) solution.
 
@@ -140,7 +140,7 @@ def finite_line_source(
     M : int, optional
         Number of Gauss-Legendre sample points for the quadrature over
         :math:`u`. This is only used for inclined boreholes.
-        Default is 21.
+        Default is 11.
     N : int, optional
         Number of terms in the approximation of the FLS solution. This
         parameter is unused if `approximation` is set to False.
@@ -249,7 +249,7 @@ def finite_line_source(
                 h = _finite_line_source_inclined_steady_state(
                     rb1, x1, y1, H1, D1, tilt1, orientation1,
                     x2, y2, H2, D2, tilt2, orientation2,
-                    reaSource, imgSource, M)
+                    reaSource, imgSource, M=M)
             elif approximation:
                 # Approximation
                 h = finite_line_source_inclined_approximation(
@@ -329,7 +329,7 @@ def finite_line_source(
                 h = _finite_line_source_inclined_steady_state(
                     r_b, x1, y1, H1, D1, tilt1, orientation1,
                     x2, y2, H2, D2, tilt2, orientation2,
-                    reaSource, imgSource, M)
+                    reaSource, imgSource, M=M)
             elif approximation:
                 # Approximation
                 h = finite_line_source_inclined_approximation(
@@ -459,7 +459,7 @@ def finite_line_source_inclined_approximation(
         time, alpha, 
         rb1, x1, y1, H1, D1, tilt1, orientation1,
         x2, y2, H2, D2, tilt2, orientation2,
-        reaSource=True, imgSource=True, M=21, N=10):
+        reaSource=True, imgSource=True, M=11, N=10):
     """
     Evaluate the inclined Finite Line Source (FLS) solution using the
     approximation method of Cimmino (2021) [#IncFLSApprox-Cimmin2021]_.
@@ -892,7 +892,7 @@ def finite_line_source_inclined_vectorized(
         time, alpha,
         rb1, x1, y1, H1, D1, tilt1, orientation1,
         x2, y2, H2, D2, tilt2, orientation2,
-        reaSource=True, imgSource=True, M=21, approximation=False, N=10):
+        reaSource=True, imgSource=True, M=11, approximation=False, N=10):
     """
     Evaluate the inclined Finite Line Source (FLS) solution.
 
@@ -1419,7 +1419,7 @@ def _finite_line_source_steady_state(dis, H1, D1, H2, D2, reaSource, imgSource):
 
 def _finite_line_source_inclined_steady_state(
         rb1, x1, y1, H1, D1, tilt1, orientation1, x2, y2, H2, D2, tilt2,
-        orientation2, reaSource, imgSource, M):
+        orientation2, reaSource, imgSource, M=11):
     """
     Steady-state inclined Finite Line Source (FLS) solution.
 
@@ -1459,6 +1459,7 @@ def _finite_line_source_inclined_steady_state(
     M : int
         Number of points for the Gauss-Legendre quadrature rule along the
         receiving heat sources.
+        Default is 11.
 
     Returns
     -------
