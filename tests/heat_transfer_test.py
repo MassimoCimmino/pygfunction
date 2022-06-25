@@ -522,5 +522,5 @@ def test_finite_line_source_multiple_inclined_to_multiple_inclined(
         # Evaluate FLS
         h = gt.heat_transfer.finite_line_source(
             time, alpha, boreholes, boreholes, reaSource=reaSource,
-            imgSource=imgSource, approximation=approximation, N=N)
+            imgSource=imgSource, approximation=approximation, M=M, N=N)
         assert np.allclose(h, expected)
