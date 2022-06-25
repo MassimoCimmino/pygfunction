@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+import warnings
+
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.constants import pi
 
-from .utilities import _initialize_figure, _format_axes, _format_axes_3d
+from .utilities import _initialize_figure, _format_axes, _format_axes_3d, length_of_side
 
 
 class Borehole(object):
@@ -628,7 +630,7 @@ def remove_duplicates(boreField, disp=False):
     return new_boreField
 
 
-def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b):
+def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
     """
     Build a list of boreholes in a rectangular bore field configuration.
 
@@ -648,6 +650,13 @@ def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b):
         Borehole buried depth (in meters).
     r_b : float
         Borehole radius (in meters).
+    tilt : float, optional
+        Angle (in radians) from vertical of the axis of the borehole. The
+        orientation of the tilt is orthogonal to the origin coordinate.
+        Default is 0.
+    origin : tuple, optional
+        A coordinate indicating the origin of reference for orientation of boreholes.
+        Default is the center of the rectangle.
 
     Returns
     -------
@@ -669,14 +678,20 @@ def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b):
     """
     borefield = []
 
+    if origin is None:
+        # When no origin is supplied, compute the origin to be at the center of the rectangle
+        origin = (length_of_side(N_1, B_1), length_of_side(N_2, B_2))
+
     for j in range(N_2):
         for i in range(N_1):
-            borefield.append(Borehole(H, D, r_b, x=i*B_1, y=j*B_2))
+            point = (i * B_1, j * B_2)
+            orientation = np.arctan2(point[1] - origin[1], point[0] - origin[0])
+            borefield.append(Borehole(H, D, r_b, x=point[0], y=point[1], tilt=tilt, orientation=orientation))
 
     return borefield
 
 
-def L_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b):
+def L_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
     """
     Build a list of boreholes in a L-shaped bore field configuration.
 
@@ -696,6 +711,13 @@ def L_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b):
         Borehole buried depth (in meters).
     r_b : float
         Borehole radius (in meters).
+    tilt : float, optional
+        Angle (in radians) from vertical of the axis of the borehole. The
+        orientation of the tilt is orthogonal to the origin coordinate.
+        Default is 0.
+    origin : tuple, optional
+        A coordinate indicating the origin of reference for orientation of boreholes.
+        Default is origin is placed at the center of an assumed rectangle.
 
     Returns
     -------
@@ -717,15 +739,23 @@ def L_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b):
     """
     borefield = []
 
+    if origin is None:
+        # When no origin is supplied, compute the origin to be at the center of the rectangle
+        origin = (length_of_side(N_1, B_1), length_of_side(N_2, B_2))
+
     for i in range(N_1):
-        borefield.append(Borehole(H, D, r_b, x=i*B_1, y=0.))
+        point = (i * B_1, 0.)
+        orientation = np.arctan2(point[1] - origin[1], point[0] - origin[0])
+        borefield.append(Borehole(H, D, r_b, x=point[0], y=point[1], tilt=tilt, orientation=orientation))
     for j in range(1, N_2):
-        borefield.append(Borehole(H, D, r_b, x=0., y=j*B_2))
+        point = (0., j * B_2)
+        orientation = np.arctan2(point[1] - origin[1], point[0] - origin[0])
+        borefield.append(Borehole(H, D, r_b, x=point[0], y=point[1], tilt=tilt, orientation=orientation))
 
     return borefield
 
 
-def U_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b):
+def U_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
     """
     Build a list of boreholes in a U-shaped bore field configuration.
 
@@ -745,6 +775,13 @@ def U_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b):
         Borehole buried depth (in meters).
     r_b : float
         Borehole radius (in meters).
+    tilt : float, optional
+        Angle (in radians) from vertical of the axis of the borehole. The
+        orientation of the tilt is orthogonal to the origin coordinate.
+        Default is 0.
+    origin : tuple, optional
+        A coordinate indicating the origin of reference for orientation of boreholes.
+        Default is the center considering an outer rectangle.
 
     Returns
     -------
@@ -766,19 +803,29 @@ def U_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b):
     """
     borefield = []
 
+    if origin is None:
+        # When no origin is supplied, compute the origin to be at the center of the rectangle
+        origin = (length_of_side(N_1, B_1), length_of_side(N_2, B_2))
+
     if N_1 > 2 and N_2 > 1:
         for i in range(N_1):
-            borefield.append(Borehole(H, D, r_b, x=i*B_1, y=0.))
+            point = (i * B_1, 0.)
+            orientation = np.arctan2(point[1] - origin[1], point[0] - origin[0])
+            borefield.append(Borehole(H, D, r_b, x=point[0], y=point[1], tilt=tilt, orientation=orientation))
         for j in range(1, N_2):
-            borefield.append(Borehole(H, D, r_b, x=0, y=j*B_2))
-            borefield.append(Borehole(H, D, r_b, x=(N_1-1)*B_1, y=j*B_2))
+            point = (0., j * B_2)
+            orientation = np.arctan2(point[1] - origin[1], point[0] - origin[0])
+            borefield.append(Borehole(H, D, r_b, x=point[0], y=point[1], tilt=tilt, orientation=orientation))
+            point = ((N_1 - 1) * B_1, j * B_2)
+            orientation = np.arctan2(point[1] - origin[1], point[0] - origin[0])
+            borefield.append(Borehole(H, D, r_b, x=point[0], y=point[1], tilt=tilt, orientation=orientation))
     else:
-        borefield = rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b)
+        borefield = rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=tilt, origin=origin)
 
     return borefield
 
 
-def box_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b):
+def box_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0, origin=None):
     """
     Build a list of boreholes in a box-shaped bore field configuration.
 
@@ -798,6 +845,13 @@ def box_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b):
         Borehole buried depth (in meters).
     r_b : float
         Borehole radius (in meters).
+    tilt : float, optional
+        Angle (in radians) from vertical of the axis of the borehole. The
+        orientation of the tilt is orthogonal to the origin coordinate.
+        Default is 0.
+    origin : tuple, optional
+        A coordinate indicating the origin of reference for orientation of boreholes.
+        Default is the center of the box.
 
     Returns
     -------
@@ -821,22 +875,33 @@ def box_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b):
     """
     borefield = []
 
+    if origin is None:
+        # When no origin is supplied, compute the origin to be at the center of the rectangle
+        origin = (length_of_side(N_1, B_1), length_of_side(N_2, B_2))
 
     if N_1 > 2 and N_2 > 2:
         for i in range(N_1):
-            borefield.append(Borehole(H, D, r_b, x=i*B_1, y=0.))
+            point = (i * B_1, 0.)
+            orientation = np.arctan2(point[1] - origin[1], point[0] - origin[0])
+            borefield.append(Borehole(H, D, r_b, x=point[0], y=point[1], tilt=tilt, orientation=orientation))
         for j in range(1, N_2-1):
-            borefield.append(Borehole(H, D, r_b, x=0., y=j*B_2))
-            borefield.append(Borehole(H, D, r_b, x=(N_1-1)*B_1, y=j*B_2))
+            point = (0., j * B_2)
+            orientation = np.arctan2(point[1] - origin[1], point[0] - origin[0])
+            borefield.append(Borehole(H, D, r_b, x=point[0], y=point[1], tilt=tilt, orientation=orientation))
+            point = ((N_1-1)*B_1, j*B_2)
+            orientation = np.arctan2(point[1] - origin[1], point[0] - origin[0])
+            borefield.append(Borehole(H, D, r_b, x=point[0], y=point[1], tilt=tilt, orientation=orientation))
         for i in range(N_1):
-            borefield.append(Borehole(H, D, r_b, x=i*B_1, y=(N_2-1)*B_2))
+            point = (i * B_1, (N_2 - 1) * B_2)
+            orientation = np.arctan2(point[1] - origin[1], point[0] - origin[0])
+            borefield.append(Borehole(H, D, r_b, x=point[0], y=point[1], tilt=tilt, orientation=orientation))
     else:
-        borefield = rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b)
+        borefield = rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=tilt, origin=origin)
 
     return borefield
 
 
-def circle_field(N, R, H, D, r_b, tilt=0.):
+def circle_field(N, R, H, D, r_b, tilt=0., origin=None):
     """
     Build a list of boreholes in a circular field configuration.
 
@@ -856,6 +921,9 @@ def circle_field(N, R, H, D, r_b, tilt=0.):
         Angle (in radians) from vertical of the axis of the borehole. The
         orientation of the tilt is towards the exterior of the bore field.
         Default is 0.
+    origin : tuple
+        A coordinate indicating the origin of reference for orientation of boreholes.
+        Default is the origin (0, 0).
 
     Returns
     -------
@@ -881,16 +949,16 @@ def circle_field(N, R, H, D, r_b, tilt=0.):
     """
     borefield = []
 
+    if origin is None:
+        origin = (0., 0.)
+
     for i in range(N):
+        x = R*np.cos(2*pi*i/N)
+        y = R*np.sin(2*pi*i/N)
+        orientation = np.arctan2(y - origin[1], x - origin[0])
+
         borefield.append(
-            Borehole(
-                H,
-                D,
-                r_b,
-                x=R*np.cos(2*pi*i/N),
-                y=R*np.sin(2*pi*i/N),
-                tilt=tilt,
-                orientation=2*pi*i/N))
+            Borehole(H, D, r_b, x=x, y=y, tilt=tilt, orientation=orientation))
 
     return borefield
 
@@ -914,12 +982,12 @@ def field_from_file(filename):
     -----
     The text file should be formatted as follows::
 
-        # x   y     H     D     r_b
-        0.    0.    100.  2.5   0.075
-        5.    0.    100.  2.5   0.075
-        0.    5.    100.  2.5   0.075
-        0.    10.   100.  2.5   0.075
-        0.    20.   100.  2.5   0.075
+        # x   y     H     D     r_b     tilt   orientation
+        0.    0.    100.  2.5   0.075   0.     0.
+        5.    0.    100.  2.5   0.075   0.     0.
+        0.    5.    100.  2.5   0.075   0.     0.
+        0.    10.   100.  2.5   0.075   0.     0.
+        0.    20.   100.  2.5   0.075   0.     0.
 
     """
     # Load data from file
@@ -932,7 +1000,14 @@ def field_from_file(filename):
         H = line[2]
         D = line[3]
         r_b = line[4]
-        borefield.append(Borehole(H, D, r_b, x=x, y=y))
+        # Previous versions of pygfunction only required up to line[4]. Now check to see if tilt and orientation exist.
+        if len(line) == 6:
+            tilt = line[5]
+            orientation = line[6]
+        else:
+            tilt = 0.
+            orientation = 0.
+        borefield.append(Borehole(H, D, r_b, x=x, y=y, tilt=tilt, orientation=orientation))
 
     return borefield
 
