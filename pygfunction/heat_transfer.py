@@ -1076,14 +1076,8 @@ def finite_line_source_inclined_vectorized(
             b = np.concatenate(([np.inf], a[:-1]))
             h = np.cumsum(
                 np.stack(
-                    [0.5 / H2 * (
-                        quad_vec(
-                            fRea, a_i, b_i, epsabs=1e-4, epsrel=1e-6)[0]
-                        + quad_vec(
-                            fImg, a_i, b_i, epsabs=1e-4, epsrel=1e-6)[0])
-                     if i==0
-                     else 0.5 / H2 * quad_vec(
-                         fReaImg, a_i, b_i, epsabs=1e-4, epsrel=1e-6)[0]
+                    [0.5 / H2 * quad_vec(
+                        fReaImg, a_i, b_i, epsabs=1e-4, epsrel=1e-6)[0]
                      for i, (a_i, b_i) in enumerate(zip(a, b))],
                     axis=-1),
                 axis=-1)
