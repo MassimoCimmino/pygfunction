@@ -18,13 +18,8 @@ def cardinal_point(direction):
     # Create the cardinal compass
     compass = {}
     for i, pointer in enumerate(accepted_inputs):
-        compass[pointer] = float(i) * np.pi / 8.
+        compass[pointer] = i * np.pi / 8.
     return compass[direction]
-
-
-def length_of_side(N, B):
-    L = (N - 1) * B
-    return L
 
 
 def erfint(x):

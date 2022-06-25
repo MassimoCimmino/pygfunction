@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
-import warnings
-
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.constants import pi
 
-from .utilities import _initialize_figure, _format_axes, _format_axes_3d, length_of_side
+from .utilities import _initialize_figure, _format_axes, _format_axes_3d
 
 
 class Borehole(object):
@@ -655,13 +653,18 @@ def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
         orientation of the tilt is orthogonal to the origin coordinate.
         Default is 0.
     origin : tuple, optional
-        A coordinate indicating the origin of reference for orientation of boreholes.
+        A coordinate indicating the origin of reference for orientation of
+        boreholes.
         Default is the center of the rectangle.
 
     Returns
     -------
     boreField : list of Borehole objects
         List of boreholes in the rectangular bore field.
+
+    Notes
+    -----
+    Boreholes located at the origin will remain vertical.
 
     Examples
     --------
@@ -679,14 +682,25 @@ def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
     borefield = []
 
     if origin is None:
-        # When no origin is supplied, compute the origin to be at the center of the rectangle
-        origin = (length_of_side(N_1, B_1), length_of_side(N_2, B_2))
+        # When no origin is supplied, compute the origin to be at the center of
+        # the rectangle
+        x0 = (N_1 - 1) / 2 * B_1
+        y0 = (N_2 - 1) / 2 * B_2
+    else:
+        x0, y0 = origin
 
     for j in range(N_2):
         for i in range(N_1):
-            point = (i * B_1, j * B_2)
-            orientation = np.arctan2(point[1] - origin[1], point[0] - origin[0])
-            borefield.append(Borehole(H, D, r_b, x=point[0], y=point[1], tilt=tilt, orientation=orientation))
+            x = i * B_1
+            y = j * B_2
+            # The borehole is inclined only if it does not lie on the origin
+            if np.sqrt((x - x0)**2 + (y - y0)**2):
+                orientation = np.arctan2(y - y0, x - x0)
+                borefield.append(
+                    Borehole(
+                        H, D, r_b, x, y, tilt=tilt, orientation=orientation))
+            else:
+                borefield.append(Borehole(H, D, r_b, x, y))
 
     return borefield
 
@@ -716,13 +730,18 @@ def L_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
         orientation of the tilt is orthogonal to the origin coordinate.
         Default is 0.
     origin : tuple, optional
-        A coordinate indicating the origin of reference for orientation of boreholes.
+        A coordinate indicating the origin of reference for orientation of
+        boreholes.
         Default is origin is placed at the center of an assumed rectangle.
 
     Returns
     -------
     boreField : list of Borehole objects
         List of boreholes in the L-shaped bore field.
+
+    Notes
+    -----
+    Boreholes located at the origin will remain vertical.
 
     Examples
     --------
@@ -740,17 +759,35 @@ def L_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
     borefield = []
 
     if origin is None:
-        # When no origin is supplied, compute the origin to be at the center of the rectangle
-        origin = (length_of_side(N_1, B_1), length_of_side(N_2, B_2))
+        # When no origin is supplied, compute the origin to be at the center of
+        # the rectangle
+        x0 = (N_1 - 1) / 2 * B_1
+        y0 = (N_2 - 1) / 2 * B_2
+    else:
+        x0, y0 = origin
 
     for i in range(N_1):
-        point = (i * B_1, 0.)
-        orientation = np.arctan2(point[1] - origin[1], point[0] - origin[0])
-        borefield.append(Borehole(H, D, r_b, x=point[0], y=point[1], tilt=tilt, orientation=orientation))
+        x = i * B_1
+        y = 0.
+        # The borehole is inclined only if it does not lie on the origin
+        if np.sqrt((x - x0)**2 + (y - y0)**2):
+            orientation = np.arctan2(y - y0, x - x0)
+            borefield.append(
+                Borehole(
+                    H, D, r_b, x, y, tilt=tilt, orientation=orientation))
+        else:
+            borefield.append(Borehole(H, D, r_b, x, y))
     for j in range(1, N_2):
-        point = (0., j * B_2)
-        orientation = np.arctan2(point[1] - origin[1], point[0] - origin[0])
-        borefield.append(Borehole(H, D, r_b, x=point[0], y=point[1], tilt=tilt, orientation=orientation))
+        x = 0.
+        y = j * B_2
+        # The borehole is inclined only if it does not lie on the origin
+        if np.sqrt((x - x0)**2 + (y - y0)**2):
+            orientation = np.arctan2(y - y0, x - x0)
+            borefield.append(
+                Borehole(
+                    H, D, r_b, x, y, tilt=tilt, orientation=orientation))
+        else:
+            borefield.append(Borehole(H, D, r_b, x, y))
 
     return borefield
 
@@ -780,13 +817,18 @@ def U_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
         orientation of the tilt is orthogonal to the origin coordinate.
         Default is 0.
     origin : tuple, optional
-        A coordinate indicating the origin of reference for orientation of boreholes.
+        A coordinate indicating the origin of reference for orientation of
+        boreholes.
         Default is the center considering an outer rectangle.
 
     Returns
     -------
     boreField : list of Borehole objects
         List of boreholes in the U-shaped bore field.
+
+    Notes
+    -----
+    Boreholes located at the origin will remain vertical.
 
     Examples
     --------
@@ -804,23 +846,49 @@ def U_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
     borefield = []
 
     if origin is None:
-        # When no origin is supplied, compute the origin to be at the center of the rectangle
-        origin = (length_of_side(N_1, B_1), length_of_side(N_2, B_2))
+        # When no origin is supplied, compute the origin to be at the center of
+        # the rectangle
+        x0 = (N_1 - 1) / 2 * B_1
+        y0 = (N_2 - 1) / 2 * B_2
+    else:
+        x0, y0 = origin
 
     if N_1 > 2 and N_2 > 1:
         for i in range(N_1):
-            point = (i * B_1, 0.)
-            orientation = np.arctan2(point[1] - origin[1], point[0] - origin[0])
-            borefield.append(Borehole(H, D, r_b, x=point[0], y=point[1], tilt=tilt, orientation=orientation))
+            x = i * B_1
+            y = 0.
+            # The borehole is inclined only if it does not lie on the origin
+            if np.sqrt((x - x0)**2 + (y - y0)**2):
+                orientation = np.arctan2(y - y0, x - x0)
+                borefield.append(
+                    Borehole(
+                        H, D, r_b, x, y, tilt=tilt, orientation=orientation))
+            else:
+                borefield.append(Borehole(H, D, r_b, x, y))
         for j in range(1, N_2):
-            point = (0., j * B_2)
-            orientation = np.arctan2(point[1] - origin[1], point[0] - origin[0])
-            borefield.append(Borehole(H, D, r_b, x=point[0], y=point[1], tilt=tilt, orientation=orientation))
-            point = ((N_1 - 1) * B_1, j * B_2)
-            orientation = np.arctan2(point[1] - origin[1], point[0] - origin[0])
-            borefield.append(Borehole(H, D, r_b, x=point[0], y=point[1], tilt=tilt, orientation=orientation))
+            x = 0.
+            y = j * B_2
+            # The borehole is inclined only if it does not lie on the origin
+            if np.sqrt((x - x0)**2 + (y - y0)**2):
+                orientation = np.arctan2(y - y0, x - x0)
+                borefield.append(
+                    Borehole(
+                        H, D, r_b, x, y, tilt=tilt, orientation=orientation))
+            else:
+                borefield.append(Borehole(H, D, r_b, x, y))
+            x = (N_1 - 1) * B_1
+            y = j * B_2
+            # The borehole is inclined only if it does not lie on the origin
+            if np.sqrt((x - x0)**2 + (y - y0)**2):
+                orientation = np.arctan2(y - y0, x - x0)
+                borefield.append(
+                    Borehole(
+                        H, D, r_b, x, y, tilt=tilt, orientation=orientation))
+            else:
+                borefield.append(Borehole(H, D, r_b, x, y))
     else:
-        borefield = rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=tilt, origin=origin)
+        borefield = rectangle_field(
+            N_1, N_2, B_1, B_2, H, D, r_b, tilt=tilt, origin=origin)
 
     return borefield
 
@@ -850,13 +918,18 @@ def box_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0, origin=None):
         orientation of the tilt is orthogonal to the origin coordinate.
         Default is 0.
     origin : tuple, optional
-        A coordinate indicating the origin of reference for orientation of boreholes.
+        A coordinate indicating the origin of reference for orientation of
+        boreholes.
         Default is the center of the box.
 
     Returns
     -------
     boreField : list of Borehole objects
         List of boreholes in the box-shaped bore field.
+
+    Notes
+    -----
+    Boreholes located at the origin will remain vertical.
 
     Examples
     --------
@@ -876,27 +949,59 @@ def box_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0, origin=None):
     borefield = []
 
     if origin is None:
-        # When no origin is supplied, compute the origin to be at the center of the rectangle
-        origin = (length_of_side(N_1, B_1), length_of_side(N_2, B_2))
+        # When no origin is supplied, compute the origin to be at the center of
+        # the rectangle
+        x0 = (N_1 - 1) / 2 * B_1
+        y0 = (N_2 - 1) / 2 * B_2
+    else:
+        x0, y0 = origin
 
     if N_1 > 2 and N_2 > 2:
         for i in range(N_1):
-            point = (i * B_1, 0.)
-            orientation = np.arctan2(point[1] - origin[1], point[0] - origin[0])
-            borefield.append(Borehole(H, D, r_b, x=point[0], y=point[1], tilt=tilt, orientation=orientation))
+            x = i * B_1
+            y = 0.
+            # The borehole is inclined only if it does not lie on the origin
+            if np.sqrt((x - x0)**2 + (y - y0)**2):
+                orientation = np.arctan2(y - y0, x - x0)
+                borefield.append(
+                    Borehole(
+                        H, D, r_b, x, y, tilt=tilt, orientation=orientation))
+            else:
+                borefield.append(Borehole(H, D, r_b, x, y))
+            x = i * B_1
+            y = (N_2 - 1) * B_2
+            # The borehole is inclined only if it does not lie on the origin
+            if np.sqrt((x - x0)**2 + (y - y0)**2):
+                orientation = np.arctan2(y - y0, x - x0)
+                borefield.append(
+                    Borehole(
+                        H, D, r_b, x, y, tilt=tilt, orientation=orientation))
+            else:
+                borefield.append(Borehole(H, D, r_b, x, y))
         for j in range(1, N_2-1):
-            point = (0., j * B_2)
-            orientation = np.arctan2(point[1] - origin[1], point[0] - origin[0])
-            borefield.append(Borehole(H, D, r_b, x=point[0], y=point[1], tilt=tilt, orientation=orientation))
-            point = ((N_1-1)*B_1, j*B_2)
-            orientation = np.arctan2(point[1] - origin[1], point[0] - origin[0])
-            borefield.append(Borehole(H, D, r_b, x=point[0], y=point[1], tilt=tilt, orientation=orientation))
-        for i in range(N_1):
-            point = (i * B_1, (N_2 - 1) * B_2)
-            orientation = np.arctan2(point[1] - origin[1], point[0] - origin[0])
-            borefield.append(Borehole(H, D, r_b, x=point[0], y=point[1], tilt=tilt, orientation=orientation))
+            x = 0.
+            y = j * B_2
+            # The borehole is inclined only if it does not lie on the origin
+            if np.sqrt((x - x0)**2 + (y - y0)**2):
+                orientation = np.arctan2(y - y0, x - x0)
+                borefield.append(
+                    Borehole(
+                        H, D, r_b, x, y, tilt=tilt, orientation=orientation))
+            else:
+                borefield.append(Borehole(H, D, r_b, x, y))
+            x = (N_1 - 1) * B_1
+            y = j * B_2
+            # The borehole is inclined only if it does not lie on the origin
+            if np.sqrt((x - x0)**2 + (y - y0)**2):
+                orientation = np.arctan2(y - y0, x - x0)
+                borefield.append(
+                    Borehole(
+                        H, D, r_b, x, y, tilt=tilt, orientation=orientation))
+            else:
+                borefield.append(Borehole(H, D, r_b, x, y))
     else:
-        borefield = rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=tilt, origin=origin)
+        borefield = rectangle_field(
+            N_1, N_2, B_1, B_2, H, D, r_b, tilt=tilt, origin=origin)
 
     return borefield
 
@@ -922,13 +1027,18 @@ def circle_field(N, R, H, D, r_b, tilt=0., origin=None):
         orientation of the tilt is towards the exterior of the bore field.
         Default is 0.
     origin : tuple
-        A coordinate indicating the origin of reference for orientation of boreholes.
+        A coordinate indicating the origin of reference for orientation of
+        boreholes.
         Default is the origin (0, 0).
 
     Returns
     -------
     boreField : list of Borehole objects
         List of boreholes in the circular shaped bore field.
+
+    Notes
+    -----
+    Boreholes located at the origin will remain vertical.
 
     Examples
     --------
@@ -950,15 +1060,25 @@ def circle_field(N, R, H, D, r_b, tilt=0., origin=None):
     borefield = []
 
     if origin is None:
-        origin = (0., 0.)
+        # When no origin is supplied, compute the origin to be at the center of
+        # the rectangle
+        x0 = 0.
+        y0 = 0.
+    else:
+        x0, y0 = origin
 
     for i in range(N):
-        x = R*np.cos(2*pi*i/N)
-        y = R*np.sin(2*pi*i/N)
-        orientation = np.arctan2(y - origin[1], x - origin[0])
-
-        borefield.append(
-            Borehole(H, D, r_b, x=x, y=y, tilt=tilt, orientation=orientation))
+        x = R * np.cos(2 * pi * i / N)
+        y = R * np.sin(2 * pi * i / N)
+        orientation = np.arctan2(y - y0, x - x0)
+        # The borehole is inclined only if it does not lie on the origin
+        if np.sqrt((x - x0)**2 + (y - y0)**2):
+            orientation = np.arctan2(y - y0, x - x0)
+            borefield.append(
+                Borehole(
+                    H, D, r_b, x, y, tilt=tilt, orientation=orientation))
+        else:
+            borefield.append(Borehole(H, D, r_b, x, y))
 
     return borefield
 
@@ -1000,14 +1120,16 @@ def field_from_file(filename):
         H = line[2]
         D = line[3]
         r_b = line[4]
-        # Previous versions of pygfunction only required up to line[4]. Now check to see if tilt and orientation exist.
+        # Previous versions of pygfunction only required up to line[4].
+        # Now check to see if tilt and orientation exist.
         if len(line) == 6:
             tilt = line[5]
             orientation = line[6]
         else:
             tilt = 0.
             orientation = 0.
-        borefield.append(Borehole(H, D, r_b, x=x, y=y, tilt=tilt, orientation=orientation))
+        borefield.append(
+            Borehole(H, D, r_b, x=x, y=y, tilt=tilt, orientation=orientation))
 
     return borefield
 
