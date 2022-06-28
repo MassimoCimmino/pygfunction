@@ -702,7 +702,7 @@ def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
             x = i * B_1
             y = j * B_2
             # The borehole is inclined only if it does not lie on the origin
-            if np.sqrt((x - x0)**2 + (y - y0)**2):
+            if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
                 orientation = np.arctan2(y - y0, x - x0)
                 borefield.append(
                     Borehole(
@@ -778,7 +778,7 @@ def L_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
         x = i * B_1
         y = 0.
         # The borehole is inclined only if it does not lie on the origin
-        if np.sqrt((x - x0)**2 + (y - y0)**2):
+        if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
             orientation = np.arctan2(y - y0, x - x0)
             borefield.append(
                 Borehole(
@@ -789,7 +789,7 @@ def L_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
         x = 0.
         y = j * B_2
         # The borehole is inclined only if it does not lie on the origin
-        if np.sqrt((x - x0)**2 + (y - y0)**2):
+        if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
             orientation = np.arctan2(y - y0, x - x0)
             borefield.append(
                 Borehole(
@@ -866,7 +866,7 @@ def U_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
             x = i * B_1
             y = 0.
             # The borehole is inclined only if it does not lie on the origin
-            if np.sqrt((x - x0)**2 + (y - y0)**2):
+            if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
                 orientation = np.arctan2(y - y0, x - x0)
                 borefield.append(
                     Borehole(
@@ -877,7 +877,7 @@ def U_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
             x = 0.
             y = j * B_2
             # The borehole is inclined only if it does not lie on the origin
-            if np.sqrt((x - x0)**2 + (y - y0)**2):
+            if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
                 orientation = np.arctan2(y - y0, x - x0)
                 borefield.append(
                     Borehole(
@@ -887,7 +887,7 @@ def U_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
             x = (N_1 - 1) * B_1
             y = j * B_2
             # The borehole is inclined only if it does not lie on the origin
-            if np.sqrt((x - x0)**2 + (y - y0)**2):
+            if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
                 orientation = np.arctan2(y - y0, x - x0)
                 borefield.append(
                     Borehole(
@@ -969,7 +969,7 @@ def box_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0, origin=None):
             x = i * B_1
             y = 0.
             # The borehole is inclined only if it does not lie on the origin
-            if np.sqrt((x - x0)**2 + (y - y0)**2):
+            if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
                 orientation = np.arctan2(y - y0, x - x0)
                 borefield.append(
                     Borehole(
@@ -979,7 +979,7 @@ def box_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0, origin=None):
             x = i * B_1
             y = (N_2 - 1) * B_2
             # The borehole is inclined only if it does not lie on the origin
-            if np.sqrt((x - x0)**2 + (y - y0)**2):
+            if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
                 orientation = np.arctan2(y - y0, x - x0)
                 borefield.append(
                     Borehole(
@@ -990,7 +990,7 @@ def box_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0, origin=None):
             x = 0.
             y = j * B_2
             # The borehole is inclined only if it does not lie on the origin
-            if np.sqrt((x - x0)**2 + (y - y0)**2):
+            if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
                 orientation = np.arctan2(y - y0, x - x0)
                 borefield.append(
                     Borehole(
@@ -1000,7 +1000,7 @@ def box_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0, origin=None):
             x = (N_1 - 1) * B_1
             y = j * B_2
             # The borehole is inclined only if it does not lie on the origin
-            if np.sqrt((x - x0)**2 + (y - y0)**2):
+            if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
                 orientation = np.arctan2(y - y0, x - x0)
                 borefield.append(
                     Borehole(
@@ -1080,7 +1080,7 @@ def circle_field(N, R, H, D, r_b, tilt=0., origin=None):
         y = R * np.sin(2 * pi * i / N)
         orientation = np.arctan2(y - y0, x - x0)
         # The borehole is inclined only if it does not lie on the origin
-        if np.sqrt((x - x0)**2 + (y - y0)**2):
+        if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
             orientation = np.arctan2(y - y0, x - x0)
             borefield.append(
                 Borehole(

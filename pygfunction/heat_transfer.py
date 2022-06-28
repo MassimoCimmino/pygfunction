@@ -1045,18 +1045,7 @@ def finite_line_source_inclined_vectorized(
     """
     if not approximation:
         # Integrand of the inclined finite line source solution
-        # Real part
-        fRea = _finite_line_source_inclined_integrand(
-            rb1, x1, y1, H1, D1, tilt1, orientation1,
-            x2, y2, H2, D2, tilt2, orientation2,
-            reaSource, False, M)
-        # Image part
-        fImg = _finite_line_source_inclined_integrand(
-            rb1, x1, y1, H1, D1, tilt1, orientation1,
-            x2, y2, H2, D2, tilt2, orientation2,
-            False, imgSource, M)
-        # Both parts
-        fReaImg = _finite_line_source_inclined_integrand(
+        f = _finite_line_source_inclined_integrand(
             rb1, x1, y1, H1, D1, tilt1, orientation1,
             x2, y2, H2, D2, tilt2, orientation2,
             reaSource, imgSource, M)
@@ -1065,8 +1054,7 @@ def finite_line_source_inclined_vectorized(
         if isinstance(time, (np.floating, float)):
             # Lower bound of integration
             a = 1.0 / np.sqrt(4.0*alpha*time)
-            h = 0.5 / H2 * (quad_vec(fRea, a, np.inf, epsabs=1e-4, epsrel=1e-6)[0] \
-                + quad_vec(fImg, a, np.inf, epsabs=1e-4, epsrel=1e-6)[0])
+            h = 0.5 / H2 * quad_vec(f, a, np.inf, epsabs=1e-4, epsrel=1e-6)[0]
         else:
             # The real and image parts are split to avoid overflow in the
             # integrand function
@@ -1077,7 +1065,7 @@ def finite_line_source_inclined_vectorized(
             h = np.cumsum(
                 np.stack(
                     [0.5 / H2 * quad_vec(
-                        fReaImg, a_i, b_i, epsabs=1e-4, epsrel=1e-6)[0]
+                        f, a_i, b_i, epsabs=1e-4, epsrel=1e-6)[0]
                      for i, (a_i, b_i) in enumerate(zip(a, b))],
                     axis=-1),
                 axis=-1)

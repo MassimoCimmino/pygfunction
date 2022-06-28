@@ -377,9 +377,9 @@ def test_finite_line_source_Lazzarotto_steady_state(
         (1., False, True, False, 21, 10, -0.14490784205005186),
         (1., False, False, False, 21, 10, 0.),
         # One time step - FLS approximation
-        (1., True, True, True, 21, 10, 6.387924910257989),
-        (1., True, False, True, 21, 10, 6.5328321472166095),
-        (1., False, True, True, 21, 10, -0.14490784205005186),
+        (1., True, True, True, 21, 10, 6.38795301165354),
+        (1., True, False, True, 21, 10, 6.532855370434292),
+        (1., False, True, True, 21, 10, -0.1449023587807526),
         (1., False, False, True, 21, 10, 0.),
         # Multiple time steps
         (np.array([0.1, 1., 10.]), True, True, False, 21, 10, np.array(
@@ -392,11 +392,11 @@ def test_finite_line_source_Lazzarotto_steady_state(
             [0., 0., 0.])),
         # Multiple time steps - FLS approximation
         (np.array([0.1, 1., 10.]), True, True, True, 21, 10, np.array(
-            [5.61499596, 6.38792491, 6.61329376])),
+            [5.61500526, 6.38795301, 6.61341841])),
         (np.array([0.1, 1., 10.]), True, False, True, 21, 10, np.array(
-            [5.63802126, 6.53283215, 7.03111215])),
+            [5.63803137, 6.53285537, 7.03118607])),
         (np.array([0.1, 1., 10.]), False, True, True, 21, 10, np.array(
-            [-0.0230257 , -0.14490784, -0.41781906])),
+            [-0.02302611, -0.14490236, -0.41776766])),
         (np.array([0.1, 1., 10.]), False, False, True, 21, 10, np.array(
             [0., 0., 0.])),
     ])
@@ -411,11 +411,12 @@ def test_finite_line_source_inclined_to_self(
         time = ts * tts
         # Evaluate FLS
         h = gt.heat_transfer.finite_line_source(
-            time, alpha, b1, b1, reaSource=reaSource, imgSource=imgSource, M=M)
+            time, alpha, b1, b1, reaSource=reaSource, imgSource=imgSource,
+            approximation=approximation, M=M, N=N)
         assert np.allclose(h, expected)
 
 
-# Test finite_line_source for the test case of Lazzarotto (2016) at
+# Test finite_line_source for an inclined borehole on itself at
 # steady-state, using different combinations of reaSource and imgSource
 @pytest.mark.parametrize("reaSource, imgSource, M, expected", [
         (True, True, 21, 6.628532759512739),

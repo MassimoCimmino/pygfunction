@@ -171,7 +171,9 @@ class gFunction(object):
 
     Notes
     -----
-    The 'equivalent' solver does not support inclined boreholes.
+    - The 'equivalent' solver does not support the 'MIFT' boundary condition
+      when boreholes are connected in series.
+    - The 'equivalent' solver does not support inclined boreholes.
 
     References
     ----------
@@ -921,10 +923,6 @@ class gFunction(object):
         assert type(self.method) is str and self.method in acceptable_methods, \
             f"Method '{self.method}' is not an acceptable method. \n" \
             f"Please provide one of the following inputs : {acceptable_methods}"
-        assert (np.all([b.is_vertical() for b in self.boreholes])
-                or self.method.lower() in ['detailed', 'similarities']), \
-            "Inclined boreholes are only supported for the 'detailed' "\
-            "and 'similarities' solvers."
         return
 
 
