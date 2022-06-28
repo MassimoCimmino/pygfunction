@@ -10,7 +10,8 @@ from scipy.interpolate import interp1d as interp1d
 
 from .boreholes import Borehole, _EquivalentBorehole, find_duplicates
 from .heat_transfer import finite_line_source, finite_line_source_vectorized, \
-    finite_line_source_equivalent_boreholes_vectorized
+    finite_line_source_equivalent_boreholes_vectorized, \
+    finite_line_source_inclined_vectorized
 from .networks import Network, _EquivalentNetwork, network_thermal_resistance
 from .utilities import _initialize_figure, _format_axes
 from . import utilities
@@ -110,6 +111,10 @@ class gFunction(object):
                 Number of terms in the approximation of the FLS solution. This
                 parameter is unused if `approximate_FLS` is set to False.
                 Default is 10. Maximum is 25.
+            mQuad : int, optional
+                Number of Gauss-Legendre sample points for the integral over
+                :math:`u` in the inclined FLS solution.
+                Default is 11.
             disp : bool, optional
                 Set to true to print progression messages.
                 Default is False.
@@ -163,6 +168,12 @@ class gFunction(object):
                 the value of this parameter increases the accuracy of the
                 method.
                 Default is 1.
+
+    Notes
+    -----
+    - The 'equivalent' solver does not support the 'MIFT' boundary condition
+      when boreholes are connected in series.
+    - The 'equivalent' solver does not support inclined boreholes.
 
     References
     ----------
@@ -290,7 +301,7 @@ class gFunction(object):
         plt.tight_layout()
         return fig
 
-    def visualize_heat_extraction_rates(self, iBoreholes=None):
+    def visualize_heat_extraction_rates(self, iBoreholes=None, showTilt=True):
         """
         Plot the time-variation of the average heat extraction rates.
 
@@ -301,6 +312,9 @@ class gFunction(object):
             If iBoreholes is None, heat extraction rates are plotted for all
             boreholes.
             Default is None.
+        showTilt : bool
+            Set to True to show borehole inclination.
+            Default is True
 
         Returns
         -------
@@ -337,6 +351,13 @@ class gFunction(object):
                 line = ax2.plot(lntts, Q_t[iBoreholes.index(i)])
                 color = line[-1]._color
                 # Draw colored marker for borehole position
+                if showTilt:
+                    ax1.plot(
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                         linestyle='--',
+                         marker='None',
+                         color=color)
                 ax1.plot(borehole.x,
                          borehole.y,
                          linestyle='None',
@@ -344,6 +365,13 @@ class gFunction(object):
                          color=color)
             else:
                 # Draw black marker for borehole position
+                if showTilt:
+                    ax1.plot(
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                         linestyle='--',
+                         marker='None',
+                         color='k')
                 ax1.plot(borehole.x,
                          borehole.y,
                          linestyle='None',
@@ -355,7 +383,7 @@ class gFunction(object):
         return fig
 
     def visualize_heat_extraction_rate_profiles(
-            self, time=None, iBoreholes=None):
+            self, time=None, iBoreholes=None, showTilt=True):
         """
         Plot the heat extraction rate profiles at chosen time.
 
@@ -371,6 +399,9 @@ class gFunction(object):
             If iBoreholes is None, heat extraction rates are plotted for all
             boreholes.
             Default is None.
+        showTilt : bool
+            Set to True to show borehole inclination.
+            Default is True
 
         Returns
         -------
@@ -405,6 +436,13 @@ class gFunction(object):
                     Q_b[iBoreholes.index(i)], z[iBoreholes.index(i)])
                 color = line[-1]._color
                 # Draw colored marker for borehole position
+                if showTilt:
+                    ax1.plot(
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                         linestyle='--',
+                         marker='None',
+                         color=color)
                 ax1.plot(borehole.x,
                          borehole.y,
                          linestyle='None',
@@ -412,6 +450,13 @@ class gFunction(object):
                          color=color)
             else:
                 # Draw black marker for borehole position
+                if showTilt:
+                    ax1.plot(
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                         linestyle='--',
+                         marker='None',
+                         color='k')
                 ax1.plot(borehole.x,
                          borehole.y,
                          linestyle='None',
@@ -421,7 +466,7 @@ class gFunction(object):
         plt.tight_layout()
         return fig
 
-    def visualize_temperatures(self, iBoreholes=None):
+    def visualize_temperatures(self, iBoreholes=None, showTilt=True):
         """
         Plot the time-variation of the average borehole wall temperatures.
 
@@ -431,6 +476,9 @@ class gFunction(object):
             Borehole indices to plot temperatures.
             If iBoreholes is None, temperatures are plotted for all boreholes.
             Default is None.
+        showTilt : bool
+            Set to True to show borehole inclination.
+            Default is True
 
         Returns
         -------
@@ -467,6 +515,13 @@ class gFunction(object):
                 line = ax2.plot(lntts, T_b[iBoreholes.index(i)])
                 color = line[-1]._color
                 # Draw colored marker for borehole position
+                if showTilt:
+                    ax1.plot(
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                         linestyle='--',
+                         marker='None',
+                         color=color)
                 ax1.plot(borehole.x,
                          borehole.y,
                          linestyle='None',
@@ -474,6 +529,13 @@ class gFunction(object):
                          color=color)
             else:
                 # Draw black marker for borehole position
+                if showTilt:
+                    ax1.plot(
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                         linestyle='--',
+                         marker='None',
+                         color='k')
                 ax1.plot(borehole.x,
                          borehole.y,
                          linestyle='None',
@@ -484,7 +546,8 @@ class gFunction(object):
         plt.tight_layout()
         return fig
 
-    def visualize_temperature_profiles(self, time=None, iBoreholes=None):
+    def visualize_temperature_profiles(
+            self, time=None, iBoreholes=None, showTilt=True):
         """
         Plot the borehole wall temperature profiles at chosen time.
 
@@ -498,6 +561,9 @@ class gFunction(object):
             Borehole indices to plot temperature profiles.
             If iBoreholes is None, temperatures are plotted for all boreholes.
             Default is None.
+        showTilt : bool
+            Set to True to show borehole inclination.
+            Default is True
 
         Returns
         -------
@@ -532,6 +598,13 @@ class gFunction(object):
                     T_b[iBoreholes.index(i)], z[iBoreholes.index(i)])
                 color = line[-1]._color
                 # Draw colored marker for borehole position
+                if showTilt:
+                    ax1.plot(
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                         linestyle='--',
+                         marker='None',
+                         color=color)
                 ax1.plot(borehole.x,
                          borehole.y,
                          linestyle='None',
@@ -539,6 +612,13 @@ class gFunction(object):
                          color=color)
             else:
                 # Draw black marker for borehole position
+                if showTilt:
+                    ax1.plot(
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                         linestyle='--',
+                         marker='None',
+                         color='k')
                 ax1.plot(borehole.x,
                          borehole.y,
                          linestyle='None',
@@ -1327,6 +1407,10 @@ class _BaseSolver(object):
         Number of terms in the approximation of the FLS solution. This
         parameter is unused if `approximate_FLS` is set to False.
         Default is 10. Maximum is 25.
+    mQuad : int, optional
+        Number of Gauss-Legendre sample points for the integral over :math:`u`
+        in the inclined FLS solution.
+        Default is 11.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -1346,8 +1430,9 @@ class _BaseSolver(object):
     """
     def __init__(self, boreholes, network, time, boundary_condition,
                  nSegments=8, segment_ratios=utilities.segment_ratios,
-                 approximate_FLS=False, nFLS=10, disp=False, profiles=False,
-                 kind='linear', dtype=np.double, **other_options):
+                 approximate_FLS=False, mQuad=11, nFLS=10, disp=False,
+                 profiles=False, kind='linear', dtype=np.double,
+                 **other_options):
         self.boreholes = boreholes
         self.network = network
         # Convert time to a 1d array
@@ -1382,6 +1467,7 @@ class _BaseSolver(object):
         self._i1Segments = [sum(self.nBoreSegments[0:(i + 1)])
                             for i in range(nBoreholes)]
         self.approximate_FLS = approximate_FLS
+        self.mQuad = mQuad
         self.nFLS = nFLS
         self.disp = disp
         self.profiles = profiles
@@ -1703,9 +1789,6 @@ class _BaseSolver(object):
         assert np.all([isinstance(b, Borehole) for b in self.boreholes]), \
             "The list of boreholes contains elements that are not Borehole " \
             "objects."
-        assert np.all(np.abs([b.tilt for b in self.boreholes]) <= 1e-6), \
-            "The current version of pygfunction only supports vertical " \
-            "boreholes."
         assert self.network is None or isinstance(self.network, Network), \
             "The network is not a valid 'Network' object."
         assert self.network is None or (self.network.m_flow_network is not None and self.network.cp_f is not None), \
@@ -1813,6 +1896,10 @@ class _Detailed(_BaseSolver):
         Number of terms in the approximation of the FLS solution. This
         parameter is unused if `approximate_FLS` is set to False.
         Default is 10. Maximum is 25.
+    mQuad : int, optional
+        Number of Gauss-Legendre sample points for the integral over :math:`u`
+        in the inclined FLS solution.
+        Default is 11.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -1871,7 +1958,7 @@ class _Detailed(_BaseSolver):
         of thermal response factors, containing a copy of the matrix accessible
         by h_ij.y[:nSources,:nSources,:nt+1]. The first index along the
         third axis corresponds to time t=0. The interp1d object can be used to
-        obtain thermal response factors at any intermediat time by
+        obtain thermal response factors at any intermediate time by
         h_ij(t)[:nSources,:nSources].
 
         Attributes
@@ -1908,39 +1995,29 @@ class _Detailed(_BaseSolver):
         # Segment-to-segment thermal response factors for same-borehole
         # thermal interactions
         # ---------------------------------------------------------------------
-        h_ii, i_segment, j_segment = \
+        h, i_segment, j_segment = \
             self._thermal_response_factors_borehole_to_self(time, alpha)
         # Broadcast values to h_ij matrix
-        h_ij[j_segment, i_segment, 1:] = h_ii
+        h_ij[j_segment, i_segment, 1:] = h
         # ---------------------------------------------------------------------
         # Segment-to-segment thermal response factors for
         # borehole-to-borehole thermal interactions
         # ---------------------------------------------------------------------
-        for i, (borehole, nSegments, ratios, i0, i1) in enumerate(
-                zip(self.boreholes,
-                    self.nBoreSegments,
-                    self.segment_ratios,
-                    self._i0Segments,
-                    self._i1Segments)):
+        for i, (i0, i1) in enumerate(zip(self._i0Segments, self._i1Segments)):
             # Segments of the receiving borehole
-            b2 = borehole.segments(nSegments, segment_ratios=ratios)
+            b2 = self.boreSegments[i0:i1]
             if i+1 < nBoreholes:
                 # Segments of the emitting borehole
                 b1 = self.boreSegments[i1:]
                 h = finite_line_source(
                     time, alpha, b1, b2, approximation=self.approximate_FLS,
-                    N=self.nFLS)
+                    N=self.nFLS, M=self.mQuad)
                 # Broadcast values to h_ij matrix
-                for j, (j0, j1) in enumerate(
-                        zip(self._i0Segments[i+1:], self._i1Segments[i+1:]),
-                        start=i+1):
-                    h_ij[i0:i1, j0:j1, 1:] = h[:, j0-i1:j1-i1, :]
-                    if j > i:
-                        h_ij[j0:j1, i0:i1, 1:] = np.einsum(
-                            'ijk,i,j->jik',
-                            h[:, j0-i1:j1-i1, :],
-                            segment_lengths[i0:i1],
-                            1/segment_lengths[j0:j1])
+                h_ij[i0:i1, i1:, 1:] = h
+                h_ij[i1:, i0:i1, 1:] = \
+                    np.swapaxes(h, 0, 1) * np.divide.outer(
+                        segment_lengths[i0:i1],
+                        segment_lengths[i1:]).T[:,:,np.newaxis]
 
         # Return 2d array if time is a scalar
         if np.isscalar(time):
@@ -1968,7 +2045,7 @@ class _Detailed(_BaseSolver):
 
         Returns
         -------
-        h_ii : array
+        h : array
             Finite line source solution.
         i_segment : list
             Indices of the emitting segments in the bore field.
@@ -1997,11 +2074,22 @@ class _Detailed(_BaseSolver):
             np.sqrt((x[i_segment] - x[j_segment])**2 + (y[i_segment] - y[j_segment])**2),
             r_b[i_segment])
         # FlS solution
-        h_ii = finite_line_source_vectorized(
-            time, alpha,
-            dis, H[i_segment], D[i_segment], H[j_segment], D[j_segment],
-            approximation=self.approximate_FLS, N=self.nFLS)
-        return h_ii, i_segment, j_segment
+        if np.all([b.is_vertical() for b in self.boreholes]):
+            h = finite_line_source_vectorized(
+                time, alpha,
+                dis, H[i_segment], D[i_segment], H[j_segment], D[j_segment],
+                approximation=self.approximate_FLS, N=self.nFLS)
+        else:
+            tilt = np.array([b.tilt for b in self.boreSegments])
+            orientation = np.array([b.orientation for b in self.boreSegments])
+            h = finite_line_source_inclined_vectorized(
+                time, alpha,
+                r_b[i_segment], x[i_segment], y[i_segment], H[i_segment],
+                D[i_segment], tilt[i_segment], orientation[i_segment],
+                x[j_segment], y[j_segment], H[j_segment], D[j_segment],
+                tilt[j_segment], orientation[j_segment], M=self.mQuad,
+                approximation=self.approximate_FLS, N=self.nFLS)
+        return h, i_segment, j_segment
         
 
 
@@ -2064,6 +2152,10 @@ class _Similarities(_BaseSolver):
         Number of terms in the approximation of the FLS solution. This
         parameter is unused if `approximate_FLS` is set to False.
         Default is 10. Maximum is 25.
+    mQuad : int, optional
+        Number of Gauss-Legendre sample points for the integral over :math:`u`
+        in the inclined FLS solution.
+        Default is 11.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -2175,49 +2267,43 @@ class _Similarities(_BaseSolver):
         tic = perf_counter()
         # Initialize segment-to-segment response factors
         h_ij = np.zeros((self.nSources, self.nSources, nt+1), dtype=self.dtype)
-        segment_lengths = self.segment_lengths()
 
         # ---------------------------------------------------------------------
         # Segment-to-segment thermal response factors for same-borehole thermal
-        # interactions
+        # interactions (vertical boreholes)
         # ---------------------------------------------------------------------
-        for group in self.borehole_to_self:
-            # Index of first borehole in group
-            i = group[0]
-            # Find segment-to-segment similarities
-            H1, D1, H2, D2, i_pair, j_pair, k_pair = \
-                self._map_axial_segment_pairs(i, i)
-            # Locate thermal response factors in the h_ij matrix
-            i_segment, j_segment, k_segment, l_segment = \
-                self._map_segment_pairs(
-                    i_pair, j_pair, k_pair, [(n, n) for n in group], [0])
-            # Evaluate FLS at all time steps
-            H1 = H1.reshape(1, -1)
-            H2 = H2.reshape(1, -1)
-            D1 = D1.reshape(1, -1)
-            D2 = D2.reshape(1, -1)
-            dis = self.boreholes[i].r_b
-            h = finite_line_source_vectorized(
-                time, alpha, dis, H1, D1, H2, D2,
-                approximation=self.approximate_FLS, N=self.nFLS)
-            # Broadcast values to h_ij matrix
-            h_ij[j_segment, i_segment, 1:] = h[0, k_segment, :]
+        # Evaluate FLS at all time steps
+        h, i_segment, j_segment, k_segment = \
+            self._thermal_response_factors_borehole_to_self_vertical(
+                time, alpha)
+        # Broadcast values to h_ij matrix
+        h_ij[j_segment, i_segment, 1:] = h[k_segment, :]
+        # ---------------------------------------------------------------------
+        # Segment-to-segment thermal response factors for same-borehole thermal
+        # interactions (inclined boreholes)
+        # ---------------------------------------------------------------------
+        # Evaluate FLS at all time steps
+        h, i_segment, j_segment, k_segment = \
+            self._thermal_response_factors_borehole_to_self_inclined(
+                time, alpha)
+        # Broadcast values to h_ij matrix
+        h_ij[j_segment, i_segment, 1:] = h[k_segment, :]
         # ---------------------------------------------------------------------
         # Segment-to-segment thermal response factors for borehole-to-borehole
-        # thermal interactions
+        # thermal interactions (vertical boreholes)
         # ---------------------------------------------------------------------
         for pairs, distances, distance_indices in zip(
-                self.borehole_to_borehole,
-                self.borehole_to_borehole_distances,
-                self.borehole_to_borehole_indices):
+                self.borehole_to_borehole_vertical,
+                self.borehole_to_borehole_distances_vertical,
+                self.borehole_to_borehole_indices_vertical):
             # Index of first borehole pair in group
             i, j = pairs[0]
             # Find segment-to-segment similarities
             H1, D1, H2, D2, i_pair, j_pair, k_pair = \
-                self._map_axial_segment_pairs(i, j)
+                self._map_axial_segment_pairs_vertical(i, j)
             # Locate thermal response factors in the h_ij matrix
             i_segment, j_segment, k_segment, l_segment = \
-                self._map_segment_pairs(
+                self._map_segment_pairs_vertical(
                     i_pair, j_pair, k_pair, pairs, distance_indices)
             # Evaluate FLS at all time steps
             dis = np.reshape(distances, (-1, 1))
@@ -2237,6 +2323,17 @@ class _Similarities(_BaseSolver):
                 h_ij[i_segment, j_segment, 1:] = h[l_segment, k_segment, :]
             else:
                 h_ij[i_segment, j_segment, 1:] = (h * H2.T / H1.T)[l_segment, k_segment, :]
+        # ---------------------------------------------------------------------
+        # Segment-to-segment thermal response factors for borehole-to-borehole
+        # thermal interactions (inclined boreholes)
+        # ---------------------------------------------------------------------
+        # Evaluate FLS at all time steps
+        h, hT, i_segment, j_segment, k_segment = \
+            self._thermal_response_factors_borehole_to_borehole_inclined(
+                time, alpha)
+        # Broadcast values to h_ij matrix
+        h_ij[j_segment, i_segment, 1:] = h[k_segment, :]
+        h_ij[i_segment, j_segment, 1:] = hT[k_segment, :]
 
         # Return 2d array if time is a scalar
         if np.isscalar(time):
@@ -2250,6 +2347,227 @@ class _Similarities(_BaseSolver):
         if self.disp: print(f' {toc - tic:.3f} sec')
 
         return h_ij
+
+    def _thermal_response_factors_borehole_to_borehole_inclined(
+            self, time, alpha):
+        """
+        Evaluate the segment-to-segment thermal response factors for all pairs
+        of inclined segments.
+
+        Attributes
+        ----------
+        time : float or array
+            Values of time (in seconds) for which the g-function is evaluated.
+        alpha : float
+            Soil thermal diffusivity (in m2/s).
+
+        Returns
+        -------
+        h : array
+            Finite line source solution.
+        hT : array
+            Reciprocal finite line source solution.
+        i_segment : list
+            Indices of the emitting segments in the bore field.
+        j_segment : list
+            Indices of the receiving segments in the bore field.
+        k_segment : list
+            Indices of unique segment pairs in the (H1, D1, H2, D2) dimensions
+            corresponding to all pairs in (i_pair, j_pair) in the bore field.
+        """
+        rb1 = np.array([])
+        x1 = np.array([])
+        y1 = np.array([])
+        H1 = np.array([])
+        D1 = np.array([])
+        tilt1 = np.array([])
+        orientation1 = np.array([])
+        x2 = np.array([])
+        y2 = np.array([])
+        H2 = np.array([])
+        D2 = np.array([])
+        tilt2 = np.array([])
+        orientation2 = np.array([])
+        i_segment = np.array([], dtype=np.uint)
+        j_segment = np.array([], dtype=np.uint)
+        k_segment = np.array([], dtype=np.uint)
+        k0 = 0
+        for pairs in self.borehole_to_borehole_inclined:
+            # Index of first borehole pair in group
+            i, j = pairs[0]
+            # Find segment-to-segment similarities
+            rb1_i, x1_i, y1_i, H1_i, D1_i, tilt1_i, orientation1_i, \
+                x2_i, y2_i, H2_i, D2_i, tilt2_i, orientation2_i, \
+                i_pair, j_pair, k_pair = \
+                    self._map_axial_segment_pairs_inclined(i, j)
+            # Locate thermal response factors in the h_ij matrix
+            i_segment_i, j_segment_i, k_segment_i = \
+                self._map_segment_pairs_inclined(i_pair, j_pair, k_pair, pairs)
+            # Append lists
+            rb1 = np.append(rb1, rb1_i)
+            x1 = np.append(x1, x1_i)
+            y1 = np.append(y1, y1_i)
+            H1 = np.append(H1, H1_i)
+            D1 = np.append(D1, D1_i)
+            tilt1 = np.append(tilt1, tilt1_i)
+            orientation1 = np.append(orientation1, orientation1_i)
+            x2 = np.append(x2, x2_i)
+            y2 = np.append(y2, y2_i)
+            H2 = np.append(H2, H2_i)
+            D2 = np.append(D2, D2_i)
+            tilt2 = np.append(tilt2, tilt2_i)
+            orientation2 = np.append(orientation2, orientation2_i)
+            i_segment = np.append(i_segment, i_segment_i)
+            j_segment = np.append(j_segment, j_segment_i)
+            k_segment = np.append(k_segment, k_segment_i + k0)
+            k0 += len(k_pair)
+        # Evaluate FLS at all time steps
+        h = finite_line_source_inclined_vectorized(
+            time, alpha, rb1, x1, y1, H1, D1, tilt1, orientation1,
+            x2, y2, H2, D2, tilt2, orientation2, M=self.mQuad,
+            approximation=self.approximate_FLS, N=self.nFLS)
+        hT = (h.T * H2 / H1).T
+        return h, hT, i_segment, j_segment, k_segment
+
+    def _thermal_response_factors_borehole_to_self_inclined(self, time, alpha):
+        """
+        Evaluate the segment-to-segment thermal response factors for all pairs
+        of segments between each inclined borehole and itself.
+
+        Attributes
+        ----------
+        time : float or array
+            Values of time (in seconds) for which the g-function is evaluated.
+        alpha : float
+            Soil thermal diffusivity (in m2/s).
+
+        Returns
+        -------
+        h : array
+            Finite line source solution.
+        i_segment : list
+            Indices of the emitting segments in the bore field.
+        j_segment : list
+            Indices of the receiving segments in the bore field.
+        k_segment : list
+            Indices of unique segment pairs in the (H1, D1, H2, D2) dimensions
+            corresponding to all pairs in (i_pair, j_pair) in the bore field.
+        """
+        rb1 = np.array([])
+        x1 = np.array([])
+        y1 = np.array([])
+        H1 = np.array([])
+        D1 = np.array([])
+        tilt1 = np.array([])
+        orientation1 = np.array([])
+        x2 = np.array([])
+        y2 = np.array([])
+        H2 = np.array([])
+        D2 = np.array([])
+        tilt2 = np.array([])
+        orientation2 = np.array([])
+        i_segment = np.array([], dtype=np.uint)
+        j_segment = np.array([], dtype=np.uint)
+        k_segment = np.array([], dtype=np.uint)
+        k0 = 0
+        for group in self.borehole_to_self_inclined:
+            # Index of first borehole in group
+            i = group[0]
+            # Find segment-to-segment similarities
+            rb1_i, x1_i, y1_i, H1_i, D1_i, tilt1_i, orientation1_i, \
+                x2_i, y2_i, H2_i, D2_i, tilt2_i, orientation2_i, \
+                i_pair, j_pair, k_pair = \
+                    self._map_axial_segment_pairs_inclined(i, i)
+            # Locate thermal response factors in the h_ij matrix
+            i_segment_i, j_segment_i, k_segment_i = \
+                self._map_segment_pairs_inclined(
+                    i_pair, j_pair, k_pair, [(n, n) for n in group])
+            # Append lists
+            rb1 = np.append(rb1, rb1_i)
+            x1 = np.append(x1, x1_i)
+            y1 = np.append(y1, y1_i)
+            H1 = np.append(H1, H1_i)
+            D1 = np.append(D1, D1_i)
+            tilt1 = np.append(tilt1, tilt1_i)
+            orientation1 = np.append(orientation1, orientation1_i)
+            x2 = np.append(x2, x2_i)
+            y2 = np.append(y2, y2_i)
+            H2 = np.append(H2, H2_i)
+            D2 = np.append(D2, D2_i)
+            tilt2 = np.append(tilt2, tilt2_i)
+            orientation2 = np.append(orientation2, orientation2_i)
+            i_segment = np.append(i_segment, i_segment_i)
+            j_segment = np.append(j_segment, j_segment_i)
+            k_segment = np.append(k_segment, k_segment_i + k0)
+            k0 += len(k_pair)
+        # Evaluate FLS at all time steps
+        h = finite_line_source_inclined_vectorized(
+            time, alpha, rb1, x1, y1, H1, D1, tilt1, orientation1,
+            x2, y2, H2, D2, tilt2, orientation2, M=self.mQuad,
+            approximation=self.approximate_FLS, N=self.nFLS)
+        return h, i_segment, j_segment, k_segment
+
+    def _thermal_response_factors_borehole_to_self_vertical(self, time, alpha):
+        """
+        Evaluate the segment-to-segment thermal response factors for all pairs
+        of segments between each vertical borehole and itself.
+
+        Attributes
+        ----------
+        time : float or array
+            Values of time (in seconds) for which the g-function is evaluated.
+        alpha : float
+            Soil thermal diffusivity (in m2/s).
+
+        Returns
+        -------
+        h : array
+            Finite line source solution.
+        i_segment : list
+            Indices of the emitting segments in the bore field.
+        j_segment : list
+            Indices of the receiving segments in the bore field.
+        k_segment : list
+            Indices of unique segment pairs in the (H1, D1, H2, D2) dimensions
+            corresponding to all pairs in (i_pair, j_pair) in the bore field.
+        """
+        H1 = np.array([])
+        D1 = np.array([])
+        H2 = np.array([])
+        D2 = np.array([])
+        dis = np.array([])
+        i_segment = np.array([], dtype=np.uint)
+        j_segment = np.array([], dtype=np.uint)
+        k_segment = np.array([], dtype=np.uint)
+        k0 = 0
+        for group in self.borehole_to_self_vertical:
+            # Index of first borehole in group
+            i = group[0]
+            # Find segment-to-segment similarities
+            H1_i, D1_i, H2_i, D2_i, i_pair, j_pair, k_pair = \
+                self._map_axial_segment_pairs_vertical(i, i)
+            # Locate thermal response factors in the h_ij matrix
+            i_segment_i, j_segment_i, k_segment_i, l_segment_i = \
+                self._map_segment_pairs_vertical(
+                    i_pair, j_pair, k_pair, [(n, n) for n in group], [0])
+            # Append lists
+            H1 = np.append(H1, H1_i)
+            D1 = np.append(D1, D1_i)
+            H2 = np.append(H2, H2_i)
+            D2 = np.append(D2, D2_i)
+            if len(self.borehole_to_self_vertical) > 1:
+                dis = np.append(dis, np.full(len(H1_i), self.boreholes[i].r_b))
+            else:
+                dis = self.boreholes[i].r_b
+            i_segment = np.append(i_segment, i_segment_i)
+            j_segment = np.append(j_segment, j_segment_i)
+            k_segment = np.append(k_segment, k_segment_i + k0)
+            k0 += np.max(k_pair) + 1
+        # Evaluate FLS at all time steps
+        h = finite_line_source_vectorized(
+            time, alpha, dis, H1, D1, H2, D2,
+            approximation=self.approximate_FLS, N=self.nFLS)
+        return h, i_segment, j_segment, k_segment
 
     def find_similarities(self):
         """
@@ -2265,12 +2583,13 @@ class _Similarities(_BaseSolver):
 
         # Find similar pairs of boreholes
         # Boreholes can only be similar if their segments are similar
-        self.borehole_to_self, self.borehole_to_borehole = \
-            self._find_axial_borehole_pairs(self.boreholes)
-        # Find distances for each similar pairs
-        self.borehole_to_borehole_distances, self.borehole_to_borehole_indices = \
+        self.borehole_to_self_vertical, self.borehole_to_self_inclined, \
+            self.borehole_to_borehole_vertical, self.borehole_to_borehole_inclined = \
+                self._find_axial_borehole_pairs(self.boreholes)
+        # Find distances for each similar pairs of vertical boreholes
+        self.borehole_to_borehole_distances_vertical, self.borehole_to_borehole_indices_vertical = \
             self._find_distances(
-                self.boreholes, self.borehole_to_borehole)
+                self.boreholes, self.borehole_to_borehole_vertical)
 
         # Stop chrono
         toc = perf_counter()
@@ -2281,7 +2600,7 @@ class _Similarities(_BaseSolver):
     def _compare_boreholes(self, borehole1, borehole2):
         """
         Compare two boreholes and checks if they have the same dimensions :
-        H, D, and r_b.
+        H, D, r_b, and tilt.
 
         Parameters
         ----------
@@ -2299,16 +2618,17 @@ class _Similarities(_BaseSolver):
         # Compare lengths (H), buried depth (D) and radius (r_b)
         if (abs((borehole1.H - borehole2.H)/borehole1.H) < self.tol and
             abs((borehole1.r_b - borehole2.r_b)/borehole1.r_b) < self.tol and
-            abs((borehole1.D - borehole2.D)/(borehole1.D + 1e-30)) < self.tol):
+            abs((borehole1.D - borehole2.D)/(borehole1.D + 1e-30)) < self.tol and
+            abs(abs(borehole1.tilt) - abs(borehole2.tilt))/(abs(borehole1.tilt) + 1e-30) < self.tol):
             similarity = True
         else:
             similarity = False
         return similarity
 
-    def _compare_real_pairs(self, pair1, pair2):
+    def _compare_real_pairs_vertical(self, pair1, pair2):
         """
-        Compare two pairs of boreholes or segments and return True if the two
-        pairs have the same FLS solution for real sources.
+        Compare two pairs of vertical boreholes or segments and return True if
+        the two pairs have the same FLS solution for real sources.
 
         Parameters
         ----------
@@ -2342,10 +2662,10 @@ class _Similarities(_BaseSolver):
             similarity = False
         return similarity
 
-    def _compare_image_pairs(self, pair1, pair2):
+    def _compare_image_pairs_vertical(self, pair1, pair2):
         """
-        Compare two pairs of boreholes or segments and return True if the two
-        pairs have the same FLS solution for mirror sources.
+        Compare two pairs of vertical boreholes or segments and return True if
+        the two pairs have the same FLS solution for mirror sources.
 
         Parameters
         ----------
@@ -2374,10 +2694,11 @@ class _Similarities(_BaseSolver):
             similarity = False
         return similarity
 
-    def _compare_realandimage_pairs(self, pair1, pair2):
+    def _compare_realandimage_pairs_vertical(self, pair1, pair2):
         """
-        Compare two pairs of boreholes or segments and return True if the two
-        pairs have the same FLS solution for both real and mirror sources.
+        Compare two pairs of vertical boreholes or segments and return True if
+        the two pairs have the same FLS solution for both real and mirror
+        sources.
 
         Parameters
         ----------
@@ -2392,8 +2713,159 @@ class _Similarities(_BaseSolver):
             True if the two pairs have the same FLS solution.
 
         """
-        if (self._compare_real_pairs(pair1, pair2)
-            and self._compare_image_pairs(pair1, pair2)):
+        if (self._compare_real_pairs_vertical(pair1, pair2)
+            and self._compare_image_pairs_vertical(pair1, pair2)):
+            similarity = True
+        else:
+            similarity = False
+        return similarity
+
+    def _compare_real_pairs_inclined(self, pair1, pair2):
+        """
+        Compare two pairs of inclined boreholes or segments and return True if
+        the two pairs have the same FLS solution for real sources.
+
+        Parameters
+        ----------
+        pair1 : Tuple of Borehole objects
+            First pair of boreholes or segments.
+        pair2 : Tuple of Borehole objects
+            Second pair of boreholes or segments.
+
+        Returns
+        -------
+        similarity : bool
+            True if the two pairs have the same FLS solution.
+
+        """
+        dx1 = pair1[0].x - pair1[1].x; dx2 = pair2[0].x - pair2[1].x
+        dy1 = pair1[0].y - pair1[1].y; dy2 = pair2[0].y - pair2[1].y
+        dis1 = np.sqrt(dx1**2 + dy1**2); dis2 = np.sqrt(dx2**2 + dy2**2)
+        theta_12_1 = np.arctan2(dy1, dx1); theta_12_2 = np.arctan2(dy2, dx2)
+        deltaD1 = pair1[0].D - pair1[1].D; deltaD2 = pair2[0].D - pair2[1].D
+        # Equality of lengths between pairs
+        cond_H = (abs((pair1[0].H - pair2[0].H)/pair1[0].H) < self.tol
+            and abs((pair1[1].H - pair2[1].H)/pair1[1].H) < self.tol)
+        # Equality of buried depths differences
+        cond_deltaD = abs(deltaD1 - deltaD2)/(abs(deltaD1) + 1e-30) < self.tol
+        # Equality of distances
+        cond_dis = abs(dis1 - dis2)/(abs(dis1) + 1e-30) < self.disTol
+        # Equality of tilts
+        cond_beta = (
+            abs(abs(pair1[0].tilt) - abs(pair2[0].tilt))/(abs(pair1[0].tilt) + 1e-30) < self.tol
+            and abs(abs(pair1[1].tilt) - abs(pair2[1].tilt))/(abs(pair1[1].tilt) + 1e-30) < self.tol)
+        # Equality of relative orientations
+        sin_b1_cos_dt1_1 = np.sin(pair1[0].tilt) * np.cos(theta_12_1 - pair1[0].orientation)
+        sin_b2_cos_dt2_1 = np.sin(pair1[1].tilt) * np.cos(theta_12_1 - pair1[1].orientation)
+        sin_b1_cos_dt1_2 = np.sin(pair2[0].tilt) * np.cos(theta_12_2 - pair2[0].orientation)
+        sin_b2_cos_dt2_2 = np.sin(pair2[1].tilt) * np.cos(theta_12_2 - pair2[1].orientation)
+        cond_theta = (
+            abs(sin_b1_cos_dt1_1 - sin_b1_cos_dt1_2) / (abs(sin_b1_cos_dt1_1) + 1e-30) > self.tol
+            and abs(sin_b2_cos_dt2_1 - sin_b2_cos_dt2_2) / (abs(sin_b2_cos_dt2_1) + 1e-30) > self.tol)
+        if cond_H and cond_deltaD and cond_dis and cond_beta and cond_theta:
+            similarity = True
+        else:
+            similarity = False
+        return similarity
+
+    def _compare_image_pairs_inclined(self, pair1, pair2):
+        """
+        Compare two pairs of inclined boreholes or segments and return True if
+        the two pairs have the same FLS solution for mirror sources.
+
+        Parameters
+        ----------
+        pair1 : Tuple of Borehole objects
+            First pair of boreholes or segments.
+        pair2 : Tuple of Borehole objects
+            Second pair of boreholes or segments.
+
+        Returns
+        -------
+        similarity : bool
+            True if the two pairs have the same FLS solution.
+
+        """
+        dx1 = pair1[0].x - pair1[1].x; dx2 = pair2[0].x - pair2[1].x
+        dy1 = pair1[0].y - pair1[1].y; dy2 = pair2[0].y - pair2[1].y
+        dis1 = np.sqrt(dx1**2 + dy1**2); dis2 = np.sqrt(dx2**2 + dy2**2)
+        theta_12_1 = np.arctan2(dy1, dx1); theta_12_2 = np.arctan2(dy2, dx2)
+        sumD1 = pair1[0].D + pair1[1].D; sumD2 = pair2[0].D + pair2[1].D
+        # Equality of lengths between pairs
+        cond_H = (abs((pair1[0].H - pair2[0].H)/pair1[0].H) < self.tol
+            and abs((pair1[1].H - pair2[1].H)/pair1[1].H) < self.tol)
+        # Equality of buried depths sums
+        cond_sumD = abs(sumD1 - sumD2)/(abs(sumD1) + 1e-30) < self.tol
+        # Equality of distances
+        cond_dis = abs(dis1 - dis2)/(abs(dis1) + 1e-30) < self.disTol
+        # Equality of tilts
+        cond_beta = (
+            abs(abs(pair1[0].tilt) - abs(pair2[0].tilt))/(abs(pair1[0].tilt) + 1e-30) < self.tol
+            and abs(abs(pair1[1].tilt) - abs(pair2[1].tilt))/(abs(pair1[1].tilt) + 1e-30) < self.tol)
+        # Equality of relative orientations
+        sin_b1_cos_dt1_1 = np.sin(pair1[0].tilt) * np.cos(theta_12_1 - pair1[0].orientation)
+        sin_b2_cos_dt2_1 = np.sin(pair1[1].tilt) * np.cos(theta_12_1 - pair1[1].orientation)
+        sin_b1_cos_dt1_2 = np.sin(pair2[0].tilt) * np.cos(theta_12_2 - pair2[0].orientation)
+        sin_b2_cos_dt2_2 = np.sin(pair2[1].tilt) * np.cos(theta_12_2 - pair2[1].orientation)
+        cond_theta = (
+            abs(sin_b1_cos_dt1_1 - sin_b1_cos_dt1_2) / (abs(sin_b1_cos_dt1_1) + 1e-30) > self.tol
+            and abs(sin_b2_cos_dt2_1 - sin_b2_cos_dt2_2) / (abs(sin_b2_cos_dt2_1) + 1e-30) > self.tol)
+        if cond_H and cond_sumD and cond_dis and cond_beta and cond_theta:
+            similarity = True
+        else:
+            similarity = False
+        return similarity
+
+    def _compare_realandimage_pairs_inclined(self, pair1, pair2):
+        """
+        Compare two pairs of inclined boreholes or segments and return True if
+        the two pairs have the same FLS solution for both real and mirror
+        sources.
+
+        Parameters
+        ----------
+        pair1 : Tuple of Borehole objects
+            First pair of boreholes or segments.
+        pair2 : Tuple of Borehole objects
+            Second pair of boreholes or segments.
+
+        Returns
+        -------
+        similarity : bool
+            True if the two pairs have the same FLS solution.
+
+        Notes
+        -----
+        For inclined boreholes the similarity condition is the same for real
+        and image parts of the solution.
+
+        """
+        dx1 = pair1[0].x - pair1[1].x; dx2 = pair2[0].x - pair2[1].x
+        dy1 = pair1[0].y - pair1[1].y; dy2 = pair2[0].y - pair2[1].y
+        dis1 = np.sqrt(dx1**2 + dy1**2); dis2 = np.sqrt(dx2**2 + dy2**2)
+        theta_12_1 = np.arctan2(dy1, dx1); theta_12_2 = np.arctan2(dy2, dx2)
+        # Equality of lengths between pairs
+        cond_H = (abs((pair1[0].H - pair2[0].H)/pair1[0].H) < self.tol
+            and abs((pair1[1].H - pair2[1].H)/pair1[1].H) < self.tol)
+        # Equality of buried depths
+        cond_D = (
+            abs(pair1[0].D - pair2[0].D)/(abs(pair1[0].D) + 1e-30) < self.tol
+            and abs(pair1[1].D - pair2[1].D)/(abs(pair1[1].D) + 1e-30) < self.tol)
+        # Equality of distances
+        cond_dis = abs(dis1 - dis2)/(abs(dis1) + 1e-30) < self.disTol
+        # Equality of tilts
+        cond_beta = (
+            abs(abs(pair1[0].tilt) - abs(pair2[0].tilt))/(abs(pair1[0].tilt) + 1e-30) < self.tol
+            and abs(abs(pair1[1].tilt) - abs(pair2[1].tilt))/(abs(pair1[1].tilt) + 1e-30) < self.tol)
+        # Equality of relative orientations
+        sin_b1_cos_dt1_1 = np.sin(pair1[0].tilt) * np.cos(theta_12_1 - pair1[0].orientation)
+        sin_b2_cos_dt2_1 = np.sin(pair1[1].tilt) * np.cos(theta_12_1 - pair1[1].orientation)
+        sin_b1_cos_dt1_2 = np.sin(pair2[0].tilt) * np.cos(theta_12_2 - pair2[0].orientation)
+        sin_b2_cos_dt2_2 = np.sin(pair2[1].tilt) * np.cos(theta_12_2 - pair2[1].orientation)
+        cond_theta = (
+            abs(sin_b1_cos_dt1_1 - sin_b1_cos_dt1_2) / (abs(sin_b1_cos_dt1_1) + 1e-30) < self.tol
+            and abs(sin_b2_cos_dt2_1 - sin_b2_cos_dt2_2) / (abs(sin_b2_cos_dt2_1) + 1e-30) < self.tol)
+        if cond_H and cond_D and cond_dis and cond_beta and cond_theta:
             similarity = True
         else:
             similarity = False
@@ -2419,17 +2891,22 @@ class _Similarities(_BaseSolver):
             boreholes that share the same (pairwise) dimensions (H, D).
 
         """
-        # Compare for the full (real + image) FLS solution
-        compare_pairs = self._compare_realandimage_pairs
-
         nBoreholes = len(boreholes)
-        borehole_to_self = []
+        borehole_to_self_vertical = []
+        borehole_to_self_inclined = []
         # Only check for similarities if there is more than one borehole
         if nBoreholes > 1:
-            borehole_to_borehole = []
+            borehole_to_borehole_vertical = []
+            borehole_to_borehole_inclined = []
             for i, (borehole_i, nSegments_i, ratios_i) in enumerate(
                     zip(boreholes, self.nBoreSegments, self.segment_ratios)):
                 # Compare the borehole to all known unique sets of dimensions
+                if borehole_i.is_vertical():
+                    borehole_to_self = borehole_to_self_vertical
+                    compare_pairs = self._compare_realandimage_pairs_vertical
+                else:
+                    borehole_to_self = borehole_to_self_inclined
+                    compare_pairs = self._compare_realandimage_pairs_inclined
                 for k, borehole_set in enumerate(borehole_to_self):
                     m = borehole_set[0]
                     # Add the borehole to the group if a similar borehole is
@@ -2454,6 +2931,12 @@ class _Similarities(_BaseSolver):
                     pair0 = (borehole_i, borehole_j) # pair
                     pair1 = (borehole_j, borehole_i) # reciprocal pair
                     # Compare pairs of boreholes to known unique pairs
+                    if borehole_i.is_vertical() and borehole_j.is_vertical():
+                        borehole_to_borehole = borehole_to_borehole_vertical
+                        compare_pairs = self._compare_realandimage_pairs_vertical
+                    else:
+                        borehole_to_borehole = borehole_to_borehole_inclined
+                        compare_pairs = self._compare_realandimage_pairs_inclined
                     for pairs in borehole_to_borehole:
                         m, n = pairs[0]
                         pair_ref = (boreholes[m], boreholes[n])
@@ -2486,11 +2969,19 @@ class _Similarities(_BaseSolver):
                     # If no similar pairs are known, append the groups
                     else:
                         borehole_to_borehole.append([(i, j)])
+                        
         else:
             # Outputs for a single borehole
-            borehole_to_self = [[0]]
-            borehole_to_borehole = []
-        return borehole_to_self, borehole_to_borehole
+            if boreholes[0].is_vertical:
+                borehole_to_self_vertical = [[0]]
+                borehole_to_self_inclined = []
+            else:
+                borehole_to_self_vertical = []
+                borehole_to_self_inclined = [[0]]
+            borehole_to_borehole_vertical = []
+            borehole_to_borehole_inclined = []
+        return borehole_to_self_vertical, borehole_to_self_inclined, \
+            borehole_to_borehole_vertical, borehole_to_borehole_inclined
 
     def _find_distances(self, boreholes, borehole_to_borehole):
         """
@@ -2559,8 +3050,8 @@ class _Similarities(_BaseSolver):
                 nDis += 1
         return borehole_to_borehole_distances, borehole_to_borehole_indices
 
-    def _map_axial_segment_pairs(self, i, j,
-                                 reaSource=True, imgSource=True):
+    def _map_axial_segment_pairs_vertical(
+            self, i, j, reaSource=True, imgSource=True):
         """
         Find axial (i.e. disregarding the radial distance) similarities between
         segment pairs along two boreholes to simplify the evaluation of the
@@ -2602,13 +3093,13 @@ class _Similarities(_BaseSolver):
             "At least one of reaSource and imgSource must be True."
         if reaSource and imgSource:
             # Find segment pairs for the full (real + image) FLS solution
-            compare_pairs = self._compare_realandimage_pairs
+            compare_pairs = self._compare_realandimage_pairs_vertical
         elif reaSource:
             # Find segment pairs for the real FLS solution
-            compare_pairs = self._compare_real_pairs
+            compare_pairs = self._compare_real_pairs_vertical
         elif imgSource:
             # Find segment pairs for the image FLS solution
-            compare_pairs = self._compare_image_pairs
+            compare_pairs = self._compare_image_pairs_vertical
         # Dive both boreholes into segments
         segments1 = borehole1.segments(
             self.nBoreSegments[i], segment_ratios=self.segment_ratios[i])
@@ -2657,8 +3148,143 @@ class _Similarities(_BaseSolver):
                 p += 1
         return np.array(H1), np.array(D1), np.array(H2), np.array(D2), i_pair, j_pair, k_pair
 
-    def _map_segment_pairs(self, i_pair, j_pair, k_pair, borehole_to_borehole,
-                           borehole_to_borehole_indices):
+    def _map_axial_segment_pairs_inclined(
+            self, i, j, reaSource=True, imgSource=True):
+        """
+        Find axial similarities between segment pairs along two boreholes to
+        simplify the evaluation of the FLS solution.
+
+        The returned H1, D1, H2, and D2 can be used to evaluate the segment-to-
+        segment response factors using scipy.integrate.quad_vec.
+
+        Parameters
+        ----------
+        i : int
+            Index of the first borehole.
+        j : int
+            Index of the second borehole.
+
+        Returns
+        -------
+        rb1 : array
+            Radii of the emitting heat sources.
+        x1 : array
+            x-Positions of the emitting heat sources.
+        y1 : array
+            y-Positions of the emitting heat sources.
+        H1 : array
+            Lengths of the emitting heat sources.
+        D1 : array
+            Buried depths of the emitting heat sources.
+        tilt1 : array
+            Angles (in radians) from vertical of the emitting heat sources.
+        orientation1 : array
+            Directions (in radians) of the tilt the emitting heat sources.
+        x2 : array
+            x-Positions of the receiving heat sources.
+        y2 : array
+            y-Positions of the receiving heat sources.
+        H2 : array
+            Lengths of the receiving heat sources.
+        D2 : array
+            Buried depths of the receiving heat sources.
+        tilt2 : array
+            Angles (in radians) from vertical of the receiving heat sources.
+        orientation2 : array
+            Directions (in radians) of the tilt the receiving heat sources.
+        i_pair : list
+            Indices of the emitting segments along a borehole.
+        j_pair : list
+            Indices of the receiving segments along a borehole.
+        k_pair : list
+            Indices of unique segment pairs in the (H1, D1, H2, D2) dimensions
+            corresponding to all pairs in (i_pair, j_pair).
+        """
+        # Initialize local variables
+        borehole1 = self.boreholes[i]
+        borehole2 = self.boreholes[j]
+        assert reaSource or imgSource, \
+            "At least one of reaSource and imgSource must be True."
+        if reaSource and imgSource:
+            # Find segment pairs for the full (real + image) FLS solution
+            compare_pairs = self._compare_realandimage_pairs_inclined
+        elif reaSource:
+            # Find segment pairs for the real FLS solution
+            compare_pairs = self._compare_real_pairs_inclined
+        elif imgSource:
+            # Find segment pairs for the image FLS solution
+            compare_pairs = self._compare_image_pairs_inclined
+        # Dive both boreholes into segments
+        segments1 = borehole1.segments(
+            self.nBoreSegments[i], segment_ratios=self.segment_ratios[i])
+        segments2 = borehole2.segments(
+            self.nBoreSegments[j], segment_ratios=self.segment_ratios[j])
+        # Prepare lists of FLS-inclined arguments
+        rb1 = []
+        x1 = []
+        y1 = []
+        H1 = []
+        D1 = []
+        tilt1 = []
+        orientation1 = []
+        x2 = []
+        y2 = []
+        H2 = []
+        D2 = []
+        tilt2 = []
+        orientation2 = []
+        # All possible pairs (i, j) of indices between segments
+        i_pair = np.repeat(np.arange(self.nBoreSegments[i], dtype=np.uint),
+                           self.nBoreSegments[j])
+        j_pair = np.tile(np.arange(self.nBoreSegments[j], dtype=np.uint),
+                         self.nBoreSegments[i])
+        # Empty list of indices for unique pairs
+        k_pair = np.empty(self.nBoreSegments[i] * self.nBoreSegments[j],
+                          dtype=np.uint)
+        unique_pairs = []
+        nPairs = 0
+
+        p = 0
+        for ii, segment_i in enumerate(segments1):
+            for jj, segment_j in enumerate(segments2):
+                pair = (segment_i, segment_j)
+                # Compare the segment pairs to all known unique pairs
+                for k, pair_k in enumerate(unique_pairs):
+                    m, n = pair_k[0], pair_k[1]
+                    pair_ref = (segments1[m], segments2[n])
+                    # Stop if a similar pair is found and assign the index
+                    if compare_pairs(pair, pair_ref):
+                        k_pair[p] = k
+                        break
+                # If no similar pair is found : add a new pair, increment the
+                # number of unique pairs, and extract the associated buried
+                # depths
+                else:
+                    k_pair[p] = nPairs
+                    rb1.append(segment_i.r_b)
+                    x1.append(segment_i.x)
+                    y1.append(segment_i.y)
+                    H1.append(segment_i.H)
+                    D1.append(segment_i.D)
+                    tilt1.append(segment_i.tilt)
+                    orientation1.append(segment_i.orientation)
+                    x2.append(segment_j.x)
+                    y2.append(segment_j.y)
+                    H2.append(segment_j.H)
+                    D2.append(segment_j.D)
+                    tilt2.append(segment_j.tilt)
+                    orientation2.append(segment_j.orientation)
+                    unique_pairs.append((ii, jj))
+                    nPairs += 1
+                p += 1
+        return np.array(rb1), np.array(x1), np.array(y1), np.array(H1), \
+            np.array(D1), np.array(tilt1), np.array(orientation1), \
+            np.array(x2), np.array(y2), np.array(H2), np.array(D2), \
+            np.array(tilt2), np.array(orientation2), i_pair, j_pair, k_pair
+
+    def _map_segment_pairs_vertical(
+            self, i_pair, j_pair, k_pair, borehole_to_borehole,
+            borehole_to_borehole_indices):
         """
         Return the maping of the unique segment-to-segment thermal response
         factors (h) to the complete h_ij array of the borefield, such that:
@@ -2704,6 +3330,47 @@ class _Similarities(_BaseSolver):
         l_segment = np.concatenate(
             [np.repeat(i, len(k_pair)) for i in borehole_to_borehole_indices])
         return i_segment, j_segment, k_segment, l_segment
+
+    def _map_segment_pairs_inclined(
+            self, i_pair, j_pair, k_pair, borehole_to_borehole):
+        """
+        Return the maping of the unique segment-to-segment thermal response
+        factors (h) to the complete h_ij array of the borefield, such that:
+
+            h_ij[j_segment, i_segment, :nt] = h[:nt, k_segment].T,
+
+        where h is the array of unique segment-to-segment thermal response
+        factors for a given unique pair of boreholes at all unique distances.
+
+        Parameters
+        ----------
+        i_pair : list
+            Indices of the emitting segments.
+        j_pair : list
+            Indices of the receiving segments.
+        k_pair : list
+            Indices of unique segment pairs in the (H1, D1, H2, D2) dimensions
+            corresponding to all pairs in (i_pair, j_pair).
+        borehole_to_borehole : list
+            Tuples of borehole indexes.
+
+        Returns
+        -------
+        i_segment : list
+            Indices of the emitting segments in the bore field.
+        j_segment : list
+            Indices of the receiving segments in the bore field.
+        k_segment : list
+            Indices of unique segment pairs in the (H1, D1, H2, D2) dimensions
+            corresponding to all pairs in (i_pair, j_pair) in the bore field.
+
+        """
+        i_segment = np.concatenate(
+            [i_pair + self._i0Segments[i] for (i, j) in borehole_to_borehole])
+        j_segment = np.concatenate(
+            [j_pair + self._i0Segments[j] for (i, j) in borehole_to_borehole])
+        k_segment = np.tile(k_pair, len(borehole_to_borehole))
+        return i_segment, j_segment, k_segment
 
     def _check_solver_specific_inputs(self):
         """
@@ -2782,6 +3449,10 @@ class _Equivalent(_BaseSolver):
         Number of terms in the approximation of the FLS solution. This
         parameter is unused if `approximate_FLS` is set to False.
         Default is 10. Maximum is 25.
+    mQuad : int, optional
+        Number of Gauss-Legendre sample points for the integral over :math:`u`
+        in the inclined FLS solution.
+        Default is 11.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -3487,6 +4158,8 @@ class _Equivalent(_BaseSolver):
             "Solver 'equivalent' can only handle equal numbers of segments."
         assert np.all([np.allclose(segment_ratios, self.segment_ratios[0]) for segment_ratios in self.segment_ratios]), \
             "Solver 'equivalent' can only handle identical segment_ratios for all boreholes."
+        assert not np.any([b.is_tilted() for b in self.boreholes]), \
+            "Solver 'equivalent' can only handle vertical boreholes."
         if self.boundary_condition == 'MIFT':
             assert np.all(np.array(self.network.c, dtype=int) == -1), \
                 "Solver 'equivalent' is only valid for parallel-connected " \

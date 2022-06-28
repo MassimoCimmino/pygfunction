@@ -6,6 +6,22 @@ from scipy.special import erf
 import warnings
 
 
+def cardinal_point(direction):
+    accepted_inputs = ['E', 'ENE', 'NE', 'NNE',
+                       'N', 'NNW', 'NW', 'WNW',
+                       'W', 'WSW', 'SW', 'SSW',
+                       'S', 'SSE', 'SE', 'ESE']
+    direction = direction.upper()
+    if direction not in accepted_inputs:
+        raise ValueError("The indicated direction {} is not encompassed in the "
+                         "cardinal point function.".format(direction))
+    # Create the cardinal compass
+    compass = {}
+    for i, pointer in enumerate(accepted_inputs):
+        compass[pointer] = i * np.pi / 8.
+    return compass[direction]
+
+
 def erfint(x):
     """
     Integral of the error function.

@@ -7,6 +7,9 @@ import pytest
 import pygfunction as gt
 
 
+# =============================================================================
+# Test gFunction (vertical boreholes)
+# =============================================================================
 # Test 'UBWT' g-functions for different bore fields using all solvers,
 # unequal/uniform segments, and with/without the FLS approximation
 @pytest.mark.parametrize("field, method, opts, expected", [
@@ -226,4 +229,46 @@ def test_gfunctions_MIFT(field, method, opts, expected, request):
     gFunc = gt.gfunction.gFunction(
         network, alpha, time=time, method=method, options=options,
         boundary_condition='MIFT')
+    assert np.allclose(gFunc.gFunc, expected)
+
+
+# =============================================================================
+# Test gFunction (inclined boreholes)
+# =============================================================================
+# Test 'UBWT' g-functions for a field of inclined boreholes using all solvers,
+# unequal/uniform segments, and with/without the FLS approximation
+@pytest.mark.parametrize("method, opts, expected", [
+        # 'similarities' solver - unequal segments
+        ('similarities', 'unequal_segments', np.array([5.67249989, 6.72866814, 7.15134705])),
+        # 'similarities' solver - uniform segments
+        ('similarities', 'uniform_segments', np.array([5.68324619, 6.74356205, 7.16738741])),
+        # 'similarities' solver - unequal segments, FLS approximation
+        ('similarities', 'unequal_segments_approx', np.array([5.66984803, 6.72564218, 7.14826009])),
+        # 'similarities' solver - uniform segments, FLS approximation
+        ('similarities', 'uniform_segments_approx', np.array([5.67916493, 6.7395222 , 7.16339216])),
+        # 'detailed' solver - unequal segments
+        ('detailed', 'unequal_segments', np.array([5.67249989, 6.72866814, 7.15134705])),
+        # 'detailed' solver - uniform segments
+        ('detailed', 'uniform_segments', np.array([5.68324619, 6.74356205, 7.16738741])),
+        # 'detailed' solver - unequal segments, FLS approximation
+        ('detailed', 'unequal_segments_approx', np.array([5.66984803, 6.72564218, 7.14826009])),
+        # 'detailed' solver - uniform segments, FLS approximation
+        ('detailed', 'uniform_segments_approx', np.array([5.67916493, 6.7395222 , 7.16339216])),
+    ])
+def test_gfunctions_UBWT(two_boreholes_inclined, method, opts, expected, request):
+    # Extract the bore field from the fixture
+    boreholes = two_boreholes_inclined
+    # Extract the g-function options from the fixture
+    options = request.getfixturevalue(opts)
+    # Mean borehole length [m]
+    H_mean = np.mean([b.H for b in boreholes])
+    alpha = 1e-6    # Ground thermal diffusivity [m2/s]
+    # Bore field characteristic time [s]
+    ts = H_mean**2 / (9 * alpha)
+    # Times for the g-function [s]
+    time = np.array([0.1, 1., 10.]) * ts
+    # g-Function
+    gFunc = gt.gfunction.gFunction(
+        boreholes, alpha, time=time, method=method, options=options,
+        boundary_condition='UBWT')
     assert np.allclose(gFunc.gFunc, expected)
