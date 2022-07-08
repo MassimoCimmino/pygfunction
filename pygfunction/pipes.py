@@ -952,7 +952,9 @@ class SingleUTube(_BasePipe):
     Contains information regarding the physical dimensions and thermal
     characteristics of the pipes and the grout material, as well as methods to
     evaluate fluid temperatures and heat extraction rates based on the work of
-    Hellstrom [#Single-Hellstrom1991]_.
+    Hellstrom [#Single-Hellstrom1991]_. Internal borehole thermal resistances
+    are evaluated using the multipole method of Claesson and Hellstrom
+    [#Single-Claesson2011b]_.
 
     Attributes
     ----------
@@ -990,11 +992,21 @@ class SingleUTube(_BasePipe):
     the borehole, equal to 1. `nDepths` is the number of depths at which
     temperatures are evaluated.
 
+    The effective borehole thermal resistance is evaluated using the method
+    of Cimmino [#Single-Cimmin2019]_. This is valid for any number of pipes.
+
     References
     ----------
     .. [#Single-Hellstrom1991] Hellstrom, G. (1991). Ground heat storage.
        Thermal Analyses of Duct Storage Systems I: Theory. PhD Thesis.
        University of Lund, Department of Mathematical Physics. Lund, Sweden.
+    .. [#Single-Claesson2011b] Claesson, J., & Hellstrom, G. (2011).
+       Multipole method to calculate borehole thermal resistances in a borehole
+       heat exchanger. HVAC&R Research, 17(6), 895-911.
+    .. [#Single-Cimmin2019] Cimmino, M. (2019). Semi-analytical method for
+       g-function calculation of bore fields with series- and
+       parallel-connected boreholes. Science and Technology for the Built
+       Environment, 25 (8), 1007-1022.
 
     """
     def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_fp, J=2):
@@ -1402,7 +1414,9 @@ class MultipleUTube(_BasePipe):
     Contains information regarding the physical dimensions and thermal
     characteristics of the pipes and the grout material, as well as methods to
     evaluate fluid temperatures and heat extraction rates based on the work of
-    Cimmino [#Cimmino2016]_ for boreholes with any number of U-tubes.
+    Cimmino [#Cimmino2016]_ for boreholes with any number of U-tubes. Internal
+    borehole thermal resistances are evaluated using the multipole method of
+    Claesson and Hellstrom [#Multiple-Claesson2011b]_.
 
     Attributes
     ----------
@@ -1444,11 +1458,21 @@ class MultipleUTube(_BasePipe):
     the borehole. `nDepths` is the number of depths at which temperatures are
     evaluated.
 
+    The effective borehole thermal resistance is evaluated using the method
+    of Cimmino [#Multiple-Cimmin2019]_. This is valid for any number of pipes.
+
     References
     ----------
     .. [#Cimmino2016] Cimmino, M. (2016). Fluid and borehole wall temperature
        profiles in vertical geothermal boreholes with multiple U-tubes.
        Renewable Energy, 96, 137-147.
+    .. [#Multiple-Claesson2011b] Claesson, J., & Hellstrom, G. (2011).
+       Multipole method to calculate borehole thermal resistances in a borehole
+       heat exchanger. HVAC&R Research, 17(6), 895-911.
+    .. [#Multiple-Cimmin2019] Cimmino, M. (2019). Semi-analytical method for
+       g-function calculation of bore fields with series- and
+       parallel-connected boreholes. Science and Technology for the Built
+       Environment, 25 (8), 1007-1022.
 
     """
     def __init__(self, pos, r_in, r_out, borehole, k_s,
@@ -1897,7 +1921,9 @@ class IndependentMultipleUTube(MultipleUTube):
     Contains information regarding the physical dimensions and thermal
     characteristics of the pipes and the grout material, as well as methods to
     evaluate fluid temperatures and heat extraction rates based on the work of
-    Cimmino [#Cimmino2016b]_ for boreholes with any number of U-tubes.
+    Cimmino [#Cimmino2016b]_ for boreholes with any number of U-tubes. Internal
+    borehole thermal resistances are evaluated using the multipole method of
+    Claesson and Hellstrom [#Independent-Claesson2011b]_.
 
     Attributes
     ----------
@@ -1940,6 +1966,10 @@ class IndependentMultipleUTube(MultipleUTube):
     .. [#Cimmino2016b] Cimmino, M. (2016). Fluid and borehole wall temperature
        profiles in vertical geothermal boreholes with multiple U-tubes.
        Renewable Energy, 96, 137-147.
+    .. [#Independent-Claesson2011b] Claesson, J., & Hellstrom, G. (2011).
+       Multipole method to calculate borehole thermal resistances in a borehole
+       heat exchanger. HVAC&R Research, 17(6), 895-911.
+
 
     """
     def __init__(self, pos, r_in, r_out, borehole, k_s,
@@ -2117,7 +2147,9 @@ class Coaxial(SingleUTube):
     Contains information regarding the physical dimensions and thermal
     characteristics of the pipes and the grout material, as well as methods to
     evaluate fluid temperatures and heat extraction rates based on the work of
-    Hellstrom [#Coaxial-Hellstrom1991]_.
+    Hellstrom [#Coaxial-Hellstrom1991]_. Internal borehole thermal resistances
+    are evaluated using the multipole method of Claesson and Hellstrom
+    [#Coaxial-Claesson2011b]_.
 
     Attributes
     ----------
@@ -2161,11 +2193,21 @@ class Coaxial(SingleUTube):
     the borehole, equal to 1. `nDepths` is the number of depths at which
     temperatures are evaluated.
 
+    The effective borehole thermal resistance is evaluated using the method
+    of Cimmino [#Coaxial-Cimmin2019]_. This is valid for any number of pipes.
+
     References
     ----------
     .. [#Coaxial-Hellstrom1991] Hellstrom, G. (1991). Ground heat storage.
        Thermal Analyses of Duct Storage Systems I: Theory. PhD Thesis.
        University of Lund, Department of Mathematical Physics. Lund, Sweden.
+    .. [#Coaxial-Claesson2011b] Claesson, J., & Hellstrom, G. (2011).
+       Multipole method to calculate borehole thermal resistances in a borehole
+       heat exchanger. HVAC&R Research, 17(6), 895-911.
+    .. [#Coaxial-Cimmin2019] Cimmino, M. (2019). Semi-analytical method for
+       g-function calculation of bore fields with series- and
+       parallel-connected boreholes. Science and Technology for the Built
+       Environment, 25 (8), 1007-1022.
 
     """
     def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_ff, R_fp, J=2):
@@ -2562,7 +2604,19 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, R_fp, J=2):
 
 def borehole_thermal_resistance(pipe, m_flow_borehole, cp_f):
     """
-    Evaluate the effective borehole thermal resistance.
+    Evaluate the effective borehole thermal resistance, defined by:
+
+        .. math::
+
+            \\frac{Q_b}{H} = \\frac{T^*_b - \\bar{T}_f}{R^*_b}
+
+            \\bar{T}_f = \\frac{1}{2}(T_{f,in} + T_{f,out})
+
+    where :math:`Q_b` is the borehole heat extraction rate (in Watts),
+    :math:`H` is the borehole length, :math:`T^*_b` is the effective
+    borehole wall temperature, :math:`R^*_b` is the effective borehole
+    thermal resistance, :math:`T_{f,in}` is the inlet fluid temperature,
+    and :math:`T_{f,out}` is the outlet fluid temperature.
 
     Parameters
     ----------
@@ -2577,6 +2631,18 @@ def borehole_thermal_resistance(pipe, m_flow_borehole, cp_f):
     -------
     R_b : float
         Effective borehole thermal resistance (m.K/W).
+
+    Notes
+    -----
+    The effective borehole thermal resistance is evaluated using the method
+    of Cimmino [#Rbeff-Cimmin2019]_. This is valid for any number of pipes.
+
+    References
+    ----------
+    .. [#Rbeff-Cimmin2019] Cimmino, M. (2019). Semi-analytical method for
+       g-function calculation of bore fields with series- and
+       parallel-connected boreholes. Science and Technology for the Built
+       Environment, 25 (8), 1007-1022.
 
     """
     # This function is deprecated as of v2.2. It will be removed in v3.0.
