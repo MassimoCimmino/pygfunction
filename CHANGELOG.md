@@ -18,6 +18,7 @@
 
 ### Other changes
 
+* [Issue 80](https://github.com/MassimoCimmino/pygfunction/issues/80) - Added references to the `pipes` module for the evaluation of borehole thermal resistances.
 * [Issue 171](https://github.com/MassimoCimmino/pygfunction/issues/171) - Refactored modules and examples to use the built-in `enumerate(x)` instead of `range(len(x))`.
 * [Issue 172](https://github.com/MassimoCimmino/pygfunction/issues/172) - Refactored reports of calculation time to use `time.perf_counter()` instead of `time.time()`.
 * [Issue 173](https://github.com/MassimoCimmino/pygfunction/issues/173) - Refactored strings into f-strings instead of using `str.format()`.
