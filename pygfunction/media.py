@@ -27,7 +27,7 @@ class Fluid:
             Default is 101325 Pa.
 
         Examples
-        ----------
+        --------
         >>> import pygfunction as gt
         >>> T_f = 20.     # Temp at 20 C
         >>> gage_P = 20  # PsiG
