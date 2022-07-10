@@ -1056,8 +1056,6 @@ def finite_line_source_inclined_vectorized(
             a = 1.0 / np.sqrt(4.0*alpha*time)
             h = 0.5 / H2 * quad_vec(f, a, np.inf, epsabs=1e-4, epsrel=1e-6)[0]
         else:
-            # The real and image parts are split to avoid overflow in the
-            # integrand function
             # Lower bound of integration
             a = 1.0 / np.sqrt(4.0*alpha*time)
             # Upper bound of integration
