@@ -2,6 +2,8 @@
 
 ## Current version
 
+## Version 2.2.0 (2022-07-10)
+
 ### New features
 
 * [Issue 50](https://github.com/MassimoCimmino/pygfunction/issues/50) - Implemented inclined boreholes for the evaluation of *g*-functions. The implementation includes an approximation of the FLS solution for inclined boreholes based on the method of Cimmino (2021) (see [Issue 138](https://github.com/MassimoCimmino/pygfunction/issues/138)). The `'equivalent'` solver is not yet supported.

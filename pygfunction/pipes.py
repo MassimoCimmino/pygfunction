@@ -2768,7 +2768,7 @@ def convective_heat_transfer_coefficient_circular_pipe(
     --------
 
     References
-    -----------
+    ----------
     .. [#Gnielinksi2013] Gnielinski, V. (2013). On heat transfer in tubes.
         International Journal of Heat and Mass Transfer, 63, 134–140.
         https://doi.org/10.1016/j.ijheatmasstransfer.2013.04.015
@@ -2875,7 +2875,7 @@ def convective_heat_transfer_coefficient_concentric_annulus(
         region (in W/m2-K).
 
     References
-    -----------
+    ----------
     .. [#Grundman2007] Grundman, R. (2007) Improved design methods for ground
         heat exchangers. Oklahoma State University, M.S. Thesis.
     .. [#ConvCoeff-CengelGhajar2015] Çengel, Y.A., & Ghajar, A.J. (2015). Heat
