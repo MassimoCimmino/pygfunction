@@ -31,14 +31,16 @@ problem, follow the steps outlined in the contribution workflow.
 
 ## Contribution workflow
 
-This section outlines the steps for contributing to *pygfunction*.
+This section outlines the steps for contributing to *pygfunction*. This workflow
+is inspired by [Trunk Based Development](https://trunkbaseddevelopment.com/), with
+short-lived feature branches and releases from tags on the `master`.
 
 1. **Open a new [issue](https://github.com/MassimoCimmino/pygfunction/issues).**
 2. **Use a short and descriptive title.** When proposing an enhancement,
 describe in details what the enhancement would entail. If you plan to implement
 the enhancement yourself, provide a step-by-step plan for the implementation.
 3. **Explain how the enhancement benefits _pygfunction_.**
-4. **Create (checkout) a new branch from the master.** The branch name should
+4. **Create (checkout) a new branch from the `master`.** The branch name should
 follow the naming convention: `issue#_shortDescription`. For example:
 issue1_loadAggregation.
 5. Implement unit tests for new features. If necessary, update already
@@ -56,4 +58,4 @@ the master to your branch.**
 Docstrings are written following the
 [numpydoc format](https://github.com/numpy/numpy/blob/master/doc/example.py),
 see also an example
-[here](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_numpy.html). 
+[here](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_numpy.html).
