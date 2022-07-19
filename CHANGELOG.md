@@ -2,6 +2,10 @@
 
 ## Current version
 
+### Bug fixes
+
+* [Issue 220](https://github.com/MassimoCimmino/pygfunction/issues/220) - Fixed the expected line length in `boreholes.field_from_file()` to correctly import fields of inclined boreholes.
+
 ## Version 2.2.0 (2022-07-10)
 
 ### New features
