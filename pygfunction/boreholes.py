@@ -1130,7 +1130,7 @@ def field_from_file(filename):
         r_b = line[4]
         # Previous versions of pygfunction only required up to line[4].
         # Now check to see if tilt and orientation exist.
-        if len(line) == 6:
+        if len(line) == 7:
             tilt = line[5]
             orientation = line[6]
         else:
