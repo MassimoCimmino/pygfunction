@@ -4,6 +4,7 @@ import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.typing import NDArray
 from scipy.cluster.hierarchy import cut_tree, dendrogram, linkage
 from scipy.constants import pi
 from scipy.interpolate import interp1d as interp1d
@@ -15,6 +16,15 @@ from .heat_transfer import finite_line_source, finite_line_source_vectorized, \
 from .networks import Network, _EquivalentNetwork, network_thermal_resistance
 from .utilities import _initialize_figure, _format_axes
 from . import utilities
+
+from enum import Enum, auto
+from typing import Dict, List, Callable, Union, Optional
+
+
+class Method(Enum):
+    similarities = auto()
+    detailed = auto()
+    equivalent = auto()
 
 
 class gFunction(object):
@@ -202,40 +212,26 @@ class gFunction(object):
        Transfer, 127, 105496.
 
     """
-    def __init__(self, boreholes_or_network, alpha, time=None,
-                 method='equivalent', boundary_condition=None, options={}):
+    def __init__(self, boreholes_or_network, alpha: float, time: Optional[Union[float, NDArray[np.float64]]] = None,
+                 method: Optional[Method] = None,  boundary_condition: Optional[str] = None, options: Optional[dict] = None):
         self.alpha = alpha
         self.time = time
-        self.method = method
+        self.method = method if method is not None else Method.equivalent
         self.boundary_condition = boundary_condition
-        self.options = options
+        self.options = options if options is not None else {}
 
         # Format inputs and assign default values where needed
         self._format_inputs(boreholes_or_network)
         # Check the validity of inputs
         self._check_inputs()
-
         # Load the chosen solver
-        if self.method.lower()=='similarities':
-            self.solver = _Similarities(
-                self.boreholes, self.network, self.time,
-                self.boundary_condition, **self.options)
-        elif self.method.lower()=='detailed':
-            self.solver = _Detailed(
-                self.boreholes, self.network, self.time,
-                self.boundary_condition, **self.options)
-        elif self.method.lower()=='equivalent':
-            self.solver = _Equivalent(
-                self.boreholes, self.network, self.time,
-                self.boundary_condition, **self.options)
-        else:
-            raise ValueError(f"'{method}' is not a valid method.")
+        self.solver = solver_mathing[self.method](self.boreholes, self.network, self.time, self.boundary_condition, **self.options)
 
         # If a time vector is provided, evaluate the g-function
         if self.time is not None:
             self.gFunc = self.evaluate_g_function(self.time)
 
-    def evaluate_g_function(self, time):
+    def evaluate_g_function(self, time: Union[float, NDArray[np.float64]]):
         """
         Evaluate the g-function.
 
@@ -864,7 +860,7 @@ class gFunction(object):
                 self.boundary_condition = 'UBWT'
         # If the 'equivalent' solver is selected for the 'MIFT' condition,
         # switch to the 'similarities' solver if boreholes are in series
-        if self.boundary_condition == 'MIFT' and  self.method.lower() == 'equivalent':
+        if self.boundary_condition == 'MIFT' and self.method is Method.equivalent:
             if not np.all(np.array(self.network.c, dtype=int) == -1):
                 warnings.warn(
                     "\nSolver 'equivalent' is only valid for "
@@ -919,10 +915,9 @@ class gFunction(object):
         assert type(self.boundary_condition) is str and self.boundary_condition in acceptable_boundary_conditions, \
             f"Boundary condition '{self.boundary_condition}' is not an acceptable boundary condition. \n" \
             f"Please provide one of the following inputs : {acceptable_boundary_conditions}"
-        acceptable_methods = ['detailed', 'similarities', 'equivalent']
-        assert type(self.method) is str and self.method in acceptable_methods, \
+        assert isinstance(self.method, Method), \
             f"Method '{self.method}' is not an acceptable method. \n" \
-            f"Please provide one of the following inputs : {acceptable_methods}"
+            f"Please provide one of the following inputs : {[method for method in Method]}"
         return
 
 
@@ -1002,10 +997,7 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
                'dtype':dtype,
                'disp':disp}
     # Select the correct solver:
-    if use_similarities:
-        method='similarities'
-    else:
-        method='detailed'
+    method=Method.similarities if use_similarities else Method.detailed
     # Evaluate g-function
     gFunc = gFunction(
         boreholes, alpha, time=time, method=method,
@@ -1428,13 +1420,13 @@ class _BaseSolver(object):
         Default is numpy.double.
 
     """
-    def __init__(self, boreholes, network, time, boundary_condition,
-                 nSegments=8, segment_ratios=utilities.segment_ratios,
-                 approximate_FLS=False, mQuad=11, nFLS=10, disp=False,
-                 profiles=False, kind='linear', dtype=np.double,
+    def __init__(self, boreholes: list, network: Network, time: Union[float, NDArray[np.float64]], boundary_condition: str,
+                 nSegments: int = 8, segment_ratios: Optional[Union[NDArray[np.float64], Callable]]=utilities.segment_ratios,
+                 approximate_FLS:bool=False, mQuad: int=11, nFLS: int=10, disp:bool=False,
+                 profiles:bool=False, kind:str='linear', dtype:float=np.double,
                  **other_options):
-        self.boreholes = boreholes
-        self.network = network
+        self.boreholes: list = boreholes
+        self.network: Network = network
         # Convert time to a 1d array
         self.time = np.atleast_1d(time).flatten()
         self.boundary_condition = boundary_condition
@@ -1446,10 +1438,10 @@ class _BaseSolver(object):
             self.nBoreSegments = nSegments
         if isinstance(segment_ratios, np.ndarray):
             segment_ratios = [segment_ratios] * nBoreholes
-        elif segment_ratios is None:
-            segment_ratios = [np.full(n, 1./n) for n in self.nBoreSegments]
         elif callable(segment_ratios):
             segment_ratios = [segment_ratios(n) for n in self.nBoreSegments]
+        else:
+            segment_ratios = [np.full(n, 1./n) for n in self.nBoreSegments]
         self.segment_ratios = segment_ratios
         # Shortcut for segment_ratios comparisons
         self._equal_segment_ratios = \
@@ -1462,10 +1454,8 @@ class _BaseSolver(object):
                         rtol=1e-6)
             for segment_ratios in self.segment_ratios]
         # Find indices of first and last segments along boreholes
-        self._i0Segments = [sum(self.nBoreSegments[0:i])
-                            for i in range(nBoreholes)]
-        self._i1Segments = [sum(self.nBoreSegments[0:(i + 1)])
-                            for i in range(nBoreholes)]
+        self._i0Segments = [sum(self.nBoreSegments[0:i]) for i in range(nBoreholes)]
+        self._i1Segments = [sum(self.nBoreSegments[0:(i + 1)]) for i in range(nBoreholes)]
         self.approximate_FLS = approximate_FLS
         self.mQuad = mQuad
         self.nFLS = nFLS
@@ -1476,11 +1466,11 @@ class _BaseSolver(object):
         # Check the validity of inputs
         self._check_inputs()
         # Initialize the solver with solver-specific options
-        self.nSources = self.initialize(**other_options)
+        self.nSources = self.initialize(*other_options)
 
         return
 
-    def initialize(self, *kwargs):
+    def initialize(self, *kwargs) -> int:
         """
         Perform any calculation required at the initialization of the solver
         and returns the number of finite line heat sources in the borefield.
@@ -1502,7 +1492,6 @@ class _BaseSolver(object):
             'return the number of finite line heat sources in the borefield '
             'used to initialize the matrix of segment-to-segment thermal '
             'response factors (of size: nSources x nSources)')
-        return None
 
     def solve(self, time, alpha):
         """
@@ -1696,8 +1685,7 @@ class _BaseSolver(object):
         """
         boreSegments = []  # list for storage of boreSegments
         for b, nSegments, segment_ratios in zip(self.boreholes, self.nBoreSegments, self.segment_ratios):
-            segments = b.segments(nSegments, segment_ratios=segment_ratios)
-            boreSegments.extend(segments)
+            boreSegments.extend(b.segments(nSegments, segment_ratios=segment_ratios))
 
         return boreSegments
 
@@ -1945,8 +1933,7 @@ class _Detailed(_BaseSolver):
         """
         # Split boreholes into segments
         self.boreSegments = self.borehole_segments()
-        nSources = len(self.boreSegments)
-        return nSources
+        return len(self.boreSegments)
 
     def thermal_response_factors(self, time, alpha, kind='linear'):
         """
@@ -2027,7 +2014,8 @@ class _Detailed(_BaseSolver):
         h_ij = interp1d(np.hstack((0., time)), h_ij,
                         kind=kind, copy=True, axis=2)
         toc = perf_counter()
-        if self.disp: print(f' {toc - tic:.3f} sec')
+        if self.disp:
+            print(f' {toc - tic:.3f} sec')
 
         return h_ij
 
@@ -2091,7 +2079,6 @@ class _Detailed(_BaseSolver):
                 approximation=self.approximate_FLS, N=self.nFLS)
         return h, i_segment, j_segment
         
-
 
 class _Similarities(_BaseSolver):
     """
@@ -4091,7 +4078,7 @@ class _Equivalent(_BaseSolver):
         elif reaSource:
             # Find segment pairs for the real FLS solution
             compare_pairs = self._compare_real_pairs
-        elif imgSource:
+        else:
             # Find segment pairs for the image FLS solution
             compare_pairs = self._compare_image_pairs
         # Dive both boreholes into segments
@@ -4176,8 +4163,9 @@ class _Equivalent(_BaseSolver):
                     self.network.m_flow_network[0]*len(self.network.b)
             # Verify that all boreholes have the same piping configuration
             # This is best done by comparing the matrix of thermal resistances.
-            assert np.all(
-                [np.allclose(self.network.p[0]._Rd, pipe._Rd)
-                 for pipe in self.network.p]), \
+            assert np.all([np.allclose(self.network.p[0]._Rd, pipe._Rd) for pipe in self.network.p]), \
                 "All boreholes must have the same piping configuration."
         return
+
+
+solver_mathing: Dict[Method, Callable] = {Method.similarities: _Similarities, Method.detailed: _Detailed, Method.equivalent: _Equivalent}
