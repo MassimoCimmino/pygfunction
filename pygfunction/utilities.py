@@ -356,7 +356,7 @@ def time_geometric(dt, tmax, Nt):
     return time
 
 
-def _initialize_figure():
+def _initialize_figure() -> plt.figure:
     """
     Initialize a matplotlib figure object with overwritten default parameters.
 

@@ -33,10 +33,10 @@ def main():
     boxField = gt.boreholes.box_shaped_field(N_1, N_2, B, B, H, D, r_b)
 
     # U-shaped field of 4 x 3 boreholes
-    UField = gt.boreholes.U_shaped_field(N_1, N_2, B, B, H, D, r_b)
+    UField = gt.boreholes.u_shaped_field(N_1, N_2, B, B, H, D, r_b)
 
     # L-shaped field of 4 x 3 boreholes
-    LField = gt.boreholes.L_shaped_field(N_1, N_2, B, B, H, D, r_b)
+    LField = gt.boreholes.l_shaped_field(N_1, N_2, B, B, H, D, r_b)
 
     # Circular field of 8 boreholes
     circleField = gt.boreholes.circle_field(N_b, R, H, D, r_b)

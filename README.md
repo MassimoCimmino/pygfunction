@@ -27,8 +27,9 @@ total):
 ```python
 import pygfunction as gt
 import numpy as np
-time = np.array([(i+1)*3600. for i in range(24)]) # Calculate hourly for one day
-boreField = gt.boreholes.rectangle_field(N_1=10, N_2=10, B_1=7.5, B_2=7.5, H=150., D=4., r_b=0.075)
+
+time = np.array([(i + 1) * 3600. for i in range(24)])  # Calculate hourly for one day
+boreField = gt.boreholes.rectangle_field(n_1=10, n_2=10, b_1=7.5, b_2=7.5, h=150., d=4., r_b=0.075)
 gFunc = gt.gfunction.gFunction(boreField, alpha=1.0e-6, time=time)
 gFunc.visualize_g_function()
 ```
