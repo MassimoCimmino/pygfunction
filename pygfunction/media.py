@@ -37,7 +37,7 @@ class Fluid:
         >>> # complete water solution
         >>> mix = 'Water'
         >>> percent = 0
-        >>> fluid = gt.media.Fluid(mix, percent, T=T_f, P=P)
+        >>> fluid = gt.media.Fluid(mix, percent, T=T_f)
         >>> print(fluid)
 
         >>> # 20 % propylene glycol mixed with water
@@ -67,18 +67,18 @@ class Fluid:
         # concentration fraction
         x_frac = percent / 100
 
-        if fluid_str.upper() == 'Water':
+        if fluid_str.upper() == 'WATER':
             self.fluid = Water()
-        elif fluid_str.upper() in ['PropyleneGlycol', 'MPG']:
+        elif fluid_str.upper() in ['PROPYLENEGLYCOL', 'MPG']:
             self.fluid = PropyleneGlycol(x_frac)
-        elif fluid_str.upper() in ['EthyleneGlycol', 'MEG']:
+        elif fluid_str.upper() in ['ETHYLENEGLYCOL', 'MEG']:
             self.fluid = EthyleneGlycol(x_frac)
-        elif fluid_str.upper() in ['MethylAlcohol', 'MMA']:
+        elif fluid_str.upper() in ['METHYLALCOHOL', 'MMA']:
             self.fluid = MethylAlcohol(x_frac)
-        elif fluid_str.upper() in ['EthylAlcohol', 'MEA']:
+        elif fluid_str.upper() in ['ETHYLALCOHOL', 'MEA']:
             self.fluid = EthylAlcohol(x_frac)
         else:
-            raise ValueError('Unsupported fluid mixture.')
+            raise ValueError(f'Unsupported fluid mixture: "{fluid_str}".')
 
         # Initialize all fluid properties
         # Temperature of the fluid (in Celsius)
