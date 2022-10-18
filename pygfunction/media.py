@@ -25,9 +25,6 @@ class Fluid:
         T: float, optional
             The temperature of the fluid (in Celcius).
             Default is 20 degC.
-        P: float, optional
-            The pressure of the fluid (in Pa).
-            Default is 101325 Pa.
 
         Examples
         --------
