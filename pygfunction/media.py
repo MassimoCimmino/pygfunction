@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
-from CoolProp.CoolProp import PropsSI
-import warnings
+from scp.ethyl_alcohol import EthylAlcohol
+from scp.ethylene_glycol import EthyleneGlycol
+from scp.methyl_alcohol import MethylAlcohol
+from scp.propylene_glycol import PropyleneGlycol
+from scp.water import Water
 
 
 class Fluid:
@@ -9,7 +12,7 @@ class Fluid:
 
         Parameters
         ----------
-        mixer: str
+        fluid_str: str
             The mixer for this application should be one of:
                 - 'Water' - Complete water solution
                 - 'MEG' - Ethylene glycol mixed with water
@@ -30,9 +33,6 @@ class Fluid:
         --------
         >>> import pygfunction as gt
         >>> T_f = 20.     # Temp at 20 C
-        >>> gage_P = 20  # PsiG
-        >>> atm_P = 14.69595
-        >>> P = (gage_P + atm_P) * 6894.75728  # Pressure in Pa
 
         >>> # complete water solution
         >>> mix = 'Water'
@@ -43,42 +43,46 @@ class Fluid:
         >>> # 20 % propylene glycol mixed with water
         >>> mix = 'MPG'
         >>> percent = 20
-        >>> fluid = gt.media.Fluid(mix, percent, T=T_f, P=P)
+        >>> fluid = gt.media.Fluid(mix, percent, T=T_f)
 
         >>> # 60% ethylene glycol mixed with water
         >>> mix = 'MEG'
         >>> percent = 60
-        >>> fluid = gt.media.Fluid(mix, percent, T=T_f, P=P)
+        >>> fluid = gt.media.Fluid(mix, percent, T=T_f)
         >>> print(fluid)
 
-        >>> # 5% methanol mixed with water water
+        >>> # 5% methanol mixed with water
         >>> mix = 'MMA'
         >>> percent = 5
-        >>> fluid = gt.media.Fluid(mix, percent, T=T_f, P=P)
+        >>> fluid = gt.media.Fluid(mix, percent, T=T_f)
         >>> print(fluid)
 
         >>> # ethanol / water
         >>> mix = 'MEA'
         >>> percent = 10
-        >>> fluid = gt.media.Fluid(mix, percent, T=T_f, P=P)
+        >>> fluid = gt.media.Fluid(mix, percent, T=T_f)
         >>> print(fluid)
     """
-    def __init__(self, mixer: str, percent: float,
-                 T: float = 20., P: float = 101325.):
-        if mixer == 'Water':
-            self.fluid_mix = mixer
-        elif mixer in ['MEG', 'MPG', 'MMA', 'MEA']:  # Expected brines
-            self.fluid_mix = f'INCOMP::{mixer}-{str(percent)}%'
+    def __init__(self, fluid_str: str, percent: float, T: float = 20.):
+        # concentration fraction
+        x_frac = percent / 100
+
+        if fluid_str.upper() == 'Water':
+            self.fluid = Water()
+        elif fluid_str.upper() in ['PropyleneGlycol', 'MPG']:
+            self.fluid = PropyleneGlycol(x_frac)
+        elif fluid_str.upper() in ['EthyleneGlycol', 'MEG']:
+            self.fluid = EthyleneGlycol(x_frac)
+        elif fluid_str.upper() in ['MethylAlcohol', 'MMA']:
+            self.fluid = MethylAlcohol(x_frac)
+        elif fluid_str.upper() in ['EthylAlcohol', 'MEA']:
+            self.fluid = EthylAlcohol(x_frac)
         else:
-            warnings.warn('It is unknown whether or not cool props has the '
-                          'mixing fluid requested, proceed with caution.')
+            raise ValueError('Unsupported fluid mixture.')
+
         # Initialize all fluid properties
         # Temperature of the fluid (in Celsius)
         self.T_C = T
-        # Temperature of the fluid (in Kelvin)
-        self.T_K = T + 273.15
-        # Pressure of the fluid (in Pa)
-        self.P = P
         # Density (in kg/m3)
         self.rho = self.density()
         # Dynamic viscosity  (in Pa.s, or N.s/m2)
@@ -117,7 +121,7 @@ class Fluid:
             Density (in kg/m3).
 
         """
-        return PropsSI('D', 'T', self.T_K, 'P', self.P, self.fluid_mix)
+        return self.fluid.density(self.T_C)
 
     def dynamic_viscosity(self):
         """
@@ -129,7 +133,7 @@ class Fluid:
             Dynamic viscosity  (in Pa.s, or N.s/m2).
 
         """
-        return PropsSI('V', 'T', self.T_K, 'P', self.P, self.fluid_mix)
+        return self.fluid.viscosity(self.T_C)
 
     def kinematic_viscosity(self):
         """
@@ -153,7 +157,7 @@ class Fluid:
             Specific isobaric heat capacity (J/kg.K).
 
         """
-        return PropsSI('C', 'T', self.T_K, 'P', self.P, self.fluid_mix)
+        return self.fluid.specific_heat(self.T_C)
 
     def volumetric_heat_capacity(self):
         """
@@ -177,7 +181,7 @@ class Fluid:
             Thermal conductivity (in W/m.K).
 
         """
-        return PropsSI('L', 'T', self.T_K, 'P', self.P, self.fluid_mix)
+        return self.fluid.conductivity(self.T_C)
 
     def Prandlt_number(self):
         """
@@ -189,4 +193,4 @@ class Fluid:
             Prandlt number.
 
         """
-        return PropsSI('PRANDTL', 'T', self.T_K, 'P', self.P, self.fluid_mix)
+        return self.fluid.prandtl(self.T_C)
