@@ -4,4 +4,4 @@ matplotlib >= 3.5.1
 numpydoc >= 1.2.0
 recommonmark >= 0.6.0
 sphinx >= 4.4.0
-CoolProp >= 6.4.1
+secondarycoolantprops >= 1.0.0
