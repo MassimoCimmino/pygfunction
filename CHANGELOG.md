@@ -2,6 +2,10 @@
 
 ## Current version
 
+### Enhancements
+
+* [Issue 204](https://github.com/MassimoCimmino/pygfunction/issues/204) - Added support for Python 3.9 and 3.10. [CoolProp](https://www.coolprop.org/) is removed from the dependencies and replace with [SecondaryCoolantProps](https://github.com/mitchute/SecondaryCoolantProps).
+
 ## Version 2.2.1 (2022-08-12)
 
 ### Bug fixes
