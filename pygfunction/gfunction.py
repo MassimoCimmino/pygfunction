@@ -275,7 +275,7 @@ class gFunction(object):
             # Evaluate g-function
             gFunc_long = self.solver.solve(time_long, self.alpha)
             # Interpolate for time < time_threshold
-            time_short = time[time < time_threshold]
+            time_short = np.maximum(time[time < time_threshold], 0.)
             gFunc_short = gFunc_long[0] * time_short / time_threshold
             self.gFunc = np.concatenate([gFunc_short, gFunc_long[1:]])
         else:
