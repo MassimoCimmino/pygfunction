@@ -1730,7 +1730,7 @@ class _BaseSolver(object):
              Q_reconstructed[:,1:] - Q_reconstructed[:,0:-1]), axis=1)[:,::-1]
         # Borehole wall temperature
         T_b0 = np.einsum('ijk,jk', h_ij[:,:,:nt], dQ)
-        
+
         return T_b0
 
     def load_history_reconstruction(self, time, Q_b):
@@ -2073,7 +2073,7 @@ class _Detailed(_BaseSolver):
         dis = np.maximum(
             np.sqrt((x[i_segment] - x[j_segment])**2 + (y[i_segment] - y[j_segment])**2),
             r_b[i_segment])
-        # FlS solution
+        # FLS solution
         if np.all([b.is_vertical() for b in self.boreholes]):
             h = finite_line_source_vectorized(
                 time, alpha,
@@ -2090,7 +2090,7 @@ class _Detailed(_BaseSolver):
                 tilt[j_segment], orientation[j_segment], M=self.mQuad,
                 approximation=self.approximate_FLS, N=self.nFLS)
         return h, i_segment, j_segment
-        
+
 
 
 class _Similarities(_BaseSolver):
@@ -2969,7 +2969,7 @@ class _Similarities(_BaseSolver):
                     # If no similar pairs are known, append the groups
                     else:
                         borehole_to_borehole.append([(i, j)])
-                        
+
         else:
             # Outputs for a single borehole
             if boreholes[0].is_vertical:
@@ -3529,7 +3529,7 @@ class _Equivalent(_BaseSolver):
         self.nBoreSegments = [self.nBoreSegments[0]] * self.nEqBoreholes
         self.segment_ratios = [self.segment_ratios[0]] * self.nEqBoreholes
         self.boreSegments = self.borehole_segments()
-        self._i0Segments = [sum(self.nBoreSegments[0:i]) 
+        self._i0Segments = [sum(self.nBoreSegments[0:i])
                             for i in range(self.nEqBoreholes)]
         self._i1Segments = [sum(self.nBoreSegments[0:(i + 1)])
                             for i in range(self.nEqBoreholes)]
@@ -3727,7 +3727,7 @@ class _Equivalent(_BaseSolver):
             self.clusters = range(self.nBoreholes)
         # Overwrite boreholes with equivalent boreholes
         self.boreholes = [_EquivalentBorehole(
-            [borehole 
+            [borehole
              for borehole, cluster in zip(self.boreholes, self.clusters)
              if cluster==i])
             for i in range(self.nEqBoreholes)]
@@ -3998,7 +3998,7 @@ class _Equivalent(_BaseSolver):
             else:
                 # If no similar boreholes are known, append the groups
                 unique_boreholes.append([i])
-            
+
         return unique_boreholes
 
     def _find_unique_distances(self, dis, indices):
