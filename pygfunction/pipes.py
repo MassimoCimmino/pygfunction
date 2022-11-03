@@ -90,7 +90,7 @@ class _BasePipe(object):
     def get_inlet_temperature(
             self, Q_f, T_b, m_flow_borehole, cp_f, segment_ratios=None):
         """
-        Returns the outlet fluid temperatures of the borehole.
+        Returns the inlet fluid temperatures of the borehole.
 
         Parameters
         ----------
@@ -832,7 +832,7 @@ class _BasePipe(object):
             check = False
 
         return check
-    
+
     def _check_geometry(self):
         """ Verifies the inputs to the pipe object and raises an error if
             the geometry is not valid.
@@ -1752,7 +1752,7 @@ class MultipleUTube(_BasePipe):
         exp_Lz = np.exp(np.multiply.outer(L, z))
         dexp_Lz = exp_Lz[:,:-1] - exp_Lz[:,1:]
         a_b = np.real(((IIm1 @ V @ Dm1) * (Vm1 @ sumA)) @ dexp_Lz)
-            
+
 
         # Configuration-specific inlet and outlet coefficient matrices
         IZER = np.vstack((np.eye(self.nPipes),
@@ -2342,7 +2342,7 @@ class Coaxial(SingleUTube):
         plt.tight_layout()
 
         return fig
-    
+
     def _check_geometry(self):
         """ Verifies the inputs to the pipe object and raises an error if
             the geometry is not valid.
@@ -3148,7 +3148,7 @@ def _F_mk(q_p, P, n_p, J, r_b, r_out, z, pikg, sigma):
     r_out : float or array
         Outer radius of the pipes (in meters).
     z : array
-        Array of pipe coordinates in complex notation (x + 1.j*y). 
+        Array of pipe coordinates in complex notation (x + 1.j*y).
     pikg : float
         Inverse of 2*pi times the grout thermal conductivity, 1.0/(2.0*pi*k_g).
     sigma : array
