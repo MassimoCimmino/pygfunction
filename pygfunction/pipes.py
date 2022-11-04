@@ -120,7 +120,7 @@ class _BasePipe(object):
         # Build coefficient matrices
         a_qf, a_b = self.coefficients_inlet_temperature(
             m_flow_borehole, cp_f, nSegments, segment_ratios=segment_ratios)
-        # Evaluate outlet temperatures
+        # Evaluate inlet temperatures
         T_f_in = a_qf @ np.atleast_1d(Q_f) + a_b @ T_b
         # Return float if Qf was supplied as scalar
         if np.isscalar(Q_f) and not np.isscalar(T_f_in):
@@ -278,7 +278,7 @@ class _BasePipe(object):
     def coefficients_inlet_temperature(
             self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
         """
-        Build coefficient matrices to evaluate outlet fluid temperature.
+        Build coefficient matrices to evaluate inlet fluid temperature.
 
         Returns coefficients for the relation:
 
