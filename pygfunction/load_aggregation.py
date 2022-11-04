@@ -120,10 +120,10 @@ class ClaessonJaved(_LoadAggregation):
         -------
         dg : array
             Array of **dimensional** thermal response factor increments used
-            for temporal superposition 
+            for temporal superposition
             (:math:`g(t_{i+1})/(2 \\pi k_s) - g(t_{i})/(2 \\pi k_s)`),
             in correspondance with the intialized values of the thermal
-            response factors in 
+            response factors in
             :func:`~load_aggregation.ClaessonJaved.initialize`.
             The output size of the array is (nSources, nSources, Nt) if
             nSources>1. If nSources=1, then the method returns a 1d array.
@@ -217,7 +217,7 @@ class ClaessonJaved(_LoadAggregation):
         # time steps : Q(t+1) = Q(t) @ A
         self.A = (1. - 1./self._width) * np.eye(nt) \
             + np.diag(1./self._width[1:], k=1)
-        
+
 
 
 class MLAA(_LoadAggregation):
