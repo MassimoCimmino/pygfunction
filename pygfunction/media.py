@@ -32,32 +32,32 @@ class Fluid:
         >>> T_f = 20.     # Temp at 20 C
 
         >>> # complete water solution
-        >>> mix = 'Water'
+        >>> fluid_str = 'Water'
         >>> percent = 0
-        >>> fluid = gt.media.Fluid(mix, percent, T=T_f)
+        >>> fluid = gt.media.Fluid(fluid_str, percent, T=T_f)
         >>> print(fluid)
 
         >>> # 20 % propylene glycol mixed with water
-        >>> mix = 'MPG'
+        >>> fluid_str = 'MPG'
         >>> percent = 20
-        >>> fluid = gt.media.Fluid(mix, percent, T=T_f)
+        >>> fluid = gt.media.Fluid(fluid_str, percent, T=T_f)
 
         >>> # 60% ethylene glycol mixed with water
-        >>> mix = 'MEG'
+        >>> fluid_str = 'MEG'
         >>> percent = 60
-        >>> fluid = gt.media.Fluid(mix, percent, T=T_f)
+        >>> fluid = gt.media.Fluid(fluid_str, percent, T=T_f)
         >>> print(fluid)
 
         >>> # 5% methanol mixed with water
-        >>> mix = 'MMA'
+        >>> fluid_str = 'MMA'
         >>> percent = 5
-        >>> fluid = gt.media.Fluid(mix, percent, T=T_f)
+        >>> fluid = gt.media.Fluid(fluid_str, percent, T=T_f)
         >>> print(fluid)
 
         >>> # ethanol / water
-        >>> mix = 'MEA'
+        >>> fluid_str = 'MEA'
         >>> percent = 10
-        >>> fluid = gt.media.Fluid(mix, percent, T=T_f)
+        >>> fluid = gt.media.Fluid(fluid_str, percent, T=T_f)
         >>> print(fluid)
     """
     def __init__(self, fluid_str: str, percent: float, T: float = 20.):
