@@ -22,7 +22,10 @@ def cardinal_point(direction):
     return compass[direction]
 
 
-def erfint(x):
+sqrt_pi = 1 / np.sqrt(np.pi)
+
+
+def erf_int(x: np.ndarray):
     """
     Integral of the error function.
 
@@ -37,7 +40,29 @@ def erfint(x):
         Integral of the error function.
 
     """
-    return x * erf(x) - 1.0 / np.sqrt(np.pi) * (1.0 - np.exp(-x**2))
+
+    abs_x = np.abs(x)
+    y_new = abs_x-sqrt_pi
+    abs_2 = abs_x[abs_x < 4.5]
+
+    y_new[abs_x < 4.5] = abs_2 * erf(abs_2) - (1.0 - np.exp(-abs_2*abs_2)) * sqrt_pi#(0.000394626933*abs_2+0.997394389926)*abs_2-0.559959571899
+
+    #abs_2 = x[abs_x < 2.5]
+    #y_new[abs_x < 2.5] = abs_2 * erf(abs_2) - (1.0 - np.exp(-abs_2*abs_2)) / np.sqrt(np.pi) #(((((-0.008064236467690 * abs_2 + 0.062357190155) * abs_2 -
+    # 0.158413379481) *
+    # abs_2 + 0.033117020491) * abs_2 + 0.556519451607) *
+    # abs_2 +0.000535001984) * abs_2
+    #y_new[abs_x < 4] = abs_2 * erf(abs_2) - (1.0 - np.exp(-abs_2*abs_2)) / np.sqrt(np.pi) #(((-0.123_560*abs_2+0.603_273)*abs_2+0.003_809)*abs_2)
+
+    #y = x * erf(x) - (1.0 - np.exp(-x*x)) / np.sqrt(np.pi)
+    # assert np.allclose(y, y_new, rtol=0.000_001)
+    return y_new
+
+
+def erf_approx(abs_x: np.ndarray, exp_x2: np.ndarray) -> np.ndarray:
+    return abs_x * erf(abs_x)
+    t = 1/(1+0.3275911*abs_x)
+    return abs_x*(1-(((((1.061405429*t-1.453152027)*t+1.42141374)*t-0.284496736)*t+0.254829592)*t)*exp_x2)
 
 
 def exp1(x):

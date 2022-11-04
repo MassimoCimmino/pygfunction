@@ -866,7 +866,7 @@ class gFunction(object):
                     "\nSolver 'equivalent' is only valid for "
                     "parallel-connected boreholes. Calculations will use the "
                     "'similarities' solver instead.")
-                self.method = 'similarities'
+                self.method = Method.similarities
             elif not (
                     type(self.network.m_flow_network) is float or (
                         type(self.network.m_flow_network) is np.ndarray and \
@@ -876,7 +876,7 @@ class gFunction(object):
                     "\nSolver 'equivalent' is only valid for equal mass flow "
                     "rates into the boreholes. Calculations will use the "
                     "'similarities' solver instead.")
-                self.method = 'similarities'
+                self.method = Method.similarities
             elif not np.all(
                     [np.allclose(self.network.p[0]._Rd, pipe._Rd)
                      for pipe in self.network.p]):
@@ -884,7 +884,7 @@ class gFunction(object):
                     "\nSolver 'equivalent' is only valid for boreholes with "
                     "the same piping  configuration. Calculations will use "
                     "the 'similarities' solver instead.")
-                self.method = 'similarities'
+                self.method = Method.similarities
         return
 
     def _check_inputs(self):
@@ -1104,9 +1104,9 @@ def uniform_temperature(boreholes, time, alpha, nSegments=8,
                'disp':disp}
     # Select the correct solver:
     if use_similarities:
-        method='similarities'
+        method=Method.similarities
     else:
-        method='detailed'
+        method=Method.detailed
     # Evaluate g-function
     gFunc = gFunction(
         boreholes, alpha, time=time, method=method,
@@ -1213,9 +1213,9 @@ def equal_inlet_temperature(
                'disp':disp}
     # Select the correct solver:
     if use_similarities:
-        method='similarities'
+        method=Method.similarities
     else:
-        method='detailed'
+        method=Method.detailed
     # Evaluate g-function
     gFunc = gFunction(
         network, alpha, time=time, method=method,
@@ -1339,9 +1339,9 @@ def mixed_inlet_temperature(
                'disp':disp}
     # Select the correct solver:
     if use_similarities:
-        method='similarities'
+        method=Method.similarities
     else:
-        method='detailed'
+        method=Method.detailed
     # Evaluate g-function
     gFunc = gFunction(
         network, alpha, time=time, method=method,

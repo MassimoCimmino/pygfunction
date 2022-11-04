@@ -4,7 +4,7 @@ from scipy.integrate import quad, quad_vec
 from scipy.special import erfc, erf, roots_legendre
 
 from .boreholes import Borehole
-from .utilities import erfint, exp1, _erf_coeffs
+from .utilities import erf_int, exp1, _erf_coeffs
 
 
 def finite_line_source(
@@ -1119,7 +1119,7 @@ def _finite_line_source_integrand(dis, H1, D1, H2, D2, reaSource, imgSource):
                       D2 + D1 + H1,
                       D2 + D1 + H2 + H1],
                      axis=-1)
-        f = lambda s: s**-2 * np.exp(-dis**2*s**2) * np.inner(p, erfint(q*s))
+        f = lambda s: 1/(s*s) * np.exp(-dis*dis*s*s) * np.inner(p, erf_int(q * s))
     elif reaSource:
         # Real FLS solution
         p = np.array([1, -1, 1, -1])
@@ -1128,7 +1128,7 @@ def _finite_line_source_integrand(dis, H1, D1, H2, D2, reaSource, imgSource):
                       D2 - D1 - H1,
                       D2 - D1 + H2 - H1],
                      axis=-1)
-        f = lambda s: s**-2 * np.exp(-dis**2*s**2) * np.inner(p, erfint(q*s))
+        f = lambda s: 1/(s*s) * np.exp(-dis*dis*s*s) * np.inner(p, erf_int(q * s))
     elif imgSource:
         # Image FLS solution
         p = np.array([1, -1, 1, -1])
@@ -1137,7 +1137,7 @@ def _finite_line_source_integrand(dis, H1, D1, H2, D2, reaSource, imgSource):
                       D2 + D1 + H1,
                       D2 + D1 + H2 + H1],
                      axis=-1)
-        f = lambda s: s**-2 * np.exp(-dis**2*s**2) * np.inner(p, erfint(q*s))
+        f = lambda s: 1/(s*s) * np.exp(-dis*dis*s*s) * np.inner(p, erf_int(q * s))
     else:
         # No heat source
         f = lambda s: np.zeros(np.broadcast_shapes(
@@ -1304,7 +1304,7 @@ def _finite_line_source_equivalent_boreholes_integrand(dis, wDis, H1, D1, H2, D2
                       D2 + D1 + H1,
                       D2 + D1 + H2 + H1],
                      axis=-1)
-        f = lambda s: s**-2 * (np.exp(-dis**2*s**2) @ wDis).T * np.inner(p, erfint(q*s))
+        f = lambda s: s**-2 * (np.exp(-dis**2*s**2) @ wDis).T * np.inner(p, erf_int(q * s))
     elif reaSource:
         # Real FLS solution
         p = np.array([1, -1, 1, -1])
@@ -1313,7 +1313,7 @@ def _finite_line_source_equivalent_boreholes_integrand(dis, wDis, H1, D1, H2, D2
                       D2 - D1 - H1,
                       D2 - D1 + H2 - H1],
                      axis=-1)
-        f = lambda s: s**-2 * (np.exp(-dis**2*s**2) @ wDis).T * np.inner(p, erfint(q*s))
+        f = lambda s: s**-2 * (np.exp(-dis**2*s**2) @ wDis).T * np.inner(p, erf_int(q * s))
     elif imgSource:
         # Image FLS solution
         p = np.array([1, -1, 1, -1])
@@ -1322,7 +1322,7 @@ def _finite_line_source_equivalent_boreholes_integrand(dis, wDis, H1, D1, H2, D2
                       D2 + D1 + H1,
                       D2 + D1 + H2 + H1],
                      axis=-1)
-        f = lambda s: s**-2 * (np.exp(-dis**2*s**2) @ wDis).T * np.inner(p, erfint(q*s))
+        f = lambda s: s**-2 * (np.exp(-dis**2*s**2) @ wDis).T * np.inner(p, erf_int(q * s))
     else:
         # No heat source
         f = lambda s: np.zeros(np.broadcast_shapes(

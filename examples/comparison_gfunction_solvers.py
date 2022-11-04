@@ -21,6 +21,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from time import perf_counter
+from cProfile import Profile
+from pstats import SortKey, Stats
 
 import pygfunction as gt
 
@@ -41,7 +43,7 @@ def main():
 
     # g-Function calculation options
     options = {'nSegments': 8,
-               'disp': True}
+               'disp': False}
 
     # Geometrically expanding time vector.
     dt = 100*3600.                  # Time step
@@ -63,21 +65,27 @@ def main():
     # -------------------------------------------------------------------------
     # Evaluate g-functions
     # -------------------------------------------------------------------------
-    t0 = perf_counter()
-    gfunc_detailed = gt.gfunction.gFunction(
-        field, alpha, time=time, options=options, method='detailed')
-    t1 = perf_counter()
-    t_detailed = t1 - t0
-    gfunc_similarities = gt.gfunction.gFunction(
-        field, alpha, time=time, options=options, method='similarities')
-    t2 = perf_counter()
-    t_similarities = t2 - t1
-    gfunc_equivalent = gt.gfunction.gFunction(
-        field, alpha, time=time, options=options, method='equivalent')
-    t3 = perf_counter()
-    t_equivalent = t3 - t2
-
-    # -------------------------------------------------------------------------
+    with Profile() as profile:
+        t0 = perf_counter()
+        gfunc_detailed = gt.gfunction.gFunction(
+            field, alpha, time=time, options=options, method=gt.gfunction.Method.detailed)
+        t1 = perf_counter()
+        t_detailed = t1 - t0
+        gfunc_similarities = gt.gfunction.gFunction(
+            field, alpha, time=time, options=options, method=gt.gfunction.Method.similarities)
+        t2 = perf_counter()
+        t_similarities = t2 - t1
+        gfunc_equivalent = gt.gfunction.gFunction(
+            field, alpha, time=time, options=options, method=gt.gfunction.Method.equivalent)
+        t3 = perf_counter()
+        t_equivalent = t3 - t2
+    # save stats
+    stats = Stats(profile)
+    # sort stats by time
+    stats.sort_stats(SortKey.TIME)
+    # save stats to file
+    stats.dump_stats(filename="profil.prof")
+# -------------------------------------------------------------------------
     # Plot results
     # -------------------------------------------------------------------------
     # Draw g-functions
@@ -89,6 +97,7 @@ def main():
                f'equivalent (t = {t_equivalent:.3f} sec)'])
     ax.set_title(f'Field of {N_1} by {N_2} boreholes')
     plt.tight_layout()
+    # plt.show()
 
     # Draw absolute error
     # Configure figure and axes
@@ -142,11 +151,11 @@ def main():
     # Evaluate g-functions
     # -------------------------------------------------------------------------
     gfunc_similarities = gt.gfunction.gFunction(
-        field, alpha, time=time, options=options, method='similarities')
+        field, alpha, time=time, options=options, method=gt.gfunction.Method.similarities)
     t2 = perf_counter()
     t_similarities = t2 - t1
     gfunc_equivalent = gt.gfunction.gFunction(
-        field, alpha, time=time, options=options, method='equivalent')
+        field, alpha, time=time, options=options, method=gt.gfunction.Method.equivalent)
     t3 = perf_counter()
     t_equivalent = t3 - t2
 
@@ -194,6 +203,7 @@ def main():
                  f"(Field of {N_1} by {N_2} boreholes)")
     # Adjust to plot window
     fig.tight_layout()
+    # plt.show()
 
     return
 
