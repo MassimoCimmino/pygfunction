@@ -477,11 +477,11 @@ class _EquivalentBorehole:
             if j1 > j0:
                 # Add the average of the distances within tolerance to the
                 # list of unique distances and store the number of distances
-                dis.append(np.mean(all_dis[j0:j1])[0])
+                dis.append(np.mean(all_dis[j0:j1]))
                 w_dis.append(j1 - j0)
             else:
                 # All remaining distances are within tolerance
-                dis.append(np.mean(all_dis[j0:])[0])
+                dis.append(np.mean(all_dis[j0:]))
                 w_dis.append(n_dis - j0)
             j0 = j1
 

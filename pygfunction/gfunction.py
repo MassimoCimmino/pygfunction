@@ -8,6 +8,8 @@ from numpy.typing import NDArray
 from scipy.cluster.hierarchy import cut_tree, dendrogram, linkage
 from scipy.constants import pi
 from scipy.interpolate import interp1d as interp1d
+from scipy.sparse import csr_matrix
+from scipy.sparse.linalg import spsolve as sp_solve
 
 from .boreholes import Borehole, _EquivalentBorehole, find_duplicates
 from .heat_transfer import finite_line_source, finite_line_source_vectorized, \
@@ -1582,8 +1584,10 @@ class _BaseSolver(object):
                     A = np.block([[h_dt, -np.ones((self.nSources, 1),
                                                   dtype=self.dtype)],
                                   [H_b, 0.]])
+                    # A = csr_matrix(A)
                     B = np.hstack((-T_b0, H_tot))
                     # Solve the system of equations
+                    # X = sp_solve(A, B)
                     X = np.linalg.solve(A, B)
                     # Store calculated heat extraction rates
                     Q_b[:,p] = X[0:self.nSources]
