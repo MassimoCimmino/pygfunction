@@ -22,7 +22,7 @@ compared using the 'similarities' solver as a reference. This shows that
 the 'equivalent' solver evaluates g-functions at a very high calculation
 speed while maintaining reasonable accuracy.
 
-The script is located in: 
+The script is located in:
 `pygfunction/examples/comparison_gfunction_solvers.py`
 
 .. literalinclude:: ../../../examples/comparison_gfunction_solvers.py
