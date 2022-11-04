@@ -69,7 +69,7 @@ def test_gfunctions_UBWT(field, method, opts, expected, request):
     # Extract the g-function options from the fixture
     options = request.getfixturevalue(opts)
     # Mean borehole length [m]
-    H_mean = np.mean([b.H for b in boreholes])
+    H_mean = np.mean([b.h for b in boreholes])
     alpha = 1e-6    # Ground thermal diffusivity [m2/s]
     # Bore field characteristic time [s]
     ts = H_mean**2 / (9 * alpha)
@@ -140,7 +140,7 @@ def test_gfunctions_UHTR(field, method, opts, expected, request):
     # Extract the g-function options from the fixture
     options = request.getfixturevalue(opts)
     # Mean borehole length [m]
-    H_mean = np.mean([b.H for b in boreholes])
+    H_mean = np.mean([b.h for b in boreholes])
     alpha = 1e-6    # Ground thermal diffusivity [m2/s]
     # Bore field characteristic time [s]
     ts = H_mean**2 / (9 * alpha)
@@ -220,7 +220,7 @@ def test_gfunctions_MIFT(field, method, opts, expected, request):
     # Extract the g-function options from the fixture
     options = request.getfixturevalue(opts)
     # Mean borehole length [m]
-    H_mean = np.mean([b.H for b in network.b])
+    H_mean = np.mean([b.h for b in network.b])
     alpha = 1e-6    # Ground thermal diffusivity [m2/s]
     # Bore field characteristic time [s]
     ts = H_mean**2 / (9 * alpha)
@@ -262,7 +262,7 @@ def test_gfunctions_UBWT(two_boreholes_inclined, method, opts, expected, request
     # Extract the g-function options from the fixture
     options = request.getfixturevalue(opts)
     # Mean borehole length [m]
-    H_mean = np.mean([b.H for b in boreholes])
+    H_mean = np.mean([b.h for b in boreholes])
     alpha = 1e-6    # Ground thermal diffusivity [m2/s]
     # Bore field characteristic time [s]
     ts = H_mean**2 / (9 * alpha)
