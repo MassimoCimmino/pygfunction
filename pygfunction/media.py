@@ -78,6 +78,8 @@ class Fluid:
             raise ValueError(f'Unsupported fluid mixture: "{fluid_str}".')
 
         # Initialize all fluid properties
+        # Name
+        self.name = self.fluid.fluid_name
         # Temperature of the fluid (in Celsius)
         self.T_C = T
         # Density (in kg/m3)
