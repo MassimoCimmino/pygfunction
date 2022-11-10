@@ -1,6 +1,5 @@
 from pygfunction.utilities import erf_int, erf_int_old
 import numpy as np
-from scipy.special import erf
 from time import perf_counter_ns
 
 
