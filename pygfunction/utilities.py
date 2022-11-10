@@ -4,6 +4,8 @@ import numpy as np
 import numpy.polynomial.polynomial as poly
 from scipy.special import erf
 import warnings
+from typing import Union
+from numpy.typing import NDArray
 
 
 def cardinal_point(direction):
@@ -25,7 +27,7 @@ def cardinal_point(direction):
 sqrt_pi = 1 / np.sqrt(np.pi)
 
 
-def erf_int(x: np.ndarray):
+def erf_int(x: Union[NDArray[np.float64], float]) -> NDArray[np.float64]:
     """
     Integral of the error function.
 
@@ -49,7 +51,7 @@ def erf_int(x: np.ndarray):
     return y_new
 
 
-def erf_int_old(x: np.ndarray):
+def erf_int_old(x: Union[NDArray[np.float64], float]) -> NDArray[np.float64]:
     """
     Integral of the error function.
 
