@@ -42,7 +42,7 @@ def erf_int(x: Union[NDArray[np.float64], float]) -> NDArray[np.float64]:
         Integral of the error function.
 
     """
-
+    return erf_int_old(x)
     abs_x = np.abs(x)
     y_new = abs_x-sqrt_pi
     idx = abs_x < 4
