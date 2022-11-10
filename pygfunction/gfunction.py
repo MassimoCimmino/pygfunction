@@ -4,12 +4,9 @@ import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy.typing import NDArray
 from scipy.cluster.hierarchy import cut_tree, dendrogram, linkage
 from scipy.constants import pi
 from scipy.interpolate import interp1d as interp1d
-from scipy.sparse import csr_matrix
-from scipy.sparse.linalg import spsolve as sp_solve
 
 from .boreholes import Borehole, _EquivalentBorehole, find_duplicates
 from .heat_transfer import finite_line_source, finite_line_source_vectorized, \
@@ -18,15 +15,6 @@ from .heat_transfer import finite_line_source, finite_line_source_vectorized, \
 from .networks import Network, _EquivalentNetwork, network_thermal_resistance
 from .utilities import _initialize_figure, _format_axes
 from . import utilities
-
-from enum import Enum, auto
-from typing import Dict, List, Callable, Union, Optional
-
-
-class Method(Enum):
-    similarities = auto()
-    detailed = auto()
-    equivalent = auto()
 
 
 class gFunction(object):
@@ -214,26 +202,40 @@ class gFunction(object):
        Transfer, 127, 105496.
 
     """
-    def __init__(self, boreholes_or_network, alpha: float, time: Optional[Union[float, NDArray[np.float64]]] = None,
-                 method: Optional[Method] = None,  boundary_condition: Optional[str] = None, options: Optional[dict] = None):
+    def __init__(self, boreholes_or_network, alpha, time=None,
+                 method='equivalent', boundary_condition=None, options={}):
         self.alpha = alpha
         self.time = time
-        self.method = method if method is not None else Method.equivalent
+        self.method = method
         self.boundary_condition = boundary_condition
-        self.options = options if options is not None else {}
+        self.options = options
 
         # Format inputs and assign default values where needed
         self._format_inputs(boreholes_or_network)
         # Check the validity of inputs
         self._check_inputs()
+
         # Load the chosen solver
-        self.solver = solver_mathing[self.method](self.boreholes, self.network, self.time, self.boundary_condition, **self.options)
+        if self.method.lower()=='similarities':
+            self.solver = _Similarities(
+                self.boreholes, self.network, self.time,
+                self.boundary_condition, **self.options)
+        elif self.method.lower()=='detailed':
+            self.solver = _Detailed(
+                self.boreholes, self.network, self.time,
+                self.boundary_condition, **self.options)
+        elif self.method.lower()=='equivalent':
+            self.solver = _Equivalent(
+                self.boreholes, self.network, self.time,
+                self.boundary_condition, **self.options)
+        else:
+            raise ValueError(f"'{method}' is not a valid method.")
 
         # If a time vector is provided, evaluate the g-function
         if self.time is not None:
             self.gFunc = self.evaluate_g_function(self.time)
 
-    def evaluate_g_function(self, time: Union[float, NDArray[np.float64]]):
+    def evaluate_g_function(self, time):
         """
         Evaluate the g-function.
 
@@ -289,7 +291,7 @@ class gFunction(object):
         _format_axes(ax)
 
         # Borefield characteristic time
-        ts = np.mean([b.h for b in self.boreholes]) ** 2 / (9. * self.alpha)
+        ts = np.mean([b.H for b in self.boreholes])**2/(9.*self.alpha)
         # Dimensionless time (log)
         lntts = np.log(self.time/ts)
         # Draw g-function
@@ -339,7 +341,7 @@ class gFunction(object):
         _format_axes(ax2)
 
         # Borefield characteristic time
-        ts = np.mean([b.h for b in self.solver.boreholes]) ** 2 / (9. * self.alpha)
+        ts = np.mean([b.H for b in self.solver.boreholes])**2/(9.*self.alpha)
         # Dimensionless time (log)
         lntts = np.log(self.time/ts)
         # Plot curves for requested boreholes
@@ -351,11 +353,11 @@ class gFunction(object):
                 # Draw colored marker for borehole position
                 if showTilt:
                     ax1.plot(
-                        [borehole.x, borehole.x + borehole.h * np.sin(borehole.tilt) * np.cos(borehole.orientation)],
-                        [borehole.y, borehole.y + borehole.h * np.sin(borehole.tilt) * np.sin(borehole.orientation)],
-                        linestyle='--',
-                        marker='None',
-                        color=color)
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                         linestyle='--',
+                         marker='None',
+                         color=color)
                 ax1.plot(borehole.x,
                          borehole.y,
                          linestyle='None',
@@ -365,11 +367,11 @@ class gFunction(object):
                 # Draw black marker for borehole position
                 if showTilt:
                     ax1.plot(
-                        [borehole.x, borehole.x + borehole.h * np.sin(borehole.tilt) * np.cos(borehole.orientation)],
-                        [borehole.y, borehole.y + borehole.h * np.sin(borehole.tilt) * np.sin(borehole.orientation)],
-                        linestyle='--',
-                        marker='None',
-                        color='k')
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                         linestyle='--',
+                         marker='None',
+                         color='k')
                 ax1.plot(borehole.x,
                          borehole.y,
                          linestyle='None',
@@ -380,7 +382,8 @@ class gFunction(object):
         plt.tight_layout()
         return fig
 
-    def visualize_heat_extraction_rate_profiles(self, time=None, iBoreholes=None, showTilt=True):
+    def visualize_heat_extraction_rate_profiles(
+            self, time=None, iBoreholes=None, showTilt=True):
         """
         Plot the heat extraction rate profiles at chosen time.
 
@@ -435,8 +438,8 @@ class gFunction(object):
                 # Draw colored marker for borehole position
                 if showTilt:
                     ax1.plot(
-                        [borehole.x, borehole.x + borehole.h * np.sin(borehole.tilt) * np.cos(borehole.orientation)],
-                        [borehole.y, borehole.y + borehole.h * np.sin(borehole.tilt) * np.sin(borehole.orientation)],
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
                          linestyle='--',
                          marker='None',
                          color=color)
@@ -449,8 +452,8 @@ class gFunction(object):
                 # Draw black marker for borehole position
                 if showTilt:
                     ax1.plot(
-                        [borehole.x, borehole.x + borehole.h * np.sin(borehole.tilt) * np.cos(borehole.orientation)],
-                        [borehole.y, borehole.y + borehole.h * np.sin(borehole.tilt) * np.sin(borehole.orientation)],
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
                          linestyle='--',
                          marker='None',
                          color='k')
@@ -502,7 +505,7 @@ class gFunction(object):
         _format_axes(ax2)
 
         # Borefield characteristic time
-        ts = np.mean([b.h for b in self.solver.boreholes]) ** 2 / (9. * self.alpha)
+        ts = np.mean([b.H for b in self.solver.boreholes])**2/(9.*self.alpha)
         # Dimensionless time (log)
         lntts = np.log(self.time/ts)
         # Plot curves for requested boreholes
@@ -514,8 +517,8 @@ class gFunction(object):
                 # Draw colored marker for borehole position
                 if showTilt:
                     ax1.plot(
-                        [borehole.x, borehole.x + borehole.h * np.sin(borehole.tilt) * np.cos(borehole.orientation)],
-                        [borehole.y, borehole.y + borehole.h * np.sin(borehole.tilt) * np.sin(borehole.orientation)],
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
                          linestyle='--',
                          marker='None',
                          color=color)
@@ -528,8 +531,8 @@ class gFunction(object):
                 # Draw black marker for borehole position
                 if showTilt:
                     ax1.plot(
-                        [borehole.x, borehole.x + borehole.h * np.sin(borehole.tilt) * np.cos(borehole.orientation)],
-                        [borehole.y, borehole.y + borehole.h * np.sin(borehole.tilt) * np.sin(borehole.orientation)],
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
                          linestyle='--',
                          marker='None',
                          color='k')
@@ -597,8 +600,8 @@ class gFunction(object):
                 # Draw colored marker for borehole position
                 if showTilt:
                     ax1.plot(
-                        [borehole.x, borehole.x + borehole.h * np.sin(borehole.tilt) * np.cos(borehole.orientation)],
-                        [borehole.y, borehole.y + borehole.h * np.sin(borehole.tilt) * np.sin(borehole.orientation)],
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
                          linestyle='--',
                          marker='None',
                          color=color)
@@ -611,8 +614,8 @@ class gFunction(object):
                 # Draw black marker for borehole position
                 if showTilt:
                     ax1.plot(
-                        [borehole.x, borehole.x + borehole.h * np.sin(borehole.tilt) * np.cos(borehole.orientation)],
-                        [borehole.y, borehole.y + borehole.h * np.sin(borehole.tilt) * np.sin(borehole.orientation)],
+                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
                          linestyle='--',
                          marker='None',
                          color='k')
@@ -690,8 +693,8 @@ class gFunction(object):
                 # The heat extraction rate is duplicated to draw from
                 # z = D to z = D + H.
                 z.append(
-                    np.array([self.solver.boreholes[i].d,
-                              self.solver.boreholes[i].d + self.solver.boreholes[i].h]))
+                    np.array([self.solver.boreholes[i].D,
+                              self.solver.boreholes[i].D + self.solver.boreholes[i].H]))
                 Q_b.append(np.array(2*[self.solver.Q_b]))
             else:
                 i0 = self.solver._i0Segments[i]
@@ -710,7 +713,7 @@ class gFunction(object):
                     # Borehole length ratio at the mid-depth of each segment
                     segment_ratios = self.solver.segment_ratios[i]
                     z.append(
-                        self.solver.boreholes[i].d \
+                        self.solver.boreholes[i].D \
                         + self.solver.boreholes[i]._segment_midpoints(
                             self.solver.nBoreSegments[i],
                             segment_ratios=segment_ratios))
@@ -719,8 +722,8 @@ class gFunction(object):
                     # If there is only one segment, the heat extraction rate is
                     # duplicated to draw from z = D to z = D + H.
                     z.append(
-                        np.array([self.solver.boreholes[i].d,
-                                  self.solver.boreholes[i].d + self.solver.boreholes[i].h]))
+                        np.array([self.solver.boreholes[i].D,
+                                  self.solver.boreholes[i].D + self.solver.boreholes[i].H]))
                     Q_b.append(np.array(2*[np.asscalar(Q_bi)]))
         return z, Q_b
 
@@ -788,8 +791,8 @@ class gFunction(object):
                 # boreholes). The temperature is duplicated to draw from
                 # z = D to z = D + H.
                 z.append(
-                    np.array([self.solver.boreholes[i].d,
-                              self.solver.boreholes[i].d + self.solver.boreholes[i].h]))
+                    np.array([self.solver.boreholes[i].D,
+                              self.solver.boreholes[i].D + self.solver.boreholes[i].H]))
                 if time is None:
                     # If time is None, temperatures are extracted at the last
                     # time step.
@@ -821,7 +824,7 @@ class gFunction(object):
 
                     segment_ratios = self.solver.segment_ratios[i]
                     z.append(
-                        self.solver.boreholes[i].d \
+                        self.solver.boreholes[i].D \
                         + self.solver.boreholes[i]._segment_midpoints(
                             self.solver.nBoreSegments[i],
                             segment_ratios=segment_ratios))
@@ -830,8 +833,8 @@ class gFunction(object):
                     # If there is only one segment, the temperature is
                     # duplicated to draw from z = D to z = D + H.
                     z.append(
-                        np.array([self.solver.boreholes[i].d,
-                                  self.solver.boreholes[i].d + self.solver.boreholes[i].h]))
+                        np.array([self.solver.boreholes[i].D,
+                                  self.solver.boreholes[i].D + self.solver.boreholes[i].H]))
                     T_b.append(np.array(2*[np.asscalar(T_bi)]))
         return z, T_b
 
@@ -861,13 +864,13 @@ class gFunction(object):
                 self.boundary_condition = 'UBWT'
         # If the 'equivalent' solver is selected for the 'MIFT' condition,
         # switch to the 'similarities' solver if boreholes are in series
-        if self.boundary_condition == 'MIFT' and self.method is Method.equivalent:
+        if self.boundary_condition == 'MIFT' and  self.method.lower() == 'equivalent':
             if not np.all(np.array(self.network.c, dtype=int) == -1):
                 warnings.warn(
                     "\nSolver 'equivalent' is only valid for "
                     "parallel-connected boreholes. Calculations will use the "
                     "'similarities' solver instead.")
-                self.method = Method.similarities
+                self.method = 'similarities'
             elif not (
                     type(self.network.m_flow_network) is float or (
                         type(self.network.m_flow_network) is np.ndarray and \
@@ -877,7 +880,7 @@ class gFunction(object):
                     "\nSolver 'equivalent' is only valid for equal mass flow "
                     "rates into the boreholes. Calculations will use the "
                     "'similarities' solver instead.")
-                self.method = Method.similarities
+                self.method = 'similarities'
             elif not np.all(
                     [np.allclose(self.network.p[0]._Rd, pipe._Rd)
                      for pipe in self.network.p]):
@@ -885,7 +888,7 @@ class gFunction(object):
                     "\nSolver 'equivalent' is only valid for boreholes with "
                     "the same piping  configuration. Calculations will use "
                     "the 'similarities' solver instead.")
-                self.method = Method.similarities
+                self.method = 'similarities'
         return
 
     def _check_inputs(self):
@@ -916,9 +919,10 @@ class gFunction(object):
         assert type(self.boundary_condition) is str and self.boundary_condition in acceptable_boundary_conditions, \
             f"Boundary condition '{self.boundary_condition}' is not an acceptable boundary condition. \n" \
             f"Please provide one of the following inputs : {acceptable_boundary_conditions}"
-        assert isinstance(self.method, Method), \
+        acceptable_methods = ['detailed', 'similarities', 'equivalent']
+        assert type(self.method) is str and self.method in acceptable_methods, \
             f"Method '{self.method}' is not an acceptable method. \n" \
-            f"Please provide one of the following inputs : {[method for method in Method]}"
+            f"Please provide one of the following inputs : {acceptable_methods}"
         return
 
 
@@ -967,8 +971,8 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
 
     Examples
     --------
-    >>> b1 = gt.boreholes.Borehole(h=150., d=4., r_b=0.075, x=0., y=0.)
-    >>> b2 = gt.boreholes.Borehole(h=150., d=4., r_b=0.075, x=5., y=0.)
+    >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
+    >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
     >>> alpha = 1.0e-6
     >>> time = np.array([1.0*10**i for i in range(4, 12)])
     >>> gt.gfunction.uniform_heat_extraction([b1, b2], time, alpha)
@@ -998,7 +1002,10 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
                'dtype':dtype,
                'disp':disp}
     # Select the correct solver:
-    method=Method.similarities if use_similarities else Method.detailed
+    if use_similarities:
+        method='similarities'
+    else:
+        method='detailed'
     # Evaluate g-function
     gFunc = gFunction(
         boreholes, alpha, time=time, method=method,
@@ -1071,8 +1078,8 @@ def uniform_temperature(boreholes, time, alpha, nSegments=8,
 
     Examples
     --------
-    >>> b1 = gt.boreholes.Borehole(h=150., d=4., r_b=0.075, x=0., y=0.)
-    >>> b2 = gt.boreholes.Borehole(h=150., d=4., r_b=0.075, x=5., y=0.)
+    >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
+    >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
     >>> alpha = 1.0e-6
     >>> time = np.array([1.0*10**i for i in range(4, 12)])
     >>> gt.gfunction.uniform_temperature([b1, b2], time, alpha)
@@ -1105,9 +1112,9 @@ def uniform_temperature(boreholes, time, alpha, nSegments=8,
                'disp':disp}
     # Select the correct solver:
     if use_similarities:
-        method=Method.similarities
+        method='similarities'
     else:
-        method=Method.detailed
+        method='detailed'
     # Evaluate g-function
     gFunc = gFunction(
         boreholes, alpha, time=time, method=method,
@@ -1214,9 +1221,9 @@ def equal_inlet_temperature(
                'disp':disp}
     # Select the correct solver:
     if use_similarities:
-        method=Method.similarities
+        method='similarities'
     else:
-        method=Method.detailed
+        method='detailed'
     # Evaluate g-function
     gFunc = gFunction(
         network, alpha, time=time, method=method,
@@ -1295,8 +1302,8 @@ def mixed_inlet_temperature(
 
     Examples
     --------
-    >>> b1 = gt.boreholes.Borehole(h=150., d=4., r_b=0.075, x=0., y=0.)
-    >>> b2 = gt.boreholes.Borehole(h=150., d=4., r_b=0.075, x=5., y=0.)
+    >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
+    >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
     >>> Utube1 = gt.pipes.SingleUTube(pos=[(-0.05, 0), (0, -0.05)],
                                       r_in=0.015, r_out=0.02,
                                       borehole=b1,k_s=2, k_g=1, R_fp=0.1)
@@ -1340,9 +1347,9 @@ def mixed_inlet_temperature(
                'disp':disp}
     # Select the correct solver:
     if use_similarities:
-        method=Method.similarities
+        method='similarities'
     else:
-        method=Method.detailed
+        method='detailed'
     # Evaluate g-function
     gFunc = gFunction(
         network, alpha, time=time, method=method,
@@ -1421,13 +1428,13 @@ class _BaseSolver(object):
         Default is numpy.double.
 
     """
-    def __init__(self, boreholes: list, network: Network, time: Union[float, NDArray[np.float64]], boundary_condition: str,
-                 nSegments: int = 8, segment_ratios: Optional[Union[NDArray[np.float64], Callable]]=utilities.segment_ratios,
-                 approximate_FLS:bool=False, mQuad: int=11, nFLS: int=10, disp:bool=False,
-                 profiles:bool=False, kind:str='linear', dtype:float=np.double,
+    def __init__(self, boreholes, network, time, boundary_condition,
+                 nSegments=8, segment_ratios=utilities.segment_ratios,
+                 approximate_FLS=False, mQuad=11, nFLS=10, disp=False,
+                 profiles=False, kind='linear', dtype=np.double,
                  **other_options):
-        self.boreholes: list = boreholes
-        self.network: Network = network
+        self.boreholes = boreholes
+        self.network = network
         # Convert time to a 1d array
         self.time = np.atleast_1d(time).flatten()
         self.boundary_condition = boundary_condition
@@ -1439,10 +1446,10 @@ class _BaseSolver(object):
             self.nBoreSegments = nSegments
         if isinstance(segment_ratios, np.ndarray):
             segment_ratios = [segment_ratios] * nBoreholes
+        elif segment_ratios is None:
+            segment_ratios = [np.full(n, 1./n) for n in self.nBoreSegments]
         elif callable(segment_ratios):
             segment_ratios = [segment_ratios(n) for n in self.nBoreSegments]
-        else:
-            segment_ratios = [np.full(n, 1./n) for n in self.nBoreSegments]
         self.segment_ratios = segment_ratios
         # Shortcut for segment_ratios comparisons
         self._equal_segment_ratios = \
@@ -1455,8 +1462,10 @@ class _BaseSolver(object):
                         rtol=1e-6)
             for segment_ratios in self.segment_ratios]
         # Find indices of first and last segments along boreholes
-        self._i0Segments = [sum(self.nBoreSegments[0:i]) for i in range(nBoreholes)]
-        self._i1Segments = [sum(self.nBoreSegments[0:(i + 1)]) for i in range(nBoreholes)]
+        self._i0Segments = [sum(self.nBoreSegments[0:i])
+                            for i in range(nBoreholes)]
+        self._i1Segments = [sum(self.nBoreSegments[0:(i + 1)])
+                            for i in range(nBoreholes)]
         self.approximate_FLS = approximate_FLS
         self.mQuad = mQuad
         self.nFLS = nFLS
@@ -1467,11 +1476,11 @@ class _BaseSolver(object):
         # Check the validity of inputs
         self._check_inputs()
         # Initialize the solver with solver-specific options
-        self.nSources = self.initialize(*other_options)
+        self.nSources = self.initialize(**other_options)
 
         return
 
-    def initialize(self, *kwargs) -> int:
+    def initialize(self, *kwargs):
         """
         Perform any calculation required at the initialization of the solver
         and returns the number of finite line heat sources in the borefield.
@@ -1493,6 +1502,7 @@ class _BaseSolver(object):
             'return the number of finite line heat sources in the borefield '
             'used to initialize the matrix of segment-to-segment thermal '
             'response factors (of size: nSources x nSources)')
+        return None
 
     def solve(self, time, alpha):
         """
@@ -1530,7 +1540,7 @@ class _BaseSolver(object):
         # Segment lengths
         H_b = self.segment_lengths()
         if self.boundary_condition == 'MIFT':
-            Hb_individual = np.array([b.h for b in self.boreSegments], dtype=self.dtype)
+            Hb_individual = np.array([b.H for b in self.boreSegments], dtype=self.dtype)
         H_tot = np.sum(H_b)
         if self.disp: print('Building and solving the system of equations ...',
                             end='')
@@ -1584,10 +1594,8 @@ class _BaseSolver(object):
                     A = np.block([[h_dt, -np.ones((self.nSources, 1),
                                                   dtype=self.dtype)],
                                   [H_b, 0.]])
-                    # A = csr_matrix(A)
                     B = np.hstack((-T_b0, H_tot))
                     # Solve the system of equations
-                    # X = sp_solve(A, B)
                     X = np.linalg.solve(A, B)
                     # Store calculated heat extraction rates
                     Q_b[:,p] = X[0:self.nSources]
@@ -1670,7 +1678,7 @@ class _BaseSolver(object):
 
         """
         # Borehole lengths
-        H_b = np.array([b.h for b in self.boreSegments], dtype=self.dtype)
+        H_b = np.array([b.H for b in self.boreSegments], dtype=self.dtype)
         return H_b
 
     def borehole_segments(self):
@@ -1688,7 +1696,8 @@ class _BaseSolver(object):
         """
         boreSegments = []  # list for storage of boreSegments
         for b, nSegments, segment_ratios in zip(self.boreholes, self.nBoreSegments, self.segment_ratios):
-            boreSegments.extend(b.segments(nSegments, segment_ratios=segment_ratios))
+            segments = b.segments(nSegments, segment_ratios=segment_ratios)
+            boreSegments.extend(segments)
 
         return boreSegments
 
@@ -1936,7 +1945,8 @@ class _Detailed(_BaseSolver):
         """
         # Split boreholes into segments
         self.boreSegments = self.borehole_segments()
-        return len(self.boreSegments)
+        nSources = len(self.boreSegments)
+        return nSources
 
     def thermal_response_factors(self, time, alpha, kind='linear'):
         """
@@ -2017,8 +2027,7 @@ class _Detailed(_BaseSolver):
         h_ij = interp1d(np.hstack((0., time)), h_ij,
                         kind=kind, copy=True, axis=2)
         toc = perf_counter()
-        if self.disp:
-            print(f' {toc - tic:.3f} sec')
+        if self.disp: print(f' {toc - tic:.3f} sec')
 
         return h_ij
 
@@ -2057,8 +2066,8 @@ class _Detailed(_BaseSolver):
         # Unpack parameters
         x = np.array([b.x for b in self.boreSegments])
         y = np.array([b.y for b in self.boreSegments])
-        H = np.array([b.h for b in self.boreSegments])
-        D = np.array([b.d for b in self.boreSegments])
+        H = np.array([b.H for b in self.boreSegments])
+        D = np.array([b.D for b in self.boreSegments])
         r_b = np.array([b.r_b for b in self.boreSegments])
         # Distances between boreholes
         dis = np.maximum(
@@ -2082,6 +2091,7 @@ class _Detailed(_BaseSolver):
                 approximation=self.approximate_FLS, N=self.nFLS)
         return h, i_segment, j_segment
         
+
 
 class _Similarities(_BaseSolver):
     """
@@ -2606,9 +2616,9 @@ class _Similarities(_BaseSolver):
 
         """
         # Compare lengths (H), buried depth (D) and radius (r_b)
-        if (abs((borehole1.h - borehole2.h) / borehole1.h) < self.tol and
+        if (abs((borehole1.H - borehole2.H)/borehole1.H) < self.tol and
             abs((borehole1.r_b - borehole2.r_b)/borehole1.r_b) < self.tol and
-            abs((borehole1.d - borehole2.d) / (borehole1.d + 1e-30)) < self.tol and
+            abs((borehole1.D - borehole2.D)/(borehole1.D + 1e-30)) < self.tol and
             abs(abs(borehole1.tilt) - abs(borehole2.tilt))/(abs(borehole1.tilt) + 1e-30) < self.tol):
             similarity = True
         else:
@@ -2633,14 +2643,14 @@ class _Similarities(_BaseSolver):
             True if the two pairs have the same FLS solution.
 
         """
-        deltaD1 = pair1[1].d - pair1[0].d
-        deltaD2 = pair2[1].d - pair2[0].d
+        deltaD1 = pair1[1].D - pair1[0].D
+        deltaD2 = pair2[1].D - pair2[0].D
 
         # Equality of lengths between pairs
-        cond_H = (abs((pair1[0].h - pair2[0].h) / pair1[0].h) < self.tol
-                  and abs((pair1[1].h - pair2[1].h) / pair1[1].h) < self.tol)
+        cond_H = (abs((pair1[0].H - pair2[0].H)/pair1[0].H) < self.tol
+            and abs((pair1[1].H - pair2[1].H)/pair1[1].H) < self.tol)
         # Equality of lengths in each pair
-        equal_H = abs((pair1[0].h - pair1[1].h) / pair1[0].h) < self.tol
+        equal_H = abs((pair1[0].H - pair1[1].H)/pair1[0].H) < self.tol
         # Equality of buried depths differences
         cond_deltaD = abs(deltaD1 - deltaD2)/abs(deltaD1 + 1e-30) < self.tol
         # Equality of buried depths differences if all boreholes have the same
@@ -2670,12 +2680,12 @@ class _Similarities(_BaseSolver):
             True if the two pairs have the same FLS solution.
 
         """
-        sumD1 = pair1[1].d + pair1[0].d
-        sumD2 = pair2[1].d + pair2[0].d
+        sumD1 = pair1[1].D + pair1[0].D
+        sumD2 = pair2[1].D + pair2[0].D
 
         # Equality of lengths between pairs
-        cond_H = (abs((pair1[0].h - pair2[0].h) / pair1[0].h) < self.tol
-                  and abs((pair1[1].h - pair2[1].h) / pair1[1].h) < self.tol)
+        cond_H = (abs((pair1[0].H - pair2[0].H)/pair1[0].H) < self.tol
+            and abs((pair1[1].H - pair2[1].H)/pair1[1].H) < self.tol)
         # Equality of buried depths sums
         cond_sumD = abs((sumD1 - sumD2)/(sumD1 + 1e-30)) < self.tol
         if cond_H and cond_sumD:
@@ -2732,10 +2742,10 @@ class _Similarities(_BaseSolver):
         dy1 = pair1[0].y - pair1[1].y; dy2 = pair2[0].y - pair2[1].y
         dis1 = np.sqrt(dx1**2 + dy1**2); dis2 = np.sqrt(dx2**2 + dy2**2)
         theta_12_1 = np.arctan2(dy1, dx1); theta_12_2 = np.arctan2(dy2, dx2)
-        deltaD1 = pair1[0].d - pair1[1].d; deltaD2 = pair2[0].d - pair2[1].d
+        deltaD1 = pair1[0].D - pair1[1].D; deltaD2 = pair2[0].D - pair2[1].D
         # Equality of lengths between pairs
-        cond_H = (abs((pair1[0].h - pair2[0].h) / pair1[0].h) < self.tol
-                  and abs((pair1[1].h - pair2[1].h) / pair1[1].h) < self.tol)
+        cond_H = (abs((pair1[0].H - pair2[0].H)/pair1[0].H) < self.tol
+            and abs((pair1[1].H - pair2[1].H)/pair1[1].H) < self.tol)
         # Equality of buried depths differences
         cond_deltaD = abs(deltaD1 - deltaD2)/(abs(deltaD1) + 1e-30) < self.tol
         # Equality of distances
@@ -2780,10 +2790,10 @@ class _Similarities(_BaseSolver):
         dy1 = pair1[0].y - pair1[1].y; dy2 = pair2[0].y - pair2[1].y
         dis1 = np.sqrt(dx1**2 + dy1**2); dis2 = np.sqrt(dx2**2 + dy2**2)
         theta_12_1 = np.arctan2(dy1, dx1); theta_12_2 = np.arctan2(dy2, dx2)
-        sumD1 = pair1[0].d + pair1[1].d; sumD2 = pair2[0].d + pair2[1].d
+        sumD1 = pair1[0].D + pair1[1].D; sumD2 = pair2[0].D + pair2[1].D
         # Equality of lengths between pairs
-        cond_H = (abs((pair1[0].h - pair2[0].h) / pair1[0].h) < self.tol
-                  and abs((pair1[1].h - pair2[1].h) / pair1[1].h) < self.tol)
+        cond_H = (abs((pair1[0].H - pair2[0].H)/pair1[0].H) < self.tol
+            and abs((pair1[1].H - pair2[1].H)/pair1[1].H) < self.tol)
         # Equality of buried depths sums
         cond_sumD = abs(sumD1 - sumD2)/(abs(sumD1) + 1e-30) < self.tol
         # Equality of distances
@@ -2835,12 +2845,12 @@ class _Similarities(_BaseSolver):
         dis1 = np.sqrt(dx1**2 + dy1**2); dis2 = np.sqrt(dx2**2 + dy2**2)
         theta_12_1 = np.arctan2(dy1, dx1); theta_12_2 = np.arctan2(dy2, dx2)
         # Equality of lengths between pairs
-        cond_H = (abs((pair1[0].h - pair2[0].h) / pair1[0].h) < self.tol
-                  and abs((pair1[1].h - pair2[1].h) / pair1[1].h) < self.tol)
+        cond_H = (abs((pair1[0].H - pair2[0].H)/pair1[0].H) < self.tol
+            and abs((pair1[1].H - pair2[1].H)/pair1[1].H) < self.tol)
         # Equality of buried depths
         cond_D = (
-                abs(pair1[0].d - pair2[0].d) / (abs(pair1[0].d) + 1e-30) < self.tol
-                and abs(pair1[1].d - pair2[1].d) / (abs(pair1[1].d) + 1e-30) < self.tol)
+            abs(pair1[0].D - pair2[0].D)/(abs(pair1[0].D) + 1e-30) < self.tol
+            and abs(pair1[1].D - pair2[1].D)/(abs(pair1[1].D) + 1e-30) < self.tol)
         # Equality of distances
         cond_dis = abs(dis1 - dis2)/(abs(dis1) + 1e-30) < self.disTol
         # Equality of tilts
@@ -3129,10 +3139,10 @@ class _Similarities(_BaseSolver):
                 # depths
                 else:
                     k_pair[p] = nPairs
-                    H1.append(segment_i.h)
-                    H2.append(segment_j.h)
-                    D1.append(segment_i.d)
-                    D2.append(segment_j.d)
+                    H1.append(segment_i.H)
+                    H2.append(segment_j.H)
+                    D1.append(segment_i.D)
+                    D2.append(segment_j.D)
                     unique_pairs.append((ii, jj))
                     nPairs += 1
                 p += 1
@@ -3254,14 +3264,14 @@ class _Similarities(_BaseSolver):
                     rb1.append(segment_i.r_b)
                     x1.append(segment_i.x)
                     y1.append(segment_i.y)
-                    H1.append(segment_i.h)
-                    D1.append(segment_i.d)
+                    H1.append(segment_i.H)
+                    D1.append(segment_i.D)
                     tilt1.append(segment_i.tilt)
                     orientation1.append(segment_i.orientation)
                     x2.append(segment_j.x)
                     y2.append(segment_j.y)
-                    H2.append(segment_j.h)
-                    D2.append(segment_j.d)
+                    H2.append(segment_j.H)
+                    D2.append(segment_j.D)
                     tilt2.append(segment_j.tilt)
                     orientation2.append(segment_j.orientation)
                     unique_pairs.append((ii, jj))
@@ -3763,7 +3773,7 @@ class _Equivalent(_BaseSolver):
 
         """
         # Borehole lengths
-        H = np.array([seg.h * seg.nBoreholes
+        H = np.array([seg.H*seg.nBoreholes
                       for (borehole, nSegments, ratios) in zip(
                               self.boreholes,
                               self.nBoreSegments,
@@ -3792,9 +3802,9 @@ class _Equivalent(_BaseSolver):
 
         """
         # Compare lengths (H), buried depth (D) and radius (r_b)
-        if (abs((borehole1.h - borehole2.h) / borehole1.h) < self.tol and
+        if (abs((borehole1.H - borehole2.H)/borehole1.H) < self.tol and
             abs((borehole1.r_b - borehole2.r_b)/borehole1.r_b) < self.tol and
-            abs((borehole1.d - borehole2.d) / (borehole1.d + 1e-30)) < self.tol):
+            abs((borehole1.D - borehole2.D)/(borehole1.D + 1e-30)) < self.tol):
             similarity = True
         else:
             similarity = False
@@ -3818,14 +3828,14 @@ class _Equivalent(_BaseSolver):
             True if the two pairs have the same FLS solution.
 
         """
-        deltaD1 = pair1[1].d - pair1[0].d
-        deltaD2 = pair2[1].d - pair2[0].d
+        deltaD1 = pair1[1].D - pair1[0].D
+        deltaD2 = pair2[1].D - pair2[0].D
 
         # Equality of lengths between pairs
-        cond_H = (abs((pair1[0].h - pair2[0].h) / pair1[0].h) < self.tol
-                  and abs((pair1[1].h - pair2[1].h) / pair1[1].h) < self.tol)
+        cond_H = (abs((pair1[0].H - pair2[0].H)/pair1[0].H) < self.tol
+            and abs((pair1[1].H - pair2[1].H)/pair1[1].H) < self.tol)
         # Equality of lengths in each pair
-        equal_H = abs((pair1[0].h - pair1[1].h) / pair1[0].h) < self.tol
+        equal_H = abs((pair1[0].H - pair1[1].H)/pair1[0].H) < self.tol
         # Equality of buried depths differences
         cond_deltaD = abs(deltaD1 - deltaD2)/abs(deltaD1 + 1e-30) < self.tol
         # Equality of buried depths differences if all boreholes have the same
@@ -3855,12 +3865,12 @@ class _Equivalent(_BaseSolver):
             True if the two pairs have the same FLS solution.
 
         """
-        sumD1 = pair1[1].d + pair1[0].d
-        sumD2 = pair2[1].d + pair2[0].d
+        sumD1 = pair1[1].D + pair1[0].D
+        sumD2 = pair2[1].D + pair2[0].D
 
         # Equality of lengths between pairs
-        cond_H = (abs((pair1[0].h - pair2[0].h) / pair1[0].h) < self.tol
-                  and abs((pair1[1].h - pair2[1].h) / pair1[1].h) < self.tol)
+        cond_H = (abs((pair1[0].H - pair2[0].H)/pair1[0].H) < self.tol
+            and abs((pair1[1].H - pair2[1].H)/pair1[1].H) < self.tol)
         # Equality of buried depths sums
         cond_sumD = abs((sumD1 - sumD2)/(sumD1 + 1e-30)) < self.tol
         if cond_H and cond_sumD:
@@ -4081,7 +4091,7 @@ class _Equivalent(_BaseSolver):
         elif reaSource:
             # Find segment pairs for the real FLS solution
             compare_pairs = self._compare_real_pairs
-        else:
+        elif imgSource:
             # Find segment pairs for the image FLS solution
             compare_pairs = self._compare_image_pairs
         # Dive both boreholes into segments
@@ -4123,10 +4133,10 @@ class _Equivalent(_BaseSolver):
                 # depths
                 else:
                     k_pair[p] = nPairs
-                    H1.append(segment_i.h)
-                    H2.append(segment_j.h)
-                    D1.append(segment_i.d)
-                    D2.append(segment_j.d)
+                    H1.append(segment_i.H)
+                    H2.append(segment_j.H)
+                    D1.append(segment_i.D)
+                    D2.append(segment_j.D)
                     unique_pairs.append((i, j))
                     nPairs += 1
                 p += 1
@@ -4166,9 +4176,8 @@ class _Equivalent(_BaseSolver):
                     self.network.m_flow_network[0]*len(self.network.b)
             # Verify that all boreholes have the same piping configuration
             # This is best done by comparing the matrix of thermal resistances.
-            assert np.all([np.allclose(self.network.p[0]._Rd, pipe._Rd) for pipe in self.network.p]), \
+            assert np.all(
+                [np.allclose(self.network.p[0]._Rd, pipe._Rd)
+                 for pipe in self.network.p]), \
                 "All boreholes must have the same piping configuration."
         return
-
-
-solver_mathing: Dict[Method, Callable] = {Method.similarities: _Similarities, Method.detailed: _Detailed, Method.equivalent: _Equivalent}

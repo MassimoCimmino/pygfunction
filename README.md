@@ -27,9 +27,8 @@ total):
 ```python
 import pygfunction as gt
 import numpy as np
-
-time = np.array([(i + 1) * 3600. for i in range(24)])  # Calculate hourly for one day
-boreField = gt.boreholes.rectangle_field(n_1=10, n_2=10, b_1=7.5, b_2=7.5, h=150., d=4., r_b=0.075)
+time = np.array([(i+1)*3600. for i in range(24)]) # Calculate hourly for one day
+boreField = gt.boreholes.rectangle_field(N_1=10, N_2=10, B_1=7.5, B_2=7.5, H=150., D=4., r_b=0.075)
 gFunc = gt.gfunction.gFunction(boreField, alpha=1.0e-6, time=time)
 gFunc.visualize_g_function()
 ```
@@ -109,17 +108,20 @@ To contribute code to *pygfunction*, follow the
 ## Contributors
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-3-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable -->
 <table>
-  <tr>
-    <td align="center"><a href="https://www.polymtl.ca/expertises/en/cimmino-massimo"><img src="https://avatars.githubusercontent.com/u/23085996?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Massimo Cimmino</b></sub></a><br /><a href="https://github.com/MassimoCimmino/pygfunction/commits?author=MassimoCimmino" title="Code">💻</a> <a href="https://github.com/MassimoCimmino/pygfunction/commits?author=MassimoCimmino" title="Documentation">📖</a> <a href="#example-MassimoCimmino" title="Examples">💡</a> <a href="http://www.ibpsa.org/proceedings/eSimPapers/2018/2-3-A-4.pdf" title="Founder">:rocket:</a> <a href="#ideas-MassimoCimmino" title="Ideas, Planning, & Feedback">🤔</a> <a href="#maintenance-MassimoCimmino" title="Maintenance">🚧</a> <a href="https://github.com/MassimoCimmino/pygfunction/pulls?q=is%3Apr+reviewed-by%3AMassimoCimmino" title="Reviewed Pull Requests">👀</a></td>
-    <td align="center"><a href="https://github.com/j-c-cook"><img src="https://avatars.githubusercontent.com/u/39248734?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Jack Cook</b></sub></a><br /><a href="https://github.com/MassimoCimmino/pygfunction/commits?author=j-c-cook" title="Code">💻</a> <a href="#example-j-c-cook" title="Examples">💡</a> <a href="#ideas-j-c-cook" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/MassimoCimmino/pygfunction/commits?author=j-c-cook" title="Documentation">📖</a></td>
-  </tr>
+  <tbody>
+    <tr>
+      <td align="center"><a href="https://www.polymtl.ca/expertises/en/cimmino-massimo"><img src="https://avatars.githubusercontent.com/u/23085996?v=4?s=100" width="100px;" alt="Massimo Cimmino"/><br /><sub><b>Massimo Cimmino</b></sub></a><br /><a href="https://github.com/MassimoCimmino/pygfunction/commits?author=MassimoCimmino" title="Code">💻</a> <a href="https://github.com/MassimoCimmino/pygfunction/commits?author=MassimoCimmino" title="Documentation">📖</a> <a href="#example-MassimoCimmino" title="Examples">💡</a> <a href="http://www.ibpsa.org/proceedings/eSimPapers/2018/2-3-A-4.pdf" title="Founder">:rocket:</a> <a href="#ideas-MassimoCimmino" title="Ideas, Planning, & Feedback">🤔</a> <a href="#maintenance-MassimoCimmino" title="Maintenance">🚧</a> <a href="https://github.com/MassimoCimmino/pygfunction/pulls?q=is%3Apr+reviewed-by%3AMassimoCimmino" title="Reviewed Pull Requests">👀</a></td>
+      <td align="center"><a href="https://github.com/j-c-cook"><img src="https://avatars.githubusercontent.com/u/39248734?v=4?s=100" width="100px;" alt="Jack Cook"/><br /><sub><b>Jack Cook</b></sub></a><br /><a href="https://github.com/MassimoCimmino/pygfunction/commits?author=j-c-cook" title="Code">💻</a> <a href="#example-j-c-cook" title="Examples">💡</a> <a href="#ideas-j-c-cook" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/MassimoCimmino/pygfunction/commits?author=j-c-cook" title="Documentation">📖</a></td>
+      <td align="center"><a href="https://github.com/mitchute"><img src="https://avatars.githubusercontent.com/u/2985979?v=4?s=100" width="100px;" alt="Matt Mitchell"/><br /><sub><b>Matt Mitchell</b></sub></a><br /><a href="https://github.com/MassimoCimmino/pygfunction/commits?author=mitchute" title="Code">💻</a> <a href="#ideas-mitchute" title="Ideas, Planning, & Feedback">🤔</a></td>
+    </tr>
+  </tbody>
 </table>
 
 <!-- markdownlint-restore -->

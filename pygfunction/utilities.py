@@ -22,10 +22,7 @@ def cardinal_point(direction):
     return compass[direction]
 
 
-sqrt_pi = 1 / np.sqrt(np.pi)
-
-
-def erf_int(x: np.ndarray):
+def erf_int(x):
     """
     Integral of the error function.
 
@@ -40,36 +37,7 @@ def erf_int(x: np.ndarray):
         Integral of the error function.
 
     """
-
-    abs_x = np.abs(x)
-    y_new = abs_x-sqrt_pi
-    idx = abs_x < 4
-    abs_2 = abs_x[idx]
-    y_new[idx] = abs_2 * erf(abs_2) - (1.0 - np.exp(-abs_2*abs_2)) * sqrt_pi
-    return y_new
-
-
-def erf_int_old(x: np.ndarray):
-    """
-    Integral of the error function.
-
-    Parameters
-    ----------
-    x : float or array
-        Argument.
-
-    Returns
-    -------
-    float or array
-        Integral of the error function.
-
-    """
-    return x * erf(x) - (1.0 - np.exp(-x*x)) / np.sqrt(np.pi)
-
-
-def erf_approx(abs_x: np.ndarray, exp_x2: np.ndarray) -> np.ndarray:
-    t = 1/(1+0.3275911*abs_x)
-    return abs_x*(1-(((((1.061405429*t-1.453152027)*t+1.42141374)*t-0.284496736)*t+0.254829592)*t)*exp_x2)
+    return x * erf(x) - 1.0 / np.sqrt(np.pi) * (1.0 - np.exp(-x**2))
 
 
 def exp1(x):
@@ -388,7 +356,7 @@ def time_geometric(dt, tmax, Nt):
     return time
 
 
-def _initialize_figure() -> plt.figure:
+def _initialize_figure():
     """
     Initialize a matplotlib figure object with overwritten default parameters.
 

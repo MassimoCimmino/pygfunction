@@ -165,8 +165,8 @@ def finite_line_source(
 
     Examples
     --------
-    >>> b1 = gt.boreholes.Borehole(h=150., d=4., r_b=0.075, x=0., y=0.)
-    >>> b2 = gt.boreholes.Borehole(h=150., d=4., r_b=0.075, x=5., y=0.)
+    >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
+    >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
     >>> h = gt.heat_transfer.finite_line_source(4*168*3600., 1.0e-6, b1, b2)
     h = 0.0110473635393
     >>> h = gt.heat_transfer.finite_line_source(
@@ -202,8 +202,8 @@ def finite_line_source(
     """
     if isinstance(borehole1, Borehole) and isinstance(borehole2, Borehole):
         # Unpack parameters
-        H1, D1 = borehole1.h, borehole1.d
-        H2, D2 = borehole2.h, borehole2.d
+        H1, D1 = borehole1.H, borehole1.D
+        H2, D2 = borehole2.H, borehole2.D
         if borehole1.is_vertical() and borehole2.is_vertical():
             # Boreholes are vertical
             dis = borehole1.distance(borehole2)
@@ -290,10 +290,10 @@ def finite_line_source(
         dis = np.maximum(
             np.sqrt(np.add.outer(x2, -x1)**2 + np.add.outer(y2, -y1)**2),
             r_b)
-        D1 = np.array([b.d for b in borehole1]).reshape(1, -1)
-        H1 = np.array([b.h for b in borehole1]).reshape(1, -1)
-        D2 = np.array([b.d for b in borehole2]).reshape(-1, 1)
-        H2 = np.array([b.h for b in borehole2]).reshape(-1, 1)
+        D1 = np.array([b.D for b in borehole1]).reshape(1, -1)
+        H1 = np.array([b.H for b in borehole1]).reshape(1, -1)
+        D2 = np.array([b.D for b in borehole2]).reshape(-1, 1)
+        H2 = np.array([b.H for b in borehole2]).reshape(-1, 1)
 
         if (np.all([b.is_vertical() for b in borehole1])
             and np.all([b.is_vertical() for b in borehole2])):
@@ -1119,7 +1119,7 @@ def _finite_line_source_integrand(dis, H1, D1, H2, D2, reaSource, imgSource):
                       D2 + D1 + H1,
                       D2 + D1 + H2 + H1],
                      axis=-1)
-        f = lambda s: 1/(s*s) * np.exp(-dis*dis*s*s) * np.inner(p, erf_int(q * s))
+        f = lambda s: s**-2 * np.exp(-dis**2*s**2) * np.inner(p, erf_int(q * s))
     elif reaSource:
         # Real FLS solution
         p = np.array([1, -1, 1, -1])
@@ -1128,7 +1128,7 @@ def _finite_line_source_integrand(dis, H1, D1, H2, D2, reaSource, imgSource):
                       D2 - D1 - H1,
                       D2 - D1 + H2 - H1],
                      axis=-1)
-        f = lambda s: 1/(s*s) * np.exp(-dis*dis*s*s) * np.inner(p, erf_int(q * s))
+        f = lambda s: s**-2 * np.exp(-dis**2*s**2) * np.inner(p, erf_int(q * s))
     elif imgSource:
         # Image FLS solution
         p = np.array([1, -1, 1, -1])
@@ -1137,7 +1137,7 @@ def _finite_line_source_integrand(dis, H1, D1, H2, D2, reaSource, imgSource):
                       D2 + D1 + H1,
                       D2 + D1 + H2 + H1],
                      axis=-1)
-        f = lambda s: 1/(s*s) * np.exp(-dis*dis*s*s) * np.inner(p, erf_int(q * s))
+        f = lambda s: s**-2 * np.exp(-dis**2*s**2) * np.inner(p, erf_int(q * s))
     else:
         # No heat source
         f = lambda s: np.zeros(np.broadcast_shapes(

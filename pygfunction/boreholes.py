@@ -1,25 +1,21 @@
 # -*- coding: utf-8 -*-
-from __future__ import annotations
-
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy.typing import NDArray
 from scipy.constants import pi
 from scipy.spatial.distance import pdist
-from typing import Tuple, List, Union, Optional
 
 from .utilities import _initialize_figure, _format_axes, _format_axes_3d
 
 
-class Borehole:
+class Borehole(object):
     """
     Contains information regarding the dimensions and position of a borehole.
 
     Attributes
     ----------
-    h : float
+    H : float
         Borehole length (in meters).
-    d : float
+    D : float
         Borehole buried depth (in meters).
     r_b : float
         Borehole radius (in meters).
@@ -33,27 +29,26 @@ class Borehole:
         Direction (in radians) of the tilt of the borehole.
 
     """
-
-    def __init__(self, h: float, d: float, r_b: float, x: float, y: float, tilt: float = 0., orientation: Optional[float] = None):
-        self.h: float = float(h)  # Borehole length
-        self.d: float = float(d)  # Borehole buried depth
-        self.r_b: float = float(r_b)  # Borehole radius
-        self.x: float = float(x)  # Borehole x coordinate position
-        self.y: float = float(y)  # Borehole y coordinate position
+    def __init__(self, H, D, r_b, x, y, tilt=0., orientation=0.):
+        self.H = float(H)      # Borehole length
+        self.D = float(D)      # Borehole buried depth
+        self.r_b = float(r_b)  # Borehole radius
+        self.x = float(x)      # Borehole x coordinate position
+        self.y = float(y)      # Borehole y coordinate position
         # Borehole inclination
-        self.tilt: float = float(tilt)
+        self.tilt = float(tilt)
         # Borehole orientation
-        self.orientation: float = float(orientation) if orientation is not None else 0.
+        self.orientation = float(orientation)
         # Check if borehole is inclined
-        self._is_tilted: bool = np.abs(self.tilt) > 1.0e-6
+        self._is_tilted = np.abs(self.tilt) > 1.0e-6
 
     def __repr__(self):
-        s = (f'Borehole(H={self.h}, D={self.d}, r_b={self.r_b}, x={self.x},'
+        s = (f'Borehole(H={self.H}, D={self.D}, r_b={self.r_b}, x={self.x},'
              f' y={self.y}, tilt={self.tilt},'
              f' orientation={self.orientation})')
         return s
 
-    def distance(self, target: Borehole) -> float:
+    def distance(self, target):
         """
         Evaluate the distance between the current borehole and a target
         borehole.
@@ -75,15 +70,17 @@ class Borehole:
 
         Examples
         --------
-        >>> b1 = gt.boreholes.Borehole(h=150., d=4., r_b=0.075, x=0., y=0.)
-        >>> b2 = gt.boreholes.Borehole(h=150., d=4., r_b=0.075, x=5., y=0.)
+        >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
+        >>> b2 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
         >>> b1.distance(b2)
         5.0
 
         """
-        return max(self.r_b, np.sqrt((self.x - target.x) ** 2 + (self.y - target.y) ** 2))
+        dis = max(self.r_b,
+                  np.sqrt((self.x - target.x)**2 + (self.y - target.y)**2))
+        return dis
 
-    def is_tilted(self) -> bool:
+    def is_tilted(self):
         """
         Returns true if the borehole is inclined.
 
@@ -95,7 +92,7 @@ class Borehole:
         """
         return self._is_tilted
 
-    def is_vertical(self) -> bool:
+    def is_vertical(self):
         """
         Returns true if the borehole is vertical.
 
@@ -107,7 +104,7 @@ class Borehole:
         """
         return not self._is_tilted
 
-    def position(self) -> Tuple[float, float]:
+    def position(self):
         """
         Returns the position of the borehole.
 
@@ -118,20 +115,21 @@ class Borehole:
 
         Examples
         --------
-        >>> b1 = gt.boreholes.Borehole(h=150., d=4., r_b=0.075, x=5., y=0.)
+        >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
         >>> b1.position()
         (5.0, 0.0)
 
         """
-        return self.x, self.y
+        pos = (self.x, self.y)
+        return pos
 
-    def segments(self, n_segments: int, segment_ratios: Optional[NDArray[np.float64]] = None) -> List[Borehole]:
+    def segments(self, nSegments, segment_ratios=None):
         """
         Split a borehole into segments.
 
         Parameters
         ----------
-        n_segments : int
+        nSegments : int
             Number of segments.
         segment_ratios : array, optional
             Ratio of the borehole length represented by each segment. The
@@ -147,37 +145,37 @@ class Borehole:
 
         Examples
         --------
-        >>> b1 = gt.boreholes.Borehole(h=150., d=4., r_b=0.075, x=5., y=0.)
+        >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
         >>> b1.segments(5)
 
         """
         if segment_ratios is None:
-            segment_ratios = np.full(n_segments, 1. / n_segments)
-        z = self._segment_edges(n_segments, segment_ratios=segment_ratios)[:-1]
-        bore_segments = []
+            segment_ratios = np.full(nSegments, 1. / nSegments)
+        z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1]
+        boreSegments = []
         for z_i, ratios in zip(z, segment_ratios):
             # Divide borehole into segments of equal length
-            H = ratios * self.h
+            H = ratios * self.H
             # Buried depth of the i-th segment
-            D = self.d + z_i * np.cos(self.tilt)
+            D = self.D + z_i * np.cos(self.tilt)
             # x-position
             x = self.x + z_i * np.sin(self.tilt) * np.cos(self.orientation)
             # y-position
             y = self.y + z_i * np.sin(self.tilt) * np.sin(self.orientation)
             # Add to list of segments
-            bore_segments.append(
+            boreSegments.append(
                 Borehole(H, D, self.r_b, x, y,
                          tilt=self.tilt,
                          orientation=self.orientation))
-        return bore_segments
+        return boreSegments
 
-    def _segment_edges(self, n_segments: int, segment_ratios: Optional[NDArray[np.float64]] = None) -> NDArray[np.float64]:
+    def _segment_edges(self, nSegments, segment_ratios=None):
         """
         Linear coordinates of the segment edges.
 
         Parameters
         ----------
-        n_segments : int
+        nSegments : int
             Number of segments.
         segment_ratios : array, optional
             Ratio of the borehole length represented by each segment. The
@@ -195,22 +193,22 @@ class Borehole:
 
         Examples
         --------
-        >>> b1 = gt.boreholes.Borehole(h=150., d=4., r_b=0.075, x=5., y=0.)
+        >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
         >>> b1._segment_edges(5)
 
         """
         if segment_ratios is None:
-            segment_ratios = np.full(n_segments, 1. / n_segments)
-        z = np.concatenate(([0.], np.cumsum(segment_ratios))) * self.h
+            segment_ratios = np.full(nSegments, 1. / nSegments)
+        z = np.concatenate(([0.], np.cumsum(segment_ratios))) * self.H
         return z
 
-    def _segment_midpoints(self, n_segments: int, segment_ratios: Optional[NDArray[np.float64]] = None) -> NDArray[np.float64]:
+    def _segment_midpoints(self, nSegments, segment_ratios=None):
         """
         Linear coordinates of the segment midpoints.
 
         Parameters
         ----------
-        n_segments : int
+        nSegments : int
             Number of segments.
         segment_ratios : array, optional
             Ratio of the borehole length represented by each segment. The
@@ -228,18 +226,18 @@ class Borehole:
 
         Examples
         --------
-        >>> b1 = gt.boreholes.Borehole(h=150., d=4., r_b=0.075, x=5., y=0.)
+        >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
         >>> b1._segment_midpoints(5)
 
         """
         if segment_ratios is None:
-            segment_ratios = np.full(n_segments, 1. / n_segments)
-        z = self._segment_edges(n_segments, segment_ratios=segment_ratios)[:-1] \
-            + segment_ratios * self.h / 2
+            segment_ratios = np.full(nSegments, 1. / nSegments)
+        z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1] \
+            + segment_ratios * self.H / 2
         return z
 
 
-class _EquivalentBorehole:
+class _EquivalentBorehole(object):
     """
     Contains information regarding the dimensions and position of an equivalent
     borehole.
@@ -283,19 +281,18 @@ class _EquivalentBorehole:
         Simulation, 14 (4), 446-460.
 
     """
-
-    def __init__(self, boreholes: Union[List[Borehole], List[_EquivalentBorehole], tuple]):
+    def __init__(self, boreholes):
         if isinstance(boreholes[0], Borehole):
-            self.h: float = boreholes[0].h
-            self.d: float = boreholes[0].d
-            self.r_b: float = boreholes[0].r_b
-            self.x: NDArray[np.float64] = np.array([b.x for b in boreholes])
-            self.y: NDArray[np.float64] = np.array([b.y for b in boreholes])
-            self.tilt: float = boreholes[0].tilt
+            self.H = boreholes[0].H
+            self.D = boreholes[0].D
+            self.r_b = boreholes[0].r_b
+            self.x = np.array([b.x for b in boreholes])
+            self.y = np.array([b.y for b in boreholes])
+            self.tilt = boreholes[0].tilt
             self.orientation = np.array([b.orientation for b in boreholes])
         elif isinstance(boreholes[0], _EquivalentBorehole):
-            self.h = boreholes[0].h
-            self.d = boreholes[0].d
+            self.H = boreholes[0].H
+            self.D = boreholes[0].D
             self.r_b = boreholes[0].r_b
             self.x = np.concatenate([b.x for b in boreholes])
             self.y = np.concatenate([b.y for b in boreholes])
@@ -303,17 +300,17 @@ class _EquivalentBorehole:
             self.orientation = np.concatenate(
                 [b.orientation for b in boreholes])
         elif type(boreholes) is tuple:
-            self.h, self.d, self.r_b, self.x, self.y = boreholes[:5]
+            self.H, self.D, self.r_b, self.x, self.y = boreholes[:5]
             self.x = np.atleast_1d(self.x)
             self.y = np.atleast_1d(self.y)
-            if len(boreholes) == 7:
+            if len(boreholes)==7:
                 self.tilt, self.orientation = boreholes[5:]
 
-        self.nBoreholes: int = len(self.x)
+        self.nBoreholes = len(self.x)
         # Check if borehole is inclined
-        self._is_tilted: bool = np.abs(self.tilt) > 1.0e-6
+        self._is_tilted = np.abs(self.tilt) > 1.0e-6
 
-    def distance(self, target: _EquivalentBorehole) -> NDArray[np.float64]:
+    def distance(self, target):
         """
         Evaluate the distance between the current borehole and a target
         borehole.
@@ -341,9 +338,13 @@ class _EquivalentBorehole:
         array([[ 5., 7.07106781, 11.18033989]])
 
         """
-        return np.maximum(np.sqrt(np.add.outer(target.x, -self.x) ** 2 + np.add.outer(target.y, -self.y) ** 2), self.r_b)
+        dis = np.maximum(
+            np.sqrt(
+                np.add.outer(target.x, -self.x)**2 + np.add.outer(target.y, -self.y)**2),
+            self.r_b)
+        return dis
 
-    def is_tilted(self) -> bool:
+    def is_tilted(self):
         """
         Returns true if the borehole is inclined.
 
@@ -355,7 +356,7 @@ class _EquivalentBorehole:
         """
         return self._is_tilted
 
-    def is_vertical(self) -> bool:
+    def is_vertical(self):
         """
         Returns true if the borehole is vertical.
 
@@ -367,7 +368,7 @@ class _EquivalentBorehole:
         """
         return not self._is_tilted
 
-    def position(self) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
+    def position(self):
         """
         Returns the position of the boreholes represented by the equivalent
         borehole.
@@ -384,15 +385,15 @@ class _EquivalentBorehole:
         (array([ 0., 5., 10.]), array([0., 0., 0.]))
 
         """
-        return self.x, self.y
+        return (self.x, self.y)
 
-    def segments(self, n_segments: int, segment_ratios: Optional[NDArray[np.float64]] = None) -> List[_EquivalentBorehole]:
+    def segments(self, nSegments, segment_ratios=None):
         """
         Split an equivalent borehole into segments.
 
         Parameters
         ----------
-        n_segments : int
+        nSegments : int
             Number of segments.
         segment_ratios : array, optional
             Ratio of the borehole length represented by each segment. The
@@ -412,20 +413,20 @@ class _EquivalentBorehole:
 
         """
         if segment_ratios is None:
-            segment_ratios = np.full(n_segments, 1. / n_segments)
-        z = self._segment_edges(n_segments, segment_ratios=segment_ratios)[:-1]
+            segment_ratios = np.full(nSegments, 1. / nSegments)
+        z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1]
         segments = [_EquivalentBorehole(
-            (ratios * self.h,
-             self.d + z_i * np.cos(self.tilt),
+            (ratios * self.H,
+             self.D + z_i * np.cos(self.tilt),
              self.r_b,
              self.x + z_i * np.sin(self.tilt) * np.cos(self.orientation),
              self.y + z_i * np.sin(self.tilt) * np.sin(self.orientation),
              self.tilt,
              self.orientation)
-        ) for z_i, ratios in zip(z, segment_ratios)]
+            ) for z_i, ratios in zip(z, segment_ratios)]
         return segments
 
-    def unique_distance(self, target: _EquivalentBorehole, dis_tol: float = 0.01) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
+    def unique_distance(self, target, disTol=0.01):
         """
         Find unique distances between pairs of boreholes for a pair of
         equivalent boreholes.
@@ -434,7 +435,7 @@ class _EquivalentBorehole:
         ----------
         target : _EquivalentBorehole object
             Target borehole for which the distances are evaluated.
-        dis_tol : float, optional
+        disTol : float, optional
             Relative tolerance on radial distance. Two distances
             (d1, d2) between two pairs of boreholes are considered equal if the
             difference between the two distances (abs(d1-d2)) is below tolerance.
@@ -462,38 +463,38 @@ class _EquivalentBorehole:
         """
         # Find all distances between the boreholes, sorted and flattened
         all_dis = np.sort(self.distance(target).flatten())
-        n_dis = len(all_dis)
+        nDis = len(all_dis)
 
         # Find unique distances within tolerance
-        dis: List[float] = []
-        w_dis: List[float] = []
+        dis = []
+        wDis = []
         # Start the search at the first distance
         j0 = 0
         j1 = 1
-        while j0 < n_dis and j1 > 0:
+        while j0 < nDis and j1 > 0:
             # Find the index of the first distance for which the distance is
             # outside tolerance to the current distance
-            j1 = np.argmax(all_dis >= (1 + dis_tol) * all_dis[j0])
+            j1 = np.argmax(all_dis >= (1 + disTol) * all_dis[j0])
             if j1 > j0:
                 # Add the average of the distances within tolerance to the
                 # list of unique distances and store the number of distances
                 dis.append(np.mean(all_dis[j0:j1]))
-                w_dis.append(j1 - j0)
+                wDis.append(j1-j0)
             else:
                 # All remaining distances are within tolerance
                 dis.append(np.mean(all_dis[j0:]))
-                w_dis.append(n_dis - j0)
+                wDis.append(nDis-j0)
             j0 = j1
+        
+        return np.array(dis), np.array(wDis)
 
-        return np.array(dis), np.array(w_dis)
-
-    def _segment_edges(self, n_segments: int, segment_ratios: Optional[np.float64] = None) -> float:
+    def _segment_edges(self, nSegments, segment_ratios=None):
         """
         Linear coordinates of the segment edges.
 
         Parameters
         ----------
-        n_segments : int
+        nSegments : int
             Number of segments.
         segment_ratios : array, optional
             Ratio of the borehole length represented by each segment. The
@@ -511,21 +512,22 @@ class _EquivalentBorehole:
 
         Examples
         --------
-        >>> b1 = gt.boreholes.Borehole(h=150., d=4., r_b=0.075, x=5., y=0.)
+        >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
         >>> b1._segment_edges(5)
 
         """
         if segment_ratios is None:
-            segment_ratios = np.full(n_segments, 1. / n_segments)
-        return np.concatenate(([0.], np.cumsum(segment_ratios))) * self.h
+            segment_ratios = np.full(nSegments, 1. / nSegments)
+        z = np.concatenate(([0.], np.cumsum(segment_ratios))) * self.H
+        return z
 
-    def _segment_midpoints(self, n_segments: int, segment_ratios: Optional[np.float64] = None) -> float:
+    def _segment_midpoints(self, nSegments, segment_ratios=None):
         """
         Linear coordinates of the segment midpoints.
 
         Parameters
         ----------
-        n_segments : int
+        nSegments : int
             Number of segments.
         segment_ratios : array, optional
             Ratio of the borehole length represented by each segment. The
@@ -543,16 +545,18 @@ class _EquivalentBorehole:
 
         Examples
         --------
-        >>> b1 = gt.boreholes.Borehole(h=150., d=4., r_b=0.075, x=5., y=0.)
+        >>> b1 = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=5., y=0.)
         >>> b1._segment_midpoints(5)
 
         """
         if segment_ratios is None:
-            segment_ratios = np.full(n_segments, 1. / n_segments)
-        return self._segment_edges(n_segments, segment_ratios=segment_ratios)[:-1] + segment_ratios * self.h / 2
+            segment_ratios = np.full(nSegments, 1. / nSegments)
+        z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1] \
+            + segment_ratios * self.H / 2
+        return z
 
 
-def find_duplicates(bore_field: List[Borehole], disp: bool = False):
+def find_duplicates(boreField, disp=False):
     """
     The distance method :func:`Borehole.distance` is utilized to find all
     duplicate boreholes in a boreField.
@@ -563,7 +567,7 @@ def find_duplicates(bore_field: List[Borehole], disp: bool = False):
 
     Parameters
     ----------
-    bore_field : list
+    boreField : list
         A list of :class:`Borehole` objects
     disp : bool, optional
         Set to true to print progression messages.
@@ -575,11 +579,11 @@ def find_duplicates(bore_field: List[Borehole], disp: bool = False):
         A list of tuples where the tuples are pairs of duplicates
     """
     # Number of boreholes
-    n = len(bore_field)
+    n = len(boreField)
     # Max. borehole radius
-    r_b = np.max([b.r_b for b in bore_field])
+    r_b = np.max([b.r_b for b in boreField])
     # Array of coordinates
-    coordinates = np.array([[b.x, b.y] for b in bore_field])
+    coordinates = np.array([[b.x, b.y] for b in boreField])
     # Find distance between each pair of boreholes
     distances = pdist(coordinates, 'euclidean')
     # Find duplicate boreholes
@@ -595,7 +599,7 @@ def find_duplicates(bore_field: List[Borehole], disp: bool = False):
     return duplicate_pairs
 
 
-def remove_duplicates(bore_field: List[Borehole], disp=False):
+def remove_duplicates(boreField, disp=False):
     """
     Removes all of the duplicates found from the duplicate pairs returned in
     :func:`check_duplicates`.
@@ -605,7 +609,7 @@ def remove_duplicates(bore_field: List[Borehole], disp=False):
 
     Parameters
     ----------
-    bore_field : list
+    boreField : list
         A list of :class:`Borehole` objects
     disp : bool, optional
         Set to true to print progression messages.
@@ -613,49 +617,42 @@ def remove_duplicates(bore_field: List[Borehole], disp=False):
 
     Returns
     -------
-    new_bore_field : list
+    new_boreField : list
         A boreField without duplicates
     """
     # Find duplicate pairs
-    duplicate_pairs = find_duplicates(bore_field, disp=disp)
+    duplicate_pairs = find_duplicates(boreField, disp=disp)
 
     # Boreholes not to be included
     duplicate_bores = [pair[1] for pair in duplicate_pairs]
     # Initialize new borefield
-    new_bore_field = [b for i, b in enumerate(bore_field) if i not in duplicate_bores]
+    new_boreField = [b for i, b in enumerate(boreField) if i not in duplicate_bores]
 
     if disp:
         print(' gt.boreholes.remove_duplicates() '.center(50, '-'))
-        n_duplicates = len(bore_field) - len(new_bore_field)
+        n_duplicates = len(boreField) - len(new_boreField)
         print(f'The number of duplicates removed: {n_duplicates}')
 
-    return new_bore_field
+    return new_boreField
 
 
-def _orientation(x: float, x0: float, y: float, y0: float, r_b: float) -> Optional[float]:
-    dx = x - x0
-    dy = y - y0
-    return np.arctan2(dy, dx) if np.sqrt(dx * dx + dy * dy) > r_b else None
-
-
-def rectangle_field(n_1: int, n_2: int, b_1: float, b_2: float, h: float, d: float, r_b: float, tilt: float = 0.,
-                    origin: Optional[Tuple[float, float]] = None) -> List[Borehole]:
+def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
     """
     Build a list of boreholes in a rectangular bore field configuration.
 
     Parameters
     ----------
-    n_1 : int
+    N_1 : int
         Number of borehole in the x direction.
-    n_2 : int
+    N_2 : int
         Number of borehole in the y direction.
-    b_1 : float
+    B_1 : float
         Distance (in meters) between adjacent boreholes in the x direction.
-    b_2 : float
+    B_2 : float
         Distance (in meters) between adjacent boreholes in the y direction.
-    h : float
+    H : float
         Borehole length (in meters).
-    d : float
+    D : float
         Borehole buried depth (in meters).
     r_b : float
         Borehole radius (in meters).
@@ -679,7 +676,7 @@ def rectangle_field(n_1: int, n_2: int, b_1: float, b_2: float, h: float, d: flo
 
     Examples
     --------
-    >>> boreField = gt.boreholes.rectangle_field(n_1=3, n_2=2, b_1=5., b_2=5.,
+    >>> boreField = gt.boreholes.rectangle_field(N_1=3, N_2=2, B_1=5., B_2=5.,
                                                  H=100., D=2.5, r_b=0.05)
 
     The bore field is constructed line by line. For N_1=3 and N_2=2, the bore
@@ -690,30 +687,49 @@ def rectangle_field(n_1: int, n_2: int, b_1: float, b_2: float, h: float, d: flo
      0   1   2
 
     """
+    borefield = []
 
-    x0, y0 = origin if origin is not None else ((n_1 - 1) / 2 * b_1, (n_2 - 1) / 2 * b_2)
+    if origin is None:
+        # When no origin is supplied, compute the origin to be at the center of
+        # the rectangle
+        x0 = (N_1 - 1) / 2 * B_1
+        y0 = (N_2 - 1) / 2 * B_2
+    else:
+        x0, y0 = origin
 
-    return [Borehole(h, d, r_b, i * b_1, j * b_2, tilt=tilt, orientation=_orientation(i * b_1, x0, j * b_2, y0, r_b)) for j in range(n_2) for i in range(n_1)]
+    for j in range(N_2):
+        for i in range(N_1):
+            x = i * B_1
+            y = j * B_2
+            # The borehole is inclined only if it does not lie on the origin
+            if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
+                orientation = np.arctan2(y - y0, x - x0)
+                borefield.append(
+                    Borehole(
+                        H, D, r_b, x, y, tilt=tilt, orientation=orientation))
+            else:
+                borefield.append(Borehole(H, D, r_b, x, y))
+
+    return borefield
 
 
-def l_shaped_field(n_1: int, n_2: int, b_1: float, b_2: float, h: float, d: float, r_b: float, tilt: float = 0.,
-                   origin: Optional[Tuple[float, float]] = None) -> List[Borehole]:
+def L_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
     """
     Build a list of boreholes in a L-shaped bore field configuration.
 
     Parameters
     ----------
-    n_1 : int
+    N_1 : int
         Number of borehole in the x direction.
-    n_2 : int
+    N_2 : int
         Number of borehole in the y direction.
-    b_1 : float
+    B_1 : float
         Distance (in meters) between adjacent boreholes in the x direction.
-    b_2 : float
+    B_2 : float
         Distance (in meters) between adjacent boreholes in the y direction.
-    h : float
+    H : float
         Borehole length (in meters).
-    d : float
+    D : float
         Borehole buried depth (in meters).
     r_b : float
         Borehole radius (in meters).
@@ -737,7 +753,7 @@ def l_shaped_field(n_1: int, n_2: int, b_1: float, b_2: float, h: float, d: floa
 
     Examples
     --------
-    >>> boreField = gt.boreholes.l_shaped_field(n_1=3, n_2=2, b_1=5., b_2=5.,
+    >>> boreField = gt.boreholes.L_shaped_field(N_1=3, N_2=2, B_1=5., B_2=5.,
                                                 H=100., D=2.5, r_b=0.05)
 
     The bore field is constructed line by line. For N_1=3 and N_2=2, the bore
@@ -748,34 +764,59 @@ def l_shaped_field(n_1: int, n_2: int, b_1: float, b_2: float, h: float, d: floa
      0   1   2
 
     """
+    borefield = []
 
-    x0, y0 = origin if origin is not None else ((n_1 - 1) / 2 * b_1, (n_2 - 1) / 2 * b_2)
+    if origin is None:
+        # When no origin is supplied, compute the origin to be at the center of
+        # the rectangle
+        x0 = (N_1 - 1) / 2 * B_1
+        y0 = (N_2 - 1) / 2 * B_2
+    else:
+        x0, y0 = origin
 
-    borefield: List[Borehole] = [Borehole(h, d, r_b, i * b_1, 0, tilt=tilt, orientation=_orientation(i * b_1, x0, 0, y0, r_b)) for i in range(n_1)]
-
-    borefield += [Borehole(h, d, r_b, 0, j * b_2, tilt=tilt, orientation=_orientation(0, x0, j * b_2, y0, r_b)) for j in range(1, n_2)]
+    for i in range(N_1):
+        x = i * B_1
+        y = 0.
+        # The borehole is inclined only if it does not lie on the origin
+        if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
+            orientation = np.arctan2(y - y0, x - x0)
+            borefield.append(
+                Borehole(
+                    H, D, r_b, x, y, tilt=tilt, orientation=orientation))
+        else:
+            borefield.append(Borehole(H, D, r_b, x, y))
+    for j in range(1, N_2):
+        x = 0.
+        y = j * B_2
+        # The borehole is inclined only if it does not lie on the origin
+        if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
+            orientation = np.arctan2(y - y0, x - x0)
+            borefield.append(
+                Borehole(
+                    H, D, r_b, x, y, tilt=tilt, orientation=orientation))
+        else:
+            borefield.append(Borehole(H, D, r_b, x, y))
 
     return borefield
 
 
-def u_shaped_field(n_1: int, n_2: int, b_1: float, b_2: float, h: float, d: float, r_b: float, tilt: float = 0.,
-                   origin: Optional[Tuple[float, float]] = None) -> List[Borehole]:
+def U_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
     """
     Build a list of boreholes in a U-shaped bore field configuration.
 
     Parameters
     ----------
-    n_1 : int
+    N_1 : int
         Number of borehole in the x direction.
-    n_2 : int
+    N_2 : int
         Number of borehole in the y direction.
-    b_1 : float
+    B_1 : float
         Distance (in meters) between adjacent boreholes in the x direction.
-    b_2 : float
+    B_2 : float
         Distance (in meters) between adjacent boreholes in the y direction.
-    h : float
+    H : float
         Borehole length (in meters).
-    d : float
+    D : float
         Borehole buried depth (in meters).
     r_b : float
         Borehole radius (in meters).
@@ -799,7 +840,7 @@ def u_shaped_field(n_1: int, n_2: int, b_1: float, b_2: float, h: float, d: floa
 
     Examples
     --------
-    >>> boreField = gt.boreholes.u_shaped_field(n_1=3, n_2=2, b_1=5., b_2=5.,
+    >>> boreField = gt.boreholes.U_shaped_field(N_1=3, N_2=2, B_1=5., B_2=5.,
                                                 H=100., D=2.5, r_b=0.05)
 
     The bore field is constructed line by line. For N_1=3 and N_2=2, the bore
@@ -810,65 +851,73 @@ def u_shaped_field(n_1: int, n_2: int, b_1: float, b_2: float, h: float, d: floa
      0   1   2
 
     """
-    borefield: List[Borehole] = []
+    borefield = []
 
-    x0, y0 = origin if origin is not None else ((n_1 - 1) / 2 * b_1, (n_2 - 1) / 2 * b_2)
+    if origin is None:
+        # When no origin is supplied, compute the origin to be at the center of
+        # the rectangle
+        x0 = (N_1 - 1) / 2 * B_1
+        y0 = (N_2 - 1) / 2 * B_2
+    else:
+        x0, y0 = origin
 
-    if n_1 > 2 and n_2 > 1:
-        for i in range(n_1):
-            x = i * b_1
+    if N_1 > 2 and N_2 > 1:
+        for i in range(N_1):
+            x = i * B_1
             y = 0.
             # The borehole is inclined only if it does not lie on the origin
-            if np.sqrt((x - x0) ** 2 + (y - y0) ** 2) > r_b:
+            if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
                 orientation = np.arctan2(y - y0, x - x0)
                 borefield.append(
                     Borehole(
-                        h, d, r_b, x, y, tilt=tilt, orientation=orientation))
+                        H, D, r_b, x, y, tilt=tilt, orientation=orientation))
             else:
-                borefield.append(Borehole(h, d, r_b, x, y))
-        for j in range(1, n_2):
+                borefield.append(Borehole(H, D, r_b, x, y))
+        for j in range(1, N_2):
             x = 0.
-            y = j * b_2
+            y = j * B_2
             # The borehole is inclined only if it does not lie on the origin
-            if np.sqrt((x - x0) ** 2 + (y - y0) ** 2) > r_b:
+            if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
                 orientation = np.arctan2(y - y0, x - x0)
                 borefield.append(
                     Borehole(
-                        h, d, r_b, x, y, tilt=tilt, orientation=orientation))
+                        H, D, r_b, x, y, tilt=tilt, orientation=orientation))
             else:
-                borefield.append(Borehole(h, d, r_b, x, y))
-            x = (n_1 - 1) * b_1
-            y = j * b_2
+                borefield.append(Borehole(H, D, r_b, x, y))
+            x = (N_1 - 1) * B_1
+            y = j * B_2
             # The borehole is inclined only if it does not lie on the origin
-            if np.sqrt((x - x0) ** 2 + (y - y0) ** 2) > r_b:
+            if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
                 orientation = np.arctan2(y - y0, x - x0)
                 borefield.append(
                     Borehole(
-                        h, d, r_b, x, y, tilt=tilt, orientation=orientation))
+                        H, D, r_b, x, y, tilt=tilt, orientation=orientation))
             else:
-                borefield.append(Borehole(h, d, r_b, x, y))
-        return borefield
-    return rectangle_field(n_1, n_2, b_1, b_2, h, d, r_b, tilt=tilt, origin=origin)
+                borefield.append(Borehole(H, D, r_b, x, y))
+    else:
+        borefield = rectangle_field(
+            N_1, N_2, B_1, B_2, H, D, r_b, tilt=tilt, origin=origin)
+
+    return borefield
 
 
-def box_shaped_field(n_1: int, n_2: int, b_1: float, b_2: float, h: float, d: float, r_b: float, tilt: float = 0.,
-                     origin: Optional[Tuple[float, float]] = None) -> List[Borehole]:
+def box_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0, origin=None):
     """
     Build a list of boreholes in a box-shaped bore field configuration.
 
     Parameters
     ----------
-    n_1 : int
+    N_1 : int
         Number of borehole in the x direction.
-    n_2 : int
+    N_2 : int
         Number of borehole in the y direction.
-    b_1 : float
+    B_1 : float
         Distance (in meters) between adjacent boreholes in the x direction.
-    b_2 : float
+    B_2 : float
         Distance (in meters) between adjacent boreholes in the y direction.
-    h : float
+    H : float
         Borehole length (in meters).
-    d : float
+    D : float
         Borehole buried depth (in meters).
     r_b : float
         Borehole radius (in meters).
@@ -892,7 +941,7 @@ def box_shaped_field(n_1: int, n_2: int, b_1: float, b_2: float, h: float, d: fl
 
     Examples
     --------
-    >>> boreField = gt.boreholes.box_shaped_field(n_1=4, n_2=3, b_1=5., b_2=5.,
+    >>> boreField = gt.boreholes.box_shaped_field(N_1=4, N_2=3, B_1=5., B_2=5.,
                                                   H=100., D=2.5, r_b=0.05)
 
     The bore field is constructed line by line. For N_1=4 and N_2=3, the bore
@@ -907,68 +956,77 @@ def box_shaped_field(n_1: int, n_2: int, b_1: float, b_2: float, h: float, d: fl
     """
     borefield = []
 
-    x0, y0 = origin if origin is not None else ((n_1 - 1) / 2 * b_1, (n_2 - 1) / 2 * b_2)
+    if origin is None:
+        # When no origin is supplied, compute the origin to be at the center of
+        # the rectangle
+        x0 = (N_1 - 1) / 2 * B_1
+        y0 = (N_2 - 1) / 2 * B_2
+    else:
+        x0, y0 = origin
 
-    if n_1 > 2 and n_2 > 2:
-        for i in range(n_1):
-            x = i * b_1
+    if N_1 > 2 and N_2 > 2:
+        for i in range(N_1):
+            x = i * B_1
             y = 0.
             # The borehole is inclined only if it does not lie on the origin
-            if np.sqrt((x - x0) ** 2 + (y - y0) ** 2) > r_b:
+            if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
                 orientation = np.arctan2(y - y0, x - x0)
                 borefield.append(
                     Borehole(
-                        h, d, r_b, x, y, tilt=tilt, orientation=orientation))
+                        H, D, r_b, x, y, tilt=tilt, orientation=orientation))
             else:
-                borefield.append(Borehole(h, d, r_b, x, y))
-            x = i * b_1
-            y = (n_2 - 1) * b_2
+                borefield.append(Borehole(H, D, r_b, x, y))
+            x = i * B_1
+            y = (N_2 - 1) * B_2
             # The borehole is inclined only if it does not lie on the origin
-            if np.sqrt((x - x0) ** 2 + (y - y0) ** 2) > r_b:
+            if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
                 orientation = np.arctan2(y - y0, x - x0)
                 borefield.append(
                     Borehole(
-                        h, d, r_b, x, y, tilt=tilt, orientation=orientation))
+                        H, D, r_b, x, y, tilt=tilt, orientation=orientation))
             else:
-                borefield.append(Borehole(h, d, r_b, x, y))
-        for j in range(1, n_2 - 1):
+                borefield.append(Borehole(H, D, r_b, x, y))
+        for j in range(1, N_2-1):
             x = 0.
-            y = j * b_2
+            y = j * B_2
             # The borehole is inclined only if it does not lie on the origin
-            if np.sqrt((x - x0) ** 2 + (y - y0) ** 2) > r_b:
+            if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
                 orientation = np.arctan2(y - y0, x - x0)
                 borefield.append(
                     Borehole(
-                        h, d, r_b, x, y, tilt=tilt, orientation=orientation))
+                        H, D, r_b, x, y, tilt=tilt, orientation=orientation))
             else:
-                borefield.append(Borehole(h, d, r_b, x, y))
-            x = (n_1 - 1) * b_1
-            y = j * b_2
+                borefield.append(Borehole(H, D, r_b, x, y))
+            x = (N_1 - 1) * B_1
+            y = j * B_2
             # The borehole is inclined only if it does not lie on the origin
-            if np.sqrt((x - x0) ** 2 + (y - y0) ** 2) > r_b:
+            if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
                 orientation = np.arctan2(y - y0, x - x0)
                 borefield.append(
                     Borehole(
-                        h, d, r_b, x, y, tilt=tilt, orientation=orientation))
+                        H, D, r_b, x, y, tilt=tilt, orientation=orientation))
             else:
-                borefield.append(Borehole(h, d, r_b, x, y))
-        return borefield
-    return rectangle_field(n_1, n_2, b_1, b_2, h, d, r_b, tilt=tilt, origin=origin)
+                borefield.append(Borehole(H, D, r_b, x, y))
+    else:
+        borefield = rectangle_field(
+            N_1, N_2, B_1, B_2, H, D, r_b, tilt=tilt, origin=origin)
+
+    return borefield
 
 
-def circle_field(n: int, r: float, h: float, d: float, r_b: float, tilt: float = 0., origin: Optional[Tuple[float, float]] = None) -> List[Borehole]:
+def circle_field(N, R, H, D, r_b, tilt=0., origin=None):
     """
     Build a list of boreholes in a circular field configuration.
 
     Parameters
     ----------
-    n : int
+    N : int
         Number of boreholes in the bore field.
-    r : float
+    R : float
         Distance (in meters) of the boreholes from the center of the field.
-    h : float
+    H : float
         Borehole length (in meters).
-    d : float
+    D : float
         Borehole buried depth (in meters).
     r_b : float
         Borehole radius (in meters).
@@ -992,7 +1050,8 @@ def circle_field(n: int, r: float, h: float, d: float, r_b: float, tilt: float =
 
     Examples
     --------
-    >>> boreField = gt.boreholes.circle_field(n=8, r = 5., h=100., d=2.5, r_b=0.05)
+    >>> boreField = gt.boreholes.circle_field(N=8, R = 5., H=100., D=2.5,
+                                              r_b=0.05)
 
     The bore field is constructed counter-clockwise. For N=8, the bore
     field layout is as follows::
@@ -1006,14 +1065,33 @@ def circle_field(n: int, r: float, h: float, d: float, r_b: float, tilt: float =
            6
 
     """
+    borefield = []
 
-    x0, y0 = origin if origin is not None else (0, 0)
+    if origin is None:
+        # When no origin is supplied, compute the origin to be at the center of
+        # the rectangle
+        x0 = 0.
+        y0 = 0.
+    else:
+        x0, y0 = origin
 
-    return [Borehole(h, d, r_b, r * np.cos(2 * pi * i / n), r * np.sin(2 * pi * i / n), tilt=tilt,
-                     orientation=_orientation(r * np.cos(2 * pi * i / n), x0, r * np.sin(2 * pi * i / n), y0, r_b)) for i in range(n)]
+    for i in range(N):
+        x = R * np.cos(2 * pi * i / N)
+        y = R * np.sin(2 * pi * i / N)
+        orientation = np.arctan2(y - y0, x - x0)
+        # The borehole is inclined only if it does not lie on the origin
+        if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
+            orientation = np.arctan2(y - y0, x - x0)
+            borefield.append(
+                Borehole(
+                    H, D, r_b, x, y, tilt=tilt, orientation=orientation))
+        else:
+            borefield.append(Borehole(H, D, r_b, x, y))
+
+    return borefield
 
 
-def field_from_file(filename: str) -> List[Borehole]:
+def field_from_file(filename):
     """
     Build a list of boreholes given coordinates and dimensions provided in a
     text file.
@@ -1032,7 +1110,7 @@ def field_from_file(filename: str) -> List[Borehole]:
     -----
     The text file should be formatted as follows::
 
-        # x   y     h     d     r_b     tilt   orientation
+        # x   y     H     D     r_b     tilt   orientation
         0.    0.    100.  2.5   0.075   0.     0.
         5.    0.    100.  2.5   0.075   0.     0.
         0.    5.    100.  2.5   0.075   0.     0.
@@ -1047,8 +1125,8 @@ def field_from_file(filename: str) -> List[Borehole]:
     for line in data:
         x = line[0]
         y = line[1]
-        h = line[2]
-        d = line[3]
+        H = line[2]
+        D = line[3]
         r_b = line[4]
         # Previous versions of pygfunction only required up to line[4].
         # Now check to see if tilt and orientation exist.
@@ -1059,12 +1137,13 @@ def field_from_file(filename: str) -> List[Borehole]:
             tilt = 0.
             orientation = 0.
         borefield.append(
-            Borehole(h, d, r_b, x=x, y=y, tilt=tilt, orientation=orientation))
+            Borehole(H, D, r_b, x=x, y=y, tilt=tilt, orientation=orientation))
 
     return borefield
 
 
-def visualize_field(borefield: List[Borehole], view_top: bool = True, view_3d: bool = True, labels: bool = True, show_tilt: bool = True) -> plt.figure:
+def visualize_field(
+        borefield, viewTop=True, view3D=True, labels=True, showTilt=True):
     """
     Plot the top view and 3D view of borehole positions.
 
@@ -1072,16 +1151,16 @@ def visualize_field(borefield: List[Borehole], view_top: bool = True, view_3d: b
     ----------
     borefield : list
         List of boreholes in the bore field.
-    view_top : bool, optional
+    viewTop : bool, optional
         Set to True to plot top view.
         Default is True
-    view_3d : bool, optional
+    view3D : bool, optional
         Set to True to plot 3D view.
         Default is True
     labels : bool, optional
         Set to True to annotate borehole indices to top view plot.
         Default is True
-    show_tilt : bool, optional
+    showTilt : bool, optional
         Set to True to show borehole inclination on top view plot.
         Default is True
 
@@ -1095,19 +1174,19 @@ def visualize_field(borefield: List[Borehole], view_top: bool = True, view_3d: b
 
     # Configure figure and axes
     fig = _initialize_figure()
-    if view_top and view_3d:
+    if viewTop and view3D:
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122, projection='3d')
-    elif view_top:
+    elif viewTop:
         ax1 = fig.add_subplot(111)
-    elif view_3d:
+    elif view3D:
         ax2 = fig.add_subplot(111, projection='3d')
-    if view_top:
+    if viewTop:
         ax1.set_xlabel(r'$x$ [m]')
         ax1.set_ylabel(r'$y$ [m]')
         ax1.axis('equal')
         _format_axes(ax1)
-    if view_3d:
+    if view3D:
         ax2.set_xlabel(r'$x$ [m]')
         ax2.set_ylabel(r'$y$ [m]')
         ax2.set_zlabel(r'$z$ [m]')
@@ -1117,16 +1196,16 @@ def visualize_field(borefield: List[Borehole], view_top: bool = True, view_3d: b
     # -------------------------------------------------------------------------
     # Top view
     # -------------------------------------------------------------------------
-    if view_top:
-        i = 0  # Initialize borehole index
+    if viewTop:
+        i = 0   # Initialize borehole index
         for borehole in borefield:
             # Extract borehole parameters
             (x, y) = borehole.position()
-            H = borehole.h
+            H = borehole.H
             tilt = borehole.tilt
             orientation = borehole.orientation
             # Add current borehole to the figure
-            if show_tilt:
+            if showTilt:
                 ax1.plot(
                     [x, x + H * np.sin(tilt) * np.cos(orientation)],
                     [y, y + H * np.sin(tilt) * np.sin(orientation)],
@@ -1140,25 +1219,26 @@ def visualize_field(borefield: List[Borehole], view_top: bool = True, view_3d: b
     # -------------------------------------------------------------------------
     # 3D view
     # -------------------------------------------------------------------------
-    if view_3d:
+    if view3D:
         for borehole in borefield:
             # Position of head of borehole
             (x, y) = borehole.position()
             # Position of bottom of borehole
-            x_H = x + borehole.h * np.sin(borehole.tilt) * np.cos(borehole.orientation)
-            y_H = y + borehole.h * np.sin(borehole.tilt) * np.sin(borehole.orientation)
-            z_H = borehole.d + borehole.h * np.cos(borehole.tilt)
+            x_H = x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)
+            y_H = y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)
+            z_H = borehole.D + borehole.H*np.cos(borehole.tilt)
             # Add current borehole to the figure
             ax2.plot(np.atleast_1d(x),
                      np.atleast_1d(y),
-                     np.atleast_1d(borehole.d),
+                     np.atleast_1d(borehole.D),
                      'ko')
             ax2.plot(np.array([x, x_H]),
                      np.array([y, y_H]),
-                     np.array([borehole.d, z_H]),
+                     np.array([borehole.D, z_H]),
                      'k-')
 
-    if view_top and view_3d:
+    
+    if viewTop and view3D:
         plt.tight_layout(rect=[0, 0.0, 0.90, 1.0])
     else:
         plt.tight_layout()

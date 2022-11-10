@@ -71,7 +71,7 @@ class Network(object):
                  m_flow_network=None, cp_f=None, nSegments=None,
                  segment_ratios=None):
         self.b = boreholes
-        self.H_tot = sum([b.h for b in self.b])
+        self.H_tot = sum([b.H for b in self.b])
         self.nBoreholes = len(boreholes)
         self.p = pipes
         if bore_connectivity is None:
@@ -1183,7 +1183,7 @@ class _EquivalentNetwork(Network):
     def __init__(self, equivalentBoreholes, pipes, m_flow_network=None,
                  cp_f=None, nSegments=None, segment_ratios=None):
         self.b = equivalentBoreholes
-        self.H_tot = sum([b.h * b.nBoreholes for b in self.b])
+        self.H_tot = sum([b.H*b.nBoreholes for b in self.b])
         self.nBoreholes = len(equivalentBoreholes)
         self.wBoreholes = np.array(
             [[b.nBoreholes for b in equivalentBoreholes]]).T

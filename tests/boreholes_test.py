@@ -23,8 +23,8 @@ def test_borehole_init():
     borehole = gt.boreholes.Borehole(
         H, D, r_b, x, y, tilt=tilt, orientation=orientation)
     assert np.all(
-        [H == borehole.h,
-         D == borehole.d,
+        [H == borehole.H,
+         D == borehole.D,
          r_b == borehole.r_b,
          x == borehole.x,
          y == borehole.y,
@@ -87,8 +87,8 @@ def test_rectangular_field(N_1, N_2, B_1, B_2):
             ~np.eye(len(field), dtype=bool)]
     assert np.all(
         [len(field) == N_1 * N_2,
-         np.allclose(H, [b.h for b in field]),
-         np.allclose(D, [b.d for b in field]),
+         np.allclose(H, [b.H for b in field]),
+         np.allclose(D, [b.D for b in field]),
          np.allclose(r_b, [b.r_b for b in field]),
          len(field) == 1 or np.isclose(np.min(dis), min(B_1, B_2)),
          ])
@@ -107,7 +107,7 @@ def test_L_shaped_field(N_1, N_2, B_1, B_2):
     D = 4.          # Borehole buried depth [m]
     r_b = 0.075     # Borehole radius [m]
     # Generate the bore field
-    field = gt.boreholes.l_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b)
+    field = gt.boreholes.L_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b)
     # Evaluate the borehole to borehole distances
     x = np.array([b.x for b in field])
     y = np.array([b.y for b in field])
@@ -116,8 +116,8 @@ def test_L_shaped_field(N_1, N_2, B_1, B_2):
             ~np.eye(len(field), dtype=bool)]
     assert np.all(
         [len(field) == N_1 + N_2 - 1,
-         np.allclose(H, [b.h for b in field]),
-         np.allclose(D, [b.d for b in field]),
+         np.allclose(H, [b.H for b in field]),
+         np.allclose(D, [b.D for b in field]),
          np.allclose(r_b, [b.r_b for b in field]),
          len(field) == 1 or np.isclose(np.min(dis), min(B_1, B_2)),
          ])
@@ -136,7 +136,7 @@ def test_U_shaped_field(N_1, N_2, B_1, B_2):
     D = 4.          # Borehole buried depth [m]
     r_b = 0.075     # Borehole radius [m]
     # Generate the bore field
-    field = gt.boreholes.u_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b)
+    field = gt.boreholes.U_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b)
     # Evaluate the borehole to borehole distances
     x = np.array([b.x for b in field])
     y = np.array([b.y for b in field])
@@ -145,8 +145,8 @@ def test_U_shaped_field(N_1, N_2, B_1, B_2):
             ~np.eye(len(field), dtype=bool)]
     assert np.all(
         [len(field) == N_1 + 2 * N_2 - 2 if N_1 > 1 else N_2,
-         np.allclose(H, [b.h for b in field]),
-         np.allclose(D, [b.d for b in field]),
+         np.allclose(H, [b.H for b in field]),
+         np.allclose(D, [b.D for b in field]),
          np.allclose(r_b, [b.r_b for b in field]),
          len(field) == 1 or np.isclose(np.min(dis), min(B_1, B_2)),
          ])
@@ -182,8 +182,8 @@ def test_box_shaped_field(N_1, N_2, B_1, B_2):
         nBoreholes_expected = 2 * (N_1 - 1) + 2 * (N_2 - 1)
     assert np.all(
         [len(field) == nBoreholes_expected,
-         np.allclose(H, [b.h for b in field]),
-         np.allclose(D, [b.d for b in field]),
+         np.allclose(H, [b.H for b in field]),
+         np.allclose(D, [b.D for b in field]),
          np.allclose(r_b, [b.r_b for b in field]),
          len(field) == 1 or np.isclose(np.min(dis), min(B_1, B_2)),
          ])
@@ -211,8 +211,8 @@ def test_circle_field(N, R):
     B_min = 2 * R * np.sin(np.pi / N)
     assert np.all(
         [len(field) == N,
-         np.allclose(H, [b.h for b in field]),
-         np.allclose(D, [b.d for b in field]),
+         np.allclose(H, [b.H for b in field]),
+         np.allclose(D, [b.D for b in field]),
          np.allclose(r_b, [b.r_b for b in field]),
          len(field) == 1 or np.isclose(np.min(dis), B_min),
          len(field) == 1 or np.max(dis) <= (2 + 1e-6) * R,

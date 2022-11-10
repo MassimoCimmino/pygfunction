@@ -657,7 +657,7 @@ class _BasePipe(object):
         a_Q = self.coefficients_borehole_heat_extraction_rate(
                 m_flow_borehole, cp_f, nSegments=1)[0].item()
         # Borehole length
-        H = self.b.h
+        H = self.b.H
         # Effective borehole thermal resistance
         R_b = -0.5*H*(1. + a_out)/a_Q
         return R_b
@@ -1093,8 +1093,8 @@ class SingleUTube(_BasePipe):
             m_flow_borehole, cp_f, nSegments, segment_ratios)
 
         # Evaluate coefficient matrices from Hellstrom (1991):
-        a_in = ((self._f1(self.b.h) + self._f2(self.b.h))
-                / (self._f3(self.b.h) - self._f2(self.b.h)))
+        a_in = ((self._f1(self.b.H) + self._f2(self.b.H))
+                / (self._f3(self.b.H) - self._f2(self.b.H)))
         a_in = np.array([[a_in]])
 
         a_out = np.array([[1.0]])
@@ -1106,7 +1106,7 @@ class SingleUTube(_BasePipe):
         dF4 = F4[:-1] - F4[1:]
         F5 = self._F5(z)
         dF5 = F5[:-1] - F5[1:]
-        a_b[0, :] = (dF4 + dF5) / (self._f3(self.b.h) - self._f2(self.b.h))
+        a_b[0, :] = (dF4 + dF5) / (self._f3(self.b.H) - self._f2(self.b.H))
 
         return a_in, a_out, a_b
 
@@ -1742,7 +1742,7 @@ class MultipleUTube(_BasePipe):
         Dm1 = self._Dm1
 
         # Matrix exponential at depth (z = H)
-        H = self.b.h
+        H = self.b.H
         E = np.real(V @ np.diag(np.exp(L*H)) @ Vm1)
 
         # Coefficient matrix for borehole wall temperatures
@@ -2658,7 +2658,7 @@ def borehole_thermal_resistance(pipe, m_flow_borehole, cp_f):
     a_Q = pipe.coefficients_borehole_heat_extraction_rate(
             m_flow_borehole, cp_f, nSegments=1)[0].item()
     # Borehole length
-    H = pipe.b.h
+    H = pipe.b.H
     # Effective borehole thermal resistance
     R_b = -0.5*H*(1. + a_out)/a_Q
 

@@ -43,7 +43,7 @@ def test_finite_line_source_vertical_to_vertical_single_time_step(
         b1 = request.getfixturevalue(borehole1)[0]
         b2 = request.getfixturevalue(borehole2)[0]
         alpha = 1e-6                # Ground thermal diffusivity [m2/s]
-        ts = b1.h ** 2 / (9 * alpha)  # Borehole characteristic time [s]
+        ts = b1.H**2 / (9 * alpha)  # Borehole characteristic time [s]
         # Time for FLS calculation [s]
         time = ts
         # Evaluate FLS
@@ -85,7 +85,7 @@ def test_finite_line_source_vertical_to_vertical_multiple_time_steps(
         b1 = request.getfixturevalue(borehole1)[0]
         b2 = request.getfixturevalue(borehole2)[0]
         alpha = 1e-6                # Ground thermal diffusivity [m2/s]
-        ts = b1.h ** 2 / (9 * alpha)  # Borehole characteristic time [s]
+        ts = b1.H**2 / (9 * alpha)  # Borehole characteristic time [s]
         # Times for FLS calculation [s]
         time = np.array([0.1, 1., 10.]) * ts
         # Evaluate FLS
@@ -162,7 +162,7 @@ def test_finite_line_source_multiple_vertical_boreholes_single_time_step(
         boreholes = three_boreholes_unequal
         alpha = 1e-6    # Ground thermal diffusivity [m2/s]
         # Bore field characteristic time [s]
-        ts = np.mean([b.h for b in boreholes]) ** 2 / (9 * alpha)
+        ts = np.mean([b.H for b in boreholes])**2 / (9 * alpha)
         # Time for FLS calculation [s]
         time = ts
         # Evaluate FLS
@@ -248,7 +248,7 @@ def test_finite_line_source_multiple_vertical_boreholes_multiple_time_steps(
         boreholes = three_boreholes_unequal
         alpha = 1e-6    # Ground thermal diffusivity [m2/s]
         # Bore field characteristic time [s]
-        ts = np.mean([b.h for b in boreholes]) ** 2 / (9 * alpha)
+        ts = np.mean([b.H for b in boreholes])**2 / (9 * alpha)
         # Times for FLS calculation [s]
         time = np.array([0.1, 1., 10.]) * ts
         # Evaluate FLS
@@ -333,7 +333,7 @@ def test_finite_line_source_Lazzarotto(
         b2 = gt.boreholes.Borehole(
             20., 25., 0.075, 0., 5., tilt=np.pi/15, orientation=4*np.pi/3)
         alpha = 1e-6                # Ground thermal diffusivity [m2/s]
-        ts = b1.h ** 2 / (9 * alpha)  # Borehole characteristic time [s]
+        ts = b1.H**2 / (9 * alpha)  # Borehole characteristic time [s]
         # Time for FLS calculation [s]
         time = ts * tts
         # Evaluate FLS
@@ -406,7 +406,7 @@ def test_finite_line_source_inclined_to_self(
         # Extract borehole from fixtures
         b1 = single_borehole_inclined[0]
         alpha = 1e-6                # Ground thermal diffusivity [m2/s]
-        ts = b1.h ** 2 / (9 * alpha)  # Borehole characteristic time [s]
+        ts = b1.H**2 / (9 * alpha)  # Borehole characteristic time [s]
         # Time for FLS calculation [s]
         time = ts * tts
         # Evaluate FLS
@@ -517,7 +517,7 @@ def test_finite_line_source_multiple_inclined_to_multiple_inclined(
         boreholes = two_boreholes_inclined
         alpha = 1e-6    # Ground thermal diffusivity [m2/s]
         # Bore field characteristic time [s]
-        ts = np.mean([b.h for b in boreholes]) ** 2 / (9 * alpha)
+        ts = np.mean([b.H for b in boreholes])**2 / (9 * alpha)
         # Times for FLS calculation [s]
         time = ts * tts
         # Evaluate FLS
