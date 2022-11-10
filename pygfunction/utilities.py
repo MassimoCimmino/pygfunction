@@ -22,7 +22,10 @@ def cardinal_point(direction):
     return compass[direction]
 
 
-def erf_int(x):
+sqrt_pi = 1 / np.sqrt(np.pi)
+
+
+def erf_int(x: np.ndarray):
     """
     Integral of the error function.
 
@@ -37,7 +40,31 @@ def erf_int(x):
         Integral of the error function.
 
     """
-    return x * erf(x) - 1.0 / np.sqrt(np.pi) * (1.0 - np.exp(-x**2))
+
+    abs_x = np.abs(x)
+    y_new = abs_x-sqrt_pi
+    idx = abs_x < 4
+    abs_2 = abs_x[idx]
+    y_new[idx] = abs_2 * erf(abs_2) - (1.0 - np.exp(-abs_2*abs_2)) * sqrt_pi
+    return y_new
+
+
+def erf_int_old(x: np.ndarray):
+    """
+    Integral of the error function.
+
+    Parameters
+    ----------
+    x : float or array
+        Argument.
+
+    Returns
+    -------
+    float or array
+        Integral of the error function.
+
+    """
+    return x * erf(x) - (1.0 - np.exp(-x*x)) / np.sqrt(np.pi)
 
 
 def exp1(x):
