@@ -12,11 +12,11 @@ The g-function of a single borehole is first calculated. Then, the borehole wall
 temperature variations are calculated using the load aggregation scheme of
 Claesson and Javed [1]_. The time-variation of heat extraction rates is given by
 the synthetic load profile of Bernier et al. [2]_. Three pipe configurations are
-compared: (1) a single U-tube, using the model of Eskilson and Claesson 
+compared: (1) a single U-tube, using the model of Eskilson and Claesson
 [3]_, (2) a double U-tube in parallel, using the model of Cimmino [4]_, and (3)
 a double U-tube in series, using the model of Cimmino [4]_.
 
-The script is located in: 
+The script is located in:
 `pygfunction/examples/fluid_temperature.py`
 
 .. literalinclude:: ../../../examples/fluid_temperature.py

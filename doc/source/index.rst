@@ -12,7 +12,7 @@ analytical solutions.
 
 .. toctree::
    :maxdepth: 2
-   
+
    install
    citing
    modules

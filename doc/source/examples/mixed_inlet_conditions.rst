@@ -19,7 +19,7 @@ different lengths. The *g*-function considering piping conections is compared to
 the *g*-function obtained using a boundary condition of uniform borehole wall
 temperature.
 
-The script is located in: 
+The script is located in:
 `pygfunction/examples/mixed_inlet_conditions.py`
 
 .. literalinclude:: ../../../examples/mixed_inlet_conditions.py

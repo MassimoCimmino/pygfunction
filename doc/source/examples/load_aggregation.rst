@@ -16,7 +16,7 @@ the synthetic load profile of Bernier et al. [2]_.
 The following script validates the load aggregation scheme with the exact
 solution obtained from convolution in the Fourier domain (see ref. [3]_).
 
-The script is located in: 
+The script is located in:
 `pygfunction/examples/load_aggregation.py`
 
 .. literalinclude:: ../../../examples/load_aggregation.py
