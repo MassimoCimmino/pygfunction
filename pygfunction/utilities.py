@@ -2,7 +2,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.polynomial.polynomial as poly
-from scipy.special import erf
+from scipy.special import erf, erfinv
 import warnings
 
 
@@ -22,14 +22,19 @@ def cardinal_point(direction):
     return compass[direction]
 
 
-def erfint(x):
+def erfint(x, tol=1e-8):
     """
     Integral of the error function.
+
+    
 
     Parameters
     ----------
     x : float or array
         Argument.
+    tol : float, optional
+        Relative tolerance on the value of erfint.
+        Default is 1e-8.
 
     Returns
     -------
@@ -37,7 +42,16 @@ def erfint(x):
         Integral of the error function.
 
     """
-    return x * erf(x) - 1.0 / np.sqrt(np.pi) * (1.0 - np.exp(-x**2))
+    # Determine the threshold for tolerance
+    x_tol = np.maximum(erfinv(1. - tol), np.sqrt(-np.log(tol)))
+    # Apply the approximation to all x
+    abs_x = np.abs(x)
+    y = abs_x - np.sqrt(np.pi)
+    # Evaluate erfint for x < x_tol
+    idx = abs_x < x_tol
+    x_low = x[idx]
+    y[idx] = x_low * erf(x_low) - (1.0 - np.exp(-x_low*x_low)) * np.sqrt(np.pi)
+    return y
 
 
 def exp1(x):
