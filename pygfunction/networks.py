@@ -982,7 +982,7 @@ class Network(object):
         for i in range(self.nBoreholes):
             if not self.c[i] == -1:
                 self._c_out[i, self.c[i]] = 1.
-            
+
         return
 
     def _initialize_stored_coefficients(
