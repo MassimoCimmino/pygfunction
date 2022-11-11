@@ -12,7 +12,7 @@ The following script generates rectangular, box-shaped, U-shaped and L-shaped
 bore fields in a 4 x 3 configuration as well as a circular field of 8
 boreholes. Each field is then plotted on a separate figure.
 
-The script is located in: 
+The script is located in:
 `pygfunction/examples/regular_bore_field.py`
 
 .. literalinclude:: ../../../examples/regular_bore_field.py

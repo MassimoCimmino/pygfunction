@@ -272,7 +272,7 @@ class _EquivalentBorehole(object):
         Direction (in radians) of the tilt of the borehole.
     nBoreholes : int
         Number of boreholes represented by the equivalent borehole.
-    
+
     References
     ----------
     .. [#EqBorehole-PriCim2021] Prieto, C., & Cimmino, M., 2021. Thermal
@@ -485,7 +485,7 @@ class _EquivalentBorehole(object):
                 dis.append(np.mean(all_dis[j0:]))
                 wDis.append(nDis-j0)
             j0 = j1
-        
+
         return np.array(dis), np.array(wDis)
 
     def _segment_edges(self, nSegments, segment_ratios=None):
@@ -1237,7 +1237,7 @@ def visualize_field(
                      np.array([borehole.D, z_H]),
                      'k-')
 
-    
+
     if viewTop and view3D:
         plt.tight_layout(rect=[0, 0.0, 0.90, 1.0])
     else:

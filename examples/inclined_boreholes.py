@@ -8,10 +8,10 @@
     configuration presented by Claesson and Eskilson (1987) and the second
     field corresponds to the configuration comprised of 8 boreholes in a
     circle.
-    
+
     Claesson J, and Eskilson, P. (1987). Conductive heat extraction by
     thermally interacting deep boreholes, in "Thermal analysis of heat
-    extraction boreholes". Ph.D. Thesis, University of Lund, Lund, Sweden. 
+    extraction boreholes". Ph.D. Thesis, University of Lund, Lund, Sweden.
 """
 
 import pygfunction as gt
