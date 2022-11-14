@@ -14,7 +14,7 @@ def test_erf_int_error():
     y = erf_int_old(x)
     toc = perf_counter_ns()
     dt_old1 = toc - tic
-    assert np.allclose(y, y_new, rtol=0.000_000_01)
+    assert np.allclose(y, y_new, rtol=1e-10)
 
     print(f'new time {dt_new1 / 1_000_000} ms; old time { dt_old1 / 1_000_000} ms')
 
@@ -27,7 +27,7 @@ def test_erf_int_error():
     y = erf_int_old(x)
     toc = perf_counter_ns()
     dt_old2 = toc - tic
-    assert np.allclose(y, y_new, rtol=0.000_000_01)
+    assert np.allclose(y, y_new, rtol=1e-10)
 
     print(f'new time {dt_new2 / 1_000_000} ms; old time {dt_old2 / 1_000_000} ms')
 
@@ -40,6 +40,6 @@ def test_erf_int_error():
     y = erf_int_old(x)
     toc = perf_counter_ns()
     dt_old3 = toc - tic
-    assert np.allclose(y, y_new, rtol=0.000_000_01)
+    assert np.allclose(y, y_new, rtol=1e-10)
 
     print(f'new time {dt_new3/1_000_000} ms; old time {dt_old3/1_000_000} ms')

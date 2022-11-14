@@ -44,7 +44,7 @@ def erf_int(x: Union[NDArray[np.float64], float]) -> NDArray[np.float64]:
     """
     abs_x = np.abs(x)
     y_new = abs_x-sqrt_pi
-    idx = abs_x < 4
+    idx = np.less(abs_x, 4)
     abs_2 = abs_x[idx]
     y_new[idx] = abs_2 * erf(abs_2) - (1.0 - np.exp(-abs_2*abs_2)) * sqrt_pi
     return y_new
