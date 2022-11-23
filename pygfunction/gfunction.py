@@ -214,6 +214,9 @@ class gFunction(object):
         self._format_inputs(boreholes_or_network)
         # Check the validity of inputs
         self._check_inputs()
+        # Evaluate threshold time for g-function linearization
+        r_b_max = np.max([b.r_b for b in self.boreholes])
+        self.time_threshold = r_b_max**2 / (25 * self.alpha)
 
         # Load the chosen solver
         if self.method.lower()=='similarities':
@@ -263,20 +266,18 @@ class gFunction(object):
         # Initialize chrono
         tic = perf_counter()
 
-        # Evaluate threshold time for g-function linearization
-        r_b_max = np.max([b.r_b for b in self.boreholes])
-        time_threshold = r_b_max**2 / (25 * self.alpha)
-        if np.any(time < time_threshold):
-            if np.all(time < time_threshold):
-                time_long = np.array([time_threshold])
+        # Linearize g-function for times under threshold
+        if np.any(time < self.time_threshold):
+            if np.all(time < self.time_threshold):
+                time_long = np.array([self.time_threshold])
             else:
                 time_long = np.concatenate(
-                    [time_threshold, time[time >= time_threshold]])
+                    [np.array([self.time_threshold]), time[time >= self.time_threshold]])
             # Evaluate g-function
             gFunc_long = self.solver.solve(time_long, self.alpha)
             # Interpolate for time < time_threshold
-            time_short = np.maximum(time[time < time_threshold], 0.)
-            gFunc_short = gFunc_long[0] * time_short / time_threshold
+            time_short = np.maximum(time[time < self.time_threshold], 0.)
+            gFunc_short = gFunc_long[0] * time_short / self.time_threshold
             self.gFunc = np.concatenate([gFunc_short, gFunc_long[1:]])
         else:
             # Evaluate g-function
