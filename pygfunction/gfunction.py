@@ -174,6 +174,9 @@ class gFunction(object):
     - The 'equivalent' solver does not support the 'MIFT' boundary condition
       when boreholes are connected in series.
     - The 'equivalent' solver does not support inclined boreholes.
+    - The g-function is linearized for times `t < r_b**2 / (25 * self.alpha)`.
+      The g-function value is then interpolated between 0 and its value at the
+      threshold.
 
     References
     ----------
