@@ -1549,7 +1549,7 @@ class _BaseSolver(object):
         else:
             time_threshold = self.linear_threshold
         # Find the number of g-function values to be linearized
-        p_long = np.searchsorted(self.time, time_threshold)
+        p_long = np.searchsorted(self.time, time_threshold, side='right')
         if p_long > 0:
             time_long = np.concatenate([[time_threshold], self.time[p_long:]])
         else:
