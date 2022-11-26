@@ -272,3 +272,26 @@ def test_gfunctions_UBWT(two_boreholes_inclined, method, opts, expected, request
         boreholes, alpha, time=time, method=method, options=options,
         boundary_condition='UBWT')
     assert np.allclose(gFunc.gFunc, expected)
+
+
+# =============================================================================
+# Test gFunction linearization
+# =============================================================================
+# Test 'UBWT' g-functions for a single borehole at low time values
+@pytest.mark.parametrize("field, method, opts, expected", [
+        #  'equivalent' solver - unequal segments
+        ('single_borehole', 'equivalent', 'unequal_segments', np.array([1.35223554e-05, 1.35223554e-04, 2.16066268e-01])),
+    ])
+def test_gfunctions_UBWT_linearization(field, method, opts, expected, request):
+    # Extract the bore field from the fixture
+    boreholes = request.getfixturevalue(field)
+    # Extract the g-function options from the fixture
+    options = request.getfixturevalue(opts)
+    alpha = 1e-6    # Ground thermal diffusivity [m2/s]
+    # Times for the g-function [s]
+    time = np.array([0.1, 1., 10.]) * boreholes[0].r_b**2 / (25 * alpha)
+    # g-Function
+    gFunc = gt.gfunction.gFunction(
+        boreholes, alpha, time=time, method=method, options=options,
+        boundary_condition='UBWT')
+    assert np.allclose(gFunc.gFunc, expected)
