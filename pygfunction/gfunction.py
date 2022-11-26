@@ -115,6 +115,13 @@ class gFunction(object):
                 Number of Gauss-Legendre sample points for the integral over
                 :math:`u` in the inclined FLS solution.
                 Default is 11.
+            linear_threshold : float, optional
+                Threshold time (in seconds) under which the g-function is
+                linearized. The g-function value is then interpolated between 0
+                and its value at the threshold. If linear_threshold==None, the
+                g-function is linearized for times
+                `t < r_b**2 / (25 * self.alpha)`.
+                Default is None.
             disp : bool, optional
                 Set to true to print progression messages.
                 Default is False.
@@ -217,9 +224,6 @@ class gFunction(object):
         self._format_inputs(boreholes_or_network)
         # Check the validity of inputs
         self._check_inputs()
-        # Evaluate threshold time for g-function linearization
-        r_b_max = np.max([b.r_b for b in self.boreholes])
-        self.time_threshold = r_b_max**2 / (25 * self.alpha)
 
         # Load the chosen solver
         if self.method.lower()=='similarities':
@@ -256,7 +260,7 @@ class gFunction(object):
             Values of the g-function
 
         """
-        time = np.atleast_1d(time)
+        time = np.maximum(np.atleast_1d(time), 0.)
         assert len(time) == 1 or np.all(time[:-1] <= time[1:]), \
             "Time values must be provided in increasing order."
         # Save time values
@@ -269,22 +273,8 @@ class gFunction(object):
         # Initialize chrono
         tic = perf_counter()
 
-        # Linearize g-function for times under threshold
-        if np.any(time < self.time_threshold):
-            if np.all(time < self.time_threshold):
-                time_long = np.array([self.time_threshold])
-            else:
-                time_long = np.concatenate(
-                    [np.array([self.time_threshold]), time[time >= self.time_threshold]])
-            # Evaluate g-function
-            gFunc_long = self.solver.solve(time_long, self.alpha)
-            # Interpolate for time < time_threshold
-            time_short = np.maximum(time[time < self.time_threshold], 0.)
-            gFunc_short = gFunc_long[0] * time_short / self.time_threshold
-            self.gFunc = np.concatenate([gFunc_short, gFunc_long[1:]])
-        else:
-            # Evaluate g-function
-            self.gFunc = self.solver.solve(time, self.alpha)
+        # Evaluate g-function
+        self.gFunc = self.solver.solve(time, self.alpha)
         toc = perf_counter()
 
         if self.solver.disp:
@@ -1431,6 +1421,13 @@ class _BaseSolver(object):
         Number of Gauss-Legendre sample points for the integral over :math:`u`
         in the inclined FLS solution.
         Default is 11.
+    linear_threshold : float, optional
+        Threshold time (in seconds) under which the g-function is
+        linearized. The g-function value is then interpolated between 0
+        and its value at the threshold. If linear_threshold==None, the
+        g-function is linearized for times
+        `t < r_b**2 / (25 * self.alpha)`.
+        Default is None.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -1450,13 +1447,15 @@ class _BaseSolver(object):
     """
     def __init__(self, boreholes, network, time, boundary_condition,
                  nSegments=8, segment_ratios=utilities.segment_ratios,
-                 approximate_FLS=False, mQuad=11, nFLS=10, disp=False,
-                 profiles=False, kind='linear', dtype=np.double,
-                 **other_options):
+                 approximate_FLS=False, mQuad=11, nFLS=10,
+                 linear_threshold=None, disp=False, profiles=False,
+                 kind='linear', dtype=np.double, **other_options):
         self.boreholes = boreholes
         self.network = network
         # Convert time to a 1d array
         self.time = np.atleast_1d(time).flatten()
+        self.linear_threshold = linear_threshold
+        self.r_b_max = np.max([b.r_b for b in self.boreholes])
         self.boundary_condition = boundary_condition
         nBoreholes = len(self.boreholes)
         # Format number of segments and segment ratios
@@ -1544,6 +1543,18 @@ class _BaseSolver(object):
         # Number of time values
         self.time = time
         nt = len(self.time)
+        # Evaluate threshold time for g-function linearization
+        if self.linear_threshold is None:
+            time_threshold = self.r_b_max**2 / (25 * alpha)
+        else:
+            time_threshold = self.linear_threshold
+        # Find the number of g-function values to be linearized
+        p_long = np.searchsorted(self.time, time_threshold)
+        if p_long > 0:
+            time_long = np.concatenate([[time_threshold], self.time[p_long:]])
+        else:
+            time_long = self.time
+        nt_long = len(time_long)
         # Initialize g-function
         gFunc = np.zeros(nt)
         # Initialize segment heat extraction rates
@@ -1556,7 +1567,7 @@ class _BaseSolver(object):
         else:
             T_b = np.zeros((self.nSources, nt), dtype=self.dtype)
         # Calculate segment to segment thermal response factors
-        h_ij = self.thermal_response_factors(time, alpha, kind=self.kind)
+        h_ij = self.thermal_response_factors(time_long, alpha, kind=self.kind)
         # Segment lengths
         H_b = self.segment_lengths()
         if self.boundary_condition == 'MIFT':
@@ -1568,7 +1579,8 @@ class _BaseSolver(object):
         tic = perf_counter()
 
         # Build and solve the system of equations at all times
-        for p in range(nt):
+        p0 = max(0, p_long-1)
+        for p in range(nt_long):
             if self.boundary_condition == 'UHTR':
                 # Evaluate the g-function with uniform heat extraction along
                 # boreholes
@@ -1577,21 +1589,21 @@ class _BaseSolver(object):
                 h_dt = h_ij.y[:,:,p+1]
                 # Borehole wall temperatures are calculated by the sum of
                 # contributions of all segments
-                T_b[:,p] = np.sum(h_dt, axis=1)
+                T_b[:,p+p0] = np.sum(h_dt, axis=1)
                 # The g-function is the average of all borehole wall
                 # temperatures
-                gFunc[p] = np.sum(T_b[:,p]*H_b)/H_tot
+                gFunc[p+p0] = np.sum(T_b[:,p+p0]*H_b)/H_tot
             else:
                 # Current thermal response factor matrix
                 if p > 0:
-                    dt = self.time[p] - self.time[p-1]
+                    dt = time_long[p] - time_long[p-1]
                 else:
-                    dt = self.time[p]
+                    dt = time_long[p]
                 # Thermal response factors evaluated at t=dt
                 h_dt = h_ij(dt)
                 # Reconstructed load history
                 Q_reconstructed = self.load_history_reconstruction(
-                    self.time[0:p+1], Q_b[:,0:p+1])
+                    time_long[0:p+1], Q_b[:,p0:p+p0+1])
                 # Borehole wall temperature for zero heat extraction at
                 # current step
                 T_b0 = self.temporal_superposition(
@@ -1618,10 +1630,10 @@ class _BaseSolver(object):
                     # Solve the system of equations
                     X = np.linalg.solve(A, B)
                     # Store calculated heat extraction rates
-                    Q_b[:,p] = X[0:self.nSources]
+                    Q_b[:,p+p0] = X[0:self.nSources]
                     # The borehole wall temperatures are equal for all segments
-                    T_b[p] = X[-1]
-                    gFunc[p] = T_b[p]
+                    T_b[p+p0] = X[-1]
+                    gFunc[p+p0] = T_b[p+p0]
                 elif self.boundary_condition == 'MIFT':
                     # Evaluate the g-function with mixed inlet fluid
                     # temperatures
@@ -1659,8 +1671,8 @@ class _BaseSolver(object):
                     # Solve the system of equations
                     X = np.linalg.solve(A, B)
                     # Store calculated heat extraction rates
-                    Q_b[:,p] = X[0:self.nSources]
-                    T_b[:,p] = X[self.nSources:2*self.nSources]
+                    Q_b[:,p+p0] = X[0:self.nSources]
+                    T_b[:,p+p0] = X[self.nSources:2*self.nSources]
                     T_f_in = X[-1]
                     # The gFunction is equal to the effective borehole wall
                     # temperature
@@ -1675,7 +1687,16 @@ class _BaseSolver(object):
                         self.network.cp_f)
                     # Effective borehole wall temperature
                     T_b_eff = T_f - 2*pi*self.network.p[0].k_s*R_field
-                    gFunc[p] = T_b_eff
+                    gFunc[p+p0] = T_b_eff
+        # Linearize g-function for times under threshold
+        if p_long > 0:
+            gFunc[:p_long] = gFunc[p_long-1] * self.time[:p_long] / time_threshold
+            if not self.boundary_condition == 'UHTR':
+                Q_b[:,:p_long] = 1 + (Q_b[:,p_long-1:p_long] - 1) * self.time[:p_long] / time_threshold
+            if self.boundary_condition == 'UBWT':
+                T_b[:p_long] = T_b[p_long-1] * self.time[:p_long] / time_threshold
+            else:
+                T_b[:,:p_long] = T_b[:,p_long-1:p_long] * self.time[:p_long] / time_threshold
         # Store temperature and heat extraction rate profiles
         if self.profiles:
             self.Q_b = Q_b
@@ -1920,6 +1941,13 @@ class _Detailed(_BaseSolver):
         Number of Gauss-Legendre sample points for the integral over :math:`u`
         in the inclined FLS solution.
         Default is 11.
+    linear_threshold : float, optional
+        Threshold time (in seconds) under which the g-function is
+        linearized. The g-function value is then interpolated between 0
+        and its value at the threshold. If linear_threshold==None, the
+        g-function is linearized for times
+        `t < r_b**2 / (25 * self.alpha)`.
+        Default is None.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -2176,6 +2204,13 @@ class _Similarities(_BaseSolver):
         Number of Gauss-Legendre sample points for the integral over :math:`u`
         in the inclined FLS solution.
         Default is 11.
+    linear_threshold : float, optional
+        Threshold time (in seconds) under which the g-function is
+        linearized. The g-function value is then interpolated between 0
+        and its value at the threshold. If linear_threshold==None, the
+        g-function is linearized for times
+        `t < r_b**2 / (25 * self.alpha)`.
+        Default is None.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -3473,6 +3508,13 @@ class _Equivalent(_BaseSolver):
         Number of Gauss-Legendre sample points for the integral over :math:`u`
         in the inclined FLS solution.
         Default is 11.
+    linear_threshold : float, optional
+        Threshold time (in seconds) under which the g-function is
+        linearized. The g-function value is then interpolated between 0
+        and its value at the threshold. If linear_threshold==None, the
+        g-function is linearized for times
+        `t < r_b**2 / (25 * self.alpha)`.
+        Default is None.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
