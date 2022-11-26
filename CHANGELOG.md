@@ -6,6 +6,10 @@
 
 * [Issue 204](https://github.com/MassimoCimmino/pygfunction/issues/204) - Added support for Python 3.9 and 3.10. [CoolProp](https://www.coolprop.org/) is removed from the dependencies and replace with [SecondaryCoolantProps](https://github.com/mitchute/SecondaryCoolantProps).
 
+### Bug fixes
+
+* [Issue 231](https://github.com/MassimoCimmino/pygfunction/issues/231) - Fixed an issue where the evaluation of g-functions at very low times raises an error due a singular matrix. g-Functions below a threshold time value `t=max(r_b)**2/(25*alpha)` are now linearized.
+
 ## Version 2.2.1 (2022-08-12)
 
 ### Bug fixes
