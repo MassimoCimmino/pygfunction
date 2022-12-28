@@ -32,19 +32,3 @@ jobs:
         pip install tox tox-gh-actions
     - name: Test with tox
       run: tox
-
-  upload_pypi:
-    runs-on: ubuntu-latest
-
-    # upload to PyPI only on release
-    if: github.event.release && github.event.action == 'published'
-    steps:
-      - uses: actions/download-artifact@v3
-        with:
-          name: python-can-dist
-          path: dist
-
-      - uses: pypa/gh-action-pypi-publish@v1.4.2
-        with:
-          user: ${{ secrets.PYPI_API_USER_TOKEN }}
-          password: ${{ secrets.PYPI_API_PASS_TOKEN }}
