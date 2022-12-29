@@ -2822,7 +2822,7 @@ def convective_heat_transfer_coefficient_concentric_annulus(
     Evaluate the inner and outer convective heat transfer coefficient for the
     annulus region of a concentric pipe.
 
-    Grundman (2007) referenced Hellström (1991) [#Hellstrom1991b]_ in the
+    Grundmann (2016) referenced Hellström (1991) [#Hellstrom1991b]_ in the
     discussion about inner and outer convection coefficients in an annulus
     region of a concentric pipe arrangement.
 
@@ -2876,7 +2876,7 @@ def convective_heat_transfer_coefficient_concentric_annulus(
 
     References
     ----------
-    .. [#Grundman2007] Grundman, R. (2007) Improved design methods for ground
+    .. [#Grundmann2016] Grundmann, R. (2016) Improved design methods for ground
         heat exchangers. Oklahoma State University, M.S. Thesis.
     .. [#ConvCoeff-CengelGhajar2015] Çengel, Y.A., & Ghajar, A.J. (2015). Heat
         and mass transfer: fundamentals & applications (Fifth edition.).
@@ -2896,7 +2896,7 @@ def convective_heat_transfer_coefficient_concentric_annulus(
     Re = rho_f * V * D_h / mu_f
     # Prandtl number
     Pr = cp_f * mu_f / k_f
-    # Ratio of radii (Grundman, 2007)
+    # Ratio of radii (Grundmann, 2016)
     r_star = r_a_in / r_a_out
     # Darcy-Wiesbach friction factor
     fDarcy = fluid_friction_factor_circular_pipe(
