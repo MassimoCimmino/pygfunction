@@ -2876,7 +2876,7 @@ def convective_heat_transfer_coefficient_concentric_annulus(
 
     References
     ----------
-    .. [#Grundmann2007] Grundmann, R. (2016) Improved design methods for ground
+    .. [#Grundmann2016] Grundmann, R. (2016) Improved design methods for ground
         heat exchangers. Oklahoma State University, M.S. Thesis.
     .. [#ConvCoeff-CengelGhajar2015] Çengel, Y.A., & Ghajar, A.J. (2015). Heat
         and mass transfer: fundamentals & applications (Fifth edition.).
