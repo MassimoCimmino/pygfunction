@@ -1,0 +1,59 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Cimmino"
+  given-names: "Massimo"
+  orcid: "https://orcid.org/0000-0002-9981-9926"
+title: "pygfunction"
+version: 2.2.1
+date-released: 2022-08-12
+url: "https://github.com/MassimoCimmino/pygfunction"
+preferred-citation:
+  type: conference-paper
+  title: "pygfunction 2.2 : New Features and Improvements in Accuracy and Computational Efficiency"
+  authors:
+  - family-names: "Cimmino"
+    given-names: "Massimo"
+    orcid: "https://orcid.org/0000-0002-9981-9926"
+  - family-names: "Cook"
+    given-names: "Jonathan C."
+  doi: "10.22488/okstate.22.000015"
+  start: 45 # First page number
+  end: 52 # Last page number
+  year: 2022
+  collection-type: proceedings
+  collection-title: "Research Conference Proceedings, IGSHPA Conference 2022"
+  publisher:
+    name: International Ground Source Heat Pump Association
+  institution:
+    name: International Ground Source Heat Pump Association
+  collection-doi: 10.22488/okstate.22.000010
+  location: Las Vegas NV, USA
+  editors:
+  - family-names: "Spitler"
+    given-names: "Jeff"
+  - family-names: "Acuña"
+    given-names: "José"
+  - family-names: "Bernier"
+    given-names: "Michel"
+  - family-names: "Cimmino"
+    given-names: "Massimo"
+  - family-names: "Fang"
+    given-names: "Zhaohong"
+  - family-names: "Gehlin"
+    given-names: "Signhild"
+  - family-names: "Javed"
+    given-names: "Saqib"
+  - family-names: "Liu"
+    given-names: "Xiaobing"
+  - family-names: "Rees"
+    given-names: "Simon"
+  - family-names: "Stumpf"
+    given-names: "Andrew"
+  conference:
+  - name: International Ground Source Heat Pump Association Annual Conference
+    city: Las Vegas
+    region: NV
+    country: USA
+    date-start: 2022-12-06
+    date-end: 2022-12-08
