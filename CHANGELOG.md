@@ -1,6 +1,6 @@
 # History of changes
 
-## Current version
+## Version 2.2.2 (2023-01-09)
 
 ### Enhancements
 
