@@ -1,7 +1,5 @@
 # History of changes
 
-## Version 2.3 (in development)
-
 ## Version 2.2.2 (2023-01-09)
 
 ### Enhancements
