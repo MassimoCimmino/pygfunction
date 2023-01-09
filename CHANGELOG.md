@@ -1,6 +1,8 @@
 # History of changes
 
-## Current version
+## Version 2.3 (in development)
+
+## Version 2.2.2 (2023-01-09)
 
 ### Enhancements
 
@@ -9,6 +11,11 @@
 ### Bug fixes
 
 * [Issue 231](https://github.com/MassimoCimmino/pygfunction/issues/231) - Fixed an issue where the evaluation of g-functions at very low times raises an error due a singular matrix. g-Functions below a threshold time value `t=max(r_b)**2/(25*alpha)` are now linearized.
+
+### Other changes
+
+* [Issue 229](https://github.com/MassimoCimmino/pygfunction/issues/229), [Issue 247](https://github.com/MassimoCimmino/pygfunction/issues/247) - Added citation to IGSHPA conference paper on *pygfunction* v2.2 in the documention. Added a `CITATION.cff` file to suggest a correct citation on github.
+* [Issue 230](https://github.com/MassimoCimmino/pygfunction/issues/230) - Configured github actions to publish *pygfunction* on Pypi on creation of a release on github.
 
 ## Version 2.2.1 (2022-08-12)
 
