@@ -719,7 +719,7 @@ def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
      0   1   2
 
     """
-    borefield = []
+    borefield = Borefield()
 
     if origin is None:
         # When no origin is supplied, compute the origin to be at the center of
@@ -796,7 +796,7 @@ def L_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
      0   1   2
 
     """
-    borefield = []
+    borefield = Borefield()
 
     if origin is None:
         # When no origin is supplied, compute the origin to be at the center of
@@ -883,7 +883,7 @@ def U_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
      0   1   2
 
     """
-    borefield = []
+    borefield = Borefield()
 
     if origin is None:
         # When no origin is supplied, compute the origin to be at the center of
@@ -986,7 +986,7 @@ def box_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0, origin=None):
      0   1   2   3
 
     """
-    borefield = []
+    borefield = Borefield()
 
     if origin is None:
         # When no origin is supplied, compute the origin to be at the center of
@@ -1097,7 +1097,7 @@ def circle_field(N, R, H, D, r_b, tilt=0., origin=None):
            6
 
     """
-    borefield = []
+    borefield = Borefield()
 
     if origin is None:
         # When no origin is supplied, compute the origin to be at the center of
@@ -1153,7 +1153,7 @@ def field_from_file(filename):
     # Load data from file
     data = np.loadtxt(filename, ndmin=2)
     # Build the bore field
-    borefield = []
+    borefield = Borefield()
     for line in data:
         x = line[0]
         y = line[1]
