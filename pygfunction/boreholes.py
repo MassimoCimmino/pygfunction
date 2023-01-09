@@ -237,6 +237,38 @@ class Borehole(object):
         return z
 
 
+class Borefield(list):
+    def __int__(self, boreholes: list = None):
+        if type(boreholes) == list:
+            super.__init__(boreholes)
+        elif type(boreholes) == Borehole:
+            super.__init__([boreholes])
+        else:
+            super.__init__()
+
+    def H(self):
+        return np.array([self.__getitem__(i).H for i, _ in enumerate(self)])
+
+    def D(self):
+        return np.array([self.__getitem__(i).D for i, _ in enumerate(self)])
+
+    def r_b(self):
+        return np.array([self.__getitem__(i).r_b for i, _ in enumerate(self)])
+
+    def x(self):
+        return np.array([self.__getitem__(i).x for i, _ in enumerate(self)])
+
+    def y(self):
+        return np.array([self.__getitem__(i).y for i, _ in enumerate(self)])
+
+    def tilt(self):
+        return np.array([self.__getitem__(i).tilt for i, _ in enumerate(self)])
+
+    def orientation(self):
+        return np.array([self.__getitem__(i).orientation
+                         for i, _ in enumerate(self)])
+
+
 class _EquivalentBorehole(object):
     """
     Contains information regarding the dimensions and position of an equivalent
