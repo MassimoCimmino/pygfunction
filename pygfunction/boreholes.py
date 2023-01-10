@@ -6,6 +6,8 @@ from scipy.spatial.distance import pdist
 
 from .utilities import _initialize_figure, _format_axes, _format_axes_3d
 
+from typing import List
+
 
 class Borehole(object):
     """
@@ -238,7 +240,7 @@ class Borehole(object):
 
 
 class Borefield(list):
-    def __int__(self, boreholes: list = None):
+    def __int__(self, boreholes: List = None):
         if type(boreholes) == list:
             super.__init__(boreholes)
         elif type(boreholes) == Borehole:
