@@ -6,7 +6,7 @@ from scipy.spatial.distance import pdist
 
 from .utilities import _initialize_figure, _format_axes, _format_axes_3d
 
-from typing import List
+from typing import List, Union
 
 
 class Borehole(object):
@@ -240,13 +240,13 @@ class Borehole(object):
 
 
 class Borefield(list):
-    def __int__(self, boreholes: List = None):
-        if type(boreholes) == list:
-            super.__init__(boreholes)
-        elif type(boreholes) == Borehole:
-            super.__init__([boreholes])
+    def __init__(self, borehole_or_boreholes: Union[List[Borehole], Borehole] = None):
+        if type(borehole_or_boreholes) is list:
+            super().__init__(borehole_or_boreholes)
+        elif type(borehole_or_boreholes) is Borehole:
+            super().__init__([borehole_or_boreholes])
         else:
-            super.__init__()
+            super().__init__([])
 
     def H(self):
         return np.array([self.__getitem__(i).H for i, _ in enumerate(self)])
