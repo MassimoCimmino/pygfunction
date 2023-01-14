@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from time import perf_counter
 import warnings
+from abc import ABC, abstractmethod
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -226,15 +227,15 @@ class gFunction(object):
         self._check_inputs()
 
         # Load the chosen solver
-        if self.method.lower()=='similarities':
+        if self.method.lower() == 'similarities':
             self.solver = _Similarities(
                 self.boreholes, self.network, self.time,
                 self.boundary_condition, **self.options)
-        elif self.method.lower()=='detailed':
+        elif self.method.lower() == 'detailed':
             self.solver = _Detailed(
                 self.boreholes, self.network, self.time,
                 self.boundary_condition, **self.options)
-        elif self.method.lower()=='equivalent':
+        elif self.method.lower() == 'equivalent':
             self.solver = _Equivalent(
                 self.boreholes, self.network, self.time,
                 self.boundary_condition, **self.options)
@@ -1368,7 +1369,7 @@ def mixed_inlet_temperature(
     return gFunc.gFunc
 
 
-class _BaseSolver(object):
+class _BaseSolver(ABC):
     """
     Template for solver classes.
 
@@ -1499,10 +1500,12 @@ class _BaseSolver(object):
 
         return
 
+    @abstractmethod
     def initialize(self, *kwargs):
         """
         Perform any calculation required at the initialization of the solver
         and returns the number of finite line heat sources in the borefield.
+
 
         Raises
         ------
@@ -1515,13 +1518,12 @@ class _BaseSolver(object):
             initialize the matrix of segment-to-segment thermal response
             factors (of size: nSources x nSources).
 
-        """
-        raise NotImplementedError(
-            'initialize class method not implemented, this method should '
-            'return the number of finite line heat sources in the borefield '
-            'used to initialize the matrix of segment-to-segment thermal '
-            'response factors (of size: nSources x nSources)')
-        return None
+       """
+        pass
+
+    @abstractmethod
+    def thermal_response_factors(self, time, alpha, kind='linear'):
+        pass
 
     def solve(self, time, alpha):
         """
@@ -2138,7 +2140,6 @@ class _Detailed(_BaseSolver):
                 tilt[j_segment], orientation[j_segment], M=self.mQuad,
                 approximation=self.approximate_FLS, N=self.nFLS)
         return h, i_segment, j_segment
-
 
 
 class _Similarities(_BaseSolver):
