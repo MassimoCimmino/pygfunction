@@ -167,7 +167,7 @@ class Borehole(object):
                 Borehole(H, D, self.r_b, x, y,
                          tilt=self.tilt,
                          orientation=self.orientation))
-        return boreSegments
+        return Borefield(boreSegments)
 
     def _segment_edges(self, nSegments, segment_ratios=None):
         """
@@ -235,6 +235,124 @@ class Borehole(object):
         z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1] \
             + segment_ratios * self.H / 2
         return z
+
+
+class Borefield(object):
+
+    cols = {
+        'H': 0,
+        'D': 1,
+        'r_b': 2,
+        'x': 3,
+        'y': 4,
+        'tilt': 5,
+        'orientation': 6,
+        'is_tilted': 7
+    }
+
+    def __init__(self, boreholes):
+        self._boreholes = np.empty(shape=(len(boreholes), len(self.cols.keys())))
+        for i, borehole in enumerate(boreholes):
+            self._boreholes[i, :] = np.array([
+                [borehole.H, borehole.D, borehole.r_b, borehole.x, borehole.y, borehole.tilt, borehole.orientation,
+                 borehole._is_tilted]])
+
+    @property
+    def nBoreholes(self):
+        return self._boreholes.shape[0]
+
+    @property
+    def H(self):
+        return self._boreholes[:, self.cols['H']]
+
+    @property
+    def D(self):
+        return self._boreholes[:, self.cols['D']]
+
+    @property
+    def r_b(self):
+        return self._boreholes[:, self.cols['r_b']]
+
+    @property
+    def x(self):
+        return self._boreholes[:, self.cols['x']]
+
+    @property
+    def y(self):
+        return self._boreholes[:, self.cols['y']]
+
+    @property
+    def _is_tilted(self):
+        return self._boreholes[:, self.cols['is_tilted']]
+
+    def append(self, borehole):
+        self._boreholes = np.append(
+            self._boreholes, [[borehole.H, borehole.D, borehole.r_b, borehole.x, borehole.y, borehole.tilt,
+                               borehole.orientation, borehole._is_tilted]], axis=0)
+
+    def __add__(self, other):
+        self.boreholes = self.boreholes + other.boreholes
+        self.nBoreholes = len(self.boreholes)
+        self.H = np.concatenate([self.H, other.H])
+        self.D = np.concatenate([self.D, other.D])
+        self.r_b = np.concatenate([self.r_b, other.r_b])
+        self.x = np.concatenate([self.x, other.x])
+        self.y = np.concatenate([self.y, other.y])
+        self.tilt = np.concatenate([self.tilt, other.tilt])
+        self.orientation = np.concatenate([self.orientation, other.orientation])
+        self._is_tilted = np.concatenate([self._is_tilted, other._is_tilted])
+        return self
+
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            return Borefield(self.boreholes[key])
+        elif isinstance(key, int):
+            return self.boreholes[key]
+        elif isinstance(key, (list, np.ndarray)):
+            return Borefield([self.boreholes[i] for i in key])
+        return
+
+    def distance(self, target, outer=True):
+        """
+        """
+        if outer:
+            dis = np.maximum(
+                np.sqrt(
+                    np.subtract.outer(target.x, self.x)**2
+                    + np.subtract.outer(target.y, self.y)**2),
+                self.r_b)
+        else:
+            dis = np.maximum(
+                np.sqrt((target.x - self.x)**2 + (target.y - self.y)**2),
+                self.r_b)
+        return dis
+
+    def is_tilted(self):
+        """
+        """
+        return self._boreholes[:, self.cols['is_tilted']]
+
+    def is_vertical(self):
+        """
+        """
+        return np.logical_not(self.is_tilted())
+
+    def position(self):
+        """
+        """
+        pos = (self.x, self.y)
+        return pos
+
+    def segments(self, nSegments, segment_ratios=None):
+        """
+        """
+        if segment_ratios is None:
+            segment_ratios = np.full(nSegments, 1. / nSegments)
+        boreSegments = []
+        for borehole in self.boreholes:
+            boreSegments.extend(
+                borehole.segments(nSegments, segment_ratios=segment_ratios))
+        return Borefield(boreSegments)
 
 
 class _EquivalentBorehole(object):
