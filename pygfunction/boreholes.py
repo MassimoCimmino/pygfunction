@@ -281,6 +281,10 @@ class Borefield(object):
     def y(self):
         return self._boreholes[:, self.cols['y']]
 
+    @property
+    def _is_tilted(self):
+        return self._boreholes[:, self.cols['is_tilted']]
+
     def append(self, borehole):
         self._boreholes = np.append(
             self._boreholes, [[borehole.H, borehole.D, borehole.r_b, borehole.x, borehole.y, borehole.tilt,
@@ -326,12 +330,12 @@ class Borefield(object):
     def is_tilted(self):
         """
         """
-        return self._is_tilted
+        return self._boreholes[:, self.cols['is_tilted']]
 
     def is_vertical(self):
         """
         """
-        return np.logical_not(self._is_tilted)
+        return np.logical_not(self.is_tilted())
 
     def position(self):
         """
