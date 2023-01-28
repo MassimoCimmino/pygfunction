@@ -12,7 +12,7 @@ class Fluid:
 
         Parameters
         ----------
-        fluid_str: str
+        mixer: str
             The mixer for this application should be one of:
                 - 'Water' - Complete water solution
                 - 'MEG' - Ethylene glycol mixed with water
@@ -32,50 +32,50 @@ class Fluid:
         >>> T_f = 20.     # Temp at 20 C
 
         >>> # complete water solution
-        >>> fluid_str = 'Water'
+        >>> mixer = 'Water'
         >>> percent = 0
-        >>> fluid = gt.media.Fluid(fluid_str, percent, T=T_f)
+        >>> fluid = gt.media.Fluid(mixer, percent, T=T_f)
         >>> print(fluid)
 
         >>> # 20 % propylene glycol mixed with water
-        >>> fluid_str = 'MPG'
+        >>> mixer = 'MPG'
         >>> percent = 20
-        >>> fluid = gt.media.Fluid(fluid_str, percent, T=T_f)
+        >>> fluid = gt.media.Fluid(mixer, percent, T=T_f)
 
         >>> # 60% ethylene glycol mixed with water
-        >>> fluid_str = 'MEG'
+        >>> mixer = 'MEG'
         >>> percent = 60
-        >>> fluid = gt.media.Fluid(fluid_str, percent, T=T_f)
+        >>> fluid = gt.media.Fluid(mixer, percent, T=T_f)
         >>> print(fluid)
 
         >>> # 5% methanol mixed with water
-        >>> fluid_str = 'MMA'
+        >>> mixer = 'MMA'
         >>> percent = 5
-        >>> fluid = gt.media.Fluid(fluid_str, percent, T=T_f)
+        >>> fluid = gt.media.Fluid(mixer, percent, T=T_f)
         >>> print(fluid)
 
         >>> # ethanol / water
-        >>> fluid_str = 'MEA'
+        >>> mixer = 'MEA'
         >>> percent = 10
-        >>> fluid = gt.media.Fluid(fluid_str, percent, T=T_f)
+        >>> fluid = gt.media.Fluid(mixer, percent, T=T_f)
         >>> print(fluid)
     """
-    def __init__(self, fluid_str: str, percent: float, T: float = 20.):
+    def __init__(self, mixer: str, percent: float, T: float = 20.):
         # concentration fraction
         x_frac = percent / 100
 
-        if fluid_str.upper() == 'WATER':
+        if mixer.upper() == 'WATER':
             self.fluid = Water()
-        elif fluid_str.upper() in ['PROPYLENEGLYCOL', 'MPG']:
+        elif mixer.upper() in ['PROPYLENEGLYCOL', 'MPG']:
             self.fluid = PropyleneGlycol(x_frac)
-        elif fluid_str.upper() in ['ETHYLENEGLYCOL', 'MEG']:
+        elif mixer.upper() in ['ETHYLENEGLYCOL', 'MEG']:
             self.fluid = EthyleneGlycol(x_frac)
-        elif fluid_str.upper() in ['METHYLALCOHOL', 'MMA']:
+        elif mixer.upper() in ['METHYLALCOHOL', 'MMA']:
             self.fluid = MethylAlcohol(x_frac)
-        elif fluid_str.upper() in ['ETHYLALCOHOL', 'MEA']:
+        elif mixer.upper() in ['ETHYLALCOHOL', 'MEA']:
             self.fluid = EthylAlcohol(x_frac)
         else:
-            raise ValueError(f'Unsupported fluid mixture: "{fluid_str}".')
+            raise ValueError(f'Unsupported fluid mixture: "{mixer}".')
 
         # Initialize all fluid properties
         # Name
