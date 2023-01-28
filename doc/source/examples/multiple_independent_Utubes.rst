@@ -14,7 +14,7 @@ independent U-tubes with different inlet fluid temperatures and different inlet
 fluid mass flow rates. The resulting fluid temperature profiles are verified
 against the fluid temeprature profiles presented by Cimmino [1]_.
 
-The script is located in: 
+The script is located in:
 `pygfunction/examples/multiple_independent_Utubes.py`
 
 .. literalinclude:: ../../../examples/multiple_independent_Utubes.py

@@ -42,15 +42,15 @@ fluid temperatures in the boreholes for several U-tube pipe configurations.
 
 *pygfunction* was developed and tested using Python 3.7. In addition, the
 following packages are needed to run *pygfunction* and its examples:
-- Coolprop (>= 6.4.1)
-- matplotlib (>= 3.3.4),
-- numpy (>= 1.20.1)
-- scipy (>= 1.6.2)
+- matplotlib (>= 3.5.1),
+- numpy (>= 1.21.5)
+- scipy (>= 1.7.3)
+- SecondaryCoolantProps (>= 1.1)
 
 The documentation is generated using [Sphinx](http://www.sphinx-doc.org). The
 following packages are needed to build the documentation:
-- sphinx (>= 4.0.1)
-- numpydoc (>= 1.1.0)
+- sphinx (>= 4.4.0)
+- numpydoc (>= 1.2.0)
 
 
 ## Quick start
@@ -108,17 +108,20 @@ To contribute code to *pygfunction*, follow the
 ## Contributors
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-3-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable -->
 <table>
-  <tr>
-    <td align="center"><a href="https://www.polymtl.ca/expertises/en/cimmino-massimo"><img src="https://avatars.githubusercontent.com/u/23085996?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Massimo Cimmino</b></sub></a><br /><a href="https://github.com/MassimoCimmino/pygfunction/commits?author=MassimoCimmino" title="Code">💻</a> <a href="https://github.com/MassimoCimmino/pygfunction/commits?author=MassimoCimmino" title="Documentation">📖</a> <a href="#example-MassimoCimmino" title="Examples">💡</a> <a href="http://www.ibpsa.org/proceedings/eSimPapers/2018/2-3-A-4.pdf" title="Founder">:rocket:</a> <a href="#ideas-MassimoCimmino" title="Ideas, Planning, & Feedback">🤔</a> <a href="#maintenance-MassimoCimmino" title="Maintenance">🚧</a> <a href="https://github.com/MassimoCimmino/pygfunction/pulls?q=is%3Apr+reviewed-by%3AMassimoCimmino" title="Reviewed Pull Requests">👀</a></td>
-    <td align="center"><a href="https://github.com/j-c-cook"><img src="https://avatars.githubusercontent.com/u/39248734?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Jack Cook</b></sub></a><br /><a href="https://github.com/MassimoCimmino/pygfunction/commits?author=j-c-cook" title="Code">💻</a> <a href="#example-j-c-cook" title="Examples">💡</a> <a href="#ideas-j-c-cook" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/MassimoCimmino/pygfunction/commits?author=j-c-cook" title="Documentation">📖</a></td>
-  </tr>
+  <tbody>
+    <tr>
+      <td align="center"><a href="https://www.polymtl.ca/expertises/en/cimmino-massimo"><img src="https://avatars.githubusercontent.com/u/23085996?v=4?s=100" width="100px;" alt="Massimo Cimmino"/><br /><sub><b>Massimo Cimmino</b></sub></a><br /><a href="https://github.com/MassimoCimmino/pygfunction/commits?author=MassimoCimmino" title="Code">💻</a> <a href="https://github.com/MassimoCimmino/pygfunction/commits?author=MassimoCimmino" title="Documentation">📖</a> <a href="#example-MassimoCimmino" title="Examples">💡</a> <a href="http://www.ibpsa.org/proceedings/eSimPapers/2018/2-3-A-4.pdf" title="Founder">:rocket:</a> <a href="#ideas-MassimoCimmino" title="Ideas, Planning, & Feedback">🤔</a> <a href="#maintenance-MassimoCimmino" title="Maintenance">🚧</a> <a href="https://github.com/MassimoCimmino/pygfunction/pulls?q=is%3Apr+reviewed-by%3AMassimoCimmino" title="Reviewed Pull Requests">👀</a></td>
+      <td align="center"><a href="https://github.com/j-c-cook"><img src="https://avatars.githubusercontent.com/u/39248734?v=4?s=100" width="100px;" alt="Jack Cook"/><br /><sub><b>Jack Cook</b></sub></a><br /><a href="https://github.com/MassimoCimmino/pygfunction/commits?author=j-c-cook" title="Code">💻</a> <a href="#example-j-c-cook" title="Examples">💡</a> <a href="#ideas-j-c-cook" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/MassimoCimmino/pygfunction/commits?author=j-c-cook" title="Documentation">📖</a></td>
+      <td align="center"><a href="https://github.com/mitchute"><img src="https://avatars.githubusercontent.com/u/2985979?v=4?s=100" width="100px;" alt="Matt Mitchell"/><br /><sub><b>Matt Mitchell</b></sub></a><br /><a href="https://github.com/MassimoCimmino/pygfunction/commits?author=mitchute" title="Code">💻</a> <a href="#ideas-mitchute" title="Ideas, Planning, & Feedback">🤔</a></td>
+    </tr>
+  </tbody>
 </table>
 
 <!-- markdownlint-restore -->

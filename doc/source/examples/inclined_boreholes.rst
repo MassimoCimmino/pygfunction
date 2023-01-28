@@ -24,4 +24,4 @@ The script is located in:
 .. rubric:: References
 .. [1] Claesson J, and Eskilson, P. (1987). Conductive heat extraction by
    thermally interacting deep boreholes, in "Thermal analysis of heat
-   extraction boreholes". Ph.D. Thesis, University of Lund, Lund, Sweden. 
+   extraction boreholes". Ph.D. Thesis, University of Lund, Lund, Sweden.

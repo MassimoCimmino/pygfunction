@@ -31,6 +31,16 @@
         "ideas",
         "doc"
       ]
+    },
+    {
+      "login": "mitchute",
+      "name": "Matt Mitchell",
+      "avatar_url": "https://avatars.githubusercontent.com/u/2985979?v=4",
+      "profile": "https://github.com/mitchute",
+      "contributions": [
+        "code",
+        "ideas"
+      ]
     }
   ],
   "contributorsPerLine": 7,
@@ -45,5 +55,6 @@
       "description": "Founder",
       "link": "http://www.ibpsa.org/proceedings/eSimPapers/2018/2-3-A-4.pdf"
     }
-  }
+  },
+  "commitConvention": "angular"
 }

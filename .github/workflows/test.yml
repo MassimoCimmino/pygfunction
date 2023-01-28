@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - master
+      - maintenance/2.2.x
   pull_request:
     branches:
       - master
+      - maintenance/2.2.x
     types: [opened, synchronize, reopened]
 
 jobs:
@@ -15,7 +17,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python-version: ['3.7', '3.8']
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
       fail-fast: false
 
     steps:

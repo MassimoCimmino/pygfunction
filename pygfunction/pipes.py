@@ -90,7 +90,7 @@ class _BasePipe(object):
     def get_inlet_temperature(
             self, Q_f, T_b, m_flow_borehole, cp_f, segment_ratios=None):
         """
-        Returns the outlet fluid temperatures of the borehole.
+        Returns the inlet fluid temperatures of the borehole.
 
         Parameters
         ----------
@@ -120,7 +120,7 @@ class _BasePipe(object):
         # Build coefficient matrices
         a_qf, a_b = self.coefficients_inlet_temperature(
             m_flow_borehole, cp_f, nSegments, segment_ratios=segment_ratios)
-        # Evaluate outlet temperatures
+        # Evaluate inlet temperatures
         T_f_in = a_qf @ np.atleast_1d(Q_f) + a_b @ T_b
         # Return float if Qf was supplied as scalar
         if np.isscalar(Q_f) and not np.isscalar(T_f_in):
@@ -278,7 +278,7 @@ class _BasePipe(object):
     def coefficients_inlet_temperature(
             self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
         """
-        Build coefficient matrices to evaluate outlet fluid temperature.
+        Build coefficient matrices to evaluate inlet fluid temperature.
 
         Returns coefficients for the relation:
 
@@ -832,7 +832,7 @@ class _BasePipe(object):
             check = False
 
         return check
-    
+
     def _check_geometry(self):
         """ Verifies the inputs to the pipe object and raises an error if
             the geometry is not valid.
@@ -952,7 +952,9 @@ class SingleUTube(_BasePipe):
     Contains information regarding the physical dimensions and thermal
     characteristics of the pipes and the grout material, as well as methods to
     evaluate fluid temperatures and heat extraction rates based on the work of
-    Hellstrom [#Single-Hellstrom1991]_.
+    Hellstrom [#Single-Hellstrom1991]_. Internal borehole thermal resistances
+    are evaluated using the multipole method of Claesson and Hellstrom
+    [#Single-Claesson2011b]_.
 
     Attributes
     ----------
@@ -990,11 +992,21 @@ class SingleUTube(_BasePipe):
     the borehole, equal to 1. `nDepths` is the number of depths at which
     temperatures are evaluated.
 
+    The effective borehole thermal resistance is evaluated using the method
+    of Cimmino [#Single-Cimmin2019]_. This is valid for any number of pipes.
+
     References
     ----------
     .. [#Single-Hellstrom1991] Hellstrom, G. (1991). Ground heat storage.
        Thermal Analyses of Duct Storage Systems I: Theory. PhD Thesis.
        University of Lund, Department of Mathematical Physics. Lund, Sweden.
+    .. [#Single-Claesson2011b] Claesson, J., & Hellstrom, G. (2011).
+       Multipole method to calculate borehole thermal resistances in a borehole
+       heat exchanger. HVAC&R Research, 17(6), 895-911.
+    .. [#Single-Cimmin2019] Cimmino, M. (2019). Semi-analytical method for
+       g-function calculation of bore fields with series- and
+       parallel-connected boreholes. Science and Technology for the Built
+       Environment, 25 (8), 1007-1022.
 
     """
     def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_fp, J=2):
@@ -1402,7 +1414,9 @@ class MultipleUTube(_BasePipe):
     Contains information regarding the physical dimensions and thermal
     characteristics of the pipes and the grout material, as well as methods to
     evaluate fluid temperatures and heat extraction rates based on the work of
-    Cimmino [#Cimmino2016]_ for boreholes with any number of U-tubes.
+    Cimmino [#Cimmino2016]_ for boreholes with any number of U-tubes. Internal
+    borehole thermal resistances are evaluated using the multipole method of
+    Claesson and Hellstrom [#Multiple-Claesson2011b]_.
 
     Attributes
     ----------
@@ -1444,11 +1458,21 @@ class MultipleUTube(_BasePipe):
     the borehole. `nDepths` is the number of depths at which temperatures are
     evaluated.
 
+    The effective borehole thermal resistance is evaluated using the method
+    of Cimmino [#Multiple-Cimmin2019]_. This is valid for any number of pipes.
+
     References
     ----------
     .. [#Cimmino2016] Cimmino, M. (2016). Fluid and borehole wall temperature
        profiles in vertical geothermal boreholes with multiple U-tubes.
        Renewable Energy, 96, 137-147.
+    .. [#Multiple-Claesson2011b] Claesson, J., & Hellstrom, G. (2011).
+       Multipole method to calculate borehole thermal resistances in a borehole
+       heat exchanger. HVAC&R Research, 17(6), 895-911.
+    .. [#Multiple-Cimmin2019] Cimmino, M. (2019). Semi-analytical method for
+       g-function calculation of bore fields with series- and
+       parallel-connected boreholes. Science and Technology for the Built
+       Environment, 25 (8), 1007-1022.
 
     """
     def __init__(self, pos, r_in, r_out, borehole, k_s,
@@ -1728,7 +1752,7 @@ class MultipleUTube(_BasePipe):
         exp_Lz = np.exp(np.multiply.outer(L, z))
         dexp_Lz = exp_Lz[:,:-1] - exp_Lz[:,1:]
         a_b = np.real(((IIm1 @ V @ Dm1) * (Vm1 @ sumA)) @ dexp_Lz)
-            
+
 
         # Configuration-specific inlet and outlet coefficient matrices
         IZER = np.vstack((np.eye(self.nPipes),
@@ -1897,7 +1921,9 @@ class IndependentMultipleUTube(MultipleUTube):
     Contains information regarding the physical dimensions and thermal
     characteristics of the pipes and the grout material, as well as methods to
     evaluate fluid temperatures and heat extraction rates based on the work of
-    Cimmino [#Cimmino2016b]_ for boreholes with any number of U-tubes.
+    Cimmino [#Cimmino2016b]_ for boreholes with any number of U-tubes. Internal
+    borehole thermal resistances are evaluated using the multipole method of
+    Claesson and Hellstrom [#Independent-Claesson2011b]_.
 
     Attributes
     ----------
@@ -1940,6 +1966,10 @@ class IndependentMultipleUTube(MultipleUTube):
     .. [#Cimmino2016b] Cimmino, M. (2016). Fluid and borehole wall temperature
        profiles in vertical geothermal boreholes with multiple U-tubes.
        Renewable Energy, 96, 137-147.
+    .. [#Independent-Claesson2011b] Claesson, J., & Hellstrom, G. (2011).
+       Multipole method to calculate borehole thermal resistances in a borehole
+       heat exchanger. HVAC&R Research, 17(6), 895-911.
+
 
     """
     def __init__(self, pos, r_in, r_out, borehole, k_s,
@@ -2117,7 +2147,9 @@ class Coaxial(SingleUTube):
     Contains information regarding the physical dimensions and thermal
     characteristics of the pipes and the grout material, as well as methods to
     evaluate fluid temperatures and heat extraction rates based on the work of
-    Hellstrom [#Coaxial-Hellstrom1991]_.
+    Hellstrom [#Coaxial-Hellstrom1991]_. Internal borehole thermal resistances
+    are evaluated using the multipole method of Claesson and Hellstrom
+    [#Coaxial-Claesson2011b]_.
 
     Attributes
     ----------
@@ -2161,11 +2193,21 @@ class Coaxial(SingleUTube):
     the borehole, equal to 1. `nDepths` is the number of depths at which
     temperatures are evaluated.
 
+    The effective borehole thermal resistance is evaluated using the method
+    of Cimmino [#Coaxial-Cimmin2019]_. This is valid for any number of pipes.
+
     References
     ----------
     .. [#Coaxial-Hellstrom1991] Hellstrom, G. (1991). Ground heat storage.
        Thermal Analyses of Duct Storage Systems I: Theory. PhD Thesis.
        University of Lund, Department of Mathematical Physics. Lund, Sweden.
+    .. [#Coaxial-Claesson2011b] Claesson, J., & Hellstrom, G. (2011).
+       Multipole method to calculate borehole thermal resistances in a borehole
+       heat exchanger. HVAC&R Research, 17(6), 895-911.
+    .. [#Coaxial-Cimmin2019] Cimmino, M. (2019). Semi-analytical method for
+       g-function calculation of bore fields with series- and
+       parallel-connected boreholes. Science and Technology for the Built
+       Environment, 25 (8), 1007-1022.
 
     """
     def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_ff, R_fp, J=2):
@@ -2300,7 +2342,7 @@ class Coaxial(SingleUTube):
         plt.tight_layout()
 
         return fig
-    
+
     def _check_geometry(self):
         """ Verifies the inputs to the pipe object and raises an error if
             the geometry is not valid.
@@ -2562,7 +2604,19 @@ def thermal_resistances(pos, r_out, r_b, k_s, k_g, R_fp, J=2):
 
 def borehole_thermal_resistance(pipe, m_flow_borehole, cp_f):
     """
-    Evaluate the effective borehole thermal resistance.
+    Evaluate the effective borehole thermal resistance, defined by:
+
+        .. math::
+
+            \\frac{Q_b}{H} = \\frac{T^*_b - \\bar{T}_f}{R^*_b}
+
+            \\bar{T}_f = \\frac{1}{2}(T_{f,in} + T_{f,out})
+
+    where :math:`Q_b` is the borehole heat extraction rate (in Watts),
+    :math:`H` is the borehole length, :math:`T^*_b` is the effective
+    borehole wall temperature, :math:`R^*_b` is the effective borehole
+    thermal resistance, :math:`T_{f,in}` is the inlet fluid temperature,
+    and :math:`T_{f,out}` is the outlet fluid temperature.
 
     Parameters
     ----------
@@ -2577,6 +2631,18 @@ def borehole_thermal_resistance(pipe, m_flow_borehole, cp_f):
     -------
     R_b : float
         Effective borehole thermal resistance (m.K/W).
+
+    Notes
+    -----
+    The effective borehole thermal resistance is evaluated using the method
+    of Cimmino [#Rbeff-Cimmin2019]_. This is valid for any number of pipes.
+
+    References
+    ----------
+    .. [#Rbeff-Cimmin2019] Cimmino, M. (2019). Semi-analytical method for
+       g-function calculation of bore fields with series- and
+       parallel-connected boreholes. Science and Technology for the Built
+       Environment, 25 (8), 1007-1022.
 
     """
     # This function is deprecated as of v2.2. It will be removed in v3.0.
@@ -2702,7 +2768,7 @@ def convective_heat_transfer_coefficient_circular_pipe(
     --------
 
     References
-    -----------
+    ----------
     .. [#Gnielinksi2013] Gnielinski, V. (2013). On heat transfer in tubes.
         International Journal of Heat and Mass Transfer, 63, 134–140.
         https://doi.org/10.1016/j.ijheatmasstransfer.2013.04.015
@@ -2756,7 +2822,7 @@ def convective_heat_transfer_coefficient_concentric_annulus(
     Evaluate the inner and outer convective heat transfer coefficient for the
     annulus region of a concentric pipe.
 
-    Grundman (2007) referenced Hellström (1991) [#Hellstrom1991b]_ in the
+    Grundmann (2016) referenced Hellström (1991) [#Hellstrom1991b]_ in the
     discussion about inner and outer convection coefficients in an annulus
     region of a concentric pipe arrangement.
 
@@ -2809,8 +2875,8 @@ def convective_heat_transfer_coefficient_concentric_annulus(
         region (in W/m2-K).
 
     References
-    -----------
-    .. [#Grundman2007] Grundman, R. (2007) Improved design methods for ground
+    ----------
+    .. [#Grundmann2016] Grundmann, R. (2016) Improved design methods for ground
         heat exchangers. Oklahoma State University, M.S. Thesis.
     .. [#ConvCoeff-CengelGhajar2015] Çengel, Y.A., & Ghajar, A.J. (2015). Heat
         and mass transfer: fundamentals & applications (Fifth edition.).
@@ -2830,7 +2896,7 @@ def convective_heat_transfer_coefficient_concentric_annulus(
     Re = rho_f * V * D_h / mu_f
     # Prandtl number
     Pr = cp_f * mu_f / k_f
-    # Ratio of radii (Grundman, 2007)
+    # Ratio of radii (Grundmann, 2016)
     r_star = r_a_in / r_a_out
     # Darcy-Wiesbach friction factor
     fDarcy = fluid_friction_factor_circular_pipe(
@@ -3082,7 +3148,7 @@ def _F_mk(q_p, P, n_p, J, r_b, r_out, z, pikg, sigma):
     r_out : float or array
         Outer radius of the pipes (in meters).
     z : array
-        Array of pipe coordinates in complex notation (x + 1.j*y). 
+        Array of pipe coordinates in complex notation (x + 1.j*y).
     pikg : float
         Inverse of 2*pi times the grout thermal conductivity, 1.0/(2.0*pi*k_g).
     sigma : array

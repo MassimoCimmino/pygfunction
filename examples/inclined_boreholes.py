@@ -8,10 +8,10 @@
     configuration presented by Claesson and Eskilson (1987) and the second
     field corresponds to the configuration comprised of 8 boreholes in a
     circle.
-    
+
     Claesson J, and Eskilson, P. (1987). Conductive heat extraction by
     thermally interacting deep boreholes, in "Thermal analysis of heat
-    extraction boreholes". Ph.D. Thesis, University of Lund, Lund, Sweden. 
+    extraction boreholes". Ph.D. Thesis, University of Lund, Lund, Sweden.
 """
 
 import pygfunction as gt
@@ -50,7 +50,7 @@ def main():
     """
     Bore field #1
 
-    This field is corresponds to the optimal configuration presented by
+    This field corresponds to the optimal configuration presented by
     Claesson and Eskilson (1987). The field is built using the `cardinal_point`
     function to define the orientation of each borehole, individually.
     """
@@ -79,7 +79,7 @@ def main():
     """
     Bore field #2
 
-    This field is corresponds to the configuration comprised of 8 boreholes in
+    This field corresponds to the configuration comprised of 8 boreholes in
     a circle presented by Claesson and Eskilson (1987). The field is built
     using the `circle_field` function.
     """

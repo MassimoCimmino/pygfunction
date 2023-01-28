@@ -1,7 +1,7 @@
-numpy >= 1.20.1
-scipy >= 1.6.2
-matplotlib >= 3.3.4
-numpydoc >= 1.1.0
+numpy >= 1.21.5
+scipy >= 1.7.3
+matplotlib >= 3.5.1
+numpydoc >= 1.2.0
 recommonmark >= 0.6.0
-sphinx >= 4.0.1
-CoolProp >= 6.4.1
+sphinx >= 4.4.0
+secondarycoolantprops >= 1.1.0

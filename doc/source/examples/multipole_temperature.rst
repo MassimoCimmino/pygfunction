@@ -17,7 +17,7 @@ temperatures of 1 degC are evaluated. The temperatures in and around the
 borehole with 2 pipes are then calculated. Results are verified against the
 results of Claesson and Hellstrom [1]_.
 
-The script is located in: 
+The script is located in:
 `pygfunction/examples/multipole_temperature.py`
 
 .. literalinclude:: ../../../examples/multipole_temperature.py
@@ -27,4 +27,4 @@ The script is located in:
 .. rubric:: References
 .. [1] Claesson, J., & Hellstrom, G. (2011). Multipole method to calculate
    borehole thermal resistances in a borehole heat exchanger. HVAC&R Research,
-   17(6), 895-911. 
+   17(6), 895-911.
