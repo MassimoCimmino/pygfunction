@@ -238,18 +238,53 @@ class Borehole(object):
 
 
 class Borefield(object):
+
+    cols = {
+        'H': 0,
+        'D': 1,
+        'r_b': 2,
+        'x': 3,
+        'y': 4,
+        'tilt': 5,
+        'orientation': 6,
+        'is_tilted': 7
+    }
+
     def __init__(self, boreholes):
-        self.boreholes = boreholes
-        self.nBoreholes = len(boreholes)
-        self.H = np.array([b.H for b in boreholes])
-        self.D = np.array([b.D for b in boreholes])
-        self.r_b = np.array([b.r_b for b in boreholes])
-        self.x = np.array([b.x for b in boreholes])
-        self.y = np.array([b.y for b in boreholes])
-        self.tilt = np.array([b.tilt for b in boreholes])
-        self.orientation = np.array([b.orientation for b in boreholes])
-        self._is_tilted = np.array(
-            [b._is_tilted for b in boreholes], dtype=bool)
+        self._boreholes = np.empty(shape=(len(boreholes), len(self.cols.keys())))
+        for i, borehole in enumerate(boreholes):
+            self._boreholes[i, :] = np.array([
+                [borehole.H, borehole.D, borehole.r_b, borehole.x, borehole.y, borehole.tilt, borehole.orientation,
+                 borehole._is_tilted]])
+
+    @property
+    def nBoreholes(self):
+        return self._boreholes.shape[0]
+
+    @property
+    def H(self):
+        return self._boreholes[:, self.cols['H']]
+
+    @property
+    def D(self):
+        return self._boreholes[:, self.cols['D']]
+
+    @property
+    def r_b(self):
+        return self._boreholes[:, self.cols['r_b']]
+
+    @property
+    def x(self):
+        return self._boreholes[:, self.cols['x']]
+
+    @property
+    def y(self):
+        return self._boreholes[:, self.cols['y']]
+
+    def append(self, borehole):
+        self._boreholes = np.append(
+            self._boreholes, [[borehole.H, borehole.D, borehole.r_b, borehole.x, borehole.y, borehole.tilt,
+                               borehole.orientation, borehole._is_tilted]], axis=0)
 
     def __add__(self, other):
         self.boreholes = self.boreholes + other.boreholes
