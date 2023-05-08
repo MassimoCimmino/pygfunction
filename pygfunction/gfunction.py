@@ -3784,7 +3784,12 @@ class _Equivalent(_BaseSolver):
                     nClusters = 1
                     self.clusters.append(self.nEqBoreholes)
                 self.nEqBoreholes += nClusters
+            self.T_b_steadyState = data
+            self.linkage = clusterization
         else:
+            # Spatial superposition of the steady-state FLS solution
+            data = np.sum(finite_line_source(np.inf, 1., self.boreholes, self.boreholes), axis=1).reshape(-1,1)
+            self.T_b_steadyState = data
             self.nEqBoreholes = self.nBoreholes
             self.clusters = range(self.nBoreholes)
         # Overwrite boreholes with equivalent boreholes
