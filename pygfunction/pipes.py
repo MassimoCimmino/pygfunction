@@ -90,7 +90,7 @@ class _BasePipe(object):
     def get_inlet_temperature(
             self, Q_f, T_b, m_flow_borehole, cp_f, segment_ratios=None):
         """
-        Returns the outlet fluid temperatures of the borehole.
+        Returns the inlet fluid temperatures of the borehole.
 
         Parameters
         ----------
@@ -120,7 +120,7 @@ class _BasePipe(object):
         # Build coefficient matrices
         a_qf, a_b = self.coefficients_inlet_temperature(
             m_flow_borehole, cp_f, nSegments, segment_ratios=segment_ratios)
-        # Evaluate outlet temperatures
+        # Evaluate inlet temperatures
         T_f_in = a_qf @ np.atleast_1d(Q_f) + a_b @ T_b
         # Return float if Qf was supplied as scalar
         if np.isscalar(Q_f) and not np.isscalar(T_f_in):
@@ -278,7 +278,7 @@ class _BasePipe(object):
     def coefficients_inlet_temperature(
             self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
         """
-        Build coefficient matrices to evaluate outlet fluid temperature.
+        Build coefficient matrices to evaluate inlet fluid temperature.
 
         Returns coefficients for the relation:
 
@@ -832,7 +832,7 @@ class _BasePipe(object):
             check = False
 
         return check
-    
+
     def _check_geometry(self):
         """ Verifies the inputs to the pipe object and raises an error if
             the geometry is not valid.
@@ -1752,7 +1752,7 @@ class MultipleUTube(_BasePipe):
         exp_Lz = np.exp(np.multiply.outer(L, z))
         dexp_Lz = exp_Lz[:,:-1] - exp_Lz[:,1:]
         a_b = np.real(((IIm1 @ V @ Dm1) * (Vm1 @ sumA)) @ dexp_Lz)
-            
+
 
         # Configuration-specific inlet and outlet coefficient matrices
         IZER = np.vstack((np.eye(self.nPipes),
@@ -2342,7 +2342,7 @@ class Coaxial(SingleUTube):
         plt.tight_layout()
 
         return fig
-    
+
     def _check_geometry(self):
         """ Verifies the inputs to the pipe object and raises an error if
             the geometry is not valid.
@@ -2822,7 +2822,7 @@ def convective_heat_transfer_coefficient_concentric_annulus(
     Evaluate the inner and outer convective heat transfer coefficient for the
     annulus region of a concentric pipe.
 
-    Grundman (2007) referenced Hellström (1991) [#Hellstrom1991b]_ in the
+    Grundmann (2016) referenced Hellström (1991) [#Hellstrom1991b]_ in the
     discussion about inner and outer convection coefficients in an annulus
     region of a concentric pipe arrangement.
 
@@ -2876,7 +2876,7 @@ def convective_heat_transfer_coefficient_concentric_annulus(
 
     References
     ----------
-    .. [#Grundman2007] Grundman, R. (2007) Improved design methods for ground
+    .. [#Grundmann2016] Grundmann, R. (2016) Improved design methods for ground
         heat exchangers. Oklahoma State University, M.S. Thesis.
     .. [#ConvCoeff-CengelGhajar2015] Çengel, Y.A., & Ghajar, A.J. (2015). Heat
         and mass transfer: fundamentals & applications (Fifth edition.).
@@ -2896,7 +2896,7 @@ def convective_heat_transfer_coefficient_concentric_annulus(
     Re = rho_f * V * D_h / mu_f
     # Prandtl number
     Pr = cp_f * mu_f / k_f
-    # Ratio of radii (Grundman, 2007)
+    # Ratio of radii (Grundmann, 2016)
     r_star = r_a_in / r_a_out
     # Darcy-Wiesbach friction factor
     fDarcy = fluid_friction_factor_circular_pipe(
@@ -3148,7 +3148,7 @@ def _F_mk(q_p, P, n_p, J, r_b, r_out, z, pikg, sigma):
     r_out : float or array
         Outer radius of the pipes (in meters).
     z : array
-        Array of pipe coordinates in complex notation (x + 1.j*y). 
+        Array of pipe coordinates in complex notation (x + 1.j*y).
     pikg : float
         Inverse of 2*pi times the grout thermal conductivity, 1.0/(2.0*pi*k_g).
     sigma : array

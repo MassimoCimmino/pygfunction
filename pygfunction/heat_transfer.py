@@ -17,7 +17,7 @@ def finite_line_source(
     of the FLS solution. For vertical boreholes, the FLS solution was proposed
     by Claesson and Javed [#FLS-ClaJav2011]_ and extended to boreholes with
     different vertical positions by Cimmino and Bernier [#FLS-CimBer2014]_.
-    The FlS solution is given by:
+    The FLS solution is given by:
 
         .. math::
             h_{1\\rightarrow2}(t) &= \\frac{1}{2H_2}
@@ -387,7 +387,7 @@ def finite_line_source_approximation(
         drop on the wall of borehole2 due to heat extracted from borehole1 is:
 
         .. math:: \\Delta T_{b,2} = T_g - \\frac{Q_1}{2\\pi k_s H_2} h
-    
+
 
     References
     ----------
@@ -456,7 +456,7 @@ def finite_line_source_approximation(
 
 
 def finite_line_source_inclined_approximation(
-        time, alpha, 
+        time, alpha,
         rb1, x1, y1, H1, D1, tilt1, orientation1,
         x2, y2, H2, D2, tilt2, orientation2,
         reaSource=True, imgSource=True, M=11, N=10):
@@ -659,7 +659,7 @@ def finite_line_source_vectorized(
     This function uses a numerical quadrature to evaluate the one-integral form
     of the FLS solution, as proposed by Claesson and Javed
     [#FLSVec-ClaJav2011]_ and extended to boreholes with different vertical
-    positions by Cimmino and Bernier [#FLSVec-CimBer2014]_. The FlS solution
+    positions by Cimmino and Bernier [#FLSVec-CimBer2014]_. The FLS solution
     is given by:
 
         .. math::
@@ -736,7 +736,7 @@ def finite_line_source_vectorized(
     (dis, H1, D1, H2, D2) must follow numpy array broadcasting rules. If time
     is an array, the integrals for different time values are stacked on the
     last axis.
-    
+
 
     References
     ----------
@@ -756,7 +756,7 @@ def finite_line_source_vectorized(
         # Integrand of the finite line source solution
         f = _finite_line_source_integrand(
             dis, H1, D1, H2, D2, reaSource, imgSource)
-    
+
         # Evaluate integral
         if isinstance(time, (np.floating, float)):
             # Lower bound of integration
@@ -857,7 +857,7 @@ def finite_line_source_equivalent_boreholes_vectorized(
     (dis, H1, D1, H2, D2) must follow numpy array broadcasting rules. If time
     is an array, the integrals for different time values are stacked on the
     last axis.
-    
+
 
     References
     ----------
@@ -1049,7 +1049,7 @@ def finite_line_source_inclined_vectorized(
             rb1, x1, y1, H1, D1, tilt1, orientation1,
             x2, y2, H2, D2, tilt2, orientation2,
             reaSource, imgSource, M)
-    
+
         # Evaluate integral
         if isinstance(time, (np.floating, float)):
             # Lower bound of integration

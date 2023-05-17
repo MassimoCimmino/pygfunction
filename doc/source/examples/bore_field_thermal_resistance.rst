@@ -13,7 +13,7 @@ The following script evaluates the effective bore field thermal resistance
 for fields of 1 to 5 series-connected boreholes with fluid flow rates ranging
 from 0.01 kg/s ti 1.00 kg/s.
 
-The script is located in: 
+The script is located in:
 `pygfunction/examples/bore_field_thermal_resistance.py`
 
 .. literalinclude:: ../../../examples/bore_field_thermal_resistance.py

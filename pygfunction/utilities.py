@@ -514,7 +514,7 @@ def _erf_coeffs(N):
 
         .. math::
             erf(x) \\approx \\sum_{n=0}^{N} a_n exp(-b_n^2 x^2)
-    
+
     for `x > 0`.
 
     Parameters
