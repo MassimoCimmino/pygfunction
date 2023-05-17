@@ -16,7 +16,7 @@ fluid temperature is compared to the *g*-functions obtained using boundary
 conditions of uniform heat extraction rate and of uniform borehole wall
 temperature.
 
-The script is located in: 
+The script is located in:
 `pygfunction/examples/equal_inlet_temperature.py`
 
 .. literalinclude:: ../../../examples/equal_inlet_temperature.py

@@ -1,6 +1,21 @@
 # History of changes
 
-## Current version
+## Version 2.3 (in development)
+
+## Version 2.2.2 (2023-01-09)
+
+### Enhancements
+
+* [Issue 204](https://github.com/MassimoCimmino/pygfunction/issues/204) - Added support for Python 3.9 and 3.10. [CoolProp](https://www.coolprop.org/) is removed from the dependencies and replace with [SecondaryCoolantProps](https://github.com/mitchute/SecondaryCoolantProps).
+
+### Bug fixes
+
+* [Issue 231](https://github.com/MassimoCimmino/pygfunction/issues/231) - Fixed an issue where the evaluation of g-functions at very low times raises an error due a singular matrix. g-Functions below a threshold time value `t=max(r_b)**2/(25*alpha)` are now linearized.
+
+### Other changes
+
+* [Issue 229](https://github.com/MassimoCimmino/pygfunction/issues/229), [Issue 247](https://github.com/MassimoCimmino/pygfunction/issues/247) - Added citation to IGSHPA conference paper on *pygfunction* v2.2 in the documention. Added a `CITATION.cff` file to suggest a correct citation on github.
+* [Issue 230](https://github.com/MassimoCimmino/pygfunction/issues/230) - Configured github actions to publish *pygfunction* on Pypi on creation of a release on github.
 
 ### Enhancements
 
@@ -79,7 +94,7 @@
 * [Issue 99](https://github.com/MassimoCimmino/pygfunction/issues/99) - Fixed an issue where `MultipleUTube._continuity_condition()` and `MultipleUTube._general_solution()` returned complex valued coefficient matrices.
 * [Issue 130](https://github.com/MassimoCimmino/pygfunction/issues/130) - Fix incorrect initialization of variables `_mix_out` and `_mixing_m_flow` in `Network`.
 * [Issue 155](https://github.com/MassimoCimmino/pygfunction/issues/155) - Fix incorrect initialization of variables in `Network` and `_BasePipe`. Stored variables are now initialized as `numpy.nan` instead of `numpy.empty`.
-* [Issue 159](https://github.com/MassimoCimmino/pygfunction/issues/159) - Fix `segment_ratios` function in the `utilities` module to always expect 0 < `end_length_ratio` < 0.5, and allows for `nSegments=1` or `nSegments=2`. If 1<=`nSegments`<3 then the user is warned that the `end_length_ratio` parameter is being over-ridden. 
+* [Issue 159](https://github.com/MassimoCimmino/pygfunction/issues/159) - Fix `segment_ratios` function in the `utilities` module to always expect 0 < `end_length_ratio` < 0.5, and allows for `nSegments=1` or `nSegments=2`. If 1<=`nSegments`<3 then the user is warned that the `end_length_ratio` parameter is being over-ridden.
 
 ## Version 2.0.0 (2021-05-22)
 

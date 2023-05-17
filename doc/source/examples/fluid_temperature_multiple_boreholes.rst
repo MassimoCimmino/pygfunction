@@ -16,8 +16,8 @@ synthetic load profile of Bernier et al. [3]_. Predicted inlet and outlet fluid
 temperatures of double U-tube boreholes are calculated using the model of
 Cimmino [4]_.
 
-The script is located in: 
-`pygfunction/examples/fluid_temperature.py`
+The script is located in:
+`pygfunction/examples/fluid_temperature_multiple_boreholes.py`
 
 .. literalinclude:: ../../../examples/fluid_temperature_multiple_boreholes.py
    :language: python
