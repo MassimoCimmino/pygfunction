@@ -756,10 +756,14 @@ def dense_field(N_1, N_2, B, H, D, r_b, include_last_borehole = True):
     """
     borefield = []
 
+    # check for line
+    if N_1 == 1 or N_2 == 1:
+        return rectangle_field(N_1, N_2, B, B, H, D, r_b)
+
     for j in range(N_2):  # y direction
         for i in range(N_1):  # x direction
-            x = i * B + (B/2 if j % 2 == 1 else 0)
-            y = j * B/2
+            x = i * B*np.sqrt(2) + (B*np.sqrt(2)/2 if j % 2 == 1 else 0)
+            y = j * B*np.sqrt(2)/2
             if include_last_borehole or (j % 2 == 0 or i != N_1 - 1):  # last borehole in the x direction on an oneven row
                 borefield.append(Borehole(H, D, r_b, x, y))
 
