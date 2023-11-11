@@ -101,13 +101,16 @@ def test_rectangular_field(N_1, N_2, B_1, B_2):
         (1, 2, 5., True),     # 1 by 2
         (2, 2, 5., True),     # 2 by 2
         (10, 9, 7.5, True),   # 10 by 9
+        (10, 10, 7.5, True),   # 10 by 10
         (1, 1, 5., False),     # 1 by 1
         (2, 1, 5., False),     # 2 by 1
         (1, 2, 5., False),     # 1 by 2
         (2, 2, 5., False),     # 2 by 2
         (10, 9, 7.5, False),   # 10 by 9
-    ])
-def test_rectangular_field(N_1, N_2, B, include_last_element):
+        (10, 10, 7.5, False),  # 10 by 10
+
+])
+def test_dense_field(N_1, N_2, B, include_last_element):
     H = 150.        # Borehole length [m]
     D = 4.          # Borehole buried depth [m]
     r_b = 0.075     # Borehole radius [m]
@@ -120,10 +123,12 @@ def test_rectangular_field(N_1, N_2, B, include_last_element):
         np.subtract.outer(x, x)**2 + np.subtract.outer(y, y)**2)[
             ~np.eye(len(field), dtype=bool)]
 
-    if include_last_element:
+    if include_last_element or N_1 == 1 or N_2 == 1:
         assert len(field) == N_1 * N_2
+    elif N_2 % 2 == 0:
+        assert len(field) == N_2 * (2 * N_1 - 1) / 2
     else:
-        assert len(field) == N_2 * N_1 * (N_1 - 1) / 2 + (0 if N_2 % 2 == 0 else N_2)
+        assert len(field) == (N_2 - 1) * (2 * N_1 - 1) / 2 + N_1
 
     assert np.all(
         [np.allclose(H, [b.H for b in field]),
@@ -140,6 +145,8 @@ def test_rectangular_field(N_1, N_2, B, include_last_element):
         (2, 2, 5., 7.5),    # 2 by 2 (different x/y spacings)
         (10, 9, 7.5, 5.),   # 10 by 9 (different x/y spacings)
     ])
+
+
 def test_L_shaped_field(N_1, N_2, B_1, B_2):
     H = 150.        # Borehole length [m]
     D = 4.          # Borehole buried depth [m]
