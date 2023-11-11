@@ -27,25 +27,30 @@ def main():
     # -------------------------------------------------------------------------
 
     # Rectangular field of 4 x 3 boreholes
-    rectangularField = gt.boreholes.rectangle_field(N_1, N_2, B, B, H, D, r_b)
+    rectangular_field = gt.boreholes.rectangle_field(N_1, N_2, B, B, H, D, r_b)
+
+    # Dense field of 4 x 3 borehole rows
+    dense_field = gt.boreholes.dense_field(N_1, N_2, B, H, D, r_b, False)
 
     # Box-shaped field of 4 x 3 boreholes
-    boxField = gt.boreholes.box_shaped_field(N_1, N_2, B, B, H, D, r_b)
+    box_field = gt.boreholes.box_shaped_field(N_1, N_2, B, B, H, D, r_b)
 
     # U-shaped field of 4 x 3 boreholes
-    UField = gt.boreholes.U_shaped_field(N_1, N_2, B, B, H, D, r_b)
+    U_field = gt.boreholes.U_shaped_field(N_1, N_2, B, B, H, D, r_b)
 
     # L-shaped field of 4 x 3 boreholes
-    LField = gt.boreholes.L_shaped_field(N_1, N_2, B, B, H, D, r_b)
+    L_field = gt.boreholes.L_shaped_field(N_1, N_2, B, B, H, D, r_b)
 
     # Circular field of 8 boreholes
-    circleField = gt.boreholes.circle_field(N_b, R, H, D, r_b)
+    circle_field = gt.boreholes.circle_field(N_b, R, H, D, r_b)
 
     # -------------------------------------------------------------------------
     # Draw bore fields
     # -------------------------------------------------------------------------
-    for field in [rectangularField, boxField, UField, LField, circleField]:
+    for field in [rectangular_field, dense_field, box_field, U_field, L_field, circle_field]:
         gt.boreholes.visualize_field(field)
+        import matplotlib.pyplot as plt
+        plt.show()
 
     return
 

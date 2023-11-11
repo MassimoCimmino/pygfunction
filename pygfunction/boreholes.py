@@ -713,6 +713,59 @@ def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
     return borefield
 
 
+def dense_field(N_1, N_2, B, H, D, r_b, include_last_borehole = True):
+    """
+    Build a list of boreholes in a dense bore field configuration.
+    Here, the high density cylinder packing is used. This means that every borehole is a distance B (in meters)
+    away from each other.
+
+    Parameters
+    ----------
+    N_1 : int
+        Number of borehole in the x direction.
+    N_2 : int
+        Number of borehole in the y direction.
+    B : float
+        Distance (in meters) between adjacent boreholes.
+    H : float
+        Borehole length (in meters).
+    D : float
+        Borehole buried depth (in meters).
+    r_b : float
+        Borehole radius (in meters).
+    include_last_borehole : bool
+        True if each row of boreholes should have equal lengths. False, if the uneven rows have one borehole less
+        so they are contained within the imaginary 'box' around the borefield
+
+    Returns
+    -------
+    boreField : list of Borehole objects
+        List of boreholes in the dense bore field.
+
+    Examples
+    --------
+    >>> boreField = gt.boreholes.dense_field(N_1=3, N_2=2, B=5., H=100., D=2.5, r_b=0.05, include_last_borehole=True)
+
+    The bore field is constructed line by line. For N_1=3 and N_2=3, the bore
+    field layout is as follows::
+
+     6   7   8
+       3   4   5
+     0   1   2
+
+    """
+    borefield = []
+
+    for j in range(N_2):  # y direction
+        for i in range(N_1):  # x direction
+            x = i * B + (B/2 if j % 2 == 1 else 0)
+            y = j * B/2
+            if include_last_borehole or (j % 2 == 0 or i != N_1 - 1):  # last borehole in the x direction on an oneven row
+                borefield.append(Borehole(H, D, r_b, x, y))
+
+    return borefield
+
+
 def L_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
     """
     Build a list of boreholes in a L-shaped bore field configuration.
