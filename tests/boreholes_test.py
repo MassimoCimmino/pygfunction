@@ -115,7 +115,7 @@ def test_dense_field(N_1, N_2, B, include_last_element):
     D = 4.          # Borehole buried depth [m]
     r_b = 0.075     # Borehole radius [m]
     # Generate the bore field
-    field = gt.boreholes.dense_field(N_1, N_2, B, H, D, r_b, include_last_borehole=include_last_element)
+    field = gt.boreholes.dense_rectangle_field(N_1, N_2, B, H, D, r_b, include_last_borehole=include_last_element)
     # Evaluate the borehole to borehole distances
     x = np.array([b.x for b in field])
     y = np.array([b.y for b in field])
@@ -145,8 +145,6 @@ def test_dense_field(N_1, N_2, B, include_last_element):
         (2, 2, 5., 7.5),    # 2 by 2 (different x/y spacings)
         (10, 9, 7.5, 5.),   # 10 by 9 (different x/y spacings)
     ])
-
-
 def test_L_shaped_field(N_1, N_2, B_1, B_2):
     H = 150.        # Borehole length [m]
     D = 4.          # Borehole buried depth [m]

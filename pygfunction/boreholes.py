@@ -713,11 +713,10 @@ def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
     return borefield
 
 
-def dense_field(N_1, N_2, B, H, D, r_b, include_last_borehole = True):
+def rectangle_field_triangular(N_1, N_2, B_1, B_2, H, D, r_b, include_last_borehole, tilt=0., origin=None):
     """
-    Build a list of boreholes in a dense bore field configuration.
-    Here, the high density cylinder packing is used. This means that every borehole is a distance B (in meters)
-    away from each other.
+    Build a list of boreholes in a rectangular bore field configuration, with boreholes
+    placed in a triangular pattern.
 
     Parameters
     ----------
@@ -725,7 +724,99 @@ def dense_field(N_1, N_2, B, H, D, r_b, include_last_borehole = True):
         Number of borehole in the x direction.
     N_2 : int
         Number of borehole in the y direction.
-    B : float
+    B_1 : float
+        Distance (in meters) between adjacent boreholes in the x direction.
+    B_2 : float
+        Distance (in meters) between adjacent boreholes in the y direction.
+    H : float
+        Borehole length (in meters).
+    D : float
+        Borehole buried depth (in meters).
+    r_b : float
+        Borehole radius (in meters).
+    include_last_borehole : bool
+        True if each row of boreholes should have equal lengths. False, if the uneven rows have one borehole less
+        so they are contained within the imaginary 'box' around the borefield
+    tilt : float, optional
+        Angle (in radians) from vertical of the axis of the borehole. The
+        orientation of the tilt is orthogonal to the origin coordinate.
+        Default is 0.
+    origin : tuple, optional
+        A coordinate indicating the origin of reference for orientation of
+        boreholes.
+        Default is the center of the rectangle.
+
+    Returns
+    -------
+    boreField : list of Borehole objects
+        List of boreholes in the rectangular bore field.
+
+    Notes
+    -----
+    Boreholes located at the origin will remain vertical.
+
+    Examples
+    --------
+    >>> boreField = gt.boreholes.rectangle_field(N_1=3, N_2=2, B_1=5., B_2=5.,
+                                                 H=100., D=2.5, r_b=0.05)
+
+    The bore field is constructed line by line. For N_1=3 and N_2=3, the bore
+    field layout is as follows, if `include_last_borehole` is True::
+
+     6    7    8
+       3    4    5
+     0    1    2
+
+    and if `include_last_borehole` is False::
+
+     5    6    7
+       3    4
+     0    1    2
+
+    """
+    borefield = []
+
+    if N_1 == 1 or N_2 == 1:
+        return rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt, origin)
+
+    if origin is None:
+        # When no origin is supplied, compute the origin to be at the center of
+        # the rectangle
+        x0 = (N_1 - 1) / 2 * B_1
+        y0 = (N_2 - 1) / 2 * B_2
+    else:
+        x0, y0 = origin
+
+    for j in range(N_2):
+        for i in range(N_1):
+            x = i * B_1 + (B_1 / 2 if j % 2 == 1 else 0)
+            y = j * B_2
+            # The borehole is inclined only if it does not lie on the origin
+            if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
+                orientation = np.arctan2(y - y0, x - x0)
+                if i < (N_1 - 1) or include_last_borehole or (j % 2 == 0):
+                    borefield.append(
+                        Borehole(
+                            H, D, r_b, x, y, tilt=tilt, orientation=orientation))
+            else:
+                if i < (N_1 - 1) or include_last_borehole or (j % 2 == 0):
+                    borefield.append(Borehole(H, D, r_b, x, y))
+
+    return borefield
+
+
+def dense_rectangle_field(N_1, N_2, B, H, D, r_b, include_last_borehole, tilt=0., origin=None):
+    """
+    Build a list of boreholes in a rectangular bore field configuration, with boreholes
+    placed in a hexagonal pattern.
+
+    Parameters
+    ----------
+    N_1 : int
+        Number of borehole in the x direction.
+    N_2 : int
+        Number of borehole in the y direction.
+    B_1 : float
         Distance (in meters) between adjacent boreholes.
     H : float
         Borehole length (in meters).
@@ -736,36 +827,44 @@ def dense_field(N_1, N_2, B, H, D, r_b, include_last_borehole = True):
     include_last_borehole : bool
         True if each row of boreholes should have equal lengths. False, if the uneven rows have one borehole less
         so they are contained within the imaginary 'box' around the borefield
+    tilt : float, optional
+        Angle (in radians) from vertical of the axis of the borehole. The
+        orientation of the tilt is orthogonal to the origin coordinate.
+        Default is 0.
+    origin : tuple, optional
+        A coordinate indicating the origin of reference for orientation of
+        boreholes.
+        Default is the center of the rectangle.
 
     Returns
     -------
     boreField : list of Borehole objects
-        List of boreholes in the dense bore field.
+        List of boreholes in the rectangular bore field.
+
+    Notes
+    -----
+    Boreholes located at the origin will remain vertical.
 
     Examples
     --------
-    >>> boreField = gt.boreholes.dense_field(N_1=3, N_2=2, B=5., H=100., D=2.5, r_b=0.05, include_last_borehole=True)
+    >>> boreField = gt.boreholes.rectangle_field(N_1=3, N_2=2, B_1=5., B_2=5.,
+                                                 H=100., D=2.5, r_b=0.05, include_last_borehole=True)
 
     The bore field is constructed line by line. For N_1=3 and N_2=3, the bore
-    field layout is as follows::
+    field layout is as follows, if `include_last_borehole` is True::
 
-     6   7   8
-       3   4   5
-     0   1   2
+     6    7    8
+       3    4    5
+     0    1    2
+
+    and if `include_last_borehole` is False::
+
+     5    6    7
+       3    4
+     0    1    2
 
     """
-    borefield = []
-
-    # check for line
-    if N_1 == 1 or N_2 == 1:
-        return rectangle_field(N_1, N_2, B, B, H, D, r_b)
-
-    for j in range(N_2):  # y direction
-        for i in range(N_1):  # x direction
-            x = i * B + (B/2 if j % 2 == 1 else 0)
-            y = j * B*np.sqrt(3)/2
-            if include_last_borehole or (j % 2 == 0 or i != N_1 - 1):  # last borehole in the x direction on an oneven row
-                borefield.append(Borehole(H, D, r_b, x, y))
+    borefield = rectangle_field_triangular(N_1, N_2, B, np.sqrt(3)/2 * B, H, D, r_b, include_last_borehole, tilt=tilt, origin=origin)
 
     return borefield
 
