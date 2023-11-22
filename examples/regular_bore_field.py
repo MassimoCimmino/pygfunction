@@ -29,8 +29,11 @@ def main():
     # Rectangular field of 4 x 3 boreholes
     rectangular_field = gt.boreholes.rectangle_field(N_1, N_2, B, B, H, D, r_b)
 
-    # Dense field of 4 x 3 borehole rows
-    dense_field = gt.boreholes.dense_field(N_1, N_2, B, H, D, r_b, False)
+    # Rectangular field triangular field of 4 x 3 borehole rows
+    rectangular_field_triangular = gt.boreholes.rectangle_field_triangular(N_1, N_2, B, B, H, D, r_b, False)
+
+    # Dense field triangular field of 4 x 3 borehole rows
+    dense_field = gt.boreholes.dense_rectangle_field(N_1, N_2, B, H, D, r_b, False)
 
     # Box-shaped field of 4 x 3 boreholes
     box_field = gt.boreholes.box_shaped_field(N_1, N_2, B, B, H, D, r_b)
@@ -47,7 +50,7 @@ def main():
     # -------------------------------------------------------------------------
     # Draw bore fields
     # -------------------------------------------------------------------------
-    for field in [rectangular_field, dense_field, box_field, U_field, L_field, circle_field]:
+    for field in [rectangular_field, rectangular_field_triangular, dense_field, box_field, U_field, L_field, circle_field]:
         gt.boreholes.visualize_field(field)
         import matplotlib.pyplot as plt
         plt.show()
