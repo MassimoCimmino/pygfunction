@@ -93,6 +93,58 @@ def test_rectangular_field(N_1, N_2, B_1, B_2):
          len(field) == 1 or np.isclose(np.min(dis), min(B_1, B_2)),
          ])
 
+# Test test_triangular_field
+@pytest.mark.parametrize("N_1, N_2, B_1, B_2, include_last_element", [
+        (1, 1, 5., 5., True),     # 1 by 1
+        (2, 1, 5., 5., True),     # 2 by 1
+        (1, 2, 5., 5., True),     # 1 by 2
+        (2, 2, 5., 7.5, True),    # 2 by 2 (different x/y spacings)
+        (10, 9, 7.5, 5., True),   # 10 by 9 (different x/y spacings),
+        (1, 1, 5., 5., False),     # 1 by 1
+        (2, 1, 5., 5., False),     # 2 by 1
+        (1, 2, 5., 5., False),     # 1 by 2
+        (2, 2, 5., 7.5, False),    # 2 by 2 (different x/y spacings)
+        (10, 9, 7.5, 5., False),   # 10 by 9 (different x/y spacings)
+
+])
+def test_triangular_field(N_1, N_2, B_1, B_2, include_last_element):
+    H = 150.        # Borehole length [m]
+    D = 4.          # Borehole buried depth [m]
+    r_b = 0.075     # Borehole radius [m]
+    # Generate the bore field
+    field = gt.boreholes.rectangle_field_triangular(N_1, N_2, B_1, B_2, H, D, r_b, include_last_borehole=include_last_element)
+    # Evaluate the borehole to borehole distances
+    x = np.array([b.x for b in field])
+    y = np.array([b.y for b in field])
+    dis = np.sqrt(
+        np.subtract.outer(x, x)**2 + np.subtract.outer(y, y)**2)[
+            ~np.eye(len(field), dtype=bool)]
+
+    if include_last_element or N_1 == 1 or N_2 == 1:
+        assert len(field) == N_1 * N_2
+    elif N_2 % 2 == 0:
+        assert len(field) == N_2 * (2 * N_1 - 1) / 2
+    else:
+        assert len(field) == (N_2 - 1) * (2 * N_1 - 1) / 2 + N_1
+
+    assert np.all(
+        [np.allclose(H, [b.H for b in field]),
+         np.allclose(D, [b.D for b in field]),
+         np.allclose(r_b, [b.r_b for b in field]),
+         len(field) == 1 or np.min(dis) >= np.minimum(B_1, B_2)])
+
+    # check correct x and y-positions
+    def find_nearest(array, value):
+        array = np.asarray(array)
+        idx = (np.abs(array - value)).argmin()
+        return array[idx]
+
+    possible_x_coor = np.arange(0, N_1, 0.5) * B_1
+    possible_y_coor = np.arange(0, N_2, 1) * B_2
+    for borehole in field:
+        assert np.isclose(borehole.x, find_nearest(possible_x_coor, borehole.x))
+        assert np.isclose(borehole.y, find_nearest(possible_y_coor, borehole.y))
+
 
 # Test dense_field
 @pytest.mark.parametrize("N_1, N_2, B, include_last_element", [
@@ -116,9 +168,6 @@ def test_dense_field(N_1, N_2, B, include_last_element):
     r_b = 0.075     # Borehole radius [m]
     # Generate the bore field
     field = gt.boreholes.dense_rectangle_field(N_1, N_2, B, H, D, r_b, include_last_borehole=include_last_element)
-    gt.boreholes.visualize_field(field)
-    import matplotlib.pyplot as plt
-    plt.show()
     # Evaluate the borehole to borehole distances
     x = np.array([b.x for b in field])
     y = np.array([b.y for b in field])
@@ -138,6 +187,18 @@ def test_dense_field(N_1, N_2, B, include_last_element):
          np.allclose(D, [b.D for b in field]),
          np.allclose(r_b, [b.r_b for b in field]),
          len(field) == 1 or np.isclose(np.min(dis), B)])
+
+    # check correct x and y-positions
+    def find_nearest(array, value):
+        array = np.asarray(array)
+        idx = (np.abs(array - value)).argmin()
+        return array[idx]
+
+    possible_x_coor = np.arange(0, N_1, 0.5) * B
+    possible_y_coor = np.arange(0, N_2, 1) * B * (np.sqrt(3)/2 if N_1 > 1 else 1)
+    for borehole in field:
+        assert np.isclose(borehole.x, find_nearest(possible_x_coor, borehole.x))
+        assert np.isclose(borehole.y, find_nearest(possible_y_coor, borehole.y))
 
 
 # Test L_shaped_field
