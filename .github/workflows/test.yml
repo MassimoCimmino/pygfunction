@@ -5,10 +5,12 @@ on:
     branches:
       - master
       - maintenance/2.2.x
+      - create_dense_borefield
   pull_request:
     branches:
       - master
       - maintenance/2.2.x
+      - create_dense_borefield
     types: [opened, synchronize, reopened]
 
 jobs:
