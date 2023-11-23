@@ -116,6 +116,9 @@ def test_dense_field(N_1, N_2, B, include_last_element):
     r_b = 0.075     # Borehole radius [m]
     # Generate the bore field
     field = gt.boreholes.dense_rectangle_field(N_1, N_2, B, H, D, r_b, include_last_borehole=include_last_element)
+    gt.boreholes.visualize_field(field)
+    import matplotlib.pyplot as plt
+    plt.show()
     # Evaluate the borehole to borehole distances
     x = np.array([b.x for b in field])
     y = np.array([b.y for b in field])
