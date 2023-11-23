@@ -1,10 +1,122 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from scipy.integrate import quad, quad_vec
-from scipy.special import erfc, erf, roots_legendre
+from scipy.special import erfc, erf, j0, j1, y0, y1, roots_legendre
 
 from .boreholes import Borehole
 from .utilities import erfint, exp1, _erf_coeffs
+
+
+def cylindrical_heat_source(
+        time, alpha, r, r_b):
+    """
+    Evaluate the Cylindrical Heat Source (CHS) solution.
+
+    This function uses a numerical quadrature to evaluate the CHS solution, as
+    proposed by Carslaw and Jaeger [#CarslawJaeger1946]_. The CHS solution
+    is given by:
+
+        .. math::
+            G(r,t) =
+            \\frac{1}{\pi^2}
+            \\int_{0}^{\\infty}
+            \\frac{1}{s^2}
+            \\frac{e^{-Fo s^2} - 1}{J_1^2(s) + Y_1^2(s)}
+            [J_0(ps)Y_1(s) - J_1(s)Y_0(ps)]ds
+
+    Parameters
+    ----------
+    time : float
+        Value of time (in seconds) for which the FLS solution is evaluated.
+    alpha : float
+        Soil thermal diffusivity (in m2/s).
+    r : float
+        Radial distance from the borehole axis (in m).
+    r_b : float
+        Borehole radius (in m).
+
+    Returns
+    -------
+    G : float
+        Value of the CHS solution. The temperature at a distance r from
+        borehole is:
+
+        .. math:: \\Delta T(r,t) = T_g - \\frac{Q}{k_s H} G(r,t)
+
+    Examples
+    --------
+    >>> G = gt.heat_transfer.cylindrical_heat_source(4*168*3600., 1.0e-6, 0.1, 0.075)
+    G = 
+
+    References
+    ----------
+    .. [#CarslawJaeger1946] Carslaw, H.S., & Jaeger, J.C. (1946). The Laplace
+       transformation: Problems on the cylinder and sphere, in: OU Press (Ed.),
+       Conduction of heat in solids, Oxford University, Oxford, pp. 327-352.
+
+    """
+    # def _CHS(u, Fo, p):
+    #     # Function to integrate
+    #     CHS_integrand = ( 1. / (u**2 * np.pi**2) * (np.exp(-u**2 * Fo) - 1.0)
+    #         / (j1(u)**2 + y1(u)**2) * (j0(p * u) * y1(u) - j1(u) * y0(p * u)) )
+    #     return CHS_integrand
+    CHS_integrand = lambda u: ( 1. / (u**2 * np.pi**2) * (np.exp(-u**2 * Fo) - 1.0)
+        / (j1(u)**2 + y1(u)**2) * (j0(p * u) * y1(u) - j1(u) * y0(p * u)) )
+
+    # Fourier number
+    Fo = alpha * time / r_b**2
+    # Normalized distance from borehole axis
+    p = r / r_b
+    # Lower bound of integration
+    a = 0.
+    # Upper bound of integration
+    b = np.inf
+    # Evaluate integral using Gauss-Kronrod
+    G = quad_vec(
+        CHS_integrand, a, b)[0]
+    return G
+
+
+def infinite_line_source(
+        time, alpha, r):
+    """
+    Evaluate the Infinit Line Source (ILS) solution.
+
+    This function uses the exponential integral to evaluate the ILS solution.
+    The ILS solution is given by:
+
+        .. math::
+            I(r,t) = E_1(\\frac{r^2}{4 \\alpha t})
+
+    Parameters
+    ----------
+    time : float
+        Value of time (in seconds) for which the FLS solution is evaluated.
+    alpha : float
+        Soil thermal diffusivity (in m2/s).
+    r : float
+        Radial distance from the borehole axis (in m).
+    borehole : Borehole object
+        Borehole object of the borehole extracting heat.
+
+    Returns
+    -------
+    I : float
+        Value of the ILS solution. The temperature at a distance r from
+        borehole is:
+
+        .. math:: \\Delta T(r,t) = T_g - \\frac{Q}{4 \\pi k_s H} I(r,t)
+
+    Examples
+    --------
+    >>> b = gt.boreholes.Borehole(H=150., D=4., r_b=0.075, x=0., y=0.)
+    >>> G = gt.heat_transfer.infinite_line_source(4*168*3600., 1.0e-6, 0.1, b)
+    I = 
+
+    """
+    I = exp1(r**2 / (4 * alpha * time))
+
+    return I
 
 
 def finite_line_source(
