@@ -864,9 +864,10 @@ def dense_rectangle_field(N_1, N_2, B, H, D, r_b, include_last_borehole, tilt=0.
      0    1    2
 
     """
-    borefield = rectangle_field_triangular(N_1, N_2, B, np.sqrt(3)/2 * B, H, D, r_b, include_last_borehole, tilt=tilt, origin=origin)
-
-    return borefield
+    if N_1 == 1:
+        # line field
+        return rectangle_field(N_1, N_2, B, B, H, D, r_b, tilt, origin)
+    return rectangle_field_triangular(N_1, N_2, B, np.sqrt(3)/2 * B, H, D, r_b, include_last_borehole, tilt=tilt, origin=origin)
 
 
 def L_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
