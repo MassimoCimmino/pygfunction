@@ -11,7 +11,8 @@ from scipy.interpolate import interp1d as interp1d
 from .boreholes import Borehole, _EquivalentBorehole, find_duplicates
 from .heat_transfer import finite_line_source, finite_line_source_vectorized, \
     finite_line_source_equivalent_boreholes_vectorized, \
-    finite_line_source_inclined_vectorized
+    finite_line_source_inclined_vectorized, cylindrical_heat_source, \
+    infinite_line_source
 from .networks import Network, _EquivalentNetwork, network_thermal_resistance
 from .utilities import _initialize_figure, _format_axes
 from . import utilities
@@ -118,10 +119,17 @@ class gFunction(object):
             linear_threshold : float, optional
                 Threshold time (in seconds) under which the g-function is
                 linearized. The g-function value is then interpolated between 0
-                and its value at the threshold. If linear_threshold==None, the
-                g-function is linearized for times
-                `t < r_b**2 / (25 * self.alpha)`.
+                and its value at the threshold. If linear_threshold==None and
+                cylindrical_correction==False, the g-function is linearized for
+                times `t < r_b**2 / (25 * self.alpha)`. If
+                linear_threshold==None and cylindrical_correction==True, the
+                g-function is not linearized.
                 Default is None.
+            cylindrical_correction : bool, optional
+                Set to true to apply cylindrical correction to the g-function.
+                The thermal response factors at the borehole radius are then
+                corrected using the cylindrical heat source solution.
+                Default is False.
             disp : bool, optional
                 Set to true to print progression messages.
                 Default is False.
@@ -1424,10 +1432,17 @@ class _BaseSolver(object):
     linear_threshold : float, optional
         Threshold time (in seconds) under which the g-function is
         linearized. The g-function value is then interpolated between 0
-        and its value at the threshold. If linear_threshold==None, the
-        g-function is linearized for times
-        `t < r_b**2 / (25 * self.alpha)`.
+        and its value at the threshold. If linear_threshold==None and
+        cylindrical_correction==False, the g-function is linearized for
+        times `t < r_b**2 / (25 * self.alpha)`. If
+        linear_threshold==None and cylindrical_correction==True, the
+        g-function is not linearized.
         Default is None.
+    cylindrical_correction : bool, optional
+        Set to true to apply cylindrical correction to the g-function.
+        The thermal response factors at the borehole radius are then
+        corrected using the cylindrical heat source solution.
+        Default is False.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -1448,13 +1463,15 @@ class _BaseSolver(object):
     def __init__(self, boreholes, network, time, boundary_condition,
                  nSegments=8, segment_ratios=utilities.segment_ratios,
                  approximate_FLS=False, mQuad=11, nFLS=10,
-                 linear_threshold=None, disp=False, profiles=False,
-                 kind='linear', dtype=np.double, **other_options):
+                 linear_threshold=None, cylindrical_correction=False,
+                 disp=False, profiles=False, kind='linear', dtype=np.double,
+                 **other_options):
         self.boreholes = boreholes
         self.network = network
         # Convert time to a 1d array
         self.time = np.atleast_1d(time).flatten()
         self.linear_threshold = linear_threshold
+        self.cylindrical_correction = cylindrical_correction
         self.r_b_max = np.max([b.r_b for b in self.boreholes])
         self.boundary_condition = boundary_condition
         nBoreholes = len(self.boreholes)
@@ -1545,7 +1562,10 @@ class _BaseSolver(object):
         nt = len(self.time)
         # Evaluate threshold time for g-function linearization
         if self.linear_threshold is None:
-            time_threshold = self.r_b_max**2 / (25 * alpha)
+            if self.cylindrical_correction:
+                time_threshold = 0.
+            else:
+                time_threshold = self.r_b_max**2 / (25 * alpha)
         else:
             time_threshold = self.linear_threshold
         # Find the number of g-function values to be linearized
@@ -1944,10 +1964,17 @@ class _Detailed(_BaseSolver):
     linear_threshold : float, optional
         Threshold time (in seconds) under which the g-function is
         linearized. The g-function value is then interpolated between 0
-        and its value at the threshold. If linear_threshold==None, the
-        g-function is linearized for times
-        `t < r_b**2 / (25 * self.alpha)`.
+        and its value at the threshold. If linear_threshold==None and
+        cylindrical_correction==False, the g-function is linearized for
+        times `t < r_b**2 / (25 * self.alpha)`. If
+        linear_threshold==None and cylindrical_correction==True, the
+        g-function is not linearized.
         Default is None.
+    cylindrical_correction : bool, optional
+        Set to true to apply cylindrical correction to the g-function.
+        The thermal response factors at the borehole radius are then
+        corrected using the cylindrical heat source solution.
+        Default is False.
     disp : bool, optional
         Set to true to print progression messages.
         Default is False.
@@ -3680,11 +3707,14 @@ class _Equivalent(_BaseSolver):
             H1, D1, H2, D2, i_pair, j_pair, k_pair = \
                 self._map_axial_segment_pairs(i, i)
             # Evaluate FLS at all time steps
-            dis = self.boreholes[i].r_b
             H1 = H1.reshape(1, -1)
             H2 = H2.reshape(1, -1)
             D1 = D1.reshape(1, -1)
             D2 = D2.reshape(1, -1)
+            if self.cylindrical_correction:
+                dis = 0.0005 * self.boreholes[i].H
+            else:
+                dis = self.boreholes[i].r_b
             h = finite_line_source_vectorized(
                 time, alpha, dis, H1, D1, H2, D2,
                 approximation=self.approximate_FLS, N=self.nFLS)
@@ -3694,7 +3724,13 @@ class _Equivalent(_BaseSolver):
                 j_segment = self._i0Segments[i] + j_pair
                 h_ij[j_segment, i_segment, 1:] = \
                     h_ij[j_segment, i_segment, 1:] + h[0, k_pair, :]
-
+                if self.cylindrical_correction:
+                    r_b = self.boreholes[i].r_b
+                    ii_segment = j_segment[j_segment==i_segment]
+                    h_ils = infinite_line_source(time, alpha, dis)
+                    h_chs = cylindrical_heat_source(time, alpha, r_b, r_b)
+                    h_ij[ii_segment, ii_segment, 1:] = (
+                        h_ij[ii_segment, ii_segment, 1:] + 2 * pi * h_chs - 0.5 * h_ils)
         # Return 2d array if time is a scalar
         if np.isscalar(time):
             h_ij = h_ij[:,:,1]
