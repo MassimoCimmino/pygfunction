@@ -1078,7 +1078,6 @@ def circle_field(N, R, H, D, r_b, tilt=0., origin=None):
     for i in range(N):
         x = R * np.cos(2 * pi * i / N)
         y = R * np.sin(2 * pi * i / N)
-        orientation = np.arctan2(y - y0, x - x0)
         # The borehole is inclined only if it does not lie on the origin
         if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
             orientation = np.arctan2(y - y0, x - x0)
@@ -1089,6 +1088,70 @@ def circle_field(N, R, H, D, r_b, tilt=0., origin=None):
             borefield.append(Borehole(H, D, r_b, x, y))
 
     return borefield
+
+
+def filled_circle_field(N, B, H, D, r_b, tilt=0., origin=None):
+    """
+    Build a list of boreholes in a filled circular configuration, starting from the origin
+    and spiralling outside.
+
+    Parameters
+    ----------
+    N : int
+        Number of boreholes in the bore field.
+    B : float
+        Distance between consecutive circles of boreholes (in meters).
+    H : float
+        Borehole length (in meters).
+    D : float
+        Borehole buried depth (in meters).
+    r_b : float
+        Borehole radius (in meters).
+    tilt : float, optional
+        Angle (in radians) from vertical of the axis of the borehole. The
+        orientation of the tilt is towards the exterior of the bore field.
+        Default is 0.
+    origin : tuple
+        A coordinate indicating the origin of reference for orientation of
+        boreholes.
+        Default is the origin (0, 0).
+
+    Returns
+    -------
+    boreField : list of Borehole objects
+        List of boreholes in the filled circle shaped bore field.
+
+    Notes
+    -----
+    Boreholes located at the origin will remain vertical.
+    """
+
+    if origin is None:
+        # When no origin is supplied, compute the origin to be at the center of
+        # the rectangle
+        x0 = 0.
+        y0 = 0.
+    else:
+        x0, y0 = origin
+
+    field = [Borehole(H, D, r_b, 0, 0)]
+    a = 6  # number of boreholes in a circle, 6 for the inner circle
+    B2 = B  # radius of the borehole
+    counter = 0
+
+    for i in range(N - 1):
+        i = i + 1
+        counter = counter + 1
+        if counter > a:
+            a = a + 6
+            B2 = B2 + B
+            counter = 1
+        # The borehole is inclined only if it does not lie on the origin, which is always the case
+        x, y = B2 * np.sin(2 * np.pi * counter / a), B2 * np.cos(2 * np.pi * counter / a)
+        orientation = np.arctan2(y - y0, x - x0)
+        field.append(Borehole(H, D, r_b, x, y, tilt=tilt, orientation=orientation))
+
+    return field
 
 
 def field_from_file(filename):
