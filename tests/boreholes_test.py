@@ -217,3 +217,31 @@ def test_circle_field(N, R):
          len(field) == 1 or np.isclose(np.min(dis), B_min),
          len(field) == 1 or np.max(dis) <= (2 + 1e-6) * R,
          ])
+
+# Test circle_field
+@pytest.mark.parametrize("N, B", [
+        (1, 5.),    # 1 borehole
+        (2, 5.),    # 2 boreholes
+        (3, 7.5),   # 3 boreholes
+        (10, 9.),   # 10 boreholes
+    ])
+def test_filled_circle_field(N, B):
+    H = 150.        # Borehole length [m]
+    D = 4.          # Borehole buried depth [m]
+    r_b = 0.075     # Borehole radius [m]
+    # Generate the bore field
+    field = gt.boreholes.filled_circle_field(N, B, H, D, r_b)
+    # Evaluate the borehole to borehole distances
+    x = np.array([b.x for b in field])
+    y = np.array([b.y for b in field])
+    dis = np.sqrt(
+        np.subtract.outer(x, x)**2 + np.subtract.outer(y, y)**2)[
+            ~np.eye(len(field), dtype=bool)]
+
+    assert np.all(
+        [len(field) == N,
+         np.allclose(H, [b.H for b in field]),
+         np.allclose(D, [b.D for b in field]),
+         np.allclose(r_b, [b.r_b for b in field]),
+         len(field) == 1 or np.isclose(np.min(dis), B),
+         ])
