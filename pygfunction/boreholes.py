@@ -785,8 +785,12 @@ def staggered_rectangle_field(
     if origin is None:
         # When no origin is supplied, compute the origin to be at the center of
         # the rectangle
-        x0 = (N_1 - 1) / 2 * B_1
-        y0 = (N_2 - 1) / 2 * B_2
+        if include_last_borehole:
+            x0 = (N_1 - 1) / 2 * B_1
+            y0 = (N_2 - 1) / 2 * B_2
+        else:
+            x0 = (N_1 - 0.5) / 2 * B_1
+            y0 = (N_2 - 0.5) / 2 * B_2
     else:
         x0, y0 = origin
 
