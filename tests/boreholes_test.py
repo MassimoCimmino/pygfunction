@@ -134,7 +134,8 @@ def test_staggered_rectangular_field(N_1, N_2, B_1, B_2, include_last_element):
          np.allclose(H, [b.H for b in field]),
          np.allclose(D, [b.D for b in field]),
          np.allclose(r_b, [b.r_b for b in field]),
-         len(field) == 1 or np.isclose(np.min(dis), min(B_1, B_2)),
+         len(field) == 1 or np.isclose(
+             np.min(dis), min(B_1, np.sqrt(B_2**2 + 0.25 * B_1**2))),
          ])
 
 
