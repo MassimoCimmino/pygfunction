@@ -713,10 +713,12 @@ def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
     return borefield
 
 
-def rectangle_field_triangular(N_1, N_2, B_1, B_2, H, D, r_b, include_last_borehole, tilt=0., origin=None):
+def staggered_rectangle_field(
+        N_1, N_2, B_1, B_2, H, D, r_b, include_last_borehole, tilt=0.,
+        origin=None):
     """
-    Build a list of boreholes in a rectangular bore field configuration, with boreholes
-    placed in a triangular pattern.
+    Build a list of boreholes in a rectangular bore field configuration, with
+    boreholes placed in a staggered configuration.
 
     Parameters
     ----------
@@ -735,8 +737,9 @@ def rectangle_field_triangular(N_1, N_2, B_1, B_2, H, D, r_b, include_last_boreh
     r_b : float
         Borehole radius (in meters).
     include_last_borehole : bool
-        True if each row of boreholes should have equal lengths. False, if the uneven rows have one borehole less
-        so they are contained within the imaginary 'box' around the borefield
+        If True, then each row of boreholes has equal numbers of boreholes.
+        If False, then the staggered rows have one borehole less so they are
+        contained within the imaginary 'box' around the borefield.
     tilt : float, optional
         Angle (in radians) from vertical of the axis of the borehole. The
         orientation of the tilt is orthogonal to the origin coordinate.
@@ -805,10 +808,12 @@ def rectangle_field_triangular(N_1, N_2, B_1, B_2, H, D, r_b, include_last_boreh
     return borefield
 
 
-def dense_rectangle_field(N_1, N_2, B, H, D, r_b, include_last_borehole, tilt=0., origin=None):
+def dense_rectangle_field(
+        N_1, N_2, B, H, D, r_b, include_last_borehole, tilt=0., origin=None):
     """
-    Build a list of boreholes in a rectangular bore field configuration, with boreholes
-    placed in a hexagonal pattern.
+    Build a list of boreholes in a rectangular bore field configuration, with
+    boreholes placed in a staggered configuration with uniform spacing between
+    boreholes.
 
     Parameters
     ----------
@@ -816,7 +821,7 @@ def dense_rectangle_field(N_1, N_2, B, H, D, r_b, include_last_borehole, tilt=0.
         Number of borehole in the x direction.
     N_2 : int
         Number of borehole in the y direction.
-    B_1 : float
+    B : float
         Distance (in meters) between adjacent boreholes.
     H : float
         Borehole length (in meters).
@@ -825,8 +830,9 @@ def dense_rectangle_field(N_1, N_2, B, H, D, r_b, include_last_borehole, tilt=0.
     r_b : float
         Borehole radius (in meters).
     include_last_borehole : bool
-        True if each row of boreholes should have equal lengths. False, if the uneven rows have one borehole less
-        so they are contained within the imaginary 'box' around the borefield
+        If True, then each row of boreholes has equal numbers of boreholes.
+        If False, then the staggered rows have one borehole less so they are
+        contained within the imaginary 'box' around the borefield.
     tilt : float, optional
         Angle (in radians) from vertical of the axis of the borehole. The
         orientation of the tilt is orthogonal to the origin coordinate.
@@ -847,8 +853,9 @@ def dense_rectangle_field(N_1, N_2, B, H, D, r_b, include_last_borehole, tilt=0.
 
     Examples
     --------
-    >>> boreField = gt.boreholes.rectangle_field(N_1=3, N_2=2, B_1=5., B_2=5.,
-                                                 H=100., D=2.5, r_b=0.05, include_last_borehole=True)
+    >>> boreField = gt.boreholes.rectangle_field(
+            N_1=3, N_2=2, B_1=5., B_2=5., H=100., D=2.5, r_b=0.05,
+            include_last_borehole=True)
 
     The bore field is constructed line by line. For N_1=3 and N_2=3, the bore
     field layout is as follows, if `include_last_borehole` is True::
@@ -867,7 +874,9 @@ def dense_rectangle_field(N_1, N_2, B, H, D, r_b, include_last_borehole, tilt=0.
     if N_1 == 1:
         # line field
         return rectangle_field(N_1, N_2, B, B, H, D, r_b, tilt, origin)
-    return rectangle_field_triangular(N_1, N_2, B, np.sqrt(3)/2 * B, H, D, r_b, include_last_borehole, tilt=tilt, origin=origin)
+    return staggered_rectangle_field(
+        N_1, N_2, B, np.sqrt(3)/2 * B, H, D, r_b, include_last_borehole,
+        tilt=tilt, origin=origin)
 
 
 def L_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
