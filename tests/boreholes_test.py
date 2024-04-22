@@ -93,7 +93,7 @@ def test_rectangular_field(N_1, N_2, B_1, B_2):
          len(field) == 1 or np.isclose(np.min(dis), min(B_1, B_2)),
          ])
 
-# Test test_triangular_field
+# Test staggered_rectangle_field
 @pytest.mark.parametrize("N_1, N_2, B_1, B_2, include_last_element", [
         (1, 1, 5., 5., True),     # 1 by 1
         (2, 1, 5., 5., True),     # 2 by 1
@@ -107,12 +107,12 @@ def test_rectangular_field(N_1, N_2, B_1, B_2):
         (10, 9, 7.5, 5., False),   # 10 by 9 (different x/y spacings)
 
 ])
-def test_triangular_field(N_1, N_2, B_1, B_2, include_last_element):
+def test_staggered_rectangular_field(N_1, N_2, B_1, B_2, include_last_element):
     H = 150.        # Borehole length [m]
     D = 4.          # Borehole buried depth [m]
     r_b = 0.075     # Borehole radius [m]
     # Generate the bore field
-    field = gt.boreholes.rectangle_field_triangular(N_1, N_2, B_1, B_2, H, D, r_b, include_last_borehole=include_last_element)
+    field = gt.boreholes.staggered_rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b, include_last_borehole=include_last_element)
     # Evaluate the borehole to borehole distances
     x = np.array([b.x for b in field])
     y = np.array([b.y for b in field])
@@ -146,7 +146,7 @@ def test_triangular_field(N_1, N_2, B_1, B_2, include_last_element):
         assert np.isclose(borehole.y, find_nearest(possible_y_coor, borehole.y))
 
 
-# Test dense_field
+# Test dense_rectangle_field
 @pytest.mark.parametrize("N_1, N_2, B, include_last_element", [
         (1, 1, 5., True),     # 1 by 1
         (2, 1, 5., True),     # 2 by 1
@@ -162,7 +162,7 @@ def test_triangular_field(N_1, N_2, B_1, B_2, include_last_element):
         (10, 10, 7.5, False),  # 10 by 10
 
 ])
-def test_dense_field(N_1, N_2, B, include_last_element):
+def test_dense_rectangle_field(N_1, N_2, B, include_last_element):
     H = 150.        # Borehole length [m]
     D = 4.          # Borehole buried depth [m]
     r_b = 0.075     # Borehole radius [m]
