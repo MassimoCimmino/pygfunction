@@ -2,6 +2,8 @@
 """ Example of definition of a bore field using pre-defined configurations.
 
 """
+import matplotlib.pyplot as plt
+
 import pygfunction as gt
 
 
@@ -27,32 +29,35 @@ def main():
     # -------------------------------------------------------------------------
 
     # Rectangular field of 4 x 3 boreholes
-    rectangular_field = gt.boreholes.rectangle_field(N_1, N_2, B, B, H, D, r_b)
+    rectangularField = gt.boreholes.rectangle_field(N_1, N_2, B, B, H, D, r_b)
 
     # Rectangular field triangular field of 4 x 3 borehole rows
-    staggered_rectangular_field = gt.boreholes.staggered_rectangle_field(N_1, N_2, B, B, H, D, r_b, False)
+    staggeredRectangularField = gt.boreholes.staggered_rectangle_field(
+        N_1, N_2, B, B, H, D, r_b, False)
 
     # Dense field triangular field of 4 x 3 borehole rows
-    dense_rectangular_field = gt.boreholes.dense_rectangle_field(N_1, N_2, B, H, D, r_b, False)
+    denseRectangularField = gt.boreholes.dense_rectangle_field(
+        N_1, N_2, B, H, D, r_b, False)
 
     # Box-shaped field of 4 x 3 boreholes
-    box_field = gt.boreholes.box_shaped_field(N_1, N_2, B, B, H, D, r_b)
+    boxField = gt.boreholes.box_shaped_field(N_1, N_2, B, B, H, D, r_b)
 
     # U-shaped field of 4 x 3 boreholes
-    U_field = gt.boreholes.U_shaped_field(N_1, N_2, B, B, H, D, r_b)
+    UField = gt.boreholes.U_shaped_field(N_1, N_2, B, B, H, D, r_b)
 
     # L-shaped field of 4 x 3 boreholes
-    L_field = gt.boreholes.L_shaped_field(N_1, N_2, B, B, H, D, r_b)
+    LField = gt.boreholes.L_shaped_field(N_1, N_2, B, B, H, D, r_b)
 
     # Circular field of 8 boreholes
-    circle_field = gt.boreholes.circle_field(N_b, R, H, D, r_b)
+    circleField = gt.boreholes.circle_field(N_b, R, H, D, r_b)
 
     # -------------------------------------------------------------------------
     # Draw bore fields
     # -------------------------------------------------------------------------
-    for field in [rectangular_field, staggered_rectangular_field, dense_rectangular_field, box_field, U_field, L_field, circle_field]:
+    for field in [
+            rectangularField, staggeredRectangularField, denseRectangularField,
+            boxField, UField, LField, circleField]:
         gt.boreholes.visualize_field(field)
-        import matplotlib.pyplot as plt
         plt.show()
 
     return
