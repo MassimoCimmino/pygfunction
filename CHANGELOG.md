@@ -1,5 +1,11 @@
 # History of changes
 
+## Version 2.2.3 (in development)
+
+### Bug fixes
+
+* [Issue 274](https://github.com/MassimoCimmino/pygfunction/issues/274) - Fixed scalar assignment from ndim-1 array. It is deprecated as of `numpy` version `1.25`. Only ndim-0 arrays can be treated as scalars.
+
 ## Version 2.2.2 (2023-01-09)
 
 ### Enhancements
