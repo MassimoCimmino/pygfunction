@@ -2,6 +2,8 @@
 """ Example of definition of a bore field using pre-defined configurations.
 
 """
+import matplotlib.pyplot as plt
+
 import pygfunction as gt
 
 
@@ -29,6 +31,14 @@ def main():
     # Rectangular field of 4 x 3 boreholes
     rectangularField = gt.boreholes.rectangle_field(N_1, N_2, B, B, H, D, r_b)
 
+    # Rectangular field triangular field of 4 x 3 borehole rows
+    staggeredRectangularField = gt.boreholes.staggered_rectangle_field(
+        N_1, N_2, B, B, H, D, r_b, False)
+
+    # Dense field triangular field of 4 x 3 borehole rows
+    denseRectangularField = gt.boreholes.dense_rectangle_field(
+        N_1, N_2, B, H, D, r_b, False)
+
     # Box-shaped field of 4 x 3 boreholes
     boxField = gt.boreholes.box_shaped_field(N_1, N_2, B, B, H, D, r_b)
 
@@ -44,8 +54,11 @@ def main():
     # -------------------------------------------------------------------------
     # Draw bore fields
     # -------------------------------------------------------------------------
-    for field in [rectangularField, boxField, UField, LField, circleField]:
+    for field in [
+            rectangularField, staggeredRectangularField, denseRectangularField,
+            boxField, UField, LField, circleField]:
         gt.boreholes.visualize_field(field)
+        plt.show()
 
     return
 
