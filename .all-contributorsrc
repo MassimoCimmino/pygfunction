@@ -41,6 +41,28 @@
         "code",
         "ideas"
       ]
+    },
+    {
+      "login": "wouterpeere",
+      "name": "Wouter Peere",
+      "avatar_url": "https://avatars.githubusercontent.com/u/52632307?v=4",
+      "profile": "http://ghetool.eu",
+      "contributions": [
+        "code",
+        "ideas",
+        "bug"
+      ]
+    },
+    {
+      "login": "tblanke",
+      "name": "Tobias Blanke",
+      "avatar_url": "https://avatars.githubusercontent.com/u/86232208?v=4",
+      "profile": "https://github.com/tblanke",
+      "contributions": [
+        "code",
+        "ideas",
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,
@@ -56,5 +78,6 @@
       "link": "http://www.ibpsa.org/proceedings/eSimPapers/2018/2-3-A-4.pdf"
     }
   },
-  "commitConvention": "angular"
+  "commitConvention": "angular",
+  "commitType": "docs"
 }
