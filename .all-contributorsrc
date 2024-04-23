@@ -52,6 +52,17 @@
         "ideas",
         "bug"
       ]
+    },
+    {
+      "login": "tblanke",
+      "name": "Tobias Blanke",
+      "avatar_url": "https://avatars.githubusercontent.com/u/86232208?v=4",
+      "profile": "https://github.com/tblanke",
+      "contributions": [
+        "code",
+        "ideas",
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,
