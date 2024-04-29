@@ -2,6 +2,8 @@
 """ Example of definition of a bore field using pre-defined configurations.
 
 """
+import matplotlib.pyplot as plt
+
 import pygfunction as gt
 
 
@@ -29,6 +31,14 @@ def main():
     # Rectangular field of 4 x 3 boreholes
     rectangularField = gt.boreholes.rectangle_field(N_1, N_2, B, B, H, D, r_b)
 
+    # Rectangular field triangular field of 4 x 3 borehole rows
+    staggeredRectangularField = gt.boreholes.staggered_rectangle_field(
+        N_1, N_2, B, B, H, D, r_b, False)
+
+    # Dense field triangular field of 4 x 3 borehole rows
+    denseRectangularField = gt.boreholes.dense_rectangle_field(
+        N_1, N_2, B, H, D, r_b, False)
+
     # Box-shaped field of 4 x 3 boreholes
     boxField = gt.boreholes.box_shaped_field(N_1, N_2, B, B, H, D, r_b)
 
@@ -42,15 +52,17 @@ def main():
     circleField = gt.boreholes.circle_field(N_b, R, H, D, r_b)
 
     # Filled circle field of 20 boreholes
-    filled_circle_field = gt.boreholes.filled_circle_field(20, 10, 100, 1, 0.05)
+    filledCircleField = gt.boreholes.filled_circle_field(20, 10, 100, 1, 0.05)
 
     # -------------------------------------------------------------------------
     # Draw bore fields
     # -------------------------------------------------------------------------
-    for field in [rectangularField, boxField, UField, LField, circleField, filled_circle_field]:
+    for field in [
+            rectangularField, staggeredRectangularField, denseRectangularField,
+            boxField, UField, LField, circleField, filledCircleField]:
         gt.boreholes.visualize_field(field)
-        import matplotlib.pyplot as plt
         plt.show()
+
     return
 
 

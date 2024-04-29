@@ -94,6 +94,96 @@ def test_rectangular_field(N_1, N_2, B_1, B_2):
          ])
 
 
+# Test staggered_rectangle_field
+@pytest.mark.parametrize("N_1, N_2, B_1, B_2, include_last_element", [
+        (1, 1, 5., 5., True),     # 1 by 1
+        (2, 1, 5., 5., True),     # 2 by 1
+        (1, 2, 5., 5., True),     # 1 by 2
+        (2, 2, 5., 7.5, True),    # 2 by 2 (different x/y spacings)
+        (10, 9, 7.5, 5., True),   # 10 by 9 (different x/y spacings),
+        (1, 1, 5., 5., False),     # 1 by 1
+        (2, 1, 5., 5., False),     # 2 by 1
+        (1, 2, 5., 5., False),     # 1 by 2
+        (2, 2, 5., 7.5, False),    # 2 by 2 (different x/y spacings)
+        (10, 9, 7.5, 5., False),   # 10 by 9 (different x/y spacings)
+])
+def test_staggered_rectangular_field(N_1, N_2, B_1, B_2, include_last_element):
+    H = 150.        # Borehole length [m]
+    D = 4.          # Borehole buried depth [m]
+    r_b = 0.075     # Borehole radius [m]
+    # Generate the bore field
+    field = gt.boreholes.staggered_rectangle_field(
+        N_1, N_2, B_1, B_2, H, D, r_b,
+        include_last_borehole=include_last_element)
+    # Evaluate the borehole to borehole distances
+    x = np.array([b.x for b in field])
+    y = np.array([b.y for b in field])
+    dis = np.sqrt(
+        np.subtract.outer(x, x)**2 + np.subtract.outer(y, y)**2)[
+            ~np.eye(len(field), dtype=bool)]
+
+    if include_last_element or N_1 == 1 or N_2 == 1:
+        expected_nBoreholes = N_1 * N_2
+    elif N_2 % 2 == 0:
+        expected_nBoreholes = N_2 * (2 * N_1 - 1) / 2
+    else:
+        expected_nBoreholes = (N_2 - 1) * (2 * N_1 - 1) / 2 + N_1
+
+    assert np.all(
+        [len(field) == expected_nBoreholes,
+         np.allclose(H, [b.H for b in field]),
+         np.allclose(D, [b.D for b in field]),
+         np.allclose(r_b, [b.r_b for b in field]),
+         len(field) == 1 or np.isclose(
+             np.min(dis), min(B_1, np.sqrt(B_2**2 + 0.25 * B_1**2))),
+         ])
+
+
+# Test dense_rectangle_field
+@pytest.mark.parametrize("N_1, N_2, B, include_last_element", [
+        (1, 1, 5., True),     # 1 by 1
+        (2, 1, 5., True),     # 2 by 1
+        (1, 2, 5., True),     # 1 by 2
+        (2, 2, 5., True),     # 2 by 2
+        (10, 9, 7.5, True),   # 10 by 9
+        (10, 10, 7.5, True),   # 10 by 10
+        (1, 1, 5., False),     # 1 by 1
+        (2, 1, 5., False),     # 2 by 1
+        (1, 2, 5., False),     # 1 by 2
+        (2, 2, 5., False),     # 2 by 2
+        (10, 9, 7.5, False),   # 10 by 9
+        (10, 10, 7.5, False),  # 10 by 10
+])
+def test_dense_rectangle_field(N_1, N_2, B, include_last_element):
+    H = 150.        # Borehole length [m]
+    D = 4.          # Borehole buried depth [m]
+    r_b = 0.075     # Borehole radius [m]
+    # Generate the bore field
+    field = gt.boreholes.dense_rectangle_field(
+        N_1, N_2, B, H, D, r_b, include_last_borehole=include_last_element)
+    # Evaluate the borehole to borehole distances
+    x = np.array([b.x for b in field])
+    y = np.array([b.y for b in field])
+    dis = np.sqrt(
+        np.subtract.outer(x, x)**2 + np.subtract.outer(y, y)**2)[
+            ~np.eye(len(field), dtype=bool)]
+
+    if include_last_element or N_1 == 1 or N_2 == 1:
+        expected_nBoreholes = N_1 * N_2
+    elif N_2 % 2 == 0:
+        expected_nBoreholes = N_2 * (2 * N_1 - 1) / 2
+    else:
+        expected_nBoreholes = (N_2 - 1) * (2 * N_1 - 1) / 2 + N_1
+
+    assert np.all(
+        [len(field) == expected_nBoreholes,
+         np.allclose(H, [b.H for b in field]),
+         np.allclose(D, [b.D for b in field]),
+         np.allclose(r_b, [b.r_b for b in field]),
+         len(field) == 1 or np.isclose(np.min(dis), B)
+         ])
+
+
 # Test L_shaped_field
 @pytest.mark.parametrize("N_1, N_2, B_1, B_2", [
         (1, 1, 5., 5.),     # 1 by 1

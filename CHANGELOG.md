@@ -2,6 +2,14 @@
 
 ## Version 2.3 (in development)
 
+### New features
+
+* [Issue 276](https://github.com/MassimoCimmino/pygfunction/issues/276) - Added functions to the `boreholes` module for the generation of rectangular fields in a staggered configuration.
+
+### Bug fixes
+
+* [Issue 274](https://github.com/MassimoCimmino/pygfunction/issues/274) - Fixed scalar assignment from ndim-1 array. It is deprecated as of `numpy` version `1.25`. Only ndim-0 arrays can be treated as scalars.
+
 ## Version 2.2.2 (2023-01-09)
 
 ### Enhancements
