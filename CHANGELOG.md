@@ -9,6 +9,7 @@
 ### Bug fixes
 
 * [Issue 255](https://github.com/MassimoCimmino/pygfunction/issues/255) - Default to an `orientation` of `0.` when `tilt` is `0.` in `boreholes.Borehole` class.
+* [Issue 266](https://github.com/MassimoCimmino/pygfunction/issues/266) - Fixed an issue were `SingleUTube.get_temperature` returned incorrect results when the fluid-to-pipe wall resistance was small in coaxial configurations. New coefficients are introduced in `SingleUTube.coefficients_temperature` and `SingleUTube.coefficients_outlet_fluid_temperature`. This also solves issues encountered when the fluid mass flow rate is small.
 * [Issue 274](https://github.com/MassimoCimmino/pygfunction/issues/274) - Fixed scalar assignment from ndim-1 array. It is deprecated as of `numpy` version `1.25`. Only ndim-0 arrays can be treated as scalars.
 * [Issue 285](https://github.com/MassimoCimmino/pygfunction/issues/285) - Use `numpy.complex128` instead of `numpy.cfloat`. This is to comply with backward-incompatible changes introduced in `numpy` version `2.0`.
 * [Issue 286](https://github.com/MassimoCimmino/pygfunction/issues/286) - Fixed incorrect coefficients in `pipes.SingleUTube._continuity_condition_base` which caused errors in all dependent class methods when `segment_ratios` were not symmetric around the borehole mid-length.
