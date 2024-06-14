@@ -6,6 +6,8 @@ from scipy.spatial.distance import pdist
 
 from .utilities import _initialize_figure, _format_axes, _format_axes_3d
 
+from typing import List, Union
+
 
 class Borehole(object):
     """
@@ -241,6 +243,38 @@ class Borehole(object):
         z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1] \
             + segment_ratios * self.H / 2
         return z
+
+
+class Borefield(list):
+    def __init__(self, borehole_or_boreholes: Union[List[Borehole], Borehole] = None):
+        if type(borehole_or_boreholes) is list:
+            super().__init__(borehole_or_boreholes)
+        elif type(borehole_or_boreholes) is Borehole:
+            super().__init__([borehole_or_boreholes])
+        else:
+            super().__init__([])
+
+    def H(self):
+        return np.array([self.__getitem__(i).H for i, _ in enumerate(self)])
+
+    def D(self):
+        return np.array([self.__getitem__(i).D for i, _ in enumerate(self)])
+
+    def r_b(self):
+        return np.array([self.__getitem__(i).r_b for i, _ in enumerate(self)])
+
+    def x(self):
+        return np.array([self.__getitem__(i).x for i, _ in enumerate(self)])
+
+    def y(self):
+        return np.array([self.__getitem__(i).y for i, _ in enumerate(self)])
+
+    def tilt(self):
+        return np.array([self.__getitem__(i).tilt for i, _ in enumerate(self)])
+
+    def orientation(self):
+        return np.array([self.__getitem__(i).orientation
+                         for i, _ in enumerate(self)])
 
 
 class _EquivalentBorehole(object):
@@ -693,7 +727,7 @@ def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
      0   1   2
 
     """
-    borefield = []
+    borefield = Borefield()
 
     if origin is None:
         # When no origin is supplied, compute the origin to be at the center of
@@ -939,7 +973,7 @@ def L_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
      0   1   2
 
     """
-    borefield = []
+    borefield = Borefield()
 
     if origin is None:
         # When no origin is supplied, compute the origin to be at the center of
@@ -1026,7 +1060,7 @@ def U_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
      0   1   2
 
     """
-    borefield = []
+    borefield = Borefield()
 
     if origin is None:
         # When no origin is supplied, compute the origin to be at the center of
@@ -1129,7 +1163,7 @@ def box_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0, origin=None):
      0   1   2   3
 
     """
-    borefield = []
+    borefield = Borefield()
 
     if origin is None:
         # When no origin is supplied, compute the origin to be at the center of
@@ -1240,7 +1274,7 @@ def circle_field(N, R, H, D, r_b, tilt=0., origin=None):
            6
 
     """
-    borefield = []
+    borefield = Borefield()
 
     if origin is None:
         # When no origin is supplied, compute the origin to be at the center of
@@ -1296,7 +1330,7 @@ def field_from_file(filename):
     # Load data from file
     data = np.loadtxt(filename, ndmin=2)
     # Build the bore field
-    borefield = []
+    borefield = Borefield()
     for line in data:
         x = line[0]
         y = line[1]
