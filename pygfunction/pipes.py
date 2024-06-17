@@ -2259,7 +2259,7 @@ class Coaxial(SingleUTube):
         # Outer pipe to borehole wall thermal resistance
         R_fg = thermal_resistances(
             self.pos, self.r_out[self._iOuter], self.b.r_b, self.k_s, self.k_g,
-            R_fp, J=self.J)[1][0,0]
+            R_fp, J=self.J)[1][0]
         # Delta-circuit thermal resistances
         self._Rd = np.zeros((2*self.nPipes, 2*self.nPipes))
         self._Rd[self._iInner, self._iInner] = np.inf
@@ -3056,7 +3056,7 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
     # Multipoles (EQ. 38)
     # -------------------
     if J > 0:
-        P = np.zeros((n_p, J), dtype=np.cfloat)
+        P = np.zeros((n_p, J), dtype=np.complex128)
         coeff = -np.array([[(1 - (k+1)*beta_m)/(1 + (k+1)*beta_m)
                            for k in range(J)] for beta_m in beta_p])
         while eps_max > eps and it < it_max:
@@ -3161,7 +3161,7 @@ def _F_mk(q_p, P, n_p, J, r_b, r_out, z, pikg, sigma):
         Matrix F_mk from Claesson and Hellstrom (2011), EQ. 34.
 
     """
-    F = np.zeros((n_p, J), dtype=np.cfloat)
+    F = np.zeros((n_p, J), dtype=np.complex128)
     dz = np.add.outer(z, -z) + np.eye(n_p)
     zz = np.multiply.outer(z, np.conj(z))
     for k in range(J):
