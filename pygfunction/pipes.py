@@ -2259,7 +2259,7 @@ class Coaxial(SingleUTube):
         # Outer pipe to borehole wall thermal resistance
         R_fg = thermal_resistances(
             self.pos, self.r_out[self._iOuter], self.b.r_b, self.k_s, self.k_g,
-            R_fp, J=self.J)[1][0]
+            R_fp, J=self.J)[1][0,0]
         # Delta-circuit thermal resistances
         self._Rd = np.zeros((2*self.nPipes, 2*self.nPipes))
         self._Rd[self._iInner, self._iInner] = np.inf
