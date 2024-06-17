@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - maintenance/2.2.x
+      - numpy2.0
   pull_request:
     branches:
       - master
