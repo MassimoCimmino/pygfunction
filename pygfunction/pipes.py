@@ -1101,10 +1101,10 @@ class SingleUTube(_BasePipe):
 
         a_b = np.zeros((self.nOutlets, nSegments))
 
-        z = self.b._segment_edges(nSegments, segment_ratios=segment_ratios)[::-1]
-        F4 = self._F4(z)
+        z = self.b._segment_edges(nSegments, segment_ratios=segment_ratios)
+        F4 = self._F4(self.b.H - z)
         dF4 = F4[:-1] - F4[1:]
-        F5 = self._F5(z)
+        F5 = self._F5(self.b.H - z)
         dF5 = F5[:-1] - F5[1:]
         a_b[0, :] = (dF4 + dF5) / (self._f3(self.b.H) - self._f2(self.b.H))
 
