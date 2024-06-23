@@ -152,10 +152,10 @@ def test_multipole(J, expected):
     # Single U-tube
     ('single_Utube', None, 1., 65., np.array([4.34676755, 3.07354134])),
     ('single_Utube', None, np.array([1., 2., 3., 1.]), 65., np.array([4.41754093, 3.49949295])),
-    ('single_Utube', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 65., np.array([4.47310416, 3.66490249])),
+    ('single_Utube', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 65., np.array([4.47282344, 3.70132653])),
     ('single_Utube', None, 1., np.array([65., 75.]), np.array([[4.34676755, 3.07354134], [4.25566624, 3.13435325]])),
     ('single_Utube', None, np.array([1., 2., 3., 1.]), np.array([65., 75.]), np.array([[4.41754093, 3.49949295], [4.35173147, 3.54346564]])),
-    ('single_Utube', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), np.array([65., 75.]), np.array([[4.47310416, 3.66490249], [4.42647994, 3.69214797]])),
+    ('single_Utube', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), np.array([65., 75.]), np.array([[4.47282344, 3.70132653], [4.4261555, 3.72955733]])),
     # Double U-tube (Parallel)
     ('double_Utube_parallel', None, 1., 65., np.array([3.87525104, 3.87525104, 2.20313908, 2.20313908])),
     ('double_Utube_parallel', None, np.array([1., 2., 3., 1.]), 65., np.array([4.00464852, 4.00464852, 2.84788608, 2.84788608])),
@@ -173,17 +173,17 @@ def test_multipole(J, expected):
     # Coaxial (Annular pipe is inlet pipe)
     ('coaxial_annular_in', None, 1., 65., np.array([3.15203088, 2.18408362])),
     ('coaxial_annular_in', None, np.array([1., 2., 3., 1.]), 65., np.array([3.4176666 , 2.73205968])),
-    ('coaxial_annular_in', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 65., np.array([3.57428289, 3.01759194])),
+    ('coaxial_annular_in', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 65., np.array([3.57440691, 3.0183749])),
     ('coaxial_annular_in', None, 1., np.array([65., 75.]), np.array([[3.15203088, 2.18408362], [2.96401382, 2.15051705]])),
     ('coaxial_annular_in', None, np.array([1., 2., 3., 1.]), np.array([65., 75.]), np.array([[3.4176666, 2.73205968], [3.2920645, 2.7081367]])),
-    ('coaxial_annular_in', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), np.array([65., 75.]), np.array([[3.57428289, 3.01759194], [3.4962546, 2.99796987]])),
+    ('coaxial_annular_in', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), np.array([65., 75.]), np.array([[3.57440691, 3.0183749], [3.49639377, 2.99877788]])),
     # Coaxial (Annular pipe is outlet pipe)
     ('coaxial_annular_out', None, 1., 65., np.array([4.50649998, 2.92933532])),
     ('coaxial_annular_out', None, np.array([1., 2., 3., 1.]), 65., np.array([4.62416027, 3.50307539])),
-    ('coaxial_annular_out', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 65., np.array([4.64884211, 3.58227143])),
+    ('coaxial_annular_out', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 65., np.array([4.67083279, 3.72110166])),
     ('coaxial_annular_out', None, 1., np.array([65., 75.]), np.array([[4.50649998, 2.92933532], [4.44976224, 3.02086677]])),
     ('coaxial_annular_out', None, np.array([1., 2., 3., 1.]), np.array([65., 75.]), np.array([[4.62416027, 3.50307539], [4.58402116, 3.57860389]])),
-    ('coaxial_annular_out', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), np.array([65., 75.]), np.array([[4.64884211, 3.58227143], [4.61006377, 3.60745651]])),
+    ('coaxial_annular_out', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), np.array([65., 75.]), np.array([[4.67083279, 3.72110166], [4.63666726, 3.76190344]])),
     ])
 def test_temperature(
         pipe_fixture, segment_ratios, T_b, z, expected, request):
@@ -205,7 +205,7 @@ def test_temperature(
     # Single U-tube
     ('single_Utube', None, 1., 2.712371852688313),
     ('single_Utube', None, np.array([1., 2., 3., 1.]), 3.1377635748663573),
-    ('single_Utube', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 3.335501080169065),
+    ('single_Utube', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 3.3661222931515784),
     # Double U-tube (Parallel)
     ('double_Utube_parallel', None, 1., 1.8553031331306218),
     ('double_Utube_parallel', None, np.array([1., 2., 3., 1.]), 2.4278457017624655),
@@ -217,11 +217,11 @@ def test_temperature(
     # Coaxial (Annular pipe is inlet pipe)
     ('coaxial_annular_in', None, 1., 2.581130521333567),
     ('coaxial_annular_in', None, np.array([1., 2., 3., 1.]), 3.0276625795763357),
-    ('coaxial_annular_in', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 3.2733787998105672),
+    ('coaxial_annular_in', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 3.2740053393585953),
     # Coaxial (Annular pipe is outlet pipe)
     ('coaxial_annular_out', None, 1., 2.5811305213335674),
     ('coaxial_annular_out', None, np.array([1., 2., 3., 1.]), 2.981638747649938),
-    ('coaxial_annular_out', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 3.148206616090016),
+    ('coaxial_annular_out', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 3.216388652724723),
     ])
 def test_outlet_temperature(
         pipe_fixture, segment_ratios, T_b, expected, request):
@@ -242,7 +242,7 @@ def test_outlet_temperature(
     # Single U-tube
     ('single_Utube', None, 1., 7.595314034714041),
     ('single_Utube', None, np.array([1., 2., 3., 1.]), 8.33912674339739),
-    ('single_Utube', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 8.68487787525871),
+    ('single_Utube', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 8.73842016624424),
     # Double U-tube (Parallel)
     ('double_Utube_parallel', None, 1., 5.7977998086638305),
     ('double_Utube_parallel', None, np.array([1., 2., 3., 1.]), 6.526064048901171),
@@ -254,11 +254,11 @@ def test_outlet_temperature(
     # Coaxial (Annular pipe is inlet pipe)
     ('coaxial_annular_in', None, 1., 7.237470090568812),
     ('coaxial_annular_in', None, np.array([1., 2., 3., 1.]), 7.97588456424095),
-    ('coaxial_annular_in', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 8.382216898252953),
+    ('coaxial_annular_in', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 8.383252984827369),
     # Coaxial (Annular pipe is outlet pipe)
     ('coaxial_annular_out', None, 1., 7.237470090568813),
     ('coaxial_annular_out', None, np.array([1., 2., 3., 1.]), 7.899776560345228),
-    ('coaxial_annular_out', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 8.175224028526785),
+    ('coaxial_annular_out', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 8.287974281876208),
     ])
 def test_inlet_temperature(pipe_fixture, segment_ratios, T_b, expected, request):
     # Extract pipe from fixture
@@ -278,7 +278,7 @@ def test_inlet_temperature(pipe_fixture, segment_ratios, T_b, expected, request)
     # Single U-tube
     ('single_Utube', None, 1., -1819.4736348927008),
     ('single_Utube', None, np.array([1., 2., 3., 1.]), np.array([-507.98022943, -330.29924271, -155.92399643, -486.93326314])),
-    ('single_Utube', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), np.array([-211.44166366, -492.72964222, -279.36944922, -303.45149861])),
+    ('single_Utube', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), np.array([-212.48822505, -496.72428991, -284.6464931, -305.65175979])),
     # Double U-tube (Parallel)
     ('double_Utube_parallel', None, 1., -2501.14645849),
     ('double_Utube_parallel', None, np.array([1., 2., 3., 1.]), np.array([-796.48662356, -444.22614316, -108.02227066, -697.03753979])),
@@ -290,11 +290,11 @@ def test_inlet_temperature(pipe_fixture, segment_ratios, T_b, expected, request)
     # Coaxial (Annular pipe is inlet pipe)
     ('coaxial_annular_in', None, 1., -1923.85692048),
     ('coaxial_annular_in', None, np.array([1., 2., 3., 1.]), np.array([-757.51176437, -346.76503548, -48.92829119, -415.50088061])),
-    ('coaxial_annular_in', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), np.array([-335.11374414, -618.64814833, -139.77685268, -279.11910948])),
+    ('coaxial_annular_in', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), np.array([-335.1152758, -618.6742642, -139.8377907, -279.14900216])),
     # Coaxial (Annular pipe is outlet pipe)
     ('coaxial_annular_out', None, 1., -1923.85692048),
     ('coaxial_annular_out', None, np.array([1., 2., 3., 1.]), np.array([-480.81667849, -324.83211948, -133.10520419, -666.55719699])),
-    ('coaxial_annular_out', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), np.array([-199.09314899, -449.21544246, -227.76223639, -389.6723144])),
+    ('coaxial_annular_out', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), np.array([-205.74675004, -483.36307319, -299.14468223, -430.34747541])),
     ])
 def test_borehole_heat_extraction_rate(
         pipe_fixture, segment_ratios, T_b, expected, request):
@@ -315,7 +315,7 @@ def test_borehole_heat_extraction_rate(
     # Single U-tube
     ('single_Utube', None, 1., -1819.4736348927008),
     ('single_Utube', None, np.array([1., 2., 3., 1.]), -1481.1367317058312),
-    ('single_Utube', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), -1323.8654645418355),
+    ('single_Utube', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), -1299.5107678418537),
     # Double U-tube (Parallel)
     ('double_Utube_parallel', None, 1., -2501.14645849),
     ('double_Utube_parallel', None, np.array([1., 2., 3., 1.]), -2045.7725771641726),
@@ -327,11 +327,11 @@ def test_borehole_heat_extraction_rate(
     # Coaxial (Annular pipe is inlet pipe)
     ('coaxial_annular_in', None, 1., -1923.85692048),
     ('coaxial_annular_in', None, np.array([1., 2., 3., 1.]), -1568.705971637178),
-    ('coaxial_annular_in', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), -1373.2746534366859),
+    ('coaxial_annular_in', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), -1372.776332855085),
     # Coaxial (Annular pipe is outlet pipe)
     ('coaxial_annular_out', None, 1., -1923.85692048),
     ('coaxial_annular_out', None, np.array([1., 2., 3., 1.]), -1605.3111991367698),
-    ('coaxial_annular_out', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), -1472.830819664631),
+    ('coaxial_annular_out', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), -1418.6019808667165),
     ])
 def test_fluid_heat_extraction_rate(
         pipe_fixture, segment_ratios, T_b, expected, request):
@@ -352,7 +352,7 @@ def test_fluid_heat_extraction_rate(
     # Single U-tube
     ('single_Utube', None, 1., -1819.4736348927008),
     ('single_Utube', None, np.array([1., 2., 3., 1.]), -1481.1367317058312),
-    ('single_Utube', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), -1323.8654645418355),
+    ('single_Utube', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), -1299.5107678418537),
     # Double U-tube (Parallel)
     ('double_Utube_parallel', None, 1., -2501.14645849),
     ('double_Utube_parallel', None, np.array([1., 2., 3., 1.]), -2045.7725771641726),
@@ -364,11 +364,11 @@ def test_fluid_heat_extraction_rate(
     # Coaxial (Annular pipe is inlet pipe)
     ('coaxial_annular_in', None, 1., -1923.85692048),
     ('coaxial_annular_in', None, np.array([1., 2., 3., 1.]), -1568.705971637178),
-    ('coaxial_annular_in', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), -1373.2746534366859),
+    ('coaxial_annular_in', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), -1372.776332855085),
     # Coaxial (Annular pipe is outlet pipe)
     ('coaxial_annular_out', None, 1., -1923.85692048),
     ('coaxial_annular_out', None, np.array([1., 2., 3., 1.]), -1605.3111991367698),
-    ('coaxial_annular_out', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), -1472.830819664631),
+    ('coaxial_annular_out', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), -1418.6019808667165),
     ])
 def test_total_heat_extraction_rate(
         pipe_fixture, segment_ratios, T_b, expected, request):
