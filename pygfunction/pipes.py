@@ -1027,6 +1027,91 @@ class SingleUTube(_BasePipe):
         self.update_thermal_resistances(self.R_fp)
         return
 
+    def coefficients_outlet_temperature(
+            self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
+        """
+        Build coefficient matrices to evaluate outlet fluid temperature.
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                \\mathbf{T_{f,out}} = \\mathbf{a_{in}} \\mathbf{T_{f,in}}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
+
+        Parameters
+        ----------
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rates (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+        nSegments : int
+            Number of borehole segments.
+        segment_ratios : (nSegments,) array, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments of
+            equal lengths are considered.
+            Default is None.
+
+        Returns
+        -------
+        a_in : (nOutlets, nInlets,) array
+            Array of coefficients for inlet fluid temperature.
+        a_b : (nOutlets, nSegments,) array
+            Array of coefficients for borehole wall temperatures.
+
+        """
+        # method_id for coefficients_outlet_temperature is 4
+        method_id = 4
+        # Check if stored coefficients are available
+        if self._check_coefficients(
+                m_flow_borehole, cp_f, nSegments, segment_ratios, method_id):
+            a_in, a_b = self._get_stored_coefficients(method_id)
+        else:
+            # Check if model variables need to be updated
+            self._check_model_variables(
+                m_flow_borehole, cp_f, nSegments, segment_ratios)
+
+            # Load pipe thermal parameters
+            delta = self._delta
+            gamma = self._gamma
+            beta1 = self._beta1
+            beta2 = self._beta2
+            beta = self._beta
+            beta12 = self._beta12
+            # Other parameters
+            z_u = self.b._segment_edges(
+                nSegments, segment_ratios=segment_ratios)
+            H = self.b.H
+            # Intermediate thermal parameters
+            A = 1 - 0.5 * (beta1 + beta2) / gamma
+            B = 1 + 0.5 * (beta1 + beta2) / gamma
+            C = 1 / (B + A * np.exp(-2 * gamma * H))
+            A4 = ((beta1 - delta * beta1 - beta2 * beta12 / gamma)
+                  / (beta + gamma))
+            B4 = ((beta1 + delta * beta1 + beta2 * beta12 / gamma)
+                  / (beta - gamma))
+            A5 = ((beta2 + delta * beta2 + beta1 * beta12 / gamma)
+                  / (beta + gamma))
+            B5 = ((beta2 - delta * beta2 - beta1 * beta12 / gamma)
+                  / (beta - gamma))
+            # Coefficient [a_in] for inlet temperature
+            a_in = (A + B * np.exp(-2*gamma*H)) / (B + A * np.exp(-2*gamma*H))
+            a_in = np.atleast_2d(a_in)
+            # Coefficient [a_b] for inlet temperature
+            a_b = C * (
+                (A4 + A5) * np.exp(-z_u * (beta + gamma))
+                + (B4 + B5) * np.exp(-z_u * (beta - gamma) - 2 * gamma * H)
+                )
+            a_b = -np.diff(a_b[np.newaxis, :], axis=1)
+
+            # Store coefficients
+            self._set_stored_coefficients(
+                m_flow_borehole, cp_f, nSegments, segment_ratios, (a_in, a_b),
+                method_id)
+
+        return a_in, a_b
+
     def coefficients_temperature(
             self, z, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
         """
