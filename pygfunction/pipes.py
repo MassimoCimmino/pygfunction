@@ -1073,12 +1073,10 @@ class SingleUTube(_BasePipe):
                 m_flow_borehole, cp_f, nSegments, segment_ratios)
 
             # Load pipe thermal parameters
-            delta = self._delta
             gamma = self._gamma
             beta1 = self._beta1
             beta2 = self._beta2
             beta = self._beta
-            beta12 = self._beta12
             # Other parameters
             z_u = self.b._segment_edges(
                 nSegments, segment_ratios=segment_ratios)
@@ -1087,21 +1085,13 @@ class SingleUTube(_BasePipe):
             A = 1 - 0.5 * (beta1 + beta2) / gamma
             B = 1 + 0.5 * (beta1 + beta2) / gamma
             C = 1 / (B + A * np.exp(-2 * gamma * H))
-            A4 = ((beta1 - delta * beta1 - beta2 * beta12 / gamma)
-                  / (beta + gamma))
-            B4 = ((beta1 + delta * beta1 + beta2 * beta12 / gamma)
-                  / (beta - gamma))
-            A5 = ((beta2 + delta * beta2 + beta1 * beta12 / gamma)
-                  / (beta + gamma))
-            B5 = ((beta2 - delta * beta2 - beta1 * beta12 / gamma)
-                  / (beta - gamma))
             # Coefficient [a_in] for inlet temperature
             a_in = (A + B * np.exp(-2*gamma*H)) / (B + A * np.exp(-2*gamma*H))
             a_in = np.atleast_2d(a_in)
             # Coefficient [a_b] for inlet temperature
-            a_b = C * (
-                (A4 + A5) * np.exp(-z_u * (beta + gamma))
-                + (B4 + B5) * np.exp(-z_u * (beta - gamma) - 2 * gamma * H)
+            a_b = (beta1 + beta2) / gamma * C * (
+                np.exp(-z_u * (beta + gamma))
+                - np.exp(-z_u * (beta - gamma) - 2 * gamma * H)
                 )
             a_b = -np.diff(a_b[np.newaxis, :], axis=1)
 
@@ -1193,7 +1183,7 @@ class SingleUTube(_BasePipe):
             + a_in_11 * np.exp((beta - gamma) * z)
             )
 
-        # Coefficient [a_in] for inlet temperature
+        # Coefficient [a_b] for inlet temperature
         a_b = np.zeros((nz, 2, nSegments + 1))
         # Intermediate thermal parameters
         A4 = (beta1 - delta * beta1 - beta2 * beta12 / gamma) / (beta + gamma)
@@ -1214,8 +1204,9 @@ class SingleUTube(_BasePipe):
         a_b_01 = -A4 * A
         a_b_02 = -B4 * B
         a_b_03 = -B4 * A
-        a_b_04 = beta12 / gamma * (A4 + A5)
-        a_b_05 = beta12 / gamma * (B4 + B5)
+        a_b_04 = beta12 / gamma * (beta1 + beta2) / gamma
+        a_b_05 = -beta12 / gamma * (beta1 + beta2) / gamma
+        # Coefficients for z < z_u
         a_b[:, 0, :][index] = 0.5 * (
             a_b_01 * np.exp((beta + gamma) * dz_p - 2 * gamma * H)
             + a_b_02 * np.exp((beta - gamma) * dz_p)
@@ -1225,6 +1216,7 @@ class SingleUTube(_BasePipe):
                 (beta + gamma) * z_p - (beta - gamma) * z_u_p - 2 * gamma * H)
             + a_b_05 * np.exp((beta - gamma) * dz_p - 2 * gamma * H)
             )
+        # Coefficients for z > z_u
         a_b[:, 0, :][~index] = 0.5 * (
             a_b_00 - a_b_04 * np.exp((beta + gamma) * dz_m)
             + a_b_01 * np.exp(-2 * gamma * H)
@@ -1240,28 +1232,28 @@ class SingleUTube(_BasePipe):
         a_b_11 = A5 * A
         a_b_12 = B5 * B
         a_b_13 = B5 * A
-        a_b_14 = -(delta + 1) * (A4 + A5)
-        a_b_15 = (delta - 1) * (A4 + A5)
-        a_b_16 = -(delta + 1) * (B4 + B5)
-        a_b_17 = (delta - 1) * (B4 + B5)
+        a_b_14 = (delta + 1) * (beta1 + beta2) / gamma
+        a_b_15 = (delta - 1) * (beta1 + beta2) / gamma
+        # Coefficients for z < z_u
         a_b[:, 1, :][index] = 0.5 * (
             a_b_11 * np.exp((beta + gamma) * dz_p - 2 * gamma * H)
             + a_b_12 * np.exp((beta - gamma) * dz_p)
             + a_b_13 * np.exp((beta - gamma) * dz_p - 2 * gamma * H)
             + a_b_15 * np.exp((beta - gamma) * z_p - (beta + gamma) * z_u_p)
-            + a_b_16 * np.exp(
+            + a_b_14 * np.exp(
                 (beta + gamma) * z_p - (beta - gamma) * z_u_p - 2 * gamma * H)
-            + a_b_17 * np.exp((beta - gamma) * dz_p - 2 * gamma * H)
+            - a_b_15 * np.exp((beta - gamma) * dz_p - 2 * gamma * H)
             )
+        # Coefficients for z > z_u
         a_b[:, 1, :][~index] = 0.5 * (
-            a_b_10 + a_b_14 * np.exp((beta + gamma) * dz_m)
+            a_b_10 - a_b_14 * np.exp((beta + gamma) * dz_m)
             + a_b_11 * np.exp(-2 * gamma * H)
             + a_b_12
             + a_b_13 * np.exp(-2 * gamma * H)
             + a_b_15 * np.exp((beta - gamma) * z_m - (beta + gamma) * z_u_m)
-            + a_b_16 * np.exp(
+            + a_b_14 * np.exp(
                 (beta + gamma) * z_m - (beta - gamma) * z_u_m - 2 * gamma * H)
-            + a_b_17 * np.exp((beta - gamma) * dz_m - 2 * gamma * H)
+            - a_b_15 * np.exp((beta - gamma) * dz_m - 2 * gamma * H)
             )
         # Final coefficient
         a_b = C * np.diff(a_b, axis=2)
