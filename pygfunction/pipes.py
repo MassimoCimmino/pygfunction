@@ -1027,6 +1027,239 @@ class SingleUTube(_BasePipe):
         self.update_thermal_resistances(self.R_fp)
         return
 
+    def coefficients_outlet_temperature(
+            self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
+        """
+        Build coefficient matrices to evaluate outlet fluid temperature.
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                \\mathbf{T_{f,out}} = \\mathbf{a_{in}} \\mathbf{T_{f,in}}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
+
+        Parameters
+        ----------
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rates (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+        nSegments : int
+            Number of borehole segments.
+        segment_ratios : (nSegments,) array, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments of
+            equal lengths are considered.
+            Default is None.
+
+        Returns
+        -------
+        a_in : (nOutlets, nInlets,) array
+            Array of coefficients for inlet fluid temperature.
+        a_b : (nOutlets, nSegments,) array
+            Array of coefficients for borehole wall temperatures.
+
+        """
+        # method_id for coefficients_outlet_temperature is 4
+        method_id = 4
+        # Check if stored coefficients are available
+        if self._check_coefficients(
+                m_flow_borehole, cp_f, nSegments, segment_ratios, method_id):
+            a_in, a_b = self._get_stored_coefficients(method_id)
+        else:
+            # Check if model variables need to be updated
+            self._check_model_variables(
+                m_flow_borehole, cp_f, nSegments, segment_ratios)
+
+            # Load pipe thermal parameters
+            gamma = self._gamma
+            beta1 = self._beta1
+            beta2 = self._beta2
+            beta = self._beta
+            # Other parameters
+            z_u = self.b._segment_edges(
+                nSegments, segment_ratios=segment_ratios)
+            H = self.b.H
+            # Intermediate thermal parameters
+            A = 1 - 0.5 * (beta1 + beta2) / gamma
+            B = 1 + 0.5 * (beta1 + beta2) / gamma
+            C = 1 / (B + A * np.exp(-2 * gamma * H))
+            # Coefficient [a_in] for inlet temperature
+            a_in = (A + B * np.exp(-2*gamma*H)) / (B + A * np.exp(-2*gamma*H))
+            a_in = np.atleast_2d(a_in)
+            # Coefficient [a_b] for inlet temperature
+            a_b = (beta1 + beta2) / gamma * C * (
+                np.exp(-z_u * (beta + gamma))
+                - np.exp(-z_u * (beta - gamma) - 2 * gamma * H)
+                )
+            a_b = -np.diff(a_b[np.newaxis, :], axis=1)
+
+            # Store coefficients
+            self._set_stored_coefficients(
+                m_flow_borehole, cp_f, nSegments, segment_ratios, (a_in, a_b),
+                method_id)
+
+        return a_in, a_b
+
+    def coefficients_temperature(
+            self, z, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
+        """
+        Build coefficient matrices to evaluate fluid temperatures at a depth
+        (z).
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                \\mathbf{T_f}(z) = \\mathbf{a_{in}} \\mathbf{T_{f,in}}
+                + \\mathbf{a_{b}} \\mathbf{T_b}
+
+        Parameters
+        ----------
+        z : float or (nDepths,) array
+            Depths (in meters) to evaluate the fluid temperature coefficients.
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+        nSegments : int
+            Number of borehole segments.
+        segment_ratios : (nSegments,) array, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments of
+            equal lengths are considered.
+            Default is None.
+
+        Returns
+        -------
+        a_in :
+        (2*nPipes, nInlets,) array, or (nDepths, 2*nPipes, nInlets,) array
+            Array of coefficients for inlet fluid temperature.
+        a_b :
+        (2*nPipes, nSegments,) array, or (nDepths, 2*nPipes, nSegments,) array
+            Array of coefficients for borehole wall temperatures.
+
+        """
+        # method_id for coefficients_temperature is 5
+        method_id = 5
+
+        # Check if model variables need to be updated
+        self._check_model_variables(
+            m_flow_borehole, cp_f, nSegments, segment_ratios)
+
+        # Load pipe thermal parameters
+        delta = self._delta
+        gamma = self._gamma
+        beta1 = self._beta1
+        beta2 = self._beta2
+        beta = self._beta
+        beta12 = self._beta12
+
+        # Other parameters
+        nz = len(z)
+        z_u = self.b._segment_edges(
+            nSegments, segment_ratios=segment_ratios)
+        H = self.b.H
+
+        # Coefficient [a_in] for inlet temperature
+        a_in = np.zeros((nz, 2, 1))
+        # Intermediate thermal parameters
+        A = 1 - 0.5 * (beta1 + beta2) / gamma
+        B = 1 + 0.5 * (beta1 + beta2) / gamma
+        C = 1 / (B + A * np.exp(-2 * gamma * H))
+        # Downward pipe
+        a_in_00 = (1 - delta) * A + beta12 / gamma * B
+        a_in_01 = (1 + delta) * B - beta12 / gamma * A
+        a_in[:, 0, 0] = 0.5 * C * (
+            a_in_00 * np.exp((beta + gamma) * z - 2 * gamma * H)
+            + a_in_01 * np.exp((beta - gamma) * z)
+            )
+        # Upward pipe
+        a_in_10 = (1 + delta) * B - beta12 / gamma * A
+        a_in_11 = (1 - delta) * A + beta12 / gamma * B
+        a_in[:, 1, 0] = 0.5 * C * (
+            a_in_10 * np.exp((beta + gamma) * z - 2 * gamma * H)
+            + a_in_11 * np.exp((beta - gamma) * z)
+            )
+
+        # Coefficient [a_b] for inlet temperature
+        a_b = np.zeros((nz, 2, nSegments + 1))
+        # Intermediate thermal parameters
+        A4 = (beta1 - delta * beta1 - beta2 * beta12 / gamma) / (beta + gamma)
+        B4 = (beta1 + delta * beta1 + beta2 * beta12 / gamma) / (beta - gamma)
+        A5 = (beta2 + delta * beta2 + beta1 * beta12 / gamma) / (beta + gamma)
+        B5 = (beta2 - delta * beta2 - beta1 * beta12 / gamma) / (beta - gamma)
+        # Other parameters
+        dz = np.subtract.outer(z, z_u)
+        index = dz >= 0.
+        dz_p = dz[index]
+        z_p = np.tile(z[:, np.newaxis], (1, nSegments+1))[index]
+        z_u_p = np.tile(z_u[np.newaxis, :], (nz, 1))[index]
+        dz_m = dz[~index]
+        z_m = np.tile(z[:, np.newaxis], (1, nSegments+1))[~index]
+        z_u_m = np.tile(z_u[np.newaxis, :], (nz, 1))[~index]
+        # Downward pipe
+        a_b_00 = -A4 * B
+        a_b_01 = -A4 * A
+        a_b_02 = -B4 * B
+        a_b_03 = -B4 * A
+        a_b_04 = beta12 / gamma * (beta1 + beta2) / gamma
+        a_b_05 = -beta12 / gamma * (beta1 + beta2) / gamma
+        # Coefficients for z < z_u
+        a_b[:, 0, :][index] = 0.5 * (
+            a_b_01 * np.exp((beta + gamma) * dz_p - 2 * gamma * H)
+            + a_b_02 * np.exp((beta - gamma) * dz_p)
+            + a_b_03 * np.exp((beta - gamma) * dz_p - 2 * gamma * H)
+            + a_b_04 * np.exp((beta - gamma) * z_p - (beta + gamma) * z_u_p)
+            - a_b_05 * np.exp(
+                (beta + gamma) * z_p - (beta - gamma) * z_u_p - 2 * gamma * H)
+            + a_b_05 * np.exp((beta - gamma) * dz_p - 2 * gamma * H)
+            )
+        # Coefficients for z > z_u
+        a_b[:, 0, :][~index] = 0.5 * (
+            a_b_00 - a_b_04 * np.exp((beta + gamma) * dz_m)
+            + a_b_01 * np.exp(-2 * gamma * H)
+            + a_b_02
+            + a_b_03 * np.exp(-2 * gamma * H)
+            + a_b_04 * np.exp((beta - gamma) * z_m - (beta + gamma) * z_u_m)
+            - a_b_05 * np.exp(
+                (beta + gamma) * z_m - (beta - gamma) * z_u_m - 2 * gamma * H)
+            + a_b_05 * np.exp((beta - gamma) * dz_m - 2 * gamma * H)
+            )
+        # Upward pipe
+        a_b_10 = A5 * B
+        a_b_11 = A5 * A
+        a_b_12 = B5 * B
+        a_b_13 = B5 * A
+        a_b_14 = (delta + 1) * (beta1 + beta2) / gamma
+        a_b_15 = (delta - 1) * (beta1 + beta2) / gamma
+        # Coefficients for z < z_u
+        a_b[:, 1, :][index] = 0.5 * (
+            a_b_11 * np.exp((beta + gamma) * dz_p - 2 * gamma * H)
+            + a_b_12 * np.exp((beta - gamma) * dz_p)
+            + a_b_13 * np.exp((beta - gamma) * dz_p - 2 * gamma * H)
+            + a_b_15 * np.exp((beta - gamma) * z_p - (beta + gamma) * z_u_p)
+            + a_b_14 * np.exp(
+                (beta + gamma) * z_p - (beta - gamma) * z_u_p - 2 * gamma * H)
+            - a_b_15 * np.exp((beta - gamma) * dz_p - 2 * gamma * H)
+            )
+        # Coefficients for z > z_u
+        a_b[:, 1, :][~index] = 0.5 * (
+            a_b_10 - a_b_14 * np.exp((beta + gamma) * dz_m)
+            + a_b_11 * np.exp(-2 * gamma * H)
+            + a_b_12
+            + a_b_13 * np.exp(-2 * gamma * H)
+            + a_b_15 * np.exp((beta - gamma) * z_m - (beta + gamma) * z_u_m)
+            + a_b_14 * np.exp(
+                (beta + gamma) * z_m - (beta - gamma) * z_u_m - 2 * gamma * H)
+            - a_b_15 * np.exp((beta - gamma) * dz_m - 2 * gamma * H)
+            )
+        # Final coefficient
+        a_b = C * np.diff(a_b, axis=2)
+
+        return a_in, a_b
+
     def update_thermal_resistances(self, R_fp):
         """
         Update the delta-circuit of thermal resistances.
