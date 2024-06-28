@@ -1375,7 +1375,8 @@ def _finite_line_source_steady_state(dis, H1, D1, H2, D2, reaSource, imgSource):
                       D2 + D1 + H2 + H1],
                       axis=-1)
         dis = np.expand_dims(dis, axis=-1)
-        h = 0.5 / H2 * np.inner(p, q * np.log((q + np.sqrt(q**2 + dis**2)) / dis) - np.sqrt(q**2 + dis**2))
+        qpd = np.sqrt(q**2 + dis**2)
+        h = 0.5 / H2 * np.inner(p, q * np.log(q + qpd) - qpd)
     elif reaSource:
         # Real FLS solution
         p = np.array([1, -1, 1, -1])
@@ -1385,7 +1386,8 @@ def _finite_line_source_steady_state(dis, H1, D1, H2, D2, reaSource, imgSource):
                       D2 - D1 + H2 - H1,],
                       axis=-1)
         dis = np.expand_dims(dis, axis=-1)
-        h = 0.5 / H2 * np.inner(p, q * np.log((q + np.sqrt(q**2 + dis**2)) / dis) - np.sqrt(q**2 + dis**2))
+        qpd = np.sqrt(q**2 + dis**2)
+        h = 0.5 / H2 * np.inner(p, q * np.log(q + qpd) - qpd)
     elif imgSource:
         # Image FLS solution
         p = np.array([1, -1, 1, -1])
@@ -1395,7 +1397,8 @@ def _finite_line_source_steady_state(dis, H1, D1, H2, D2, reaSource, imgSource):
                       D2 + D1 + H2 + H1],
                       axis=-1)
         dis = np.expand_dims(dis, axis=-1)
-        h = 0.5 / H2 * np.inner(p, q * np.log((q + np.sqrt(q**2 + dis**2)) / dis) - np.sqrt(q**2 + dis**2))
+        qpd = np.sqrt(q**2 + dis**2)
+        h = 0.5 / H2 * np.inner(p, q * np.log(q + qpd) - qpd)
     else:
         # No heat source
         h = np.zeros(np.broadcast_shapes(
