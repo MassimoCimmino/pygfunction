@@ -6,6 +6,10 @@
 
 * [Issue 276](https://github.com/MassimoCimmino/pygfunction/issues/276) - Added functions to the `boreholes` module for the generation of rectangular fields in a staggered configuration.
 
+### Enhancements
+
+* [Issue 291](https://github.com/MassimoCimmino/pygfunction/issues/291) - Simplified the expressions in heat_transfer._finite_line_source_steady_state`. The function is now approximately 25% faster.
+
 ### Bug fixes
 
 * [Issue 255](https://github.com/MassimoCimmino/pygfunction/issues/255) - Default to an `orientation` of `0.` when `tilt` is `0.` in `boreholes.Borehole` class.
