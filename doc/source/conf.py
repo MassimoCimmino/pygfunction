@@ -66,7 +66,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'pygfunction'
-copyright = u'2017-2023, Massimo Cimmino'
+copyright = u'2017-2024, Massimo Cimmino'
 author = u'Massimo Cimmino'
 
 # The version info for the project you're documenting, acts as replacement for
