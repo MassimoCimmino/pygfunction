@@ -184,6 +184,13 @@ def test_multipole(J, expected):
     ('coaxial_annular_out', None, 1., np.array([65., 75.]), np.array([[4.50649998, 2.92933532], [4.44976224, 3.02086677]])),
     ('coaxial_annular_out', None, np.array([1., 2., 3., 1.]), np.array([65., 75.]), np.array([[4.62416027, 3.50307539], [4.58402116, 3.57860389]])),
     ('coaxial_annular_out', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), np.array([65., 75.]), np.array([[4.67083279, 3.72110166], [4.63666726, 3.76190344]])),
+    # Coaxial (Annular pipe is inlet pipe, no grout)
+    ('coaxial_no_grout', None, 1., 140., np.array([2.8355954, 1.48415788])),
+    ('coaxial_no_grout', None, np.array([1., 2., 3., 1.]), 140., np.array([3.2799902, 1.60137175])),
+    ('coaxial_no_grout', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 140., np.array([3.51716507, 1.66392916])),
+    ('coaxial_no_grout', None, 1., np.array([65., 140.]), np.array([[3.77463898, 1.10936191], [2.8355954, 1.48415788]])),
+    ('coaxial_no_grout', None, np.array([1., 2., 3., 1.]), np.array([65., 140.]), np.array([[3.95937381, 2.30543206], [3.2799902, 1.60137175]])),
+    ('coaxial_no_grout', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), np.array([65., 140.]), np.array([[4.07193759, 2.7536371], [3.51716507, 1.66392916]])),
     ])
 def test_temperature(
         pipe_fixture, segment_ratios, T_b, z, expected, request):
@@ -222,6 +229,10 @@ def test_temperature(
     ('coaxial_annular_out', None, 1., 2.5811305213335674),
     ('coaxial_annular_out', None, np.array([1., 2., 3., 1.]), 2.981638747649938),
     ('coaxial_annular_out', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 3.216388652724723),
+    # Coaxial (Annular pipe is inlet pipe, no grout)
+    ('coaxial_no_grout', None, 1., 1.157646033266169),
+    ('coaxial_no_grout', None, np.array([1., 2., 3., 1.]), 1.1622084785087514),
+    ('coaxial_no_grout', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 1.2705296410278433),
     ])
 def test_outlet_temperature(
         pipe_fixture, segment_ratios, T_b, expected, request):
@@ -259,6 +270,10 @@ def test_outlet_temperature(
     ('coaxial_annular_out', None, 1., 7.237470090568813),
     ('coaxial_annular_out', None, np.array([1., 2., 3., 1.]), 7.899776560345228),
     ('coaxial_annular_out', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 8.287974281876208),
+    # Coaxial (Annular pipe is inlet pipe, no grout)
+    ('coaxial_no_grout', None, 1., 4.926662185940351),
+    ('coaxial_no_grout', None, np.array([1., 2., 3., 1.]), 4.93141182148365),
+    ('coaxial_no_grout', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), 5.044177239200924),
     ])
 def test_inlet_temperature(pipe_fixture, segment_ratios, T_b, expected, request):
     # Extract pipe from fixture
@@ -295,6 +310,10 @@ def test_inlet_temperature(pipe_fixture, segment_ratios, T_b, expected, request)
     ('coaxial_annular_out', None, 1., -1923.85692048),
     ('coaxial_annular_out', None, np.array([1., 2., 3., 1.]), np.array([-480.81667849, -324.83211948, -133.10520419, -666.55719699])),
     ('coaxial_annular_out', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), np.array([-205.74675004, -483.36307319, -299.14468223, -430.34747541])),
+    # Coaxial (Annular pipe is inlet pipe, no grout)
+    ('coaxial_no_grout', None, 1., -3056.03065193),
+    ('coaxial_no_grout', None, np.array([1., 2., 3., 1.]), np.array([-1316.35767661, -1055.61151182, 1327.31501919, -2007.74772473])),
+    ('coaxial_no_grout', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), np.array([-896.16349915, -1263.97717837, 1166.37595544, -1972.48352864])),
     ])
 def test_borehole_heat_extraction_rate(
         pipe_fixture, segment_ratios, T_b, expected, request):
@@ -332,6 +351,10 @@ def test_borehole_heat_extraction_rate(
     ('coaxial_annular_out', None, 1., -1923.85692048),
     ('coaxial_annular_out', None, np.array([1., 2., 3., 1.]), -1605.3111991367698),
     ('coaxial_annular_out', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), -1418.6019808667165),
+    # Coaxial (Annular pipe is inlet pipe, no grout)
+    ('coaxial_no_grout', None, 1., -3056.0306519279184),
+    ('coaxial_no_grout', None, np.array([1., 2., 3., 1.]), -3052.4018939764674),
+    ('coaxial_no_grout', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), -2966.2482507211057),
     ])
 def test_fluid_heat_extraction_rate(
         pipe_fixture, segment_ratios, T_b, expected, request):
@@ -369,6 +392,10 @@ def test_fluid_heat_extraction_rate(
     ('coaxial_annular_out', None, 1., -1923.85692048),
     ('coaxial_annular_out', None, np.array([1., 2., 3., 1.]), -1605.3111991367698),
     ('coaxial_annular_out', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), -1418.6019808667165),
+    # Coaxial (Annular pipe is inlet pipe, no grout)
+    ('coaxial_no_grout', None, 1., -3056.0306519279184),
+    ('coaxial_no_grout', None, np.array([1., 2., 3., 1.]), -3052.4018939764674),
+    ('coaxial_no_grout', np.array([0.1, 0.35, 0.40, 0.15]), np.array([1., 2., 3., 1.]), -2966.2482507211057),
     ])
 def test_total_heat_extraction_rate(
         pipe_fixture, segment_ratios, T_b, expected, request):
