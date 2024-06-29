@@ -2,6 +2,8 @@
 
 ## Version 2.3 (in development)
 
+## Version 2.2.3 (2024-07-01)
+
 ### New features
 
 * [Issue 276](https://github.com/MassimoCimmino/pygfunction/issues/276) - Added functions to the `boreholes` module for the generation of rectangular fields in a staggered configuration.
