@@ -479,22 +479,16 @@ class _BasePipe(object):
                 m_flow_borehole, cp_f, nSegments, segment_ratios, 1):
             c_in, c_fu = self._get_stored_coefficients(1)
         else:
-            # Check if _continuity_condition_head need to be called
-            # method_id for _continuity_condition_head is 1
-            if self._check_coefficients(
-                    m_flow_borehole, cp_f, nSegments, segment_ratios, 1):
-                c_in, c_fu = self._get_stored_coefficients(1)
-            else:
-                # Coefficient matrices for temperatures at depth (z = 0):
-                # [T_fd](z=0) = [c_in]*[T_{f,in}] + [c_fu]*[T_fu](z=0)
-                c_in, c_fu = self._continuity_condition_head(
-                    m_flow_borehole, cp_f, nSegments,
-                    segment_ratios=segment_ratios)
+            # Coefficient matrices for temperatures at depth (z = 0):
+            # [T_fd](z=0) = [c_in]*[T_{f,in}] + [c_fu]*[T_fu](z=0)
+            c_in, c_fu = self._continuity_condition_head(
+                m_flow_borehole, cp_f, nSegments,
+                segment_ratios=segment_ratios)
 
-                # Store coefficients
-                self._set_stored_coefficients(
-                    m_flow_borehole, cp_f, nSegments, segment_ratios,
-                    (c_in, c_fu), 1)
+            # Store coefficients
+            self._set_stored_coefficients(
+                m_flow_borehole, cp_f, nSegments, segment_ratios,
+                (c_in, c_fu), 1)
 
         # Coefficient matrices from general solution:
         # [T_f](z=H) = [e_f0]*[T_f](0) + [e_b]*[T_b]
