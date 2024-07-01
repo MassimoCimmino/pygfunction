@@ -1777,8 +1777,7 @@ class MultipleUTube(_BasePipe):
 
             .. math::
 
-                T_{f,out} =
-                \\mathbf{c_{fu}} \\mathbf{T_{fu}}(z=0)
+                T_{f,out} = \\mathbf{c_{fu}} \\mathbf{T_{fu}}(z=0)
 
         Parameters
         ----------
@@ -2138,8 +2137,7 @@ class IndependentMultipleUTube(MultipleUTube):
 
             .. math::
 
-                T_{f,out} =
-                \\mathbf{c_{fu}} \\mathbf{T_{fu}}(z=0)
+                T_{f,out} = \\mathbf{c_{fu}} \\mathbf{T_{fu}}(z=0)
 
         Parameters
         ----------
