@@ -24,6 +24,11 @@ class _BasePipe(object):
         Total number of pipe inlets, equals to 1.
     nOutlets : int
         Total number of pipe outlets, equals to 1.
+    reversible_flow : bool
+        True to treat a negative mass flow rate as the reversal of flow
+        direction within the borehole. If False, the direction of flow is not
+        reversed when the mass flow rate is negative, and the absolute value is
+        use for calculations. Equals to True.
 
     Notes
     -----
@@ -41,6 +46,7 @@ class _BasePipe(object):
         self.nPipes = 1
         self.nInlets = 1
         self.nOutlets = 1
+        self.reversible_flow = True
 
     def get_temperature(
             self, z, T_f_in, T_b, m_flow_borehole, cp_f, segment_ratios=None):
@@ -405,19 +411,19 @@ class _BasePipe(object):
                 self.b.H, m_flow_borehole, cp_f, nSegments,
                 segment_ratios=segment_ratios)
 
+            # Coefficients for the fluid temperatures
+            # [T_f](z) = [f_fd]*[T_fd](z) + [f_fu][T_fu](z)
+            f_fd, f_fu = self._flow_direction(
+                m_flow_borehole, cp_f, nSegments,
+                segment_ratios=segment_ratios)
+
             # Final coefficient matrices for outlet temperatures:
             # [T_{f,out}] = [a_in]*[T_{f,in}] + [a_b]*[T_b]
             ImI = np.hstack(
                 (np.eye(self.nPipes),
                  -np.eye(self.nPipes)))
-            CfuoI = np.vstack(
-                (c_fu,
-                 np.eye(self.nPipes)))
-            CinoZ = np.vstack(
-                (c_in,
-                 np.zeros((self.nPipes, self.nInlets))))
-            A = d_fu @ np.linalg.solve(ImI @ e_f0 @ CfuoI, -ImI)
-            a_in = A @ e_f0 @ CinoZ
+            A = d_fu @ np.linalg.solve(ImI @ e_f0 @ (f_fu + f_fd @ c_fu), -ImI)
+            a_in = A @ e_f0 @ f_fd @ c_in
             a_b = A @ e_b
 
             # Store coefficients
@@ -501,19 +507,20 @@ class _BasePipe(object):
         f_f0, f_b = self._general_solution(
             z, m_flow_borehole, cp_f, nSegments, segment_ratios=segment_ratios)
 
+        # Coefficients for the fluid temperatures
+        # [T_f](z) = [g_fd]*[T_fd](z) + [g_fu][T_fu](z)
+        g_fd, g_fu = self._flow_direction(
+            m_flow_borehole, cp_f, nSegments,
+            segment_ratios=segment_ratios)
+
         # Final coefficient matrices for outlet temperatures:
         # [T_{f,out}] = [a_in]*[T_{f,in}] + [a_b]*[T_b]
         ImI = np.hstack(
             (np.eye(self.nPipes),
              -np.eye(self.nPipes)))
-        CfuoI = np.vstack(
-            (c_fu,
-             np.eye(self.nPipes)))
-        CinoZ = np.vstack(
-            (c_in,
-             np.zeros((self.nPipes, self.nInlets))))
-        A = CfuoI @ np.linalg.solve(ImI @ e_f0 @ CfuoI, -ImI)
-        a_in = f_f0 @ (np.eye(2*self.nPipes) + A @ e_f0) @ CinoZ
+        B = (g_fu + g_fd @ c_fu)
+        A = B @ np.linalg.solve(ImI @ e_f0 @ B, -ImI)
+        a_in = f_f0 @ (np.eye(2*self.nPipes) + A @ e_f0) @ g_fd @ c_in
         a_b = (f_f0 @ A @ e_b) + f_b
 
         return a_in, a_b
@@ -566,8 +573,7 @@ class _BasePipe(object):
                 m_flow_borehole, cp_f, nSegments, segment_ratios)
             m_flow_pipe = self._m_flow_pipe
             cp_pipe = self._cp_pipe
-            mcp = np.hstack((-m_flow_pipe[0:nPipes],
-                             m_flow_pipe[-nPipes:]))*cp_pipe
+            mcp = m_flow_pipe * cp_pipe
 
             # Initialize coefficient matrices
             a_in = np.zeros((nSegments, self.nInlets))
@@ -578,8 +584,8 @@ class _BasePipe(object):
             aTf, bTf = self.coefficients_temperature(
                 z, m_flow_borehole, cp_f, nSegments,
                 segment_ratios=segment_ratios)
-            a_in = mcp @ (aTf[:-1,:,:] - aTf[1:,:,:])
-            a_b = mcp @ (bTf[:-1,:,:] - bTf[1:,:,:])
+            a_in = mcp @ (aTf[1:,:,:] - aTf[:-1,:,:])
+            a_b = mcp @ (bTf[1:,:,:] - bTf[:-1,:,:])
 
             # Store coefficients
             self._set_stored_coefficients(
@@ -641,7 +647,7 @@ class _BasePipe(object):
 
             # Intermediate matrices for fluid heat extraction rates:
             # [Q_{f}] = [c_in]*[T_{f,in}] + [c_out]*[T_{f,out}]
-            MCP = self._m_flow_in * self._cp_in
+            MCP = np.abs(self._m_flow_in) * self._cp_in
             c_in = -np.diag(MCP)
             c_out = np.diag(MCP)
 
@@ -927,20 +933,20 @@ class _BasePipe(object):
 
         return True
 
-    def _pipe_connectivity(
-            self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
-        """ Returns coefficients for the relation
-            [T_{f,out}] = [c_fu]*[T_fu](z=0)
-        """
-        raise NotImplementedError(
-            '_continuity_condition_head class method not implemented, '
-            'this method should return matrices for the relation: '
-            '[T_{f,out}] = [c_fu]*[T_fu](z=0)')
-
     def _continuity_condition_head(
             self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
         """ Returns coefficients for the relation
             [T_fd](z=0) = [c_in]*[T_{f,in}] + [c_fu]*[T_fu](z=0)
+        """
+        raise NotImplementedError(
+            '_continuity_condition_head class method not implemented, '
+            'this method should return matrices for the relation: '
+            '[T_fd](z=0) = [c_in]*[T_{f,in}] + [c_fu]*[T_fu](z=0)')
+
+    def _flow_direction(
+            self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
+        """ Returns coefficients for the relation
+            [T_f](z) = [c_fd]*[T_fd](z) + [c_fu]*[T_fu](z)
         """
         raise NotImplementedError(
             '_continuity_condition_head class method not implemented, '
@@ -956,6 +962,16 @@ class _BasePipe(object):
             '_general_solution class method not implemented, '
             'this method should return matrices for the relation: '
             '[T_f](z) = [a_f0]*[T_f](0) + [a_b]*[T_b]')
+
+    def _pipe_connectivity(
+            self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
+        """ Returns coefficients for the relation
+            [T_{f,out}] = [c_fu]*[T_fu](z=0)
+        """
+        raise NotImplementedError(
+            '_continuity_condition_head class method not implemented, '
+            'this method should return matrices for the relation: '
+            '[T_{f,out}] = [c_fu]*[T_fu](z=0)')
 
     def _update_model_variables(
             self, m_flow_borehole, cp_f, nSegments, segment_ratios):
@@ -1010,6 +1026,12 @@ class SingleUTube(_BasePipe):
     J : int, optional
         Number of multipoles per pipe to evaluate the thermal resistances.
         Default is 2.
+    reversible_flow : bool
+        True to treat a negative mass flow rate as the reversal of flow
+        direction within the borehole. If False, the direction of flow is not
+        reversed when the mass flow rate is negative, and the absolute value is
+        use for calculations.
+        Default is True.
     nPipes : int
         Number of U-Tubes, equals to 1.
     nInlets : int
@@ -1044,7 +1066,9 @@ class SingleUTube(_BasePipe):
        Environment, 25 (8), 1007-1022.
 
     """
-    def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_fp, J=2):
+    def __init__(
+            self, pos, r_in, r_out, borehole, k_s, k_g, R_fp, J=2,
+            reversible_flow=True):
         self.pos = pos
         self.r_in = r_in
         self.r_out = r_out
@@ -1053,6 +1077,7 @@ class SingleUTube(_BasePipe):
         self.k_g = k_g
         self.R_fp = R_fp
         self.J = J
+        self.reversible_flow = reversible_flow
         self.nPipes = 1
         self.nInlets = 1
         self.nOutlets = 1
@@ -1206,14 +1231,14 @@ class SingleUTube(_BasePipe):
         # Downward pipe
         a_in_00 = (1 - delta) * A + beta12 / gamma * B
         a_in_01 = (1 + delta) * B - beta12 / gamma * A
-        a_in[:, 0, 0] = 0.5 * C * (
+        a_in[:, self._iInlet, 0] = 0.5 * C * (
             a_in_00 * np.exp((beta + gamma) * z - 2 * gamma * H)
             + a_in_01 * np.exp((beta - gamma) * z)
             )
         # Upward pipe
         a_in_10 = (1 + delta) * B - beta12 / gamma * A
         a_in_11 = (1 - delta) * A + beta12 / gamma * B
-        a_in[:, 1, 0] = 0.5 * C * (
+        a_in[:, self._iOutlet, 0] = 0.5 * C * (
             a_in_10 * np.exp((beta + gamma) * z - 2 * gamma * H)
             + a_in_11 * np.exp((beta - gamma) * z)
             )
@@ -1242,7 +1267,7 @@ class SingleUTube(_BasePipe):
         a_b_04 = beta12 / gamma * (beta1 + beta2) / gamma
         a_b_05 = -beta12 / gamma * (beta1 + beta2) / gamma
         # Coefficients for z < z_u
-        a_b[:, 0, :][index] = 0.5 * (
+        a_b[:, self._iInlet, :][index] = 0.5 * (
             a_b_01 * np.exp((beta + gamma) * dz_p - 2 * gamma * H)
             + a_b_02 * np.exp((beta - gamma) * dz_p)
             + a_b_03 * np.exp((beta - gamma) * dz_p - 2 * gamma * H)
@@ -1252,7 +1277,7 @@ class SingleUTube(_BasePipe):
             + a_b_05 * np.exp((beta - gamma) * dz_p - 2 * gamma * H)
             )
         # Coefficients for z > z_u
-        a_b[:, 0, :][~index] = 0.5 * (
+        a_b[:, self._iInlet, :][~index] = 0.5 * (
             a_b_00 - a_b_04 * np.exp((beta + gamma) * dz_m)
             + a_b_01 * np.exp(-2 * gamma * H)
             + a_b_02
@@ -1270,7 +1295,7 @@ class SingleUTube(_BasePipe):
         a_b_14 = (delta + 1) * (beta1 + beta2) / gamma
         a_b_15 = (delta - 1) * (beta1 + beta2) / gamma
         # Coefficients for z < z_u
-        a_b[:, 1, :][index] = 0.5 * (
+        a_b[:, self._iOutlet, :][index] = 0.5 * (
             a_b_11 * np.exp((beta + gamma) * dz_p - 2 * gamma * H)
             + a_b_12 * np.exp((beta - gamma) * dz_p)
             + a_b_13 * np.exp((beta - gamma) * dz_p - 2 * gamma * H)
@@ -1280,7 +1305,7 @@ class SingleUTube(_BasePipe):
             - a_b_15 * np.exp((beta - gamma) * dz_p - 2 * gamma * H)
             )
         # Coefficients for z > z_u
-        a_b[:, 1, :][~index] = 0.5 * (
+        a_b[:, self._iOutlet, :][~index] = 0.5 * (
             a_b_10 - a_b_14 * np.exp((beta + gamma) * dz_m)
             + a_b_11 * np.exp(-2 * gamma * H)
             + a_b_12
@@ -1317,47 +1342,6 @@ class SingleUTube(_BasePipe):
         # Initialize stored_coefficients
         self._initialize_stored_coefficients()
         return
-
-    def _pipe_connectivity(
-            self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
-        """
-        Equation that satisfies equal fluid temperatures in both legs of
-        each U-tube pipe at depth (z = H).
-
-        Returns coefficients for the relation:
-
-            .. math::
-
-                T_{f,out} = \\mathbf{c_{fu}} \\mathbf{T_{fu}}(z=0)
-
-        Parameters
-        ----------
-        m_flow_borehole : float or (nInlets,) array
-            Inlet mass flow rate (in kg/s) into the borehole.
-        cp_f : float or (nInlets,) array
-            Fluid specific isobaric heat capacity (in J/kg.degC).
-        nSegments : int
-            Number of borehole segments.
-        segment_ratios : (nSegments,) array, optional
-            Ratio of the borehole length represented by each segment. The sum
-            of ratios must be equal to 1. If segment_ratios==None, segments of
-            equal lengths are considered.
-            Default is None.
-
-        Returns
-        -------
-        c_fu : (nOutlets, nPipes,) array
-            Array of coefficients for upward fluid temperatures.
-
-        """
-        # Check if model variables need to be updated
-        self._check_model_variables(
-            m_flow_borehole, cp_f, nSegments, segment_ratios)
-
-        # The upward fluid temperature at z=0 is the outlet fluid temperature
-        c_fu = np.array([[1.]])
-
-        return c_fu
 
     def _continuity_condition_head(
             self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
@@ -1406,6 +1390,67 @@ class SingleUTube(_BasePipe):
 
         return c_in, c_fu
 
+    def _flow_direction(
+            self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
+        """
+        Build coefficient matrices to evaluate fluid temperatures at depth
+        (z). These coefficients take into account connections between U-tube
+        pipes.
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                \\mathbf{T_f}(z) = \\mathbf{c_{fd}} \\mathbf{T_{fd}}(z)
+                + \\mathbf{c_{fu}} \\mathbf{T_{fu}}(z)
+
+        Parameters
+        ----------
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+        nSegments : int
+            Number of borehole segments.
+        segment_ratios : (nSegments,) array, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments of
+            equal lengths are considered.
+            Default is None.
+
+        Returns
+        -------
+        c_fd : (2*nPipes, nPipes,) array
+            Array of coefficients for inlet fluid temperature.
+        c_fu : (2*nPipes, nPipes,) array
+            Array of coefficients for upward fluid temperatures.
+
+        """
+        # Check if model variables need to be updated
+        self._check_model_variables(
+            m_flow_borehole, cp_f, nSegments, segment_ratios)
+
+        if self._is_reversed:
+            # The last nPipes pipes are downward flowing
+            c_fd = np.vstack(
+                (np.zeros((self.nPipes, self.nPipes)),
+                 np.eye(self.nPipes)))
+            # The first nPipes pipes are upward flowing
+            c_fu = np.vstack(
+                (np.eye(self.nPipes),
+                 np.zeros((self.nPipes, self.nPipes))))
+        else:
+            # The first nPipes pipes are downward flowing
+            c_fd = np.vstack(
+                (np.eye(self.nPipes),
+                 np.zeros((self.nPipes, self.nPipes))))
+            # The last nPipes pipes are upward flowing
+            c_fu = np.vstack(
+                (np.zeros((self.nPipes, self.nPipes)),
+                 np.eye(self.nPipes)))
+
+        return c_fd, c_fu
+
     def _general_solution(
             self, z, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
         """
@@ -1449,8 +1494,16 @@ class SingleUTube(_BasePipe):
         self._check_model_variables(
             m_flow_borehole, cp_f, nSegments, segment_ratios)
 
-        a_f0 = np.block([[[self._f1(z)], [self._f2(z)]],
-                         [[-self._f2(z)], [self._f3(z)]]]).transpose(2, 0, 1)
+        if self._is_reversed:
+            a_f0 = np.block(
+                [[[self._f3(z)], [-self._f2(z)]],
+                 [[self._f2(z)], [self._f1(z)]]]).transpose(
+                     2, 0, 1)
+        else:
+            a_f0 = np.block(
+                [[[self._f1(z)], [self._f2(z)]],
+                 [[-self._f2(z)], [self._f3(z)]]]).transpose(
+                     2, 0, 1)
 
         a_b = np.zeros((len(z_array), 2*self.nPipes, nSegments))
         z_edges = self.b._segment_edges(
@@ -1458,14 +1511,55 @@ class SingleUTube(_BasePipe):
         dz = np.maximum(np.subtract.outer(z_array, z_edges), 0.)
         dF4 = self._F4(dz)
         dF5 = self._F5(dz)
-        a_b[:, 0, :] = (dF4[:, :-1] - dF4[:, 1:])
-        a_b[:, 1, :] = -(dF5[:, :-1] - dF5[:, 1:])
+        a_b[:, self._iInlet, :] = (dF4[:, :-1] - dF4[:, 1:])
+        a_b[:, self._iOutlet, :] = -(dF5[:, :-1] - dF5[:, 1:])
         # Remove first dimension if z is a scalar
         if np.isscalar(z):
             a_f0 = a_f0[0, :, :]
             a_b = a_b[0, :, :]
 
         return a_f0, a_b
+
+    def _pipe_connectivity(
+            self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
+        """
+        Equation that satisfies equal fluid temperatures in both legs of
+        each U-tube pipe at depth (z = H).
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                T_{f,out} = \\mathbf{c_{fu}} \\mathbf{T_{fu}}(z=0)
+
+        Parameters
+        ----------
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+        nSegments : int
+            Number of borehole segments.
+        segment_ratios : (nSegments,) array, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments of
+            equal lengths are considered.
+            Default is None.
+
+        Returns
+        -------
+        c_fu : (nOutlets, nPipes,) array
+            Array of coefficients for upward fluid temperatures.
+
+        """
+        # Check if model variables need to be updated
+        self._check_model_variables(
+            m_flow_borehole, cp_f, nSegments, segment_ratios)
+
+        # The upward fluid temperature at z=0 is the outlet fluid temperature
+        c_fu = np.array([[1.]])
+
+        return c_fu
 
     def _update_model_variables(
             self, m_flow_borehole, cp_f, nSegments, segment_ratios):
@@ -1488,13 +1582,18 @@ class SingleUTube(_BasePipe):
 
         # Format mass flow rate and heat capacity inputs
         self._format_inputs(m_flow_borehole, cp_f, nSegments, segment_ratios)
-        m_flow_in = self._m_flow_in
+        m_flow_in = np.abs(self._m_flow_in)
         cp_in = self._cp_in
+        iInlet = self._iInlet
+        iOutlet = self._iOutlet
 
         # Dimensionless delta-circuit conductances
-        self._beta1 = 1./(self._Rd[0][0]*m_flow_in[0]*cp_in[0])
-        self._beta2 = 1./(self._Rd[1][1]*m_flow_in[0]*cp_in[0])
-        self._beta12 = 1./(self._Rd[0][1]*m_flow_in[0]*cp_in[0])
+        self._beta1 = 1. / (
+            self._Rd[iInlet, iInlet] * m_flow_in[0] * cp_in[0])
+        self._beta2 = 1. / (
+            self._Rd[iOutlet, iOutlet] * m_flow_in[0] * cp_in[0])
+        self._beta12 = 1. / (
+            self._Rd[iInlet, iOutlet] * m_flow_in[0] * cp_in[0])
         self._beta = 0.5*(self._beta2 - self._beta1)
         # Eigenvalues
         self._gamma = np.sqrt(0.25*(self._beta1+self._beta2)**2
@@ -1523,14 +1622,22 @@ class SingleUTube(_BasePipe):
         # Format mass flow rate inputs
         if np.isscalar(m_flow_borehole):
             # Mass flow rate in each fluid circuit
-            m_flow_in = m_flow_borehole*np.ones(self.nInlets)
+            m_flow_in = m_flow_borehole * np.ones(self.nInlets)
         else:
             # Mass flow rate in each fluid circuit
             m_flow_in = m_flow_borehole
         self._m_flow_in = m_flow_in
         # Mass flow rate in pipes
-        m_flow_pipe = np.tile(m_flow_in, 2*self.nPipes)
+        m_flow_pipe = np.array([m_flow_borehole, -m_flow_borehole]).flatten()
         self._m_flow_pipe = m_flow_pipe
+        # Flow direction
+        self._is_reversed = m_flow_borehole < 0. and self.reversible_flow
+        if self._is_reversed:
+            self._iInlet = 1
+            self._iOutlet = 0
+        else:
+            self._iInlet = 0
+            self._iOutlet = 1
 
         # Format heat capacity inputs
         if np.isscalar(cp_f):
@@ -1683,6 +1790,12 @@ class MultipleUTube(_BasePipe):
     J : int, optional
         Number of multipoles per pipe to evaluate the thermal resistances.
         Default is 2.
+    reversible_flow : bool
+        True to treat a negative mass flow rate as the reversal of flow
+        direction within the borehole. If False, the direction of flow is not
+        reversed when the mass flow rate is negative, and the absolute value is
+        use for calculations.
+        Default is True.
     nPipes : int
         Number of U-Tubes.
     config : str, defaults to 'parallel'
@@ -1724,8 +1837,8 @@ class MultipleUTube(_BasePipe):
        Environment, 25 (8), 1007-1022.
 
     """
-    def __init__(self, pos, r_in, r_out, borehole, k_s,
-                 k_g, R_fp, nPipes, config='parallel', J=2):
+    def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_fp, nPipes,
+                 config='parallel', J=2, reversible_flow=True):
         self.pos = pos
         self.r_in = r_in
         self.r_out = r_out
@@ -1734,6 +1847,7 @@ class MultipleUTube(_BasePipe):
         self.k_g = k_g
         self.R_fp = R_fp
         self.J = J
+        self.reversible_flow = reversible_flow
         self.nPipes = nPipes
         self.nInlets = 1
         self.nOutlets = 1
@@ -1766,57 +1880,6 @@ class MultipleUTube(_BasePipe):
         # Initialize stored_coefficients
         self._initialize_stored_coefficients()
         return
-
-    def _pipe_connectivity(
-            self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
-        """
-        Equation that satisfies equal fluid temperatures in both legs of
-        each U-tube pipe at depth (z = H).
-
-        Returns coefficients for the relation:
-
-            .. math::
-
-                T_{f,out} = \\mathbf{c_{fu}} \\mathbf{T_{fu}}(z=0)
-
-        Parameters
-        ----------
-        m_flow_borehole : float or (nInlets,) array
-            Inlet mass flow rate (in kg/s) into the borehole.
-        cp_f : float or (nInlets,) array
-            Fluid specific isobaric heat capacity (in J/kg.degC).
-        nSegments : int
-            Number of borehole segments.
-        segment_ratios : (nSegments,) array, optional
-            Ratio of the borehole length represented by each segment. The sum
-            of ratios must be equal to 1. If segment_ratios==None, segments of
-            equal lengths are considered.
-            Default is None.
-
-        Returns
-        -------
-        c_fu : (nOutlets, nPipes,) array
-            Array of coefficients for upward fluid temperatures.
-
-        """
-        # Check if model variables need to be updated
-        self._check_model_variables(
-            m_flow_borehole, cp_f, nSegments, segment_ratios)
-        m_flow_pipe = self._m_flow_pipe[-self.nPipes:]
-        cp_pipe = self._cp_pipe[-self.nPipes:]
-
-        if self.config == 'parallel':
-            # The outlet temperature is a result of mixing from all the upward
-            # flowing pipes
-            c_fu = m_flow_pipe * cp_pipe / np.sum(m_flow_pipe * cp_pipe)
-        elif self.config == 'series':
-            # Only the last pipe is connected to the outlet
-            c_fu = np.concatenate((np.zeros(self.nPipes-1), np.ones(1)))
-        else:
-            raise NotImplementedError(
-                f"Configuration '{self.config}' not implemented.")
-
-        return c_fu[np.newaxis, :]
 
     def _continuity_condition_head(
             self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
@@ -1864,16 +1927,84 @@ class MultipleUTube(_BasePipe):
             # None of the upward flowing pipes are connected to another pipe
             c_fu = np.zeros((self.nPipes, self.nPipes))
         elif self.config == 'series':
-            # The inlet is connected to the first downward flowing pipe
-            c_in = np.concatenate((np.ones(1), np.zeros(self.nPipes-1)))
-            # Each upward flowing pipe is connected to a downward flowing pipe
-            # (except for the last one connected to the outlet)
-            c_fu = np.eye(self.nPipes, k=-1)
+            if self._is_reversed:
+                # The inlet is connected to the last downward flowing pipe
+                c_in = np.concatenate((np.zeros(self.nPipes-1), np.ones(1)))
+                # Each upward flowing pipe is connected to a downward flowing pipe
+                # (except for the last one connected to the outlet)
+                c_fu = np.eye(self.nPipes, k=+1)
+            else:
+                # The inlet is connected to the first downward flowing pipe
+                c_in = np.concatenate((np.ones(1), np.zeros(self.nPipes-1)))
+                # Each upward flowing pipe is connected to a downward flowing pipe
+                # (except for the last one connected to the outlet)
+                c_fu = np.eye(self.nPipes, k=-1)
         else:
             raise NotImplementedError(
                 f"Configuration '{self.config}' not implemented.")
 
         return c_in[:, np.newaxis], c_fu
+
+    def _flow_direction(
+            self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
+        """
+        Build coefficient matrices to evaluate fluid temperatures at depth
+        (z). These coefficients take into account connections between U-tube
+        pipes.
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                \\mathbf{T_f}(z) = \\mathbf{c_{fd}} \\mathbf{T_{fd}}(z)
+                + \\mathbf{c_{fu}} \\mathbf{T_{fu}}(z)
+
+        Parameters
+        ----------
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+        nSegments : int
+            Number of borehole segments.
+        segment_ratios : (nSegments,) array, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments of
+            equal lengths are considered.
+            Default is None.
+
+        Returns
+        -------
+        c_fd : (2*nPipes, nPipes,) array
+            Array of coefficients for inlet fluid temperature.
+        c_fu : (2*nPipes, nPipes,) array
+            Array of coefficients for upward fluid temperatures.
+
+        """
+        # Check if model variables need to be updated
+        self._check_model_variables(
+            m_flow_borehole, cp_f, nSegments, segment_ratios)
+
+        if self._is_reversed:
+            # The last nPipes pipes are downward flowing
+            c_fd = np.vstack(
+                (np.zeros((self.nPipes, self.nPipes)),
+                 np.eye(self.nPipes)))
+            # The first nPipes pipes are upward flowing
+            c_fu = np.vstack(
+                (np.eye(self.nPipes),
+                 np.zeros((self.nPipes, self.nPipes))))
+        else:
+            # The first nPipes pipes are downward flowing
+            c_fd = np.vstack(
+                (np.eye(self.nPipes),
+                 np.zeros((self.nPipes, self.nPipes))))
+            # The last nPipes pipes are upward flowing
+            c_fu = np.vstack(
+                (np.zeros((self.nPipes, self.nPipes)),
+                 np.eye(self.nPipes)))
+
+        return c_fd, c_fu
 
     def _general_solution(
             self, z, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
@@ -1944,6 +2075,61 @@ class MultipleUTube(_BasePipe):
 
         return a_f0, a_b
 
+    def _pipe_connectivity(
+            self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
+        """
+        Equation that satisfies equal fluid temperatures in both legs of
+        each U-tube pipe at depth (z = H).
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                T_{f,out} = \\mathbf{c_{fu}} \\mathbf{T_{fu}}(z=0)
+
+        Parameters
+        ----------
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+        nSegments : int
+            Number of borehole segments.
+        segment_ratios : (nSegments,) array, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments of
+            equal lengths are considered.
+            Default is None.
+
+        Returns
+        -------
+        c_fu : (nOutlets, nPipes,) array
+            Array of coefficients for upward fluid temperatures.
+
+        """
+        # Check if model variables need to be updated
+        self._check_model_variables(
+            m_flow_borehole, cp_f, nSegments, segment_ratios)
+        m_flow_pipe = np.abs(self._m_flow_pipe[:self.nPipes])
+        cp_pipe = self._cp_pipe[:self.nPipes]
+
+        if self.config == 'parallel':
+            # The outlet temperature is a result of mixing from all the upward
+            # flowing pipes
+            c_fu = m_flow_pipe * cp_pipe / np.sum(m_flow_pipe * cp_pipe)
+        elif self.config == 'series':
+            if self._is_reversed:
+                # Only the first pipe is connected to the outlet
+                c_fu = np.concatenate((np.ones(1), np.zeros(self.nPipes-1)))
+            else:
+                # Only the last pipe is connected to the outlet
+                c_fu = np.concatenate((np.zeros(self.nPipes-1), np.ones(1)))
+        else:
+            raise NotImplementedError(
+                f"Configuration '{self.config}' not implemented.")
+
+        return c_fu[np.newaxis, :]
+
     def _update_model_variables(
             self, m_flow_borehole, cp_f, nSegments, segment_ratios):
         """
@@ -1975,8 +2161,6 @@ class MultipleUTube(_BasePipe):
         for i in range(2*nPipes):
             self._A[i, i] = -self._A[i, i] - sum(
                 [self._A[i, j] for j in range(2*nPipes) if not i == j])
-        for i in range(nPipes, 2*nPipes):
-            self._A[i, :] = - self._A[i, :]
         self._sumA = np.sum(self._A, axis=1)
         # Eigenvalues and eigenvectors of A
         self._L, self._V = np.linalg.eig(self._A)
@@ -2008,13 +2192,20 @@ class MultipleUTube(_BasePipe):
         # Format mass flow rate inputs
         # Mass flow rate in pipes
         if self.config.lower() == 'parallel':
-            m_flow_pipe = np.tile(m_flow_borehole/nPipes, 2*self.nPipes)
+            m_flow_pipe = np.tile(
+                np.abs(m_flow_borehole) / nPipes,
+                self.nPipes)
         elif self.config.lower() == 'series':
-            m_flow_pipe = np.tile(m_flow_borehole, 2*self.nPipes)
-        self._m_flow_pipe = m_flow_pipe
+            m_flow_pipe = np.tile(
+                np.abs(m_flow_borehole),
+                self.nPipes)
+        self._m_flow_pipe = np.sign(m_flow_borehole) * np.concatenate(
+            (m_flow_pipe, -m_flow_pipe))
         # Mass flow rate in each fluid circuit
         m_flow_in = np.atleast_1d(m_flow_borehole)
         self._m_flow_in = m_flow_in
+        # Flow direction
+        self._is_reversed = m_flow_borehole < 0. and self.reversible_flow
 
         # Format heat capacity inputs
         # Heat capacity in each fluid circuit
@@ -2055,6 +2246,12 @@ class IndependentMultipleUTube(MultipleUTube):
     J : int, optional
         Number of multipoles per pipe to evaluate the thermal resistances.
         Default is 2.
+    reversible_flow : bool
+        True to treat a negative mass flow rate as the reversal of flow
+        direction within the borehole. If False, the direction of flow is not
+        reversed when the mass flow rate is negative, and the absolute value is
+        use for calculations.
+        Default is True.
     nPipes : int
         Number of U-Tubes.
     nInlets : int
@@ -2085,8 +2282,8 @@ class IndependentMultipleUTube(MultipleUTube):
        heat exchanger. HVAC&R Research, 17(6), 895-911.
 
     """
-    def __init__(self, pos, r_in, r_out, borehole, k_s,
-                 k_g, R_fp, nPipes, J=2):
+    def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_fp, nPipes,
+                 J=2, reversible_flow=True):
         self.pos = pos
         self.r_in = r_in
         self.r_out = r_out
@@ -2095,6 +2292,7 @@ class IndependentMultipleUTube(MultipleUTube):
         self.k_g = k_g
         self.R_fp = R_fp
         self.J = J
+        self.reversible_flow = reversible_flow
         self.nPipes = nPipes
         self.nInlets = nPipes
         self.nOutlets = nPipes
@@ -2126,6 +2324,58 @@ class IndependentMultipleUTube(MultipleUTube):
         # Initialize stored_coefficients
         self._initialize_stored_coefficients()
         return
+
+    def _flow_direction(
+            self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
+        """
+        Build coefficient matrices to evaluate fluid temperatures at depth
+        (z). These coefficients take into account connections between U-tube
+        pipes.
+
+        Returns coefficients for the relation:
+
+            .. math::
+
+                \\mathbf{T_f}(z) = \\mathbf{c_{fd}} \\mathbf{T_{fd}}(z)
+                + \\mathbf{c_{fu}} \\mathbf{T_{fu}}(z)
+
+        Parameters
+        ----------
+        m_flow_borehole : float or (nInlets,) array
+            Inlet mass flow rate (in kg/s) into the borehole.
+        cp_f : float or (nInlets,) array
+            Fluid specific isobaric heat capacity (in J/kg.degC).
+        nSegments : int
+            Number of borehole segments.
+        segment_ratios : (nSegments,) array, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. If segment_ratios==None, segments of
+            equal lengths are considered.
+            Default is None.
+
+        Returns
+        -------
+        c_fd : (2*nPipes, nPipes,) array
+            Array of coefficients for inlet fluid temperature.
+        c_fu : (2*nPipes, nPipes,) array
+            Array of coefficients for upward fluid temperatures.
+
+        """
+        # Check if model variables need to be updated
+        self._check_model_variables(
+            m_flow_borehole, cp_f, nSegments, segment_ratios)
+
+        c_fd = np.zeros((2*self.nPipes, self.nPipes))
+        c_fu = np.zeros((2*self.nPipes, self.nPipes))
+        for i, is_reversed in enumerate(self._is_reversed):
+            if is_reversed:
+                c_fd[i+self.nPipes, i] = 1.
+                c_fu[i, i] = 1.
+            else:
+                c_fd[i, i] = 1.
+                c_fu[i+self.nPipes, i] = 1.
+
+        return c_fd, c_fu
 
     def _pipe_connectivity(
             self, m_flow_borehole, cp_f, nSegments, segment_ratios=None):
@@ -2227,8 +2477,11 @@ class IndependentMultipleUTube(MultipleUTube):
                 'Incorrect length of mass flow vector.')
         self._m_flow_in = m_flow_in
         # Mass flow rate in pipes
-        m_flow_pipe = np.tile(m_flow_in, 2)
-        self._m_flow_pipe = m_flow_pipe
+        self._m_flow_pipe = np.concatenate((m_flow_in, -m_flow_in))
+        # Flow direction
+        self._is_reversed = np.logical_and(
+            m_flow_borehole < 0.,
+            self.reversible_flow)
 
         # Format heat capacity inputs
         # Heat capacity in each fluid circuit
@@ -2280,6 +2533,12 @@ class Coaxial(SingleUTube):
     J : int, optional
         Number of multipoles per pipe to evaluate the thermal resistances.
         Default is 2.
+    reversible_flow : bool
+        True to treat a negative mass flow rate as the reversal of flow
+        direction within the borehole. If False, the direction of flow is not
+        reversed when the mass flow rate is negative, and the absolute value is
+        use for calculations.
+        Default is True.
     nPipes : int
         Number of U-Tubes, equals to 1.
     nInlets : int
@@ -2314,7 +2573,8 @@ class Coaxial(SingleUTube):
        Environment, 25 (8), 1007-1022.
 
     """
-    def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_ff, R_fp, J=2):
+    def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_ff, R_fp, J=2,
+                 reversible_flow=True):
         if isinstance(pos, tuple):
             pos = [pos]
         self.pos = pos
@@ -2326,6 +2586,7 @@ class Coaxial(SingleUTube):
         self.R_ff = R_ff
         self.R_fp = R_fp
         self.J = J
+        self.reversible_flow = reversible_flow
         self.nPipes = 1
         self.nInlets = 1
         self.nOutlets = 1
