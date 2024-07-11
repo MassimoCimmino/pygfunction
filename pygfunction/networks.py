@@ -81,18 +81,8 @@ class Network(object):
         self.cp_f = cp_f
 
         # Verify that borehole connectivity is valid
-        _verify_bore_connectivity(bore_connectivity, self.nBoreholes)
-        iInlets, nInlets, iOutlets, nOutlets, iCircuit = _find_inlets_outlets(
-                bore_connectivity, self.nBoreholes)
-
-        # Number of inlets and outlets in network
-        self.nInlets = nInlets
-        self.nOutlets = nOutlets
-        # Indices of inlets and outlets in network
-        self.iInlets = iInlets
-        self.iOutlets = iOutlets
-        # Indices of circuit of each borehole in network
-        self.iCircuit = iCircuit
+        self._verify_bore_connectivity()
+        self._find_inlets_outlets()
 
         # Initialize stored_coefficients
         self._initialize_coefficients_connectivity()
@@ -140,7 +130,7 @@ class Network(object):
                 m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
         # Evaluate outlet temperatures
         if np.isscalar(T_b):
-            T_b = np.tile(T_b, sum(self.nSegments))
+            T_b = np.tile(T_b, np.size(a_b, axis=1))
         T_f_in_borehole = a_in @ np.atleast_1d(T_f_in) + a_b @ T_b
         return T_f_in_borehole
 
@@ -185,7 +175,7 @@ class Network(object):
                 m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
         # Evaluate outlet temperatures
         if np.isscalar(T_b):
-            T_b = np.tile(T_b, sum(self.nSegments))
+            T_b = np.tile(T_b, np.size(a_b, axis=1))
         T_f_out = a_in @ np.atleast_1d(T_f_in) + a_b @ T_b
         return T_f_out
 
@@ -228,7 +218,7 @@ class Network(object):
         a_in, a_b = self.coefficients_borehole_heat_extraction_rate(
                 m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
         if np.isscalar(T_b):
-            T_b = np.tile(T_b, sum(self.nSegments))
+            T_b = np.tile(T_b, np.size(a_b, axis=1))
         Q_b = a_in @ np.atleast_1d(T_f_in) + a_b @ T_b
 
         return Q_b
@@ -272,7 +262,7 @@ class Network(object):
         a_in, a_b = self.coefficients_fluid_heat_extraction_rate(
                 m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
         if np.isscalar(T_b):
-            T_b = np.tile(T_b, sum(self.nSegments))
+            T_b = np.tile(T_b, np.size(a_b, axis=1))
         Q_f = a_in @ np.atleast_1d(T_f_in) + a_b @ T_b
 
         return Q_f
@@ -319,7 +309,7 @@ class Network(object):
                 m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
         # Evaluate outlet temperatures
         if np.isscalar(T_b):
-            T_b = np.tile(T_b, sum(self.nSegments))
+            T_b = np.tile(T_b, np.size(a_b, axis=1))
         T_f_in = a_q @ np.atleast_1d(Q_t) + a_b @ T_b
         if np.isscalar(Q_t):
             T_f_in = T_f_in.item()
@@ -367,7 +357,7 @@ class Network(object):
                 m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
         # Evaluate outlet temperatures
         if np.isscalar(T_b):
-            T_b = np.tile(T_b, sum(self.nSegments))
+            T_b = np.tile(T_b, np.size(a_b, axis=1))
         T_f_out = a_in @ np.atleast_1d(T_f_in) + a_b @ T_b
         if np.isscalar(T_f_in):
             T_f_out = T_f_out.item()
@@ -413,7 +403,7 @@ class Network(object):
         a_in, a_b = self.coefficients_network_heat_extraction_rate(
                 m_flow_network, cp_f, nSegments, segment_ratios=segment_ratios)
         if np.isscalar(T_b):
-            T_b = np.tile(T_b, sum(self.nSegments))
+            T_b = np.tile(T_b, np.size(a_b, axis=1))
         Q_t = a_in @ np.atleast_1d(T_f_in) + a_b @ T_b
         if np.isscalar(T_f_in):
             Q_t = Q_t.item()
@@ -960,7 +950,8 @@ class Network(object):
         """
         if not self._check_mixing_coefficients(m_flow_network):
             self._mix_out = np.zeros((1, self.nBoreholes))
-            self._mix_out[0, self.iOutlets] = self._m_flow_in/np.sum(self._m_flow_in)
+            self._mix_out[0, self.iOutlets] = \
+                np.abs(self._m_flow_in) / np.sum(np.abs(self._m_flow_in))
             self._mixing_m_flow = m_flow_network
         return self._mix_out
 
@@ -975,13 +966,22 @@ class Network(object):
                 + \\mathbf{c_{out}} \\mathbf{T_{f,borehole,out}}
 
         """
-        self._c_in = np.zeros((self.nBoreholes, 1))
-        self._c_out = np.zeros((self.nBoreholes, self.nBoreholes))
+        # Flow in positive direction
+        self._c_in_pos = np.zeros((self.nBoreholes, 1))
+        self._c_out_pos = np.zeros((self.nBoreholes, self.nBoreholes))
         for i in range(self.nInlets):
-            self._c_in[self.iInlets[i], 0] = 1.
+            self._c_in_pos[self._iInlets_pos[i], 0] = 1.
         for i in range(self.nBoreholes):
             if not self.c[i] == -1:
-                self._c_out[i, self.c[i]] = 1.
+                self._c_out_pos[i, self.c[i]] = 1.
+        # Flow in negative direction
+        self._c_in_neg = np.zeros((self.nBoreholes, 1))
+        self._c_out_neg = np.zeros((self.nBoreholes, self.nBoreholes))
+        for i in range(self.nInlets):
+            self._c_in_neg[self._iInlets_neg[i], 0] = 1.
+        for i in range(self.nBoreholes):
+            if not self.c[i] == -1:
+                self._c_out_neg[self.c[i], i] = 1.
 
         return
 
@@ -1078,6 +1078,18 @@ class Network(object):
             raise ValueError(
                 'Incorrect length of mass flow vector.')
         self._m_flow_in = m_flow_in
+        # Flow direction
+        self._is_reversed = m_flow_network < 0.
+        if self._is_reversed:
+            self._c_in = self._c_in_neg
+            self._c_out = self._c_out_neg
+            self.iInlets = self._iInlets_neg
+            self.iOutlets = self._iOutlets_neg
+        else:
+            self._c_in = self._c_in_pos
+            self._c_out = self._c_out_pos
+            self.iInlets = self._iInlets_pos
+            self.iOutlets = self._iOutlets_pos
 
         # Format heat capacity inputs
         # Heat capacity in each fluid circuit
@@ -1119,6 +1131,115 @@ class Network(object):
         else:
             raise ValueError(
                 'Incorrect format of the segment ratios list.')
+
+
+    def _find_inlets_outlets(self):
+        """
+        Finds the numbers of boreholes connected to the inlet and outlet of the
+        network and the indices of the boreholes.
+
+        This function raises an error if the supplied borehole connectivity is
+        invalid.
+
+        Parameters
+        ----------
+        bore_connectivity : list
+            Index of fluid inlet into each borehole. -1 corresponds to a borehole
+            connected to the bore field inlet.
+        nBoreholes : int
+            Number of boreholes in the bore field.
+
+        """
+        # Number and indices of inlets
+        nInlets = self.c.count(-1)
+        iInlets = [i for i in range(self.nBoreholes) if self.c[i] == -1]
+        # Number and indices of outlets
+        iOutlets = [i for i in range(self.nBoreholes) if i not in self.c]
+        nOutlets = len(iOutlets)
+        iCircuit = [iInlets.index(self._path_to_inlet(i)[-1])
+                    for i in range(self.nBoreholes)]
+        if not nInlets == nOutlets:
+            raise ValueError(
+                'The network should have as many inlets as outlets.')
+
+        # Number of inlets and outlets in network
+        self.nInlets = nInlets
+        self.nOutlets = nOutlets
+        # Indices of inlets and outlets in network
+        self._iInlets_pos = iInlets
+        self._iOutlets_pos = iOutlets
+        self._iInlets_neg = iOutlets
+        self._iOutlets_neg = iInlets
+        # Indices of circuit of each borehole in network
+        self.iCircuit = iCircuit
+
+        return
+
+
+    def _path_to_inlet(self, bore_index):
+        """
+        Returns the path from a borehole to the bore field inlet.
+
+        Parameters
+        ----------
+        bore_index : int
+            Index of borehole to evaluate path.
+
+        Returns
+        -------
+        path : list
+            List of boreholes leading to the bore field inlet, starting from
+            borehole bore_index
+
+        """
+        # Initialize path
+        path = [bore_index]
+        # Index of borehole feeding into borehole (bore_index)
+        index_in = self.c[bore_index]
+        # Stop when bore field inlet is reached (index_in == -1)
+        while not index_in == -1:
+            # Add index of upstream borehole to path
+            path.append(index_in)
+            # Get index of next upstream borehole
+            index_in = self.c[index_in]
+
+        return path
+
+
+    def _verify_bore_connectivity(self):
+        """
+        Verifies that borehole connectivity is valid.
+
+        This function raises an error if the supplied borehole connectivity is
+        invalid.
+
+        """
+        if not len(self.c) == self.nBoreholes:
+            raise ValueError(
+                'The length of the borehole connectivity list does not correspond '
+                'to the number of boreholes in the bore field.')
+        if max(self.c) >= self.nBoreholes:
+            raise ValueError(
+                'The borehole connectivity list contains borehole indices that '
+                'are not part of the network.')
+        # Cycle through each borehole and verify that connections lead to -1
+        # (-1 is the bore field inlet) and that no two boreholes have the same
+        # index of fluid inlet (except for -1).
+        for index_in in self.c:
+            n = 0 # Initialize step counter
+            if index_in != -1 and self.c.count(index_in) > 1:
+                raise ValueError(
+                    'Two boreholes cannot have the same inlet, except fort the '
+                    'network inlet (index of -1).')
+            # Stop when bore field inlet is reached (index_in == -1)
+            while not index_in == -1:
+                index_in = self.c[index_in]
+                n += 1 # Increment step counter
+                # Raise error if n exceeds the number of boreholes
+                if n > self.nBoreholes:
+                    raise ValueError(
+                        'The borehole connectivity list is invalid.')
+        return
 
 
 class _EquivalentNetwork(Network):
@@ -1194,17 +1315,7 @@ class _EquivalentNetwork(Network):
         self.cp_f = cp_f
 
         # Verify that borehole connectivity is valid
-        iInlets, nInlets, iOutlets, nOutlets, iCircuit = _find_inlets_outlets(
-                self.c, self.nBoreholes)
-
-        # Number of inlets and outlets in network
-        self.nInlets = nInlets
-        self.nOutlets = nOutlets
-        # Indices of inlets and outlets in network
-        self.iInlets = iInlets
-        self.iOutlets = iOutlets
-        # Indices of circuit of each borehole in network
-        self.iCircuit = iCircuit
+        self._find_inlets_outlets()
 
         # Initialize stored_coefficients
         self._initialize_coefficients_connectivity()
@@ -1303,9 +1414,10 @@ class _EquivalentNetwork(Network):
         """
         if not self._check_mixing_coefficients(m_flow_network):
             self._mix_out = np.zeros((1, self.nBoreholes))
+            m_flow_in = np.abs(self._m_flow_in)
+            wBoreholes = self.wBoreholes.flatten()
             self._mix_out[0, self.iOutlets] = \
-                self._m_flow_in * self.wBoreholes.flatten() \
-                / np.sum(self._m_flow_in * self.wBoreholes.flatten())
+                m_flow_in * wBoreholes / np.sum(m_flow_in * wBoreholes)
             self._mixing_m_flow = m_flow_network
         return self._mix_out
 
@@ -1323,6 +1435,18 @@ class _EquivalentNetwork(Network):
             raise ValueError(
                 'Incorrect length of mass flow vector.')
         self._m_flow_in = m_flow_in
+        # Flow direction
+        self._is_reversed = m_flow_network < 0.
+        if self._is_reversed:
+            self._c_in = self._c_in_neg
+            self._c_out = self._c_out_neg
+            self.iInlets = self._iOutlets_neg
+            self.iOutlets = self._iInlets_neg
+        else:
+            self._c_in = self._c_in_pos
+            self._c_out = self._c_out_pos
+            self.iInlets = self._iOutlets_pos
+            self.iOutlets = self._iInlets_pos
 
         # Format heat capacity inputs
         # Heat capacity in each fluid circuit
@@ -1410,112 +1534,3 @@ def network_thermal_resistance(network, m_flow_network, cp_f):
         R_field = R_field.item()
 
     return R_field
-
-
-def _find_inlets_outlets(bore_connectivity, nBoreholes):
-    """
-    Finds the numbers of boreholes connected to the inlet and outlet of the
-    network and the indices of the boreholes.
-
-    This function raises an error if the supplied borehole connectivity is
-    invalid.
-
-    Parameters
-    ----------
-    bore_connectivity : list
-        Index of fluid inlet into each borehole. -1 corresponds to a borehole
-        connected to the bore field inlet.
-    nBoreholes : int
-        Number of boreholes in the bore field.
-
-    """
-    # Number and indices of inlets
-    nInlets = bore_connectivity.count(-1)
-    iInlets = [i for i in range(nBoreholes) if bore_connectivity[i]==-1]
-    # Number and indices of outlets
-    iOutlets = [i for i in range(nBoreholes) if i not in bore_connectivity]
-    nOutlets = len(iOutlets)
-    iCircuit = [iInlets.index(_path_to_inlet(bore_connectivity, i)[-1])
-                for i in range(nBoreholes)]
-    if not nInlets == nOutlets:
-        raise ValueError(
-            'The network should have as many inlets as outlets.')
-
-    return iInlets, nInlets, iOutlets, nOutlets, iCircuit
-
-
-def _path_to_inlet(bore_connectivity, bore_index):
-    """
-    Returns the path from a borehole to the bore field inlet.
-
-    Parameters
-    ----------
-    bore_connectivity : list
-        Index of fluid inlet into each borehole. -1 corresponds to a borehole
-        connected to the bore field inlet.
-    bore_index : int
-        Index of borehole to evaluate path.
-
-    Returns
-    -------
-    path : list
-        List of boreholes leading to the bore field inlet, starting from
-        borehole bore_index
-
-    """
-    # Initialize path
-    path = [bore_index]
-    # Index of borehole feeding into borehole (bore_index)
-    index_in = bore_connectivity[bore_index]
-    # Stop when bore field inlet is reached (index_in == -1)
-    while not index_in == -1:
-        # Add index of upstream borehole to path
-        path.append(index_in)
-        # Get index of next upstream borehole
-        index_in = bore_connectivity[index_in]
-
-    return path
-
-
-def _verify_bore_connectivity(bore_connectivity, nBoreholes):
-    """
-    Verifies that borehole connectivity is valid.
-
-    This function raises an error if the supplied borehole connectivity is
-    invalid.
-
-    Parameters
-    ----------
-    bore_connectivity : list
-        Index of fluid inlet into each borehole. -1 corresponds to a borehole
-        connected to the bore field inlet.
-    nBoreholes : int
-        Number of boreholes in the bore field.
-
-    """
-    if not len(bore_connectivity) == nBoreholes:
-        raise ValueError(
-            'The length of the borehole connectivity list does not correspond '
-            'to the number of boreholes in the bore field.')
-    if max(bore_connectivity) >= nBoreholes:
-        raise ValueError(
-            'The borehole connectivity list contains borehole indices that '
-            'are not part of the network.')
-    # Cycle through each borehole and verify that connections lead to -1
-    # (-1 is the bore field inlet) and that no two boreholes have the same
-    # index of fluid inlet (except for -1).
-    for index_in in bore_connectivity:
-        n = 0 # Initialize step counter
-        if index_in != -1 and bore_connectivity.count(index_in) > 1:
-            raise ValueError(
-                'Two boreholes cannot have the same inlet, except fort the '
-                'network inlet (index of -1).')
-        # Stop when bore field inlet is reached (index_in == -1)
-        while not index_in == -1:
-            index_in = bore_connectivity[index_in]
-            n += 1 # Increment step counter
-            # Raise error if n exceeds the number of boreholes
-            if n > nBoreholes:
-                raise ValueError(
-                    'The borehole connectivity list is invalid.')
-    return
