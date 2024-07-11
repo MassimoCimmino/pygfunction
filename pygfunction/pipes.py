@@ -3065,7 +3065,7 @@ def fluid_friction_factor_circular_pipe(
     # Relative roughness
     E = epsilon / D
     # Fluid velocity
-    V_flow = m_flow_pipe / rho_f
+    V_flow = np.abs(m_flow_pipe) / rho_f
     A_cs = pi * r_in**2
     V = V_flow / A_cs
     # Reynolds number
@@ -3142,7 +3142,7 @@ def convective_heat_transfer_coefficient_circular_pipe(
     # Hydraulic diameter
     D = 2.*r_in
     # Fluid velocity
-    V_flow = m_flow_pipe / rho_f
+    V_flow = np.abs(m_flow_pipe) / rho_f
     A_cs = pi * r_in**2
     V = V_flow / A_cs
     # Reynolds number
@@ -3254,7 +3254,7 @@ def convective_heat_transfer_coefficient_concentric_annulus(
     # Cross-sectional area of the annulus region
     A_c = pi * ((r_a_out ** 2) - (r_a_in ** 2))
     # Volume flow rate
-    V_dot = m_flow_pipe / rho_f
+    V_dot = np.abs(m_flow_pipe) / rho_f
     # Average velocity
     V = V_dot / A_c
     # Reynolds number
