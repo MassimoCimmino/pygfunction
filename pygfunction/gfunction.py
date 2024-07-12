@@ -1677,8 +1677,10 @@ class _BaseSolver(object):
                     # The gFunction is equal to the effective borehole wall
                     # temperature
                     # Outlet fluid temperature
-                    T_f_out = T_f_in - 2*pi*self.network.p[0].k_s*H_tot/(
-                        np.sum(self.network.m_flow_network*self.network.cp_f))
+                    T_f_out = T_f_in - 2*pi*self.network.p[0].k_s*H_tot / (
+                        np.sum(
+                            np.abs(self.network.m_flow_network)
+                            * self.network.cp_f))
                     # Average fluid temperature
                     T_f = 0.5*(T_f_in + T_f_out)
                     # Borefield thermal resistance
