@@ -1079,17 +1079,21 @@ class Network(object):
                 'Incorrect length of mass flow vector.')
         self._m_flow_in = m_flow_in
         # Flow direction
-        self._is_reversed = m_flow_network < 0.
-        if self._is_reversed:
+        if np.all(m_flow_network >= 0.):
+            self._is_reversed = False
+            self._c_in = self._c_in_pos
+            self._c_out = self._c_out_pos
+            self.iInlets = self._iInlets_pos
+            self.iOutlets = self._iOutlets_pos
+        elif np.all(m_flow_network <= 0.):
+            self._is_reversed = True
             self._c_in = self._c_in_neg
             self._c_out = self._c_out_neg
             self.iInlets = self._iInlets_neg
             self.iOutlets = self._iOutlets_neg
         else:
-            self._c_in = self._c_in_pos
-            self._c_out = self._c_out_pos
-            self.iInlets = self._iInlets_pos
-            self.iOutlets = self._iOutlets_pos
+            raise ValueError(
+                'All elements of m_flow_network should be of the same sign.')
 
         # Format heat capacity inputs
         # Heat capacity in each fluid circuit
