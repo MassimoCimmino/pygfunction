@@ -154,7 +154,41 @@ def double_Utube_parallel(single_borehole):
     r_in = 0.015            # Pipe inner radius [m]
     epsilon = 1.0e-06       # Pipe surface roughness [m]
     m_flow_borehole = 0.05  # Nominal fluid mass flow rate [kg/s]
-    m_flow_pipe = m_flow_borehole
+    m_flow_pipe = m_flow_borehole / 2
+    # Fluid is propylene-glycol (20 %) at 20 degC
+    fluid = gt.media.Fluid('MPG', 20.)
+    # Pipe thermal resistance [m.K/W]
+    R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(
+        r_in, r_out, k_p)
+    # Convection heat transfer coefficient [W/m2.K]
+    h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
+        m_flow_pipe, r_in, fluid.mu, fluid.rho, fluid.k, fluid.cp,
+        epsilon)
+    # Film thermal resistance [m.K/W]
+    R_f = 1.0 / (h_f * 2 * np.pi * r_in)
+    # Initialize pipe
+    doubleUTube = gt.pipes.MultipleUTube(
+            pos_pipes, r_in, r_out, borehole, k_s, k_g, R_f + R_p, 2,
+            config='parallel')
+    return doubleUTube
+
+
+@pytest.fixture
+def double_Utube_parallel_asymmetrical(single_borehole):
+    # Extract borehole from fixture
+    borehole = single_borehole[0]
+    # Pipe positions [m]
+    D_s = 0.05
+    pos_pipes = [
+        (-D_s, 0.), (0.35*D_s, -0.6*D_s), (0.9*D_s, 0.), (0., 0.8*D_s)]
+    k_s = 2.0               # Ground thermal conductivity [W/m.K]
+    k_g = 1.0               # Grout thermal conductivity [W/m.K]
+    k_p = 0.4               # Pipe thermal conductivity [W/m.K]
+    r_out = 0.02            # Pipe outer radius [m]
+    r_in = 0.015            # Pipe inner radius [m]
+    epsilon = 1.0e-06       # Pipe surface roughness [m]
+    m_flow_borehole = 0.05  # Nominal fluid mass flow rate [kg/s]
+    m_flow_pipe = m_flow_borehole / 2
     # Fluid is propylene-glycol (20 %) at 20 degC
     fluid = gt.media.Fluid('MPG', 20.)
     # Pipe thermal resistance [m.K/W]
@@ -180,6 +214,40 @@ def double_Utube_series(single_borehole):
     # Pipe positions [m]
     D_s = 0.05
     pos_pipes = [(-D_s, 0.), (0., -D_s), (D_s, 0.), (0., D_s)]
+    k_s = 2.0               # Ground thermal conductivity [W/m.K]
+    k_g = 1.0               # Grout thermal conductivity [W/m.K]
+    k_p = 0.4               # Pipe thermal conductivity [W/m.K]
+    r_out = 0.02            # Pipe outer radius [m]
+    r_in = 0.015            # Pipe inner radius [m]
+    epsilon = 1.0e-06       # Pipe surface roughness [m]
+    m_flow_borehole = 0.05  # Nominal fluid mass flow rate [kg/s]
+    m_flow_pipe = m_flow_borehole
+    # Fluid is propylene-glycol (20 %) at 20 degC
+    fluid = gt.media.Fluid('MPG', 20.)
+    # Pipe thermal resistance [m.K/W]
+    R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(
+        r_in, r_out, k_p)
+    # Convection heat transfer coefficient [W/m2.K]
+    h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
+        m_flow_pipe, r_in, fluid.mu, fluid.rho, fluid.k, fluid.cp,
+        epsilon)
+    # Film thermal resistance [m.K/W]
+    R_f = 1.0 / (h_f * 2 * np.pi * r_in)
+    # Initialize pipe
+    doubleUTube = gt.pipes.MultipleUTube(
+            pos_pipes, r_in, r_out, borehole, k_s, k_g, R_f + R_p, 2,
+            config='series')
+    return doubleUTube
+
+
+@pytest.fixture
+def double_Utube_series_asymmetrical(single_borehole):
+    # Extract borehole from fixture
+    borehole = single_borehole[0]
+    # Pipe positions [m]
+    D_s = 0.05
+    pos_pipes = [
+        (-D_s, 0.), (0.35*D_s, -0.6*D_s), (0.9*D_s, 0.), (0., 0.8*D_s)]
     k_s = 2.0               # Ground thermal conductivity [W/m.K]
     k_g = 1.0               # Grout thermal conductivity [W/m.K]
     k_p = 0.4               # Pipe thermal conductivity [W/m.K]
