@@ -653,3 +653,45 @@ def ten_boreholes_network_rectangular_series(ten_boreholes_rectangular):
         boreField, UTubes, bore_connectivity=bore_connectivity,
         m_flow_network=m_flow_network, cp_f=fluid.cp)
     return network
+
+
+@pytest.fixture
+def three_boreholes_network_series_unequal(three_boreholes_unequal):
+    # Extract bore field from fixture
+    boreField = three_boreholes_unequal
+    # Pipe positions [m]
+    D_s = 0.04
+    pos_pipes = [(-D_s, 0.), (D_s, 0.)]
+    k_s = 2.0               # Ground thermal conductivity [W/m.K]
+    k_g = 1.0               # Grout thermal conductivity [W/m.K]
+    k_p = 0.4               # Pipe thermal conductivity [W/m.K]
+    r_out = 0.02            # Pipe outer radius [m]
+    r_in = 0.015            # Pipe inner radius [m]
+    epsilon = 1.0e-06       # Pipe surface roughness [m]
+    m_flow_borehole = 0.05  # Nominal fluid mass flow rate [kg/s]
+    m_flow_pipe = m_flow_borehole
+    m_flow_network = m_flow_borehole
+    # Fluid is propylene-glycol (20 %) at 20 degC
+    fluid = gt.media.Fluid('MPG', 20.)
+    # Pipe thermal resistance [m.K/W]
+    R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(
+        r_in, r_out, k_p)
+    # Convection heat transfer coefficient [W/m2.K]
+    h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
+        m_flow_pipe, r_in, fluid.mu, fluid.rho, fluid.k, fluid.cp,
+        epsilon)
+    # Film thermal resistance [m.K/W]
+    R_f = 1.0 / (h_f * 2 * np.pi * r_in)
+
+    # Build network of series-connected boreholes
+    bore_connectivity = list(range(-1, len(boreField)-1))
+    UTubes = []
+    for borehole in boreField:
+        UTube = gt.pipes.SingleUTube(
+            pos_pipes, r_in, r_out, borehole, k_s, k_g, R_f + R_p)
+        UTubes.append(UTube)
+    # Initialize network
+    network = gt.networks.Network(
+        boreField, UTubes, bore_connectivity=bore_connectivity,
+        m_flow_network=m_flow_network, cp_f=fluid.cp)
+    return network
