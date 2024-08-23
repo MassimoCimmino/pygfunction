@@ -28,7 +28,7 @@ class _BasePipe(object):
         True to treat a negative mass flow rate as the reversal of flow
         direction within the borehole. If False, the direction of flow is not
         reversed when the mass flow rate is negative, and the absolute value is
-        use for calculations. Equals to True.
+        used for calculations. Equals to True.
 
     Notes
     -----
@@ -1030,7 +1030,7 @@ class SingleUTube(_BasePipe):
         True to treat a negative mass flow rate as the reversal of flow
         direction within the borehole. If False, the direction of flow is not
         reversed when the mass flow rate is negative, and the absolute value is
-        use for calculations.
+        used for calculations.
         Default is True.
     nPipes : int
         Number of U-Tubes, equals to 1.
@@ -1794,7 +1794,7 @@ class MultipleUTube(_BasePipe):
         True to treat a negative mass flow rate as the reversal of flow
         direction within the borehole. If False, the direction of flow is not
         reversed when the mass flow rate is negative, and the absolute value is
-        use for calculations.
+        used for calculations.
         Default is True.
     nPipes : int
         Number of U-Tubes.
@@ -1825,16 +1825,16 @@ class MultipleUTube(_BasePipe):
     .. [#Cimmino2016] Cimmino, M. (2016). Fluid and borehole wall temperature
        profiles in vertical geothermal boreholes with multiple U-tubes.
        Renewable Energy, 96, 137-147.
+    .. [#Multiple-Cimmin2019] Cimmino, M. (2019). Semi-analytical method for
+       g-function calculation of bore fields with series- and
+       parallel-connected boreholes. Science and Technology for the Built
+       Environment, 25 (8), 1007-1022.
     .. [#Cimmino2024] Cimmino, M. (2024). g-Functions for fields of series- and
        parallel-connected boreholes with variable fluid mass flow rate and
        reversible flow direction. Renewable Energy, 228, 120661.
     .. [#Multiple-Claesson2011b] Claesson, J., & Hellstrom, G. (2011).
        Multipole method to calculate borehole thermal resistances in a borehole
        heat exchanger. HVAC&R Research, 17(6), 895-911.
-    .. [#Multiple-Cimmin2019] Cimmino, M. (2019). Semi-analytical method for
-       g-function calculation of bore fields with series- and
-       parallel-connected boreholes. Science and Technology for the Built
-       Environment, 25 (8), 1007-1022.
 
     """
     def __init__(self, pos, r_in, r_out, borehole, k_s, k_g, R_fp, nPipes,
@@ -2250,7 +2250,7 @@ class IndependentMultipleUTube(MultipleUTube):
         True to treat a negative mass flow rate as the reversal of flow
         direction within the borehole. If False, the direction of flow is not
         reversed when the mass flow rate is negative, and the absolute value is
-        use for calculations.
+        used for calculations.
         Default is True.
     nPipes : int
         Number of U-Tubes.
@@ -2274,8 +2274,8 @@ class IndependentMultipleUTube(MultipleUTube):
     .. [#Cimmino2016b] Cimmino, M. (2016). Fluid and borehole wall temperature
        profiles in vertical geothermal boreholes with multiple U-tubes.
        Renewable Energy, 96, 137-147.
-    .. [#Cimmino2024b] Cimmino, M. (2024). g-Functions for fields of series- and
-       parallel-connected boreholes with variable fluid mass flow rate and
+    .. [#Cimmino2024b] Cimmino, M. (2024). g-Functions for fields of series-
+       and parallel-connected boreholes with variable fluid mass flow rate and
        reversible flow direction. Renewable Energy, 228, 120661.
     .. [#Independent-Claesson2011b] Claesson, J., & Hellstrom, G. (2011).
        Multipole method to calculate borehole thermal resistances in a borehole
@@ -2537,7 +2537,7 @@ class Coaxial(SingleUTube):
         True to treat a negative mass flow rate as the reversal of flow
         direction within the borehole. If False, the direction of flow is not
         reversed when the mass flow rate is negative, and the absolute value is
-        use for calculations.
+        used for calculations.
         Default is True.
     nPipes : int
         Number of U-Tubes, equals to 1.

@@ -12,7 +12,8 @@ class Network(object):
     characteristics of the pipes and the grout material in each boreholes, the
     topology of the connections between boreholes, as well as methods to
     evaluate fluid temperatures and heat extraction rates based on the work of
-    Cimmino (2018, 2019) [#Network-Cimmin2018]_, [#Network-Cimmin2019]_.
+    Cimmino (2018, 2019, 2024) [#Network-Cimmin2018]_, [#Network-Cimmin2019]_,
+    [#Network-Cimmino2024]_.
 
     Attributes
     ----------
@@ -65,6 +66,9 @@ class Network(object):
        g-function calculation of bore fields with series- and
        parallel-connected boreholes. Science and Technology for the Built
        Environment, 25 (8), 1007-1022.
+    .. [#Network-Cimmino2024] Cimmino, M. (2024). g-Functions for fields of
+       series- and parallel-connected boreholes with variable fluid mass flow
+       rate and reversible flow direction. Renewable Energy, 228, 120661.
 
     """
     def __init__(self, boreholes, pipes, bore_connectivity=None,
@@ -1255,7 +1259,8 @@ class _EquivalentNetwork(Network):
     characteristics of the pipes and the grout material in each boreholes, the
     topology of the connections between boreholes, as well as methods to
     evaluate fluid temperatures and heat extraction rates based on the work of
-    Cimmino (2018, 2019) [#Network-Cimmin2018]_, [#Network-Cimmin2019]_.
+    Cimmino (2018, 2019, 2024) [#Network-Cimmin2018]_, [#Network-Cimmin2019]_,
+    [#Network-Cimmin2024]_.
 
     Attributes
     ----------
@@ -1303,6 +1308,9 @@ class _EquivalentNetwork(Network):
        g-function calculation of bore fields with series- and
        parallel-connected boreholes. Science and Technology for the Built
        Environment, 25 (8), 1007-1022.
+    .. [#Network-Cimmino2024] Cimmino, M. (2024). g-Functions for fields of
+       series- and parallel-connected boreholes with variable fluid mass flow
+       rate and reversible flow direction. Renewable Energy, 228, 120661.
 
     """
     def __init__(self, equivalentBoreholes, pipes, m_flow_network=None,
