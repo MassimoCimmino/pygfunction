@@ -80,6 +80,27 @@ class gFunction(object):
 
         If not given, chosen to be 'UBWT' if a list of boreholes is provided
         or 'MIFT' if a Network object is provided.
+    m_flow_borehole : (nBoreholes,) array or (nBoreholes, nMassFlow) array, optional
+        Fluid mass flow rate into each borehole. If a
+        (nBoreholes, nMassFlow) array is supplied, the
+        (nMassFlow, nMassFlow,) variable mass flow rate g-functions
+        will be evaluated using the method of Cimmino (2024)
+        [#gFunction-CimBer2024]_. Only required for the 'MIFT' boundary
+         condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
+         provided.
+        Default is None.
+    m_flow_network : float or (nMassFlow,) array, optional
+        Fluid mass flow rate into the network of boreholes. If an array
+        is supplied, the (nMassFlow, nMassFlow,) variable mass flow
+        rate g-functions will be evaluated using the method of Cimmino
+        (2024) [#gFunction-CimBer2024]_. Only required for the 'MIFT' boundary
+         condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
+         provided.
+        Default is None.
+    cp_f : float, optional
+        Fluid specific isobaric heat capacity (in J/kg.degC). Only required
+        for the 'MIFT' boundary condition.
+        Default is None.
     options : dict, optional
         A dictionary of solver options. All methods accept the following
         generic options:
@@ -184,6 +205,8 @@ class gFunction(object):
     - The g-function is linearized for times `t < r_b**2 / (25 * self.alpha)`.
       The g-function value is then interpolated between 0 and its value at the
       threshold.
+    - If the 'MIFT' is used, only one of the 'm_flow_borehole' or
+      'm_flow_network' can be supplied.
 
     References
     ----------
@@ -210,14 +233,22 @@ class gFunction(object):
        finite line source solution to model thermal interactions between
        geothermal boreholes. International Communications in Heat and Mass
        Transfer, 127, 105496.
+    .. [#gFunction-Cimmino2024] Cimmino, M. (2024). g-Functions for fields of
+       series- and parallel-connected boreholes with variable fluid mass flow
+       rate and reversible flow direction. Renewable Energy, 228, 120661.
 
     """
     def __init__(self, boreholes_or_network, alpha, time=None,
-                 method='equivalent', boundary_condition=None, options={}):
+                 method='equivalent', boundary_condition=None,
+                 m_flow_borehole=None, m_flow_network=None,
+                 cp_f=None, options={}):
         self.alpha = alpha
         self.time = time
         self.method = method
         self.boundary_condition = boundary_condition
+        self.m_flow_borehole = m_flow_borehole
+        self.m_flow_network = m_flow_network
+        self.cp_f = cp_f
         self.options = options
 
         # Format inputs and assign default values where needed
@@ -229,15 +260,18 @@ class gFunction(object):
         if self.method.lower()=='similarities':
             self.solver = _Similarities(
                 self.boreholes, self.network, self.time,
-                self.boundary_condition, **self.options)
+                self.boundary_condition, self.m_flow_borehole,
+                self.m_flow_network, self.cp_f, **self.options)
         elif self.method.lower()=='detailed':
             self.solver = _Detailed(
                 self.boreholes, self.network, self.time,
-                self.boundary_condition, **self.options)
+                self.boundary_condition, self.m_flow_borehole,
+                self.m_flow_network, self.cp_f, **self.options)
         elif self.method.lower()=='equivalent':
             self.solver = _Equivalent(
                 self.boreholes, self.network, self.time,
-                self.boundary_condition, **self.options)
+                self.boundary_condition, self.m_flow_borehole,
+                self.m_flow_network, self.cp_f, **self.options)
         else:
             raise ValueError(f"'{method}' is not a valid method.")
 
@@ -283,9 +317,16 @@ class gFunction(object):
             print(60*'-')
         return self.gFunc
 
-    def visualize_g_function(self):
+    def visualize_g_function(self, which=None):
         """
         Plot the g-function of the borefield.
+
+        Parameters
+        ----------
+        which : list of tuple, optional
+            Tuples (i, j) of the variable mass flow rate g-functions to plot.
+            If None, all g-functions are plotted.
+            Default is None.
 
         Returns
         -------
@@ -305,7 +346,23 @@ class gFunction(object):
         # Dimensionless time (log)
         lntts = np.log(self.time/ts)
         # Draw g-function
-        ax.plot(lntts, self.gFunc)
+        if self.solver.nMassFlow == 0:
+            ax.plot(lntts, self.gFunc)
+        elif which is None:
+            for j in range(self.solver.nMassFlow):
+                for i in range(self.solver.nMassFlow):
+                    ax.plot(
+                        lntts,
+                        self.gFunc[i,j,:],
+                        label=f'$g_{{{i+1}{j+1}}}$')
+            plt.legend()
+        else:
+            for (i, j) in which:
+                ax.plot(
+                    lntts,
+                    self.gFunc[i,j,:],
+                    label=f'$g_{{{i+1}{j+1}}}$')
+            plt.legend()
 
         # Adjust figure to window
         plt.tight_layout()
@@ -865,6 +922,15 @@ class gFunction(object):
             # use 'MIFT'
             if self.boundary_condition is None:
                 self.boundary_condition = 'MIFT'
+            # Extract mass flow rate from Network object if provided in the object
+            # and none of m_flow_borehole and m_flow_network are provided
+            if self.m_flow_borehole is None and self.m_flow_network is None:
+                if type(self.network.m_flow_network) is float:
+                     self.m_flow_network = self.network.m_flow_network
+                elif type(self.network.m_flow_network) is np.ndarray:
+                     self.m_flow_borehole = self.network.m_flow_network
+            if self.cp_f is None and type(self.network.cp_f) is float:
+                self.cp_f = self.network.cp_f
         else:
             self.network = None
             self.boreholes = boreholes_or_network
@@ -881,11 +947,10 @@ class gFunction(object):
                     "parallel-connected boreholes. Calculations will use the "
                     "'similarities' solver instead.")
                 self.method = 'similarities'
-            elif not (
-                    type(self.network.m_flow_network) is float or (
-                        type(self.network.m_flow_network) is np.ndarray and \
-                            np.allclose(self.network.m_flow_network,
-                                        self.network.m_flow_network[0]))):
+            elif not (self.m_flow_borehole is None
+                      or np.allclose(
+                          self.m_flow_borehole,
+                          self.m_flow_borehole[0])):
                 warnings.warn(
                     "\nSolver 'equivalent' is only valid for equal mass flow "
                     "rates into the boreholes. Calculations will use the "
@@ -918,9 +983,19 @@ class gFunction(object):
             "There are duplicate boreholes in the borefield."
         assert (self.network is None and not self.boundary_condition=='MIFT') or isinstance(self.network, Network), \
             "The network is not a valid 'Network' object."
-        assert self.network is None or (self.network.m_flow_network is not None and self.network.cp_f is not None), \
-            "The mass flow rate 'm_flow_network' and heat capacity 'cp_f' must " \
-            "be provided at the instanciation of the 'Network' object."
+        if self.boundary_condition == 'MIFT':
+            assert not (self.m_flow_network is None and self.m_flow_borehole is None), \
+                "The mass flow rate 'm_flow_borehole' or 'm_flow_network' must " \
+                "be provided when using the 'MIFT' boundary condition."
+            assert not (self.m_flow_network is not None and self.m_flow_borehole is not None), \
+                "Only one of 'm_flow_borehole' or 'm_flow_network' can " \
+                "be provided when using the 'MIFT' boundary condition."
+            assert not self.cp_f is None, \
+                "The heat capacity 'cp_f' must " \
+                "be provided when using the 'MIFT' boundary condition."
+            assert not (type(self.m_flow_borehole) is np.ndarray and self.m_flow_borehole.ndim and not np.size(self.m_flow_borehole, axis=1)==len(self.boreholes)), \
+                "The number of mass flow rates in 'm_flow_borehole' must " \
+                "correspond to the number of boreholes."
         assert type(self.time) is np.ndarray or isinstance(self.time, (np.floating, float)) or self.time is None, \
             "Time should be a float or an array."
         assert isinstance(self.alpha, (np.floating, float)), \
@@ -1406,6 +1481,27 @@ class _BaseSolver(object):
         (of type int) as an argument, or an array of size (nSegments[i],) when
         provided with an element of nSegments (of type list).
         Default is :func:`utilities.segment_ratios`.
+    m_flow_borehole : (nBoreholes,) array or (nBoreholes, nMassFlow) array, optional
+        Fluid mass flow rate into each borehole. If a
+        (nBoreholes, nMassFlow) array is supplied, the
+        (nMassFlow, nMassFlow,) variable mass flow rate g-functions
+        will be evaluated using the method of Cimmino (2024)
+        [#gFunction-CimBer2024]_. Only required for the 'MIFT' boundary
+         condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
+         provided.
+        Default is None.
+    m_flow_network : float or (nMassFlow,) array, optional
+        Fluid mass flow rate into the network of boreholes. If an array
+        is supplied, the (nMassFlow, nMassFlow,) variable mass flow
+        rate g-functions will be evaluated using the method of Cimmino
+        (2024) [#gFunction-CimBer2024]_. Only required for the 'MIFT' boundary
+         condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
+         provided.
+        Default is None.
+    cp_f : float, optional
+        Fluid specific isobaric heat capacity (in J/kg.degC). Only required
+        for the 'MIFT' boundary condition.
+        Default is None.
     approximate_FLS : bool, optional
         Set to true to use the approximation of the FLS solution of Cimmino
         (2021). This approximation does not require the numerical evaluation of
@@ -1446,6 +1542,7 @@ class _BaseSolver(object):
 
     """
     def __init__(self, boreholes, network, time, boundary_condition,
+                 m_flow_borehole=None, m_flow_network=None, cp_f=None,
                  nSegments=8, segment_ratios=utilities.segment_ratios,
                  approximate_FLS=False, mQuad=11, nFLS=10,
                  linear_threshold=None, disp=False, profiles=False,
@@ -1485,6 +1582,20 @@ class _BaseSolver(object):
                             for i in range(nBoreholes)]
         self._i1Segments = [sum(self.nBoreSegments[0:(i + 1)])
                             for i in range(nBoreholes)]
+        self.nMassFlow = 0
+        self.m_flow_borehole = m_flow_borehole
+        if self.m_flow_borehole is not None:
+            if not self.m_flow_borehole.ndim == 1:
+                self.nMassFlow = np.size(self.m_flow_borehole, axis=1)
+            self.m_flow_borehole = np.atleast_2d(self.m_flow_borehole)
+            self.m_flow = self.m_flow_borehole
+        self.m_flow_network = m_flow_network
+        if self.m_flow_network is not None:
+            if not isinstance(self.m_flow_network, (np.floating, float)):
+                self.nMassFlow = len(self.m_flow_network)
+            self.m_flow_network = np.atleast_1d(self.m_flow_network)
+            self.m_flow = self.m_flow_network
+        self.cp_f = cp_f
         self.approximate_FLS = approximate_FLS
         self.mQuad = mQuad
         self.nFLS = nFLS
@@ -1555,17 +1666,6 @@ class _BaseSolver(object):
         else:
             time_long = self.time
         nt_long = len(time_long)
-        # Initialize g-function
-        gFunc = np.zeros(nt)
-        # Initialize segment heat extraction rates
-        if self.boundary_condition == 'UHTR':
-            Q_b = 1
-        else:
-            Q_b = np.zeros((self.nSources, nt), dtype=self.dtype)
-        if self.boundary_condition == 'UBWT':
-            T_b = np.zeros(nt, dtype=self.dtype)
-        else:
-            T_b = np.zeros((self.nSources, nt), dtype=self.dtype)
         # Calculate segment to segment thermal response factors
         h_ij = self.thermal_response_factors(time_long, alpha, kind=self.kind)
         # Segment lengths
@@ -1578,10 +1678,17 @@ class _BaseSolver(object):
         # Initialize chrono
         tic = perf_counter()
 
-        # Build and solve the system of equations at all times
-        p0 = max(0, p_long-1)
-        for p in range(nt_long):
-            if self.boundary_condition == 'UHTR':
+        if self.boundary_condition == 'UHTR':
+            # Initialize g-function
+            gFunc = np.zeros(nt)
+            # Initialize segment heat extraction rates
+            Q_b = 1
+            # Initialize borehole wall temperatures
+            T_b = np.zeros((self.nSources, nt), dtype=self.dtype)
+
+            # Build and solve the system of equations at all times
+            p0 = max(0, p_long-1)
+            for p in range(nt_long):
                 # Evaluate the g-function with uniform heat extraction along
                 # boreholes
 
@@ -1593,7 +1700,22 @@ class _BaseSolver(object):
                 # The g-function is the average of all borehole wall
                 # temperatures
                 gFunc[p+p0] = np.sum(T_b[:,p+p0]*H_b)/H_tot
-            else:
+
+            # Linearize g-function for times under threshold
+            if p_long > 0:
+                gFunc[:p_long] = gFunc[p_long-1] * self.time[:p_long] / time_threshold
+                T_b[:,:p_long] = T_b[:,p_long-1:p_long] * self.time[:p_long] / time_threshold
+
+        elif self.boundary_condition == 'UBWT':
+            # Initialize g-function
+            gFunc = np.zeros(nt)
+            # Initialize segment heat extraction rates
+            Q_b = np.zeros((self.nSources, nt), dtype=self.dtype)
+            T_b = np.zeros(nt, dtype=self.dtype)
+
+            # Build and solve the system of equations at all times
+            p0 = max(0, p_long-1)
+            for p in range(nt_long):
                 # Current thermal response factor matrix
                 if p > 0:
                     dt = time_long[p] - time_long[p-1]
@@ -1609,32 +1731,78 @@ class _BaseSolver(object):
                 T_b0 = self.temporal_superposition(
                     h_ij.y[:,:,1:], Q_reconstructed)
 
-                if self.boundary_condition == 'UBWT':
-                    # Evaluate the g-function with uniform borehole wall
-                    # temperature
-                    # ---------------------------------------------------------
-                    # Build a system of equation [A]*[X] = [B] for the
-                    # evaluation of the g-function. [A] is a coefficient
-                    # matrix, [X] = [Q_b,T_b] is a state space vector of the
-                    # borehole heat extraction rates and borehole wall
-                    # temperature (equal for all segments), [B] is a
-                    # coefficient vector.
-                    #
-                    # Spatial superposition: [T_b] = [T_b0] + [h_ij_dt]*[Q_b]
-                    # Energy conservation: sum([Q_b*Hb]) = sum([Hb])
-                    # ---------------------------------------------------------
-                    A = np.block([[h_dt, -np.ones((self.nSources, 1),
-                                                  dtype=self.dtype)],
-                                  [H_b, 0.]])
-                    B = np.hstack((-T_b0, H_tot))
-                    # Solve the system of equations
-                    X = np.linalg.solve(A, B)
-                    # Store calculated heat extraction rates
-                    Q_b[:,p+p0] = X[0:self.nSources]
-                    # The borehole wall temperatures are equal for all segments
-                    T_b[p+p0] = X[-1]
-                    gFunc[p+p0] = T_b[p+p0]
-                elif self.boundary_condition == 'MIFT':
+                # Evaluate the g-function with uniform borehole wall
+                # temperature
+                # ---------------------------------------------------------
+                # Build a system of equation [A]*[X] = [B] for the
+                # evaluation of the g-function. [A] is a coefficient
+                # matrix, [X] = [Q_b,T_b] is a state space vector of the
+                # borehole heat extraction rates and borehole wall
+                # temperature (equal for all segments), [B] is a
+                # coefficient vector.
+                #
+                # Spatial superposition: [T_b] = [T_b0] + [h_ij_dt]*[Q_b]
+                # Energy conservation: sum([Q_b*Hb]) = sum([Hb])
+                # ---------------------------------------------------------
+                A = np.block([[h_dt, -np.ones((self.nSources, 1),
+                                              dtype=self.dtype)],
+                              [H_b, 0.]])
+                B = np.hstack((-T_b0, H_tot))
+                # Solve the system of equations
+                X = np.linalg.solve(A, B)
+                # Store calculated heat extraction rates
+                Q_b[:,p+p0] = X[0:self.nSources]
+                # The borehole wall temperatures are equal for all segments
+                T_b[p+p0] = X[-1]
+                gFunc[p+p0] = T_b[p+p0]
+
+            # Linearize g-function for times under threshold
+            if p_long > 0:
+                gFunc[:p_long] = gFunc[p_long-1] * self.time[:p_long] / time_threshold
+                Q_b[:,:p_long] = 1 + (Q_b[:,p_long-1:p_long] - 1) * self.time[:p_long] / time_threshold
+                T_b[:p_long] = T_b[p_long-1] * self.time[:p_long] / time_threshold
+
+        elif self.boundary_condition == 'MIFT':
+            if self.nMassFlow == 0:
+                # Initialize g-function
+                gFunc = np.zeros((1, 1, nt))
+                # Initialize segment heat extraction rates
+                Q_b = np.zeros((1, self.nSources, nt), dtype=self.dtype)
+                T_b = np.zeros((1, self.nSources, nt), dtype=self.dtype)
+            else:
+                # Initialize g-function
+                gFunc = np.zeros((self.nMassFlow, self.nMassFlow, nt))
+                # Initialize segment heat extraction rates
+                Q_b = np.zeros(
+                    (self.nMassFlow, self.nSources, nt), dtype=self.dtype)
+                T_b = np.zeros(
+                    (self.nMassFlow, self.nSources, nt), dtype=self.dtype)
+
+            for j in range(np.maximum(self.nMassFlow, 1)):
+                # Build and solve the system of equations at all times
+                p0 = max(0, p_long-1)
+                a_in_j, a_b_j = self.network.coefficients_borehole_heat_extraction_rate(
+                        self.m_flow[j],
+                        self.cp_f,
+                        self.nBoreSegments,
+                        segment_ratios=self.segment_ratios)
+                k_s = self.network.p[0].k_s
+                for p in range(nt_long):
+                    # Current thermal response factor matrix
+                    if p > 0:
+                        dt = time_long[p] - time_long[p-1]
+                    else:
+                        dt = time_long[p]
+                    # Thermal response factors evaluated at t=dt
+                    h_dt = h_ij(dt)
+                    # Reconstructed load history
+                    Q_reconstructed = self.load_history_reconstruction(
+                        time_long[0:p+1], Q_b[j,:,p0:p+p0+1])
+                    # Borehole wall temperature for zero heat extraction at
+                    # current step
+                    T_b0 = self.temporal_superposition(
+                        h_ij.y[:,:,1:], Q_reconstructed)
+
                     # Evaluate the g-function with mixed inlet fluid
                     # temperatures
                     # ---------------------------------------------------------
@@ -1650,19 +1818,13 @@ class _BaseSolver(object):
                     # [Q_{b,i}] = [a_in]*[T_{f,in}] + [a_{b,i}]*[T_{b,i}]
                     # Energy conservation: sum([Q_b*H_b]) = sum([H_b])
                     # ---------------------------------------------------------
-                    a_in, a_b = self.network.coefficients_borehole_heat_extraction_rate(
-                            self.network.m_flow_network,
-                            self.network.cp_f,
-                            self.nBoreSegments,
-                            segment_ratios=self.segment_ratios)
-                    k_s = self.network.p[0].k_s
                     A = np.block(
                         [[h_dt,
                           -np.eye(self.nSources, dtype=self.dtype),
                           np.zeros((self.nSources, 1), dtype=self.dtype)],
                          [np.eye(self.nSources, dtype=self.dtype),
-                          a_b/(2.0*pi*k_s*np.atleast_2d(Hb_individual).T),
-                          a_in/(2.0*pi*k_s*np.atleast_2d(Hb_individual).T)],
+                          a_b_j/(2.0*pi*k_s*np.atleast_2d(Hb_individual).T),
+                          a_in_j/(2.0*pi*k_s*np.atleast_2d(Hb_individual).T)],
                          [H_b, np.zeros(self.nSources + 1, dtype=self.dtype)]])
                     B = np.hstack(
                         (-T_b0,
@@ -1671,34 +1833,55 @@ class _BaseSolver(object):
                     # Solve the system of equations
                     X = np.linalg.solve(A, B)
                     # Store calculated heat extraction rates
-                    Q_b[:,p+p0] = X[0:self.nSources]
-                    T_b[:,p+p0] = X[self.nSources:2*self.nSources]
+                    Q_b[j,:,p+p0] = X[0:self.nSources]
+                    T_b[j,:,p+p0] = X[self.nSources:2*self.nSources]
+                    # Inlet fluid temperature
                     T_f_in = X[-1]
                     # The gFunction is equal to the effective borehole wall
                     # temperature
                     # Outlet fluid temperature
-                    T_f_out = T_f_in - 2*pi*self.network.p[0].k_s*H_tot / (
-                        np.sum(
-                            np.abs(self.network.m_flow_network)
-                            * self.network.cp_f))
+                    T_f_out = T_f_in - 2 * pi * k_s * H_tot / (
+                        np.sum(np.abs(self.m_flow[j]) * self.cp_f))
                     # Average fluid temperature
                     T_f = 0.5*(T_f_in + T_f_out)
                     # Borefield thermal resistance
                     R_field = network_thermal_resistance(
-                        self.network, self.network.m_flow_network,
-                        self.network.cp_f)
+                        self.network, self.m_flow[j], self.cp_f)
                     # Effective borehole wall temperature
-                    T_b_eff = T_f - 2*pi*self.network.p[0].k_s*R_field
-                    gFunc[p+p0] = T_b_eff
-        # Linearize g-function for times under threshold
-        if p_long > 0:
-            gFunc[:p_long] = gFunc[p_long-1] * self.time[:p_long] / time_threshold
-            if not self.boundary_condition == 'UHTR':
-                Q_b[:,:p_long] = 1 + (Q_b[:,p_long-1:p_long] - 1) * self.time[:p_long] / time_threshold
-            if self.boundary_condition == 'UBWT':
-                T_b[:p_long] = T_b[p_long-1] * self.time[:p_long] / time_threshold
-            else:
-                T_b[:,:p_long] = T_b[:,p_long-1:p_long] * self.time[:p_long] / time_threshold
+                    T_b_eff = T_f - 2 * pi * k_s * R_field
+                    gFunc[j,j,p+p0] = T_b_eff
+
+            for i in range(np.maximum(self.nMassFlow, 1)):
+                for j in range(np.maximum(self.nMassFlow, 1)):
+                    if not i == j:
+                        # Inlet fluid temperature
+                        a_in, a_b = self.network.coefficients_network_heat_extraction_rate(
+                                self.m_flow[i],
+                                self.cp_f,
+                                self.nBoreSegments,
+                                segment_ratios=self.segment_ratios)
+                        T_f_in = (-2 * pi * k_s * H_tot - a_b @ T_b[j,:,p0:]) / a_in
+                        # The gFunction is equal to the effective borehole wall
+                        # temperature
+                        # Outlet fluid temperature
+                        T_f_out = T_f_in - 2 * pi * k_s * H_tot / (np.abs(self.m_flow[i]) * self.cp_f)
+                        # Borefield thermal resistance
+                        R_field = network_thermal_resistance(
+                            self.network, self.m_flow[i], self.cp_f)
+                        # Effective borehole wall temperature
+                        T_b_eff = 0.5 * (T_f_in + T_f_out) - 2 * pi * k_s * R_field
+                        gFunc[i,j,p0:] = T_b_eff
+
+            # Linearize g-function for times under threshold
+            if p_long > 0:
+                gFunc[:,:,:p_long] = gFunc[:,:,p_long-1] * self.time[:p_long] / time_threshold
+                Q_b[:,:,:p_long] = 1 + (Q_b[:,:,p_long-1:p_long] - 1) * self.time[:p_long] / time_threshold
+                T_b[:,:,:p_long] = T_b[:,:,p_long-1:p_long] * self.time[:p_long] / time_threshold
+            if self.nMassFlow == 0:
+                gFunc = gFunc[0,0,:]
+                Q_b = Q_b[0,:,:]
+                T_b = T_b[0,:,:]
+
         # Store temperature and heat extraction rate profiles
         if self.profiles:
             self.Q_b = Q_b
@@ -1834,9 +2017,19 @@ class _BaseSolver(object):
             "objects."
         assert self.network is None or isinstance(self.network, Network), \
             "The network is not a valid 'Network' object."
-        assert self.network is None or (self.network.m_flow_network is not None and self.network.cp_f is not None), \
-            "The mass flow rate 'm_flow_network' and heat capacity 'cp_f' must be " \
-            "provided at the instanciation of the 'Network' object."
+        if self.boundary_condition == 'MIFT':
+            assert not (self.m_flow_network is None and self.m_flow_borehole is None), \
+                "The mass flow rate 'm_flow_borehole' or 'm_flow_network' must " \
+                "be provided when using the 'MIFT' boundary condition."
+            assert not (self.m_flow_network is not None and self.m_flow_borehole is not None), \
+                "Only one of 'm_flow_borehole' or 'm_flow_network' can " \
+                "be provided when using the 'MIFT' boundary condition."
+            assert not self.cp_f is None, \
+                "The heat capacity 'cp_f' must " \
+                "be provided when using the 'MIFT' boundary condition."
+            assert not (type(self.m_flow_borehole) is np.ndarray and not np.size(self.m_flow_borehole, axis=1)==len(self.boreholes)), \
+                "The number of mass flow rates in 'm_flow_borehole' must " \
+                "correspond to the number of boreholes."
         assert type(self.time) is np.ndarray or isinstance(self.time, (float, np.floating)) or self.time is None, \
             "Time should be a float or an array."
         # self.nSegments can now be an int or list
@@ -3808,8 +4001,6 @@ class _Equivalent(_BaseSolver):
             self.network = _EquivalentNetwork(
                 self.boreholes,
                 pipes,
-                m_flow_network=self.network.m_flow_network,
-                cp_f=self.network.cp_f,
                 nSegments=self.nBoreSegments[0],
                 segment_ratios=self.segment_ratios[0])
 
@@ -4228,9 +4419,9 @@ class _Equivalent(_BaseSolver):
             assert np.all(np.array(self.network.c, dtype=int) == -1), \
                 "Solver 'equivalent' is only valid for parallel-connected " \
                 "boreholes."
-            assert type(self.network.m_flow_network) is float \
-                or (type(self.network.m_flow_network) is np.ndarray
-                    and np.allclose(self.network.m_flow_network, self.network.m_flow_network[0])), \
+            assert (self.m_flow_borehole is None
+                    or (self.m_flow_borehole.ndim==1 and np.allclose(self.m_flow_borehole, self.m_flow_borehole[0]))
+                    or (self.m_flow_borehole.ndim==2 and np.all([np.allclose(self.m_flow_borehole[:, i], self.m_flow_borehole[0, i]) for i in range(self.nBoreholes)]))), \
                 "Mass flow rates into the network must be equal for all " \
                 "boreholes."
             # Use the total network mass flow rate.
