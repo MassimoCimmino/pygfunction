@@ -4,6 +4,7 @@
 
 ### New features
 
+* [Issue 215](https://github.com/MassimoCimmino/pygfunction/issues/215) - Implemented variable fluid mass flow rate g-functions. Bore fields with series-connected boreholes and reversible flow direction can now be simulated.
 * [Issue 282](https://github.com/MassimoCimmino/pygfunction/issues/282) - Enabled the use of negative mass flow rates in `Pipe` and `Network` classes to model reversed flow direction.
 
 ## Version 2.2.3 (2024-07-01)
