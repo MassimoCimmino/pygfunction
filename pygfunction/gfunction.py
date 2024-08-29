@@ -354,14 +354,14 @@ class gFunction(object):
                     ax.plot(
                         lntts,
                         self.gFunc[i,j,:],
-                        label=f'$g_{{{i+1}{j+1}}}$')
+                        label=f'$g_{{{i}{j}}}$')
             plt.legend()
         else:
             for (i, j) in which:
                 ax.plot(
                     lntts,
                     self.gFunc[i,j,:],
-                    label=f'$g_{{{i+1}{j+1}}}$')
+                    label=f'$g_{{{i}{j}}}$')
             plt.legend()
 
         # Adjust figure to window
