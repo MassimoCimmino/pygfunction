@@ -93,13 +93,11 @@ def main():
     # Single U-tube, same for all boreholes in the bore field
     UTubes = []
     for borehole in boreField:
-        SingleUTube = gt.pipes.SingleUTube(pos_pipes, r_in, r_out,
-                                           borehole, k_s, k_g, R_f + R_p)
+        SingleUTube = gt.pipes.SingleUTube(
+            pos_pipes, r_in, r_out, borehole, k_s, k_g, R_f + R_p)
         UTubes.append(SingleUTube)
-    m_flow_network = m_flow_borehole*nBoreholes
-    network = gt.networks.Network(
-        boreField, UTubes, m_flow_network=m_flow_network, cp_f=cp_f,
-        nSegments=nSegments)
+    m_flow_network = m_flow_borehole * nBoreholes
+    network = gt.networks.Network(boreField, UTubes)
 
     # -------------------------------------------------------------------------
     # Evaluate the g-functions for the borefield
@@ -107,23 +105,26 @@ def main():
 
     # Calculate the g-function for uniform heat extraction rate
     gfunc_uniform_Q = gt.gfunction.gFunction(
-        boreField, alpha, time=time, boundary_condition='UHTR', options=options)
+        boreField, alpha, time=time, boundary_condition='UHTR',
+        options=options)
 
     # Calculate the g-function for uniform borehole wall temperature
     gfunc_uniform_T = gt.gfunction.gFunction(
-        boreField, alpha, time=time, boundary_condition='UBWT', options=options)
+        boreField, alpha, time=time, boundary_condition='UBWT',
+        options=options)
 
     # Calculate the g-function for equal inlet fluid temperature
     gfunc_equal_Tf_in = gt.gfunction.gFunction(
-        network, alpha, time=time, boundary_condition='MIFT', options=options)
+        network, alpha, time=time, m_flow_network=m_flow_network, cp_f=cp_f,
+        boundary_condition='MIFT', options=options)
 
     # -------------------------------------------------------------------------
     # Plot g-functions
     # -------------------------------------------------------------------------
 
     ax = gfunc_uniform_Q.visualize_g_function().axes[0]
-    ax.plot(np.log(time/ts), gfunc_uniform_T.gFunc, 'k--')
-    ax.plot(np.log(time/ts), gfunc_equal_Tf_in.gFunc, 'r-.')
+    ax.plot(np.log(time / ts), gfunc_uniform_T.gFunc, 'k--')
+    ax.plot(np.log(time / ts), gfunc_equal_Tf_in.gFunc, 'r-.')
     ax.legend(['Uniform heat extraction rate',
                'Uniform borehole wall temperature',
                'Equal inlet temperature'])

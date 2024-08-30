@@ -110,8 +110,7 @@ def main():
             pos_pipes, r_in, r_out, borehole, k_s, k_g, R_f + R_p)
         UTubes.append(SingleUTube)
     network = gt.networks.Network(
-        boreField, UTubes, bore_connectivity=bore_connectivity,
-        m_flow_network=m_flow_network, cp_f=cp_f, nSegments=nSegments)
+        boreField, UTubes, bore_connectivity=bore_connectivity)
 
     # -------------------------------------------------------------------------
     # Evaluate the g-functions for the borefield
@@ -124,8 +123,8 @@ def main():
 
     # Calculate the g-function for mixed inlet fluid conditions
     gfunc_equal_Tf_mixed = gt.gfunction.gFunction(
-        network, alpha, time=time, boundary_condition='MIFT', options=options,
-        method=method)
+        network, alpha, time=time, m_flow_network=m_flow_network, cp_f=cp_f,
+        boundary_condition='MIFT', options=options, method=method)
 
     # -------------------------------------------------------------------------
     # Plot g-functions
