@@ -85,7 +85,7 @@ class gFunction(object):
         (nBoreholes, nMassFlow) array is supplied, the
         (nMassFlow, nMassFlow,) variable mass flow rate g-functions
         will be evaluated using the method of Cimmino (2024)
-        [#gFunction-CimBer2024]_. Only required for the 'MIFT' boundary
+        [#gFunction-Cimmin2024]_. Only required for the 'MIFT' boundary
          condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
          provided.
         Default is None.
@@ -93,7 +93,7 @@ class gFunction(object):
         Fluid mass flow rate into the network of boreholes. If an array
         is supplied, the (nMassFlow, nMassFlow,) variable mass flow
         rate g-functions will be evaluated using the method of Cimmino
-        (2024) [#gFunction-CimBer2024]_. Only required for the 'MIFT' boundary
+        (2024) [#gFunction-Cimmin2024]_. Only required for the 'MIFT' boundary
          condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
          provided.
         Default is None.
@@ -233,7 +233,7 @@ class gFunction(object):
        finite line source solution to model thermal interactions between
        geothermal boreholes. International Communications in Heat and Mass
        Transfer, 127, 105496.
-    .. [#gFunction-Cimmino2024] Cimmino, M. (2024). g-Functions for fields of
+    .. [#gFunction-Cimmin2024] Cimmino, M. (2024). g-Functions for fields of
        series- and parallel-connected boreholes with variable fluid mass flow
        rate and reversible flow direction. Renewable Energy, 228, 120661.
 
