@@ -357,6 +357,10 @@ class gFunction(object):
                         label=f'$g_{{{i}{j}}}$')
             plt.legend()
         else:
+            if which is None:
+                which = [
+                    (i, j) for j in range(self.solver.nMassFlow)
+                    for i in range(self.solver.nMassFlow)]
             for (i, j) in which:
                 ax.plot(
                     lntts,
@@ -368,7 +372,8 @@ class gFunction(object):
         plt.tight_layout()
         return fig
 
-    def visualize_heat_extraction_rates(self, iBoreholes=None, showTilt=True):
+    def visualize_heat_extraction_rates(
+            self, iBoreholes=None, showTilt=True, which=None):
         """
         Plot the time-variation of the average heat extraction rates.
 
@@ -382,6 +387,11 @@ class gFunction(object):
         showTilt : bool
             Set to True to show borehole inclination.
             Default is True
+        which : list of int, optional
+            Indices i of the diagonal variable mass flow rate g-functions for
+            which to plot heat extraction rates.
+            If None, all diagonal g-functions are plotted.
+            Default is None.
 
         Returns
         -------
@@ -394,63 +404,120 @@ class gFunction(object):
             iBoreholes = range(len(self.solver.boreholes))
         # Import heat extraction rates
         Q_t = self._heat_extraction_rates(iBoreholes)
-
-        # Configure figure and axes
-        fig = _initialize_figure()
-        ax1 = fig.add_subplot(121)
-        ax1.set_xlabel(r'$x$ [m]')
-        ax1.set_ylabel(r'$y$ [m]')
-        ax1.axis('equal')
-        _format_axes(ax1)
-        ax2 = fig.add_subplot(122)
-        ax2.set_xlabel(r'ln$(t/t_s)$')
-        ax2.set_ylabel(r'$\bar{Q}_b$')
-        _format_axes(ax2)
-
         # Borefield characteristic time
         ts = np.mean([b.H for b in self.solver.boreholes])**2/(9.*self.alpha)
         # Dimensionless time (log)
         lntts = np.log(self.time/ts)
-        # Plot curves for requested boreholes
-        for i, borehole in enumerate(self.solver.boreholes):
-            if i in iBoreholes:
-                # Draw heat extraction rate
-                line = ax2.plot(lntts, Q_t[iBoreholes.index(i)])
-                color = line[-1]._color
-                # Draw colored marker for borehole position
-                if showTilt:
-                    ax1.plot(
-                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
-                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
-                         linestyle='--',
-                         marker='None',
-                         color=color)
-                ax1.plot(borehole.x,
-                         borehole.y,
-                         linestyle='None',
-                         marker='o',
-                         color=color)
-            else:
-                # Draw black marker for borehole position
-                if showTilt:
-                    ax1.plot(
-                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
-                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
-                         linestyle='--',
-                         marker='None',
-                         color='k')
-                ax1.plot(borehole.x,
-                         borehole.y,
-                         linestyle='None',
-                         marker='o',
-                         color='k')
 
-        # Adjust figure to window
-        plt.tight_layout()
+        if self.solver.nMassFlow == 0:
+            # Configure figure and axes
+            fig = _initialize_figure()
+            ax1 = fig.add_subplot(121)
+            ax1.set_xlabel(r'$x$ [m]')
+            ax1.set_ylabel(r'$y$ [m]')
+            ax1.axis('equal')
+            _format_axes(ax1)
+            ax2 = fig.add_subplot(122)
+            ax2.set_xlabel(r'ln$(t/t_s)$')
+            ax2.set_ylabel(r'$\bar{Q}_b$')
+            _format_axes(ax2)
+
+            # Plot curves for requested boreholes
+            for i, borehole in enumerate(self.solver.boreholes):
+                if i in iBoreholes:
+                    # Draw heat extraction rate
+                    line = ax2.plot(lntts, Q_t[iBoreholes.index(i)])
+                    color = line[-1]._color
+                    # Draw colored marker for borehole position
+                    if showTilt:
+                        ax1.plot(
+                            [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                            [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                             linestyle='--',
+                             marker='None',
+                             color=color)
+                    ax1.plot(borehole.x,
+                             borehole.y,
+                             linestyle='None',
+                             marker='o',
+                             color=color)
+                else:
+                    # Draw black marker for borehole position
+                    if showTilt:
+                        ax1.plot(
+                            [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                            [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                             linestyle='--',
+                             marker='None',
+                             color='k')
+                    ax1.plot(borehole.x,
+                             borehole.y,
+                             linestyle='None',
+                             marker='o',
+                             color='k')
+
+            # Adjust figure to window
+            plt.tight_layout()
+        else:
+            m_flow = self.solver.m_flow
+            if which is None:
+                which = [n for n in range(self.solver.nMassFlow)]
+            for n in which:
+                # Configure figure and axes
+                fig = _initialize_figure()
+                fig.suptitle(
+                    f'Heat extraction rates for m_flow={m_flow[n]} kg/s')
+                ax1 = fig.add_subplot(121)
+                ax1.set_xlabel(r'$x$ [m]')
+                ax1.set_ylabel(r'$y$ [m]')
+                ax1.axis('equal')
+                _format_axes(ax1)
+                ax2 = fig.add_subplot(122)
+                ax2.set_xlabel(r'ln$(t/t_s)$')
+                ax2.set_ylabel(r'$\bar{Q}_b$')
+                _format_axes(ax2)
+
+                # Plot curves for requested boreholes
+                for i, borehole in enumerate(self.solver.boreholes):
+                    if i in iBoreholes:
+                        # Draw heat extraction rate
+                        line = ax2.plot(lntts, Q_t[iBoreholes.index(i)][n])
+                        color = line[-1]._color
+                        # Draw colored marker for borehole position
+                        if showTilt:
+                            ax1.plot(
+                                [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                                [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                                 linestyle='--',
+                                 marker='None',
+                                 color=color)
+                        ax1.plot(borehole.x,
+                                 borehole.y,
+                                 linestyle='None',
+                                 marker='o',
+                                 color=color)
+                    else:
+                        # Draw black marker for borehole position
+                        if showTilt:
+                            ax1.plot(
+                                [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                                [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                                 linestyle='--',
+                                 marker='None',
+                                 color='k')
+                        ax1.plot(borehole.x,
+                                 borehole.y,
+                                 linestyle='None',
+                                 marker='o',
+                                 color='k')
+
+                # Adjust figure to window
+                plt.tight_layout()
+            
         return fig
 
     def visualize_heat_extraction_rate_profiles(
-            self, time=None, iBoreholes=None, showTilt=True):
+            self, time=None, iBoreholes=None, showTilt=True, which=None):
         """
         Plot the heat extraction rate profiles at chosen time.
 
@@ -469,6 +536,11 @@ class gFunction(object):
         showTilt : bool
             Set to True to show borehole inclination.
             Default is True
+        which : list of int, optional
+            Indices i of the diagonal variable mass flow rate g-functions for
+            which to plot heat extraction rates.
+            If None, all diagonal g-functions are plotted.
+            Default is None.
 
         Returns
         -------
@@ -482,58 +554,120 @@ class gFunction(object):
         # Import heat extraction rate profiles
         z, Q_b = self._heat_extraction_rate_profiles(time, iBoreholes)
 
-        # Configure figure and axes
-        fig = _initialize_figure()
-        ax1 = fig.add_subplot(121)
-        ax1.set_xlabel(r'$x$ [m]')
-        ax1.set_ylabel(r'$y$ [m]')
-        ax1.axis('equal')
-        _format_axes(ax1)
-        ax2 = fig.add_subplot(122)
-        ax2.set_xlabel(r'$Q_b$')
-        ax2.set_ylabel(r'$z$ [m]')
-        ax2.invert_yaxis()
-        _format_axes(ax2)
+        if self.solver.nMassFlow == 0:
+            # Configure figure and axes
+            fig = _initialize_figure()
+            ax1 = fig.add_subplot(121)
+            ax1.set_xlabel(r'$x$ [m]')
+            ax1.set_ylabel(r'$y$ [m]')
+            ax1.axis('equal')
+            _format_axes(ax1)
+            ax2 = fig.add_subplot(122)
+            ax2.set_xlabel(r'$Q_b$')
+            ax2.set_ylabel(r'$z$ [m]')
+            ax2.invert_yaxis()
+            _format_axes(ax2)
 
-        # Plot curves for requested boreholes
-        for i, borehole in enumerate(self.solver.boreholes):
-            if i in iBoreholes:
-                # Draw heat extraction rate profile
-                line = ax2.plot(
-                    Q_b[iBoreholes.index(i)], z[iBoreholes.index(i)])
-                color = line[-1]._color
-                # Draw colored marker for borehole position
-                if showTilt:
-                    ax1.plot(
-                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
-                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
-                         linestyle='--',
-                         marker='None',
-                         color=color)
-                ax1.plot(borehole.x,
-                         borehole.y,
-                         linestyle='None',
-                         marker='o',
-                         color=color)
-            else:
-                # Draw black marker for borehole position
-                if showTilt:
-                    ax1.plot(
-                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
-                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
-                         linestyle='--',
-                         marker='None',
-                         color='k')
-                ax1.plot(borehole.x,
-                         borehole.y,
-                         linestyle='None',
-                         marker='o',
-                         color='k')
+            # Plot curves for requested boreholes
+            for i, borehole in enumerate(self.solver.boreholes):
+                if i in iBoreholes:
+                    # Draw heat extraction rate profile
+                    line = ax2.plot(
+                        Q_b[iBoreholes.index(i)], z[iBoreholes.index(i)])
+                    color = line[-1]._color
+                    # Draw colored marker for borehole position
+                    if showTilt:
+                        ax1.plot(
+                            [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                            [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                             linestyle='--',
+                             marker='None',
+                             color=color)
+                    ax1.plot(borehole.x,
+                             borehole.y,
+                             linestyle='None',
+                             marker='o',
+                             color=color)
+                else:
+                    # Draw black marker for borehole position
+                    if showTilt:
+                        ax1.plot(
+                            [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                            [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                             linestyle='--',
+                             marker='None',
+                             color='k')
+                    ax1.plot(borehole.x,
+                             borehole.y,
+                             linestyle='None',
+                             marker='o',
+                             color='k')
 
-        plt.tight_layout()
+            # Adjust figure to window
+            plt.tight_layout()
+        else:
+            m_flow = self.solver.m_flow
+            if which is None:
+                which = [n for n in range(self.solver.nMassFlow)]
+            for n in which:
+                # Configure figure and axes
+                fig = _initialize_figure()
+                fig.suptitle(
+                    f'Heat extraction rate profiles for m_flow={m_flow[n]} kg/s')
+                ax1 = fig.add_subplot(121)
+                ax1.set_xlabel(r'$x$ [m]')
+                ax1.set_ylabel(r'$y$ [m]')
+                ax1.axis('equal')
+                _format_axes(ax1)
+                ax2 = fig.add_subplot(122)
+                ax2.set_xlabel(r'$Q_b$')
+                ax2.set_ylabel(r'$z$ [m]')
+                ax2.invert_yaxis()
+                _format_axes(ax2)
+
+                # Plot curves for requested boreholes
+                for i, borehole in enumerate(self.solver.boreholes):
+                    if i in iBoreholes:
+                        # Draw heat extraction rate profile
+                        line = ax2.plot(
+                            Q_b[iBoreholes.index(i)][n],
+                            z[iBoreholes.index(i)])
+                        color = line[-1]._color
+                        # Draw colored marker for borehole position
+                        if showTilt:
+                            ax1.plot(
+                                [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                                [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                                 linestyle='--',
+                                 marker='None',
+                                 color=color)
+                        ax1.plot(borehole.x,
+                                 borehole.y,
+                                 linestyle='None',
+                                 marker='o',
+                                 color=color)
+                    else:
+                        # Draw black marker for borehole position
+                        if showTilt:
+                            ax1.plot(
+                                [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                                [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                                 linestyle='--',
+                                 marker='None',
+                                 color='k')
+                        ax1.plot(borehole.x,
+                                 borehole.y,
+                                 linestyle='None',
+                                 marker='o',
+                                 color='k')
+
+                # Adjust figure to window
+                plt.tight_layout()
+
         return fig
 
-    def visualize_temperatures(self, iBoreholes=None, showTilt=True):
+    def visualize_temperatures(
+            self, iBoreholes=None, showTilt=True, which=None):
         """
         Plot the time-variation of the average borehole wall temperatures.
 
@@ -546,6 +680,11 @@ class gFunction(object):
         showTilt : bool
             Set to True to show borehole inclination.
             Default is True
+        which : list of int, optional
+            Indices i of the diagonal variable mass flow rate g-functions for
+            which to plot heat extraction rates.
+            If None, all diagonal g-functions are plotted.
+            Default is None.
 
         Returns
         -------
@@ -558,63 +697,118 @@ class gFunction(object):
             iBoreholes = range(len(self.solver.boreholes))
         # Import temperatures
         T_b = self._temperatures(iBoreholes)
-
-        # Configure figure and axes
-        fig = _initialize_figure()
-        ax1 = fig.add_subplot(121)
-        ax1.set_xlabel(r'$x$ [m]')
-        ax1.set_ylabel(r'$y$ [m]')
-        ax1.axis('equal')
-        _format_axes(ax1)
-        ax2 = fig.add_subplot(122)
-        ax2.set_xlabel(r'ln$(t/t_s)$')
-        ax2.set_ylabel(r'$\bar{T}_b$')
-        _format_axes(ax2)
-
         # Borefield characteristic time
         ts = np.mean([b.H for b in self.solver.boreholes])**2/(9.*self.alpha)
         # Dimensionless time (log)
         lntts = np.log(self.time/ts)
-        # Plot curves for requested boreholes
-        for i, borehole in enumerate(self.solver.boreholes):
-            if i in iBoreholes:
-                # Draw borehole wall temperature
-                line = ax2.plot(lntts, T_b[iBoreholes.index(i)])
-                color = line[-1]._color
-                # Draw colored marker for borehole position
-                if showTilt:
-                    ax1.plot(
-                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
-                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
-                         linestyle='--',
-                         marker='None',
-                         color=color)
-                ax1.plot(borehole.x,
-                         borehole.y,
-                         linestyle='None',
-                         marker='o',
-                         color=color)
-            else:
-                # Draw black marker for borehole position
-                if showTilt:
-                    ax1.plot(
-                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
-                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
-                         linestyle='--',
-                         marker='None',
-                         color='k')
-                ax1.plot(borehole.x,
-                         borehole.y,
-                         linestyle='None',
-                         marker='o',
-                         color='k')
 
-        # Adjust figure to window
-        plt.tight_layout()
+
+        if self.solver.nMassFlow == 0:
+            # Configure figure and axes
+            fig = _initialize_figure()
+            ax1 = fig.add_subplot(121)
+            ax1.set_xlabel(r'$x$ [m]')
+            ax1.set_ylabel(r'$y$ [m]')
+            ax1.axis('equal')
+            _format_axes(ax1)
+            ax2 = fig.add_subplot(122)
+            ax2.set_xlabel(r'ln$(t/t_s)$')
+            ax2.set_ylabel(r'$\bar{T}_b$')
+            _format_axes(ax2)
+            # Plot curves for requested boreholes
+            for i, borehole in enumerate(self.solver.boreholes):
+                if i in iBoreholes:
+                    # Draw borehole wall temperature
+                    line = ax2.plot(lntts, T_b[iBoreholes.index(i)])
+                    color = line[-1]._color
+                    # Draw colored marker for borehole position
+                    if showTilt:
+                        ax1.plot(
+                            [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                            [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                             linestyle='--',
+                             marker='None',
+                             color=color)
+                    ax1.plot(borehole.x,
+                             borehole.y,
+                             linestyle='None',
+                             marker='o',
+                             color=color)
+                else:
+                    # Draw black marker for borehole position
+                    if showTilt:
+                        ax1.plot(
+                            [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                            [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                             linestyle='--',
+                             marker='None',
+                             color='k')
+                    ax1.plot(borehole.x,
+                             borehole.y,
+                             linestyle='None',
+                             marker='o',
+                             color='k')
+
+            # Adjust figure to window
+            plt.tight_layout()
+        else:
+            m_flow = self.solver.m_flow
+            if which is None:
+                which = [n for n in range(self.solver.nMassFlow)]
+            for n in which:
+                # Configure figure and axes
+                fig = _initialize_figure()
+                fig.suptitle(
+                    f'Borehole wall temperatures for m_flow={m_flow[n]} kg/s')
+                ax1 = fig.add_subplot(121)
+                ax1.set_xlabel(r'$x$ [m]')
+                ax1.set_ylabel(r'$y$ [m]')
+                ax1.axis('equal')
+                _format_axes(ax1)
+                ax2 = fig.add_subplot(122)
+                ax2.set_xlabel(r'ln$(t/t_s)$')
+                ax2.set_ylabel(r'$\bar{T}_b$')
+                _format_axes(ax2)
+                # Plot curves for requested boreholes
+                for i, borehole in enumerate(self.solver.boreholes):
+                    if i in iBoreholes:
+                        # Draw borehole wall temperature
+                        line = ax2.plot(lntts, T_b[iBoreholes.index(i)][n])
+                        color = line[-1]._color
+                        # Draw colored marker for borehole position
+                        if showTilt:
+                            ax1.plot(
+                                [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                                [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                                 linestyle='--',
+                                 marker='None',
+                                 color=color)
+                        ax1.plot(borehole.x,
+                                 borehole.y,
+                                 linestyle='None',
+                                 marker='o',
+                                 color=color)
+                    else:
+                        # Draw black marker for borehole position
+                        if showTilt:
+                            ax1.plot(
+                                [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
+                                [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
+                                 linestyle='--',
+                                 marker='None',
+                                 color='k')
+                        ax1.plot(borehole.x,
+                                 borehole.y,
+                                 linestyle='None',
+                                 marker='o',
+                                 color='k')
+
+                # Adjust figure to window
+                plt.tight_layout()
         return fig
 
     def visualize_temperature_profiles(
-            self, time=None, iBoreholes=None, showTilt=True):
+            self, time=None, iBoreholes=None, showTilt=True, which=None):
         """
         Plot the borehole wall temperature profiles at chosen time.
 
@@ -631,6 +825,11 @@ class gFunction(object):
         showTilt : bool
             Set to True to show borehole inclination.
             Default is True
+        which : list of int, optional
+            Indices i of the diagonal variable mass flow rate g-functions for
+            which to plot heat extraction rates.
+            If None, all diagonal g-functions are plotted.
+            Default is None.
 
         Returns
         -------
@@ -644,55 +843,114 @@ class gFunction(object):
         # Import temperature profiles
         z, T_b = self._temperature_profiles(time, iBoreholes)
 
-        # Configure figure and axes
-        fig = _initialize_figure()
-        ax1 = fig.add_subplot(121)
-        ax1.set_xlabel(r'$x$ [m]')
-        ax1.set_ylabel(r'$y$ [m]')
-        ax1.axis('equal')
-        _format_axes(ax1)
-        ax2 = fig.add_subplot(122)
-        ax2.set_xlabel(r'$T_b$')
-        ax2.set_ylabel(r'$z$ [m]')
-        ax2.invert_yaxis()
-        _format_axes(ax2)
+        if self.solver.nMassFlow == 0:
+            # Configure figure and axes
+            fig = _initialize_figure()
+            ax1 = fig.add_subplot(121)
+            ax1.set_xlabel(r'$x$ [m]')
+            ax1.set_ylabel(r'$y$ [m]')
+            ax1.axis('equal')
+            _format_axes(ax1)
+            ax2 = fig.add_subplot(122)
+            ax2.set_xlabel(r'$T_b$')
+            ax2.set_ylabel(r'$z$ [m]')
+            ax2.invert_yaxis()
+            _format_axes(ax2)
 
-        # Plot curves for requested boreholes
-        for i, borehole in enumerate(self.solver.boreholes):
-            if i in iBoreholes:
-                # Draw heat extraction rate profile
-                line = ax2.plot(
-                    T_b[iBoreholes.index(i)], z[iBoreholes.index(i)])
-                color = line[-1]._color
-                # Draw colored marker for borehole position
-                if showTilt:
-                    ax1.plot(
-                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
-                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
-                         linestyle='--',
-                         marker='None',
-                         color=color)
-                ax1.plot(borehole.x,
-                         borehole.y,
-                         linestyle='None',
-                         marker='o',
-                         color=color)
-            else:
-                # Draw black marker for borehole position
-                if showTilt:
-                    ax1.plot(
-                        [borehole.x, borehole.x + borehole.H*np.sin(borehole.tilt)*np.cos(borehole.orientation)],
-                        [borehole.y, borehole.y + borehole.H*np.sin(borehole.tilt)*np.sin(borehole.orientation)],
-                         linestyle='--',
-                         marker='None',
-                         color='k')
-                ax1.plot(borehole.x,
-                         borehole.y,
-                         linestyle='None',
-                         marker='o',
-                         color='k')
+            # Plot curves for requested boreholes
+            for i, borehole in enumerate(self.solver.boreholes):
+                if i in iBoreholes:
+                    # Draw borehole wall temperature profile
+                    line = ax2.plot(
+                        T_b[iBoreholes.index(i)],
+                        z[iBoreholes.index(i)])
+                    color = line[-1]._color
+                    # Draw colored marker for borehole position
+                    if showTilt:
+                        ax1.plot(
+                            [borehole.x, borehole.x + borehole.H * np.sin(borehole.tilt) * np.cos(borehole.orientation)],
+                            [borehole.y, borehole.y + borehole.H * np.sin(borehole.tilt) * np.sin(borehole.orientation)],
+                             linestyle='--',
+                             marker='None',
+                             color=color)
+                    ax1.plot(borehole.x,
+                             borehole.y,
+                             linestyle='None',
+                             marker='o',
+                             color=color)
+                else:
+                    # Draw black marker for borehole position
+                    if showTilt:
+                        ax1.plot(
+                            [borehole.x, borehole.x + borehole.H * np.sin(borehole.tilt) * np.cos(borehole.orientation)],
+                            [borehole.y, borehole.y + borehole.H * np.sin(borehole.tilt) * np.sin(borehole.orientation)],
+                             linestyle='--',
+                             marker='None',
+                             color='k')
+                    ax1.plot(borehole.x,
+                             borehole.y,
+                             linestyle='None',
+                             marker='o',
+                             color='k')
 
-        plt.tight_layout()
+            plt.tight_layout()
+        else:
+            m_flow = self.solver.m_flow
+            if which is None:
+                which = [n for n in range(self.solver.nMassFlow)]
+            for n in which:
+                # Configure figure and axes
+                fig = _initialize_figure()
+                fig.suptitle(
+                f'Borehole wall temperature profiles for m_flow={m_flow[n]} kg/s')
+                ax1 = fig.add_subplot(121)
+                ax1.set_xlabel(r'$x$ [m]')
+                ax1.set_ylabel(r'$y$ [m]')
+                ax1.axis('equal')
+                _format_axes(ax1)
+                ax2 = fig.add_subplot(122)
+                ax2.set_xlabel(r'$T_b$')
+                ax2.set_ylabel(r'$z$ [m]')
+                ax2.invert_yaxis()
+                _format_axes(ax2)
+
+                # Plot curves for requested boreholes
+                for i, borehole in enumerate(self.solver.boreholes):
+                    if i in iBoreholes:
+                        # Draw borehole wall temperature profile
+                        line = ax2.plot(
+                            T_b[iBoreholes.index(i)][n],
+                            z[iBoreholes.index(i)])
+                        color = line[-1]._color
+                        # Draw colored marker for borehole position
+                        if showTilt:
+                            ax1.plot(
+                                [borehole.x, borehole.x + borehole.H * np.sin(borehole.tilt) * np.cos(borehole.orientation)],
+                                [borehole.y, borehole.y + borehole.H * np.sin(borehole.tilt) * np.sin(borehole.orientation)],
+                                 linestyle='--',
+                                 marker='None',
+                                 color=color)
+                        ax1.plot(borehole.x,
+                                 borehole.y,
+                                 linestyle='None',
+                                 marker='o',
+                                 color=color)
+                    else:
+                        # Draw black marker for borehole position
+                        if showTilt:
+                            ax1.plot(
+                                [borehole.x, borehole.x + borehole.H * np.sin(borehole.tilt) * np.cos(borehole.orientation)],
+                                [borehole.y, borehole.y + borehole.H * np.sin(borehole.tilt) * np.sin(borehole.orientation)],
+                                 linestyle='--',
+                                 marker='None',
+                                 color='k')
+                        ax1.plot(borehole.x,
+                                 borehole.y,
+                                 linestyle='None',
+                                 marker='o',
+                                 color='k')
+
+                plt.tight_layout()
         return fig
 
     def _heat_extraction_rates(self, iBoreholes):
@@ -724,9 +982,18 @@ class gFunction(object):
                 i0 = self.solver._i0Segments[i]
                 i1 = self.solver._i1Segments[i]
                 segment_ratios = self.solver.segment_ratios[i]
-                Q_t.append(
-                    np.sum(self.solver.Q_b[i0:i1,:]*segment_ratios[:,np.newaxis],
-                           axis=0))
+                if self.solver.nMassFlow == 0:
+                    Q_t.append(
+                        np.sum(
+                            self.solver.Q_b[i0:i1, :]
+                            * segment_ratios[:, np.newaxis],
+                            axis=0))
+                else:
+                    Q_t.append(
+                        np.sum(
+                            self.solver.Q_b[:, i0:i1, :]
+                            * segment_ratios[:, np.newaxis],
+                            axis=1))
         return Q_t
 
     def _heat_extraction_rate_profiles(self, time, iBoreholes):
@@ -769,13 +1036,26 @@ class gFunction(object):
                 if time is None:
                     # If time is None, heat extraction rates are extracted at
                     # the last time step.
-                    Q_bi = self.solver.Q_b[i0:i1,-1].flatten()
+                    if self.solver.nMassFlow == 0:
+                        Q_bi = self.solver.Q_b[i0:i1, -1]
+                    else:
+                        Q_bi = self.solver.Q_b[:, i0:i1, -1]
                 else:
                     # Otherwise, heat extraction rates are interpolated.
-                    Q_bi = interp1d(self.time, self.solver.Q_b[i0:i1,:],
-                                    kind='linear',
-                                    copy=False,
-                                    axis=1)(time).flatten()
+                    if self.solver.nMassFlow == 0:
+                        Q_bi = interp1d(
+                            self.time,
+                            self.solver.Q_b[i0:i1,:],
+                            kind='linear',
+                            copy=False,
+                            axis=1)(time)
+                    else:
+                        Q_bi = interp1d(
+                            self.time,
+                            self.solver.Q_b[i0:i1,:],
+                            kind='linear',
+                            copy=False,
+                            axis=2)(time)
                 if self.solver.nBoreSegments[i] > 1:
                     # Borehole length ratio at the mid-depth of each segment
                     segment_ratios = self.solver.segment_ratios[i]
@@ -791,7 +1071,10 @@ class gFunction(object):
                     z.append(
                         np.array([self.solver.boreholes[i].D,
                                   self.solver.boreholes[i].D + self.solver.boreholes[i].H]))
-                    Q_b.append(np.array(2*[np.asscalar(Q_bi)]))
+                    if self.solver.nMassFlow == 0:
+                        Q_b.append(np.repeat(Q_bi, 2, axis=0))
+                    else:
+                        Q_b.append(np.repeat(Q_bi, 2, axis=1))
         return z, Q_b
 
     def _temperatures(self, iBoreholes):
@@ -823,9 +1106,18 @@ class gFunction(object):
                 i0 = self.solver._i0Segments[i]
                 i1 = self.solver._i1Segments[i]
                 segment_ratios = self.solver.segment_ratios[i]
-                T_b.append(
-                    np.sum(self.solver.T_b[i0:i1,:]*segment_ratios[:,np.newaxis],
-                           axis=0))
+                if self.solver.nMassFlow == 0:
+                    T_b.append(
+                        np.sum(
+                            self.solver.T_b[i0:i1, :]
+                            * segment_ratios[:, np.newaxis],
+                            axis=0))
+                else:
+                    T_b.append(
+                        np.sum(
+                            self.solver.T_b[:, i0:i1, :]
+                            * segment_ratios[:, np.newaxis],
+                            axis=1))
         return T_b
 
     def _temperature_profiles(self, time, iBoreholes):
@@ -878,14 +1170,31 @@ class gFunction(object):
                 if time is None:
                     # If time is None, temperatures are extracted at the last
                     # time step.
-                    T_bi = self.solver.T_b[i0:i1,-1].flatten()
+                    if self.solver.nMassFlow == 0:
+                        T_bi = self.solver.T_b[i0:i1, -1]
+                    else:
+                        T_bi = self.solver.T_b[:, i0:i1, -1]
                 else:
                     # Otherwise, temperatures are interpolated.
                     T_bi = interp1d(self.time,
-                                    self.solver.T_b[i0:i1,:],
+                                    self.solver.T_b[i0:i1, :],
                                     kind='linear',
                                     copy=False,
-                                    axis=1)(time).flatten()
+                                    axis=1)(time)
+                    if self.solver.nMassFlow == 0:
+                        T_bi = interp1d(
+                            self.time,
+                            self.solver.T_b[i0:i1,:],
+                            kind='linear',
+                            copy=False,
+                            axis=1)(time)
+                    else:
+                        T_bi = interp1d(
+                            self.time,
+                            self.solver.T_b[i0:i1,:],
+                            kind='linear',
+                            copy=False,
+                            axis=2)(time)
                 if self.solver.nBoreSegments[i] > 1:
                     # Borehole length ratio at the mid-depth of each segment
 
@@ -902,7 +1211,10 @@ class gFunction(object):
                     z.append(
                         np.array([self.solver.boreholes[i].D,
                                   self.solver.boreholes[i].D + self.solver.boreholes[i].H]))
-                    T_b.append(np.array(2*[np.asscalar(T_bi)]))
+                    if self.solver.nMassFlow == 0:
+                        T_b.append(np.repeat(T_bi, 2, axis=0))
+                    else:
+                        T_b.append(np.repeat(T_bi, 2, axis=1))
         return z, T_b
 
     def _format_inputs(self, boreholes_or_network):
