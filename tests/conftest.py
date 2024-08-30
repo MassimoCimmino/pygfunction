@@ -524,8 +524,7 @@ def single_borehole_network(single_borehole):
         UTubes.append(UTube)
     # Initialize network
     network = gt.networks.Network(
-        boreField, UTubes, bore_connectivity=bore_connectivity,
-        m_flow_network=m_flow_network, cp_f=fluid.cp)
+        boreField, UTubes, bore_connectivity=bore_connectivity)
     return network
 
 
@@ -566,8 +565,7 @@ def single_borehole_network_short(single_borehole_short):
         UTubes.append(UTube)
     # Initialize network
     network = gt.networks.Network(
-        boreField, UTubes, bore_connectivity=bore_connectivity,
-        m_flow_network=m_flow_network, cp_f=fluid.cp)
+        boreField, UTubes, bore_connectivity=bore_connectivity)
     return network
 
 
@@ -608,8 +606,7 @@ def ten_boreholes_network_rectangular(ten_boreholes_rectangular):
         UTubes.append(UTube)
     # Initialize network
     network = gt.networks.Network(
-        boreField, UTubes, bore_connectivity=bore_connectivity,
-        m_flow_network=m_flow_network, cp_f=fluid.cp)
+        boreField, UTubes, bore_connectivity=bore_connectivity)
     return network
 
 
@@ -650,8 +647,7 @@ def ten_boreholes_network_rectangular_series(ten_boreholes_rectangular):
         UTubes.append(UTube)
     # Initialize network
     network = gt.networks.Network(
-        boreField, UTubes, bore_connectivity=bore_connectivity,
-        m_flow_network=m_flow_network, cp_f=fluid.cp)
+        boreField, UTubes, bore_connectivity=bore_connectivity)
     return network
 
 
@@ -692,6 +688,5 @@ def three_boreholes_network_series_unequal(three_boreholes_unequal):
         UTubes.append(UTube)
     # Initialize network
     network = gt.networks.Network(
-        boreField, UTubes, bore_connectivity=bore_connectivity,
-        m_flow_network=m_flow_network, cp_f=fluid.cp)
+        boreField, UTubes, bore_connectivity=bore_connectivity)
     return network
