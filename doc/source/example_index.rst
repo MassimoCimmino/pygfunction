@@ -21,6 +21,7 @@ Examples
    examples/fluid_temperature
    examples/equal_inlet_temperature
    examples/fluid_temperature_multiple_boreholes
+   examples/fluid_temperature_reversible_flow_direction
    examples/multiple_independent_Utubes
    examples/multipole_temperature
    examples/bore_field_thermal_resistance
