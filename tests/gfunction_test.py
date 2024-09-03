@@ -235,15 +235,24 @@ def test_gfunctions_MIFT(
     assert np.allclose(gFunc.gFunc, expected)
 
 
-# Test 'MIFT' g-functions for different bore fields using the similarities,
-# solver, unequal, and with the FLS approximation for variable mass flow rate
+# Test 'MIFT' g-functions for different bore fields using all solvers, unequal
+# segments, and with the FLS approximation for variable mass flow rate
 # g-functions
 @pytest.mark.parametrize("field, method, m_flow_network, opts, expected", [
+        # 'detailed' solver - unequal segments, FLS approximation
+        ('single_borehole_network', 'detailed', np.array([-0.25, 0.05]), 'unequal_segments_approx', np.array([[[5.60566489, 6.38071943, 6.62706326], [5.603355, 6.3615959, 6.5979712]], [[5.60284597, 6.36233529, 6.5996188], [5.76596769, 6.51061169, 6.73731276]]])),
+        ('single_borehole_network_short', 'detailed', np.array([-0.25, 0.05]), 'unequal_segments_approx', np.array([[[4.17130904, 5.0108666, 5.31097968], [4.1708935, 5.00979555, 5.30928557]], [[4.1708873, 5.0097772, 5.30925837], [4.17105984, 5.00931374, 5.30816983]]])),
+        ('ten_boreholes_network_rectangular', 'detailed', np.array([-0.5, 0.25]), 'unequal_segments_approx', np.array([[[11.19891898, 17.50417429, 19.51221751], [11.61378246, 17.69400368, 19.56564714]], [[11.44417287, 17.5662909, 19.47928482], [12.66136057, 18.57792276, 20.33429034]]])),
+        ('ten_boreholes_network_rectangular_series', 'detailed', np.array([-0.25, 0.05]), 'unequal_segments_approx', np.array([[[7.57467211, 13.97746499, 16.08569783], [25.31574066, 31.796452, 33.86566759]], [[17.37750733, 23.69326533, 25.75080157], [3.19002567, 8.85783554, 10.84222402]]])),
         # 'similarities' solver - unequal segments, FLS approximation
         ('single_borehole_network', 'similarities', np.array([-0.25, 0.05]), 'unequal_segments_approx', np.array([[[5.60566489, 6.38071943, 6.62706326], [5.603355, 6.3615959, 6.5979712]], [[5.60284597, 6.36233529, 6.5996188], [5.76596769, 6.51061169, 6.73731276]]])),
         ('single_borehole_network_short', 'similarities', np.array([-0.25, 0.05]), 'unequal_segments_approx', np.array([[[4.17130904, 5.0108666, 5.31097968], [4.1708935, 5.00979555, 5.30928557]], [[4.1708873, 5.0097772, 5.30925837], [4.17105984, 5.00931374, 5.30816983]]])),
         ('ten_boreholes_network_rectangular', 'similarities', np.array([-0.5, 0.25]), 'unequal_segments_approx', np.array([[[11.19891898, 17.50417429, 19.51221751], [11.61378246, 17.69400368, 19.56564714]], [[11.44417287, 17.5662909, 19.47928482], [12.66136057, 18.57792276, 20.33429034]]])),
         ('ten_boreholes_network_rectangular_series', 'similarities', np.array([-0.25, 0.05]), 'unequal_segments_approx', np.array([[[7.57467211, 13.97746499, 16.08569783], [25.31574066, 31.796452, 33.86566759]], [[17.37750733, 23.69326533, 25.75080157], [3.19002567, 8.85783554, 10.84222402]]])),
+        # 'equivalent' solver - unequal segments, FLS approximation
+        ('single_borehole_network', 'equivalent', np.array([-0.25, 0.05]), 'unequal_segments_approx', np.array([[[5.60566489, 6.38071943, 6.62706326], [5.603355, 6.3615959, 6.5979712]], [[5.60284597, 6.36233529, 6.5996188], [5.76596769, 6.51061169, 6.73731276]]])),
+        ('single_borehole_network_short', 'equivalent', np.array([-0.25, 0.05]), 'unequal_segments_approx', np.array([[[4.17130904, 5.0108666, 5.31097968], [4.1708935, 5.00979555, 5.30928557]], [[4.1708873, 5.0097772, 5.30925837], [4.17105984, 5.00931374, 5.30816983]]])),
+        ('ten_boreholes_network_rectangular', 'equivalent', np.array([-0.5, 0.25]), 'unequal_segments_approx', np.array([[[11.19974879, 17.50502384, 19.51351783], [11.61465222, 17.69478305, 19.56679743]], [[11.44502591, 17.56709008, 19.48049408], [12.66228879, 18.57863253, 20.33526092]]])),
     ])
 def test_gfunctions_MIFT_variable_mass_flow_rate(
         field, method, m_flow_network, opts, expected, request):
