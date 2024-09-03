@@ -86,16 +86,16 @@ class gFunction(object):
         (nMassFlow, nMassFlow,) variable mass flow rate g-functions
         will be evaluated using the method of Cimmino (2024)
         [#gFunction-Cimmin2024]_. Only required for the 'MIFT' boundary
-         condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
-         provided.
+        condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
+        provided.
         Default is None.
     m_flow_network : float or (nMassFlow,) array, optional
         Fluid mass flow rate into the network of boreholes. If an array
         is supplied, the (nMassFlow, nMassFlow,) variable mass flow
         rate g-functions will be evaluated using the method of Cimmino
         (2024) [#gFunction-Cimmin2024]_. Only required for the 'MIFT' boundary
-         condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
-         provided.
+        condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
+        provided.
         Default is None.
     cp_f : float, optional
         Fluid specific isobaric heat capacity (in J/kg.degC). Only required
@@ -682,7 +682,7 @@ class gFunction(object):
             Default is True
         which : list of int, optional
             Indices i of the diagonal variable mass flow rate g-functions for
-            which to plot heat extraction rates.
+            which to plot borehole wall temperatures.
             If None, all diagonal g-functions are plotted.
             Default is None.
 
@@ -827,7 +827,7 @@ class gFunction(object):
             Default is True
         which : list of int, optional
             Indices i of the diagonal variable mass flow rate g-functions for
-            which to plot heat extraction rates.
+            which to plot borehole wall temperatures.
             If None, all diagonal g-functions are plotted.
             Default is None.
 
