@@ -1391,8 +1391,8 @@ class _EquivalentNetwork(Network):
             # The total network heat extraction rate is the sum of heat
             # extraction rates from all boreholes:
             # [Q_{tot}] = [a_in]*[T_{f,n,in}] + [a_b]*[T_{b}]
-            a_in = np.reshape(np.sum(b_in*self.wBoreholes, axis=0), (1,-1))
-            a_b = np.reshape(np.sum(b_b*self.wBoreholes, axis=0), (1,-1))
+            a_in = np.reshape(self.wBoreholes.T @ b_in, (1,-1))
+            a_b = np.reshape(self.wBoreholes.T @ b_b, (1,-1))
 
             # Store coefficients
             self._set_stored_coefficients(
