@@ -1305,9 +1305,9 @@ class gFunction(object):
             assert not self.cp_f is None, \
                 "The heat capacity 'cp_f' must " \
                 "be provided when using the 'MIFT' boundary condition."
-            assert not (type(self.m_flow_borehole) is np.ndarray and self.m_flow_borehole.ndim and not np.size(self.m_flow_borehole, axis=1)==len(self.boreholes)), \
+            assert not (type(self.m_flow_borehole) is np.ndarray and self.m_flow_borehole.ndim == 2 and not np.size(self.m_flow_borehole, axis=1)==self.network.nInlets), \
                 "The number of mass flow rates in 'm_flow_borehole' must " \
-                "correspond to the number of boreholes."
+                "correspond to the number of circuits in the network."
         assert type(self.time) is np.ndarray or isinstance(self.time, (np.floating, float)) or self.time is None, \
             "Time should be a float or an array."
         assert isinstance(self.alpha, (np.floating, float)), \
@@ -1898,7 +1898,7 @@ class _BaseSolver(object):
         self.m_flow_borehole = m_flow_borehole
         if self.m_flow_borehole is not None:
             if not self.m_flow_borehole.ndim == 1:
-                self.nMassFlow = np.size(self.m_flow_borehole, axis=1)
+                self.nMassFlow = np.size(self.m_flow_borehole, axis=0)
             self.m_flow_borehole = np.atleast_2d(self.m_flow_borehole)
             self.m_flow = self.m_flow_borehole
         self.m_flow_network = m_flow_network
@@ -2176,7 +2176,7 @@ class _BaseSolver(object):
                         # The gFunction is equal to the effective borehole wall
                         # temperature
                         # Outlet fluid temperature
-                        T_f_out = T_f_in - 2 * pi * k_s * H_tot / (np.abs(self.m_flow[i]) * self.cp_f)
+                        T_f_out = T_f_in - 2 * pi * k_s * H_tot / np.sum(np.abs(self.m_flow[i]) * self.cp_f)
                         # Borefield thermal resistance
                         R_field = network_thermal_resistance(
                             self.network, self.m_flow[i], self.cp_f)
@@ -2339,9 +2339,9 @@ class _BaseSolver(object):
             assert not self.cp_f is None, \
                 "The heat capacity 'cp_f' must " \
                 "be provided when using the 'MIFT' boundary condition."
-            assert not (type(self.m_flow_borehole) is np.ndarray and not np.size(self.m_flow_borehole, axis=1)==len(self.boreholes)), \
+            assert not (type(self.m_flow_borehole) is np.ndarray and not np.size(self.m_flow_borehole, axis=1)==self.network.nInlets), \
                 "The number of mass flow rates in 'm_flow_borehole' must " \
-                "correspond to the number of boreholes."
+                "correspond to the number of circuits in the network."
         assert type(self.time) is np.ndarray or isinstance(self.time, (float, np.floating)) or self.time is None, \
             "Time should be a float or an array."
         # self.nSegments can now be an int or list
