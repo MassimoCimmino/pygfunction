@@ -80,9 +80,9 @@ class gFunction(object):
 
         If not given, chosen to be 'UBWT' if a list of boreholes is provided
         or 'MIFT' if a Network object is provided.
-    m_flow_borehole : (nBoreholes,) array or (nBoreholes, nMassFlow) array, optional
+    m_flow_borehole : (nInlets,) array or (nMassFlow, nInlets,) array, optional
         Fluid mass flow rate into each borehole. If a
-        (nBoreholes, nMassFlow) array is supplied, the
+        (nMassFlow, nInlets,) array is supplied, the
         (nMassFlow, nMassFlow,) variable mass flow rate g-functions
         will be evaluated using the method of Cimmino (2024)
         [#gFunction-Cimmin2024]_. Only required for the 'MIFT' boundary
@@ -1793,9 +1793,9 @@ class _BaseSolver(object):
         (of type int) as an argument, or an array of size (nSegments[i],) when
         provided with an element of nSegments (of type list).
         Default is :func:`utilities.segment_ratios`.
-    m_flow_borehole : (nBoreholes,) array or (nBoreholes, nMassFlow) array, optional
+    m_flow_borehole : (nInlets,) array or (nMassFlow, nInlets,) array, optional
         Fluid mass flow rate into each borehole. If a
-        (nBoreholes, nMassFlow) array is supplied, the
+        (nMassFlow, nInlets,) array is supplied, the
         (nMassFlow, nMassFlow,) variable mass flow rate g-functions
         will be evaluated using the method of Cimmino (2024)
         [#gFunction-CimBer2024]_. Only required for the 'MIFT' boundary
@@ -2435,6 +2435,27 @@ class _Detailed(_BaseSolver):
         (of type int) as an argument, or an array of size (nSegments[i],) when
         provided with an element of nSegments (of type list).
         Default is :func:`utilities.segment_ratios`.
+    m_flow_borehole : (nInlets,) array or (nMassFlow, nInlets,) array, optional
+        Fluid mass flow rate into each borehole. If a
+        (nMassFlow, nInlets,) array is supplied, the
+        (nMassFlow, nMassFlow,) variable mass flow rate g-functions
+        will be evaluated using the method of Cimmino (2024)
+        [#gFunction-CimBer2024]_. Only required for the 'MIFT' boundary
+         condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
+         provided.
+        Default is None.
+    m_flow_network : float or (nMassFlow,) array, optional
+        Fluid mass flow rate into the network of boreholes. If an array
+        is supplied, the (nMassFlow, nMassFlow,) variable mass flow
+        rate g-functions will be evaluated using the method of Cimmino
+        (2024) [#gFunction-CimBer2024]_. Only required for the 'MIFT' boundary
+         condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
+         provided.
+        Default is None.
+    cp_f : float, optional
+        Fluid specific isobaric heat capacity (in J/kg.degC). Only required
+        for the 'MIFT' boundary condition.
+        Default is None.
     approximate_FLS : bool, optional
         Set to true to use the approximation of the FLS solution of Cimmino
         (2021) [#Detailed-Cimmin2021]_. This approximation does not require the
@@ -2698,6 +2719,27 @@ class _Similarities(_BaseSolver):
         (of type int) as an argument, or an array of size (nSegments[i],) when
         provided with an element of nSegments (of type list).
         Default is :func:`utilities.segment_ratios`.
+    m_flow_borehole : (nInlets,) array or (nMassFlow, nInlets,) array, optional
+        Fluid mass flow rate into each borehole. If a
+        (nMassFlow, nInlets,) array is supplied, the
+        (nMassFlow, nMassFlow,) variable mass flow rate g-functions
+        will be evaluated using the method of Cimmino (2024)
+        [#gFunction-CimBer2024]_. Only required for the 'MIFT' boundary
+         condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
+         provided.
+        Default is None.
+    m_flow_network : float or (nMassFlow,) array, optional
+        Fluid mass flow rate into the network of boreholes. If an array
+        is supplied, the (nMassFlow, nMassFlow,) variable mass flow
+        rate g-functions will be evaluated using the method of Cimmino
+        (2024) [#gFunction-CimBer2024]_. Only required for the 'MIFT' boundary
+         condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
+         provided.
+        Default is None.
+    cp_f : float, optional
+        Fluid specific isobaric heat capacity (in J/kg.degC). Only required
+        for the 'MIFT' boundary condition.
+        Default is None.
     approximate_FLS : bool, optional
         Set to true to use the approximation of the FLS solution of Cimmino
         (2021) [#Similarities-Cimmin2021]_. This approximation does not require
@@ -3999,6 +4041,27 @@ class _Equivalent(_BaseSolver):
         (of type int) as an argument, or an array of size (nSegments[i],) when
         provided with an element of nSegments (of type list).
         Default is :func:`utilities.segment_ratios`.
+    m_flow_borehole : (nInlets,) array or (nMassFlow, nInlets,) array, optional
+        Fluid mass flow rate into each borehole. If a
+        (nMassFlow, nInlets,) array is supplied, the
+        (nMassFlow, nMassFlow,) variable mass flow rate g-functions
+        will be evaluated using the method of Cimmino (2024)
+        [#gFunction-CimBer2024]_. Only required for the 'MIFT' boundary
+         condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
+         provided.
+        Default is None.
+    m_flow_network : float or (nMassFlow,) array, optional
+        Fluid mass flow rate into the network of boreholes. If an array
+        is supplied, the (nMassFlow, nMassFlow,) variable mass flow
+        rate g-functions will be evaluated using the method of Cimmino
+        (2024) [#gFunction-CimBer2024]_. Only required for the 'MIFT' boundary
+         condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
+         provided.
+        Default is None.
+    cp_f : float, optional
+        Fluid specific isobaric heat capacity (in J/kg.degC). Only required
+        for the 'MIFT' boundary condition.
+        Default is None.
     approximate_FLS : bool, optional
         Set to true to use the approximation of the FLS solution of Cimmino
         (2021) [#Equivalent-Cimmin2021]_. This approximation does not require
