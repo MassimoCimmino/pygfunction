@@ -81,7 +81,7 @@ class gFunction(object):
         If not given, chosen to be 'UBWT' if a list of boreholes is provided
         or 'MIFT' if a Network object is provided.
     m_flow_borehole : (nInlets,) array or (nMassFlow, nInlets,) array, optional
-        Fluid mass flow rate into each borehole. If a
+        Fluid mass flow rate into each circuit of the network. If a
         (nMassFlow, nInlets,) array is supplied, the
         (nMassFlow, nMassFlow,) variable mass flow rate g-functions
         will be evaluated using the method of Cimmino (2024)
@@ -205,8 +205,8 @@ class gFunction(object):
     - The g-function is linearized for times `t < r_b**2 / (25 * self.alpha)`.
       The g-function value is then interpolated between 0 and its value at the
       threshold.
-    - If the 'MIFT' is used, only one of the 'm_flow_borehole' or
-      'm_flow_network' can be supplied.
+    - If the 'MIFT' boundary condition is used, only one of the
+      'm_flow_borehole' or 'm_flow_network' can be supplied.
 
     References
     ----------
@@ -1794,7 +1794,7 @@ class _BaseSolver(object):
         provided with an element of nSegments (of type list).
         Default is :func:`utilities.segment_ratios`.
     m_flow_borehole : (nInlets,) array or (nMassFlow, nInlets,) array, optional
-        Fluid mass flow rate into each borehole. If a
+        Fluid mass flow rate into each circuit of the network. If a
         (nMassFlow, nInlets,) array is supplied, the
         (nMassFlow, nMassFlow,) variable mass flow rate g-functions
         will be evaluated using the method of Cimmino (2024)
@@ -2436,7 +2436,7 @@ class _Detailed(_BaseSolver):
         provided with an element of nSegments (of type list).
         Default is :func:`utilities.segment_ratios`.
     m_flow_borehole : (nInlets,) array or (nMassFlow, nInlets,) array, optional
-        Fluid mass flow rate into each borehole. If a
+        Fluid mass flow rate into each circuit of the network. If a
         (nMassFlow, nInlets,) array is supplied, the
         (nMassFlow, nMassFlow,) variable mass flow rate g-functions
         will be evaluated using the method of Cimmino (2024)
@@ -2720,7 +2720,7 @@ class _Similarities(_BaseSolver):
         provided with an element of nSegments (of type list).
         Default is :func:`utilities.segment_ratios`.
     m_flow_borehole : (nInlets,) array or (nMassFlow, nInlets,) array, optional
-        Fluid mass flow rate into each borehole. If a
+        Fluid mass flow rate into each circuit of the network. If a
         (nMassFlow, nInlets,) array is supplied, the
         (nMassFlow, nMassFlow,) variable mass flow rate g-functions
         will be evaluated using the method of Cimmino (2024)
@@ -4042,7 +4042,7 @@ class _Equivalent(_BaseSolver):
         provided with an element of nSegments (of type list).
         Default is :func:`utilities.segment_ratios`.
     m_flow_borehole : (nInlets,) array or (nMassFlow, nInlets,) array, optional
-        Fluid mass flow rate into each borehole. If a
+        Fluid mass flow rate into each circuit of the network. If a
         (nMassFlow, nInlets,) array is supplied, the
         (nMassFlow, nMassFlow,) variable mass flow rate g-functions
         will be evaluated using the method of Cimmino (2024)
