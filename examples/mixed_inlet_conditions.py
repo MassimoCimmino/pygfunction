@@ -50,7 +50,8 @@ def main():
     k_p = 0.4           # Pipe thermal conductivity (W/m.K)
 
     # Fluid properties
-    m_flow_network = 0.25   # Total fluid mass flow rate in network (kg/s)
+    # Total fluid mass flow rate in network (kg/s)
+    m_flow_network = np.array([-0.25, 0.5])   
     # All boreholes are in series
     m_flow_borehole = m_flow_network
     # The fluid is propylene-glycol (20 %) at 20 degC
@@ -98,7 +99,7 @@ def main():
     R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(
         r_in, r_out, k_p)
     # Fluid to inner pipe wall thermal resistance (Single U-tube)
-    m_flow_pipe = m_flow_borehole
+    m_flow_pipe = np.max(np.abs(m_flow_borehole))
     h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
         m_flow_pipe,  r_in, mu_f, rho_f, k_f, cp_f, epsilon)
     R_f = 1.0/(h_f*2*pi*r_in)
@@ -110,8 +111,7 @@ def main():
             pos_pipes, r_in, r_out, borehole, k_s, k_g, R_f + R_p)
         UTubes.append(SingleUTube)
     network = gt.networks.Network(
-        boreField, UTubes, bore_connectivity=bore_connectivity,
-        m_flow_network=m_flow_network, cp_f=cp_f, nSegments=nSegments)
+        boreField, UTubes, bore_connectivity=bore_connectivity)
 
     # -------------------------------------------------------------------------
     # Evaluate the g-functions for the borefield
@@ -124,16 +124,20 @@ def main():
 
     # Calculate the g-function for mixed inlet fluid conditions
     gfunc_equal_Tf_mixed = gt.gfunction.gFunction(
-        network, alpha, time=time, boundary_condition='MIFT', options=options,
-        method=method)
+        network, alpha, time=time, m_flow_network=m_flow_network, cp_f=cp_f,
+        boundary_condition='MIFT', options=options, method=method)
 
     # -------------------------------------------------------------------------
     # Plot g-functions
     # -------------------------------------------------------------------------
 
     ax = gfunc_Tb.visualize_g_function().axes[0]
-    ax.plot(np.log(time/ts), gfunc_equal_Tf_mixed.gFunc, 'r-.')
-    ax.legend(['Uniform temperature', 'Mixed inlet temperature'])
+    ax.plot(np.log(time/ts), gfunc_equal_Tf_mixed.gFunc[0, 0, :], 'C1')
+    ax.plot(np.log(time/ts), gfunc_equal_Tf_mixed.gFunc[1, 1, :], 'C2')
+    ax.legend([
+        'Uniform temperature',
+        f'Mixed inlet temperature (m_flow={m_flow_network[0]} kg/s)',
+        f'Mixed inlet temperature (m_flow={m_flow_network[1]} kg/s)'])
     plt.tight_layout()
 
     # For the mixed inlet fluid temperature condition, draw the temperatures

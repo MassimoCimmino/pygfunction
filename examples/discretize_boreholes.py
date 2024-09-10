@@ -114,8 +114,7 @@ def main():
     m_flow_network = m_flow_borehole*nBoreholes
 
     # Network of boreholes connected in parallel
-    network = gt.networks.Network(
-        boreField, UTubes, m_flow_network=m_flow_network, cp_f=cp_f)
+    network = gt.networks.Network(boreField, UTubes)
 
     # -------------------------------------------------------------------------
     # Evaluate the g-functions for the borefield
@@ -124,8 +123,8 @@ def main():
     # Compute g-function for the converged MIFT case with equal number of
     # segments per borehole, and equal segment lengths along the boreholes
     gfunc_MIFT_uniform = gt.gfunction.gFunction(
-        network, alpha, time=time, boundary_condition='MIFT',
-        options=options_uniform)
+        network, alpha, time=time, m_flow_network=m_flow_network, cp_f=cp_f,
+        boundary_condition='MIFT', options=options_uniform)
 
     # Calculate the g-function for uniform borehole wall temperature
     gfunc_UBWT_uniform = gt.gfunction.gFunction(
@@ -135,8 +134,8 @@ def main():
     # Compute g-function for the MIFT case with equal number of segments per
     # borehole, and non-uniform segment lengths along the boreholes
     gfunc_MIFT_unequal = gt.gfunction.gFunction(
-        network, alpha, time=time, boundary_condition='MIFT',
-        options=options_unequal)
+        network, alpha, time=time, m_flow_network=m_flow_network, cp_f=cp_f,
+        boundary_condition='MIFT', options=options_unequal)
 
     # Calculate the g-function for uniform borehole wall temperature
     gfunc_UBWT_unequal = gt.gfunction.gFunction(

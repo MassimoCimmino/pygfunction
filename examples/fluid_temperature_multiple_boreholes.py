@@ -55,7 +55,8 @@ def main():
 
     # Fluid properties
     m_flow_borehole = 0.25      # Total fluid mass flow rate per borehole (kg/s)
-    m_flow_network = m_flow_borehole*N_1*N_2    # Total fluid mass flow rate (kg/s)
+    # Total fluid mass flow rate (kg/s)
+    m_flow_network = m_flow_borehole * N_1 * N_2
     # The fluid is propylene-glycol (20 %) at 20 degC
     fluid = gt.media.Fluid('MPG', 20.)
     cp_f = fluid.cp     # Fluid specific isobaric heat capacity (J/kg.K)
@@ -102,8 +103,7 @@ def main():
             nPipes=2, config='parallel')
         UTubes.append(UTube)
     # Build a network object from the list of UTubes
-    network = gt.networks.Network(
-        boreField, UTubes, m_flow_network=m_flow_network, cp_f=cp_f)
+    network = gt.networks.Network(boreField, UTubes)
 
     # -------------------------------------------------------------------------
     # Calculate g-function
@@ -113,17 +113,17 @@ def main():
     time_req = LoadAgg.get_times_for_simulation()
     # Calculate g-function
     gFunc = gt.gfunction.gFunction(
-        network, alpha, time=time_req, boundary_condition='MIFT',
-        options=options)
+        network, alpha, time=time_req, m_flow_network=m_flow_network,
+        cp_f=cp_f, boundary_condition='MIFT', options=options)
     # Initialize load aggregation scheme
-    LoadAgg.initialize(gFunc.gFunc/(2*pi*k_s))
+    LoadAgg.initialize(gFunc.gFunc / (2 * pi * k_s))
 
     # -------------------------------------------------------------------------
     # Simulation
     # -------------------------------------------------------------------------
 
     # Evaluate heat extraction rate
-    Q_tot = nBoreholes*synthetic_load(time/3600.)
+    Q_tot = nBoreholes*synthetic_load(time / 3600.)
 
     T_b = np.zeros(Nt)
     T_f_in = np.zeros(Nt)
@@ -191,7 +191,6 @@ def main():
     z = np.linspace(0., H, num=nz)
     T_f = UTubes[0].get_temperature(
         z, T_f_in[it], T_b[it], m_flow_borehole, cp_f)
-
 
     # Configure figure and axes
     fig = gt.utilities._initialize_figure()
