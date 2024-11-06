@@ -37,6 +37,7 @@ def test_access_borehole_from_api():
     # pprint(f"{simple_borefield_config=}=")
 
     # -- Act
+    # TODO: submit various options and test the output
     pyg_1 = PYG(complete_borefield_config, alpha, time, solver_method="detailed")
     pyg_2 = PYG(simple_borefield_config, alpha, time)
 
