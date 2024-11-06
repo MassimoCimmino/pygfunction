@@ -1,9 +1,9 @@
-import numpy as np
 from pygfunction.gfunction import gFunction
 from pygfunction.boreholes import Borehole
+from typing import Dict, Optional, Any, List
 
 class PYG(object):
-    def __init__(self, borehole_config_list: list[list[float]], alpha: float, time: list[int], options=None, solver_method="equivalent"):
+    def __init__(self, borehole_config_list: List[List[float]], alpha: float, time: List[int], options: Optional[Dict[str, Any]] = None, solver_method: str = "equivalent"):
         """
         Borehole config parameters are defined in the Borehole class
         All other parameters are defined in the PyGFunction class
@@ -45,6 +45,10 @@ class PYG(object):
         #         'profiles': True
         #     }
 
+        # We want to at least pass an empty dict to gFunction, so it can be populated by internal classes with defaults
+        if options is None:
+            options = {}
+
         boundary = "UHTR"  # "UHTR" or "UBWT" or "MIFT"
 
         bore_field = []  # List of borehole objects
@@ -63,7 +67,7 @@ class PYG(object):
             alpha,
             time=time,
             boundary_condition=boundary,
-            # options=options,
+            options=options,
             method=solver_method,
         )
     def to_list(self):
