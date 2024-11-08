@@ -5,12 +5,12 @@ from typing import Dict, Optional, Any, List
 
 class PYG(object):
 
-    def __init__(self, borehole_config_list: list[list[float]],
+    def __init__(self, borehole_config_list: List[List[float]],
                  alpha: float,
-                 time: list[float],
-                 options=None,
-                 solver_method="equivalent",
-                 boundary_condition="UHTR"):
+                 time: List[float],
+                 options: Optional[Dict[str, Any]] = None,
+                 solver_method: str = "equivalent",
+                 boundary_condition: str = "UHTR"):
 
         """
         Borehole config parameters are defined in the Borehole class
@@ -30,9 +30,7 @@ class PYG(object):
             borefield,
             alpha,
             time=time,
-
             boundary_condition=boundary_condition,
-
             options=options,
             method=solver_method,
         )
