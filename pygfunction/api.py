@@ -1,11 +1,14 @@
 from pygfunction.gfunction import gFunction
 from pygfunction.boreholes import Borehole
 
+from typing import Union, List, Tuple
+
 
 class BHFieldParams(object):
-    def __init__(self, xy_coord_pairs: list[tuple[float, float] | list[float, float]], height: float | list[float],
-                 depth: float | list[float], borehole_radius: float | list[float],
-                 tilt_angle: float | list[float] = 0, orientation_angle: float | list[float] = 0):
+    def __init__(self, xy_coord_pairs: Union[List[Tuple[float, float]], List[List[float]]],
+                 height: Union[float, List[float]], depth: Union[float, List[float]],
+                 borehole_radius: Union[float, List[float]], tilt_angle: Union[float, List[float]] = 0,
+                 orientation_angle: Union[float, List[float]] = 0):
 
         self.xy_coords = xy_coord_pairs
         self.x_coords = [xy_pair[0] for xy_pair in xy_coord_pairs]
