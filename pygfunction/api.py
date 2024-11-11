@@ -1,7 +1,7 @@
 from pygfunction.gfunction import gFunction
 from pygfunction.boreholes import Borehole
 
-from typing import Union, List, Tuple
+from typing import Union, List, Tuple, Dict
 
 
 class BHFieldParams(object):
@@ -55,8 +55,8 @@ class GFunctionGenerator(object):
 
     def __init__(self, borehole_field: BHFieldParams,
                  alpha: float,
-                 time: list[float],
-                 options: dict[str] | None = None,
+                 time: List[float],
+                 options: Union[Dict[str, str], None] = None,
                  solver_method: str = "equivalent",
                  boundary_condition: str = "UHTR"):
         """
