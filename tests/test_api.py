@@ -74,4 +74,4 @@ class TestAPI(TestCase):
         g = bh_field.get_g_functions(self.alpha, self.time, solver_method="detailed")
 
         # we don't have any other reference to compare these to currently
-        self.assertIsInstance(g.tolist(), list)
+        self.assertIsInstance(g, list)

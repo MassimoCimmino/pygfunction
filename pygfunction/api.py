@@ -119,7 +119,7 @@ class BoreholeField:
 
         Returns
         ----------
-        array of g-function values
+        list of g-function values
         """
 
         if options is None:
@@ -134,8 +134,4 @@ class BoreholeField:
             method=solver_method,
         )
 
-        return self.gfunc.gFunc
-
-    def to_list(self):
-        """returns a _list_ of g-function values"""
         return self.gfunc.gFunc.tolist()
