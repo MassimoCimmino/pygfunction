@@ -51,12 +51,15 @@ def main():
     # Circular field of 8 boreholes
     circleField = gt.boreholes.circle_field(N_b, R, H, D, r_b)
 
+    # Filled circle field of 20 boreholes
+    filledCircleField = gt.boreholes.filled_circle_field(20, 10, 100, 1, 0.05)
+
     # -------------------------------------------------------------------------
     # Draw bore fields
     # -------------------------------------------------------------------------
     for field in [
             rectangularField, staggeredRectangularField, denseRectangularField,
-            boxField, UField, LField, circleField]:
+            boxField, UField, LField, circleField, filledCircleField]:
         gt.boreholes.visualize_field(field)
         plt.show()
 
