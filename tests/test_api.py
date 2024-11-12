@@ -1,7 +1,7 @@
 import numpy as np
 
 from unittest import TestCase
-from pygfunction.api import GFunctionGenerator, BHFieldParams
+from pygfunction.api import GFunctionGenerator, BoreholeFieldParameters
 
 
 class TestAPI(TestCase):
@@ -37,7 +37,8 @@ class TestAPI(TestCase):
     def test_compute_vertical_g_functions_from_api(self):
         def run_test(xy):
             # compute g-functions
-            bh_field_params = BHFieldParams(xy_coords, self.height, self.depth, self.bh_radius)
+            bh_field_params = BoreholeFieldParameters()
+            bh_field_params.initialize_borehole_field_generic(xy, self.height, self.depth, self.bh_radius)
             g = GFunctionGenerator(bh_field_params, self.alpha, self.time, boundary_condition="UBWT")
 
             # tolerance values are not as tight as one might expect
@@ -63,8 +64,10 @@ class TestAPI(TestCase):
         xy_coords = [(0, 5), (0, 10), (0, 15), (0, 20)]
 
         # compute g-functions
-        bh_field_params = BHFieldParams(xy_coords, self.height, self.depth, self.bh_radius, tilt_angle=20,
-                                        orientation_angle=20)
+        bh_field_params = BoreholeFieldParameters()
+        bh_field_params.initialize_borehole_field_generic(
+            xy_coords, self.height, self.depth, self.bh_radius, tilt_angle=20, orientation_angle=20
+        )
         g = GFunctionGenerator(bh_field_params, self.alpha, self.time, solver_method="detailed")
 
         # we don't have any other reference to compare these to currently
