@@ -1,7 +1,7 @@
 import numpy as np
 
 from unittest import TestCase
-from pygfunction.api import GFunctionGenerator, BoreholeFieldParameters
+from pygfunction.api import BoreholeField
 
 
 class TestAPI(TestCase):
@@ -39,12 +39,12 @@ class TestAPI(TestCase):
     def test_compute_vertical_g_functions_from_api(self):
         def run_test(xy):
             # compute g-functions
-            bh_field_params = BoreholeFieldParameters()
-            bh_field_params.initialize_borehole_field_generic(xy, self.height, self.depth, self.bh_radius)
-            g = GFunctionGenerator(bh_field_params, self.alpha, self.time, boundary_condition="UBWT")
+            bh_field = BoreholeField()
+            bh_field.initialize_borehole_field_generic(xy, self.height, self.depth, self.bh_radius)
+            g_vals = bh_field.get_g_functions(self.alpha, self.time, boundary_condition="UBWT")
 
             # tolerance values are not as tight as one might expect
-            for idx, test_val in enumerate(g.to_list()):
+            for idx, test_val in enumerate(g_vals):
                 self.assertAlmostEqual(test_val, self.expected_g_values[idx], delta=2e-1)
 
         # bh locations
@@ -66,12 +66,12 @@ class TestAPI(TestCase):
         xy_coords = [(0, 5), (0, 10), (0, 15), (0, 20)]
 
         # compute g-functions
-        bh_field_params = BoreholeFieldParameters()
-        bh_field_params.initialize_borehole_field_generic(
+        bh_field = BoreholeField()
+        bh_field.initialize_borehole_field_generic(
             xy_coords, self.height, self.depth, self.bh_radius,
-            tilt_angle=20*self.deg_to_rad, orientation_angle=20*self.deg_to_rad
+            tilt_angle=20 * self.deg_to_rad, orientation_angle=20 * self.deg_to_rad
         )
-        g = GFunctionGenerator(bh_field_params, self.alpha, self.time, solver_method="detailed")
+        g = bh_field.get_g_functions(self.alpha, self.time, solver_method="detailed")
 
         # we don't have any other reference to compare these to currently
-        self.assertIsInstance(g.to_list(), list)
+        self.assertIsInstance(g.tolist(), list)

@@ -6,7 +6,7 @@ from typing import Union, List, Tuple, Dict
 FloatOrList = Union[float, List[float]]
 
 
-class BoreholeFieldParameters:
+class BoreholeField:
     """This class represents the borehole field and can generate inputs for pygfunction"""
 
     def __init__(self):
@@ -17,6 +17,7 @@ class BoreholeFieldParameters:
         self.orientation_angle_list: List[float] = []  # list of direction of borehole tilt angles, in radians
         self.x_coords: List[float] = []  # list of borehole x-axis coordinates, in meters
         self.y_coords: List[float] = []  # list of borehole y-axis coordinates, in meters
+        self.gfunc = None
 
     def initialize_borehole_field_generic(
             self, xy_coord_pairs: List[Tuple[float, float]],
@@ -65,12 +66,14 @@ class BoreholeFieldParameters:
 
         Parameters
         ----------
-        check_data
-        expected_size
+        check_data: FloatOrList
+            Data or list of parameters to use
+        expected_size: int
+            Expected size of list
 
         Returns
-        -------
-
+        ----------
+        list of floats filled with correct values
         """
         if isinstance(check_data, list):
             if len(check_data) != expected_size:
@@ -79,6 +82,7 @@ class BoreholeFieldParameters:
         return [check_data] * expected_size
 
     def as_config(self):
+        """"""
         all_bh_configs = zip(self.height_list,
                              self.depth_list,
                              self.bh_radius_list,
@@ -88,34 +92,41 @@ class BoreholeFieldParameters:
                              self.orientation_angle_list)
         return [Borehole(*cfg) for cfg in all_bh_configs]
 
+    def get_g_functions(self,
+                        alpha: float,
+                        time: List[float],
+                        options: Union[Dict[str, str], None] = None,
+                        solver_method: str = "equivalent",
+                        boundary_condition: str = "UHTR"):
 
-class GFunctionGenerator(object):
-
-    def __init__(self, borehole_field: BoreholeFieldParameters,
-                 alpha: float,
-                 time: List[float],
-                 options: Union[Dict[str, str], None] = None,
-                 solver_method: str = "equivalent",
-                 boundary_condition: str = "UHTR"):
         """
-        Borehole config parameters are defined in the Borehole class
-        All other parameters are defined in the PyGFunction class
+        Generates g-function values
 
         Parameters
         ----------
-        borehole_field
-        alpha
-        time
-        options
-        solver_method
-        boundary_condition
+        alpha: float
+            soil thermal diffusivity, in m^2/s
+        time: list[float]
+            time interval values for computing g-function values
+        options: Union[Dict[str, str], None]
+            Optional argument, options dict containing options for g-function computation
+        solver_method: str
+            optional argument, solver method for g-function computation. default: "equivalent".
+            other options: "similarities" or "detailed"
+        boundary_condition: str
+            optional argument, boundary condition for g-function computation, default: "UHTR"
+            other options: "UBWT" or "MFIT",
+
+        Returns
+        ----------
+        array of g-function values
         """
 
         if options is None:
             options = {}
 
         self.gfunc = gFunction(
-            borehole_field.as_config(),
+            self.as_config(),
             alpha,
             time=time,
             boundary_condition=boundary_condition,
@@ -123,5 +134,8 @@ class GFunctionGenerator(object):
             method=solver_method,
         )
 
+        return self.gfunc.gFunc
+
     def to_list(self):
+        """returns a _list_ of g-function values"""
         return self.gfunc.gFunc.tolist()
