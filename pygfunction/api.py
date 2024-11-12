@@ -1,7 +1,7 @@
 from pygfunction.gfunction import gFunction
 from pygfunction.boreholes import Borehole
 
-from typing import Union, List, Tuple, Dict, Iterable
+from typing import Union, List, Tuple, Dict
 
 FloatOrList = Union[float, List[float]]
 
@@ -10,13 +10,13 @@ class BoreholeFieldParameters:
     """This class represents the borehole field and can generate inputs for pygfunction"""
 
     def __init__(self):
-        self.height_list: List[float] = []  # TODO: Document the units
-        self.depth_list: List[float] = []
-        self.bh_radius_list: List[float] = []
-        self.tilt_angle_list: List[float] = []  # TODO: Is this degrees? And I assume from vertical?
-        self.orientation_angle_list: List[float] = []  # TODO: Same question
-        self.x_coords: List[float] = []  # TODO: What are the units here, I'm assuming meters
-        self.y_coords: List[float] = []  # TODO: Same question
+        self.height_list: List[float] = []  # list of borehole heights, in meters
+        self.depth_list: List[float] = []  # list of depth of borehole head, in meters
+        self.bh_radius_list: List[float] = []  # list of borehole radii
+        self.tilt_angle_list: List[float] = []  # list of borehole tilt angles from vertical, in radians
+        self.orientation_angle_list: List[float] = []  # list of direction of borehole tilt angles, in radians
+        self.x_coords: List[float] = []  # list of borehole x-axis coordinates, in meters
+        self.y_coords: List[float] = []  # list of borehole y-axis coordinates, in meters
 
     def initialize_borehole_field_generic(
             self, xy_coord_pairs: List[Tuple[float, float]],
@@ -28,16 +28,23 @@ class BoreholeFieldParameters:
         Any scalar arguments are extended to the size of the coordinates list to cover each borehole.
         List arguments must be sized to match the size of the coordinate list.
 
-        Parameters
+        Attributes
         ----------
-        xy_coord_pairs
-        height
-        depth
-        borehole_radius
-        tilt_angle
-        orientation_angle
-
-        Returns
+        xy_coord_pairs: list[tuple[float, float]] or list[list[float, float]]
+            Position (in meters) of the head of the borehole along the x- and y-axis.
+        height : float
+            Borehole length (in meters).
+        depth : float
+            Borehole buried depth (in meters).
+        borehole_radius : float
+            Borehole radius (in meters).
+        tilt_angle : float, optional
+            Angle (in radians) from vertical of the axis of the borehole.
+            Default is 0.
+        orientation_angle : float, optional
+            Direction (in radians) of the tilt of the borehole. Defaults to zero
+            if the borehole is vertical.
+            Default is 0.
         -------
 
         """

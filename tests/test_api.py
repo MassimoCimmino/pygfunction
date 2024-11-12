@@ -34,6 +34,8 @@ class TestAPI(TestCase):
             15.103960182529738, 15.135243749367413, 15.185795927543893
         ]
 
+        self.deg_to_rad = np.pi / 180
+
     def test_compute_vertical_g_functions_from_api(self):
         def run_test(xy):
             # compute g-functions
@@ -66,7 +68,8 @@ class TestAPI(TestCase):
         # compute g-functions
         bh_field_params = BoreholeFieldParameters()
         bh_field_params.initialize_borehole_field_generic(
-            xy_coords, self.height, self.depth, self.bh_radius, tilt_angle=20, orientation_angle=20
+            xy_coords, self.height, self.depth, self.bh_radius,
+            tilt_angle=20*self.deg_to_rad, orientation_angle=20*self.deg_to_rad
         )
         g = GFunctionGenerator(bh_field_params, self.alpha, self.time, solver_method="detailed")
 
