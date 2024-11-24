@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import Union, List, Self
+from typing import Union, List, Dict, Self
 
 import numpy as np
 import numpy.typing as npt
@@ -97,3 +97,47 @@ class Borefield:
                     H, D, r_b, x, y, tilt, orientation)]
         borefield = cls(boreholes)
         return borefield
+
+    def evaluate_g_function(
+            self,
+            alpha: float,
+            time: npt.ArrayLike,
+            options: Union[Dict[str, str], None] = None,
+            method: str = "equivalent",
+            boundary_condition: str = "UBWT"):
+        """
+        Generates g-function values
+
+        Parameters
+        ----------
+        alpha: float
+            soil thermal diffusivity, in m^2/s
+        time: list[float]
+            time interval values for computing g-function values
+        options: Union[Dict[str, str], None]
+            Optional argument, options dict containing options for g-function computation
+        method: str
+            optional argument, solver method for g-function computation. default: "equivalent".
+            other options: "similarities" or "detailed"
+        boundary_condition: str
+            optional argument, boundary condition for g-function computation, default: "UBWT"
+            other options: "UHTR" or "MIFT",
+
+        Returns
+        ----------
+        list of g-function values
+        """
+        from .gfunction import gFunction
+        if options is None:
+            options = {}
+
+        gfunc = gFunction(
+            self,
+            alpha,
+            time=time,
+            method=method,
+            boundary_condition=boundary_condition,
+            options=options,
+        )
+
+        return gfunc
