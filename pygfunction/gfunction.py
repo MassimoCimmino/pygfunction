@@ -9,6 +9,7 @@ from scipy.constants import pi
 from scipy.interpolate import interp1d as interp1d
 
 from .boreholes import Borehole, _EquivalentBorehole, find_duplicates
+from .borefield import Borefield
 from .heat_transfer import finite_line_source, finite_line_source_vectorized, \
     finite_line_source_equivalent_boreholes_vectorized, \
     finite_line_source_inclined_vectorized
@@ -1284,7 +1285,7 @@ class gFunction(object):
         are what is expected.
 
         """
-        assert isinstance(self.boreholes, list), \
+        assert isinstance(self.boreholes, (list, Borefield)), \
             "Boreholes must be provided in a list."
         assert len(self.boreholes) > 0, \
             "The list of boreholes is empty."
@@ -2320,7 +2321,7 @@ class _BaseSolver(object):
         are what is expected.
 
         """
-        assert isinstance(self.boreholes, list), \
+        assert isinstance(self.boreholes, (list, Borefield)), \
             "Boreholes must be provided in a list."
         assert len(self.boreholes) > 0, \
             "The list of boreholes is empty."

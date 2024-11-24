@@ -1,4 +1,5 @@
 from . import boreholes
+from . import borefield
 from . import gfunction
 from . import heat_transfer
 from . import load_aggregation
