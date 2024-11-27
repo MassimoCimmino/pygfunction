@@ -71,8 +71,8 @@ class Borefield:
             else:
                 tilt = 0.
                 orientation = 0.
-        borefield = cls.from_lists(
-            H, D, r_b, x, y, tilt=tilt, orientation=orientation)
+        # Create the borefield object
+        borefield = cls(H, D, r_b, x, y, tilt=tilt, orientation=orientation)
         return borefield
 
     @classmethod
