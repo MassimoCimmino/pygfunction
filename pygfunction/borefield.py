@@ -11,8 +11,8 @@ class Borefield:
 
     def __init__(
             self, H: npt.ArrayLike, D: npt.ArrayLike, r_b: npt.ArrayLike,
-            x: npt.ArrayLike, y: npt.ArrayLike, tilt: npt.ArrayLike = 0,
-            orientation: npt.ArrayLike = 0):
+            x: npt.ArrayLike, y: npt.ArrayLike, tilt: npt.ArrayLike = 0.,
+            orientation: npt.ArrayLike = 0.):
         # Convert x and y coordinates to arrays
         x = np.atleast_1d(x)
         y = np.atleast_1d(y)
@@ -25,10 +25,18 @@ class Borefield:
         self.x = np.broadcast_to(x, self.nBoreholes)
         self.y = np.broadcast_to(y, self.nBoreholes)
         self.tilt = np.broadcast_to(tilt, self.nBoreholes)
-        self.orientation = np.broadcast_to(orientation, self.nBoreholes)
 
         # Identify tilted boreholes
-        self._is_tilted = np.greater(self.orientation, 1e-6)
+        self._is_tilted = np.broadcast_to(
+            np.greater(tilt, 1e-6),
+            self.nBoreholes)
+        # Vertical boreholes default to an orientation of zero
+        if not np.any(self._is_tilted):
+            self.orientation = np.broadcast_to(0., self.nBoreholes)
+        elif np.all(self._is_tilted):
+            self.orientation = np.broadcast_to(orientation, self.nBoreholes)
+        else:
+            self.orientation = np.multiply(orientation, self._is_tilted)
         pass
 
     def __getitem__(self, key):
