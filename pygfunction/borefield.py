@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import Union, List, Dict, Self
+from typing import Union, List, Dict, Tuple, Self
 
 import numpy as np
 import numpy.typing as npt
@@ -394,3 +394,586 @@ class Borefield:
         
         """
         return [borehole for borehole in self]
+
+    @classmethod
+    def rectangle_field(
+            cls, N_1: int, N_2:int, B_1: float, B_2: float, H: float, D: float,
+            r_b: float, tilt: float = 0.,
+            origin: Union[Tuple[float, float], None] = None) -> Self:
+        """
+        Build a bore field in a rectangular configuration.
+
+        Parameters
+        ----------
+        N_1 : int
+            Number of boreholes in the x direction.
+        N_2 : int
+            Number of boreholes in the y direction.
+        B_1 : float
+            Distance (in meters) between adjacent boreholes in the x direction.
+        B_2 : float
+            Distance (in meters) between adjacent boreholes in the y direction.
+        H : float
+            Borehole length (in meters).
+        D : float
+            Borehole buried depth (in meters).
+        r_b : float
+            Borehole radius (in meters).
+        tilt : float, optional
+            Angle (in radians) from vertical of the axis of the borehole. The
+            orientation of the tilt is orthogonal to the origin coordinate.
+            Default is 0.
+        origin : tuple, optional
+            A coordinate indicating the origin of reference for orientation of
+            boreholes.
+            Default is the center of the rectangle.
+
+        Returns
+        -------
+        borefield : Borefield object
+            The rectangular bore field.
+
+        Notes
+        -----
+        Boreholes located at the origin will remain vertical.
+
+        Examples
+        --------
+        >>> borefield = gt.borefield.Borefield.rectangle_field(
+            N_1=3, N_2=2, B_1=5., B_2=5., H=100., D=2.5, r_b=0.05)
+
+        The bore field is constructed line by line. For N_1=3 and N_2=2, the
+        bore field layout is as follows::
+
+         3   4   5
+
+         0   1   2
+
+        """
+        if origin is None:
+            # When no origin is supplied, compute the origin to be at the
+            # center of the rectangle
+            x0 = (N_1 - 1) / 2 * B_1
+            y0 = (N_2 - 1) / 2 * B_2
+        else:
+            x0, y0 = origin
+
+        # Borehole positions and orientation
+        x = np.tile(np.arange(N_1), N_2) * B_1
+        y = np.repeat(np.arange(N_2), N_1) * B_2
+        orientation = np.arctan2(y - y0, x - x0)
+        # Boreholes are inclined only if they do not lie on the origin
+        dis0 = np.sqrt((x - x0)**2 + (y - y0)**2)
+        if np.any(dis0 < r_b):
+            tilt = np.full(N_1 * N_2, tilt)
+            tilt[dis0 < r_b] = 0.
+
+        # Create the bore field
+        borefield = cls(H, D, r_b, x, y, tilt=tilt, orientation=orientation)
+        return borefield
+
+    @classmethod
+    def staggered_rectangle_field(
+            cls, N_1: int, N_2:int, B_1: float, B_2: float, H: float, D: float,
+            r_b: float, include_last_borehole: bool, tilt: float = 0.,
+            origin: Union[Tuple[float, float], None] = None) -> Self:
+        """
+        Build a bore field in a staggered rectangular bore field configuration.
+
+        Parameters
+        ----------
+        N_1 : int
+            Number of borehole in the x direction.
+        N_2 : int
+            Number of borehole in the y direction.
+        B_1 : float
+            Distance (in meters) between adjacent boreholes in the x direction.
+        B_2 : float
+            Distance (in meters) between adjacent boreholes in the y direction.
+        H : float
+            Borehole length (in meters).
+        D : float
+            Borehole buried depth (in meters).
+        r_b : float
+            Borehole radius (in meters).
+        include_last_borehole : bool
+            If True, then each row of boreholes has equal numbers of boreholes.
+            If False, then the staggered rows have one borehole less so they are
+            contained within the imaginary 'box' around the borefield.
+        tilt : float, optional
+            Angle (in radians) from vertical of the axis of the borehole. The
+            orientation of the tilt is orthogonal to the origin coordinate.
+            Default is 0.
+        origin : tuple, optional
+            A coordinate indicating the origin of reference for orientation of
+            boreholes.
+            Default is the center of the rectangle.
+
+        Returns
+        -------
+        borefield : Borefield object
+            The staggered rectangular bore field.
+
+        Notes
+        -----
+        Boreholes located at the origin will remain vertical.
+
+        Examples
+        --------
+        >>> borefield = gt.borefield.Borefield.staggered_rectangle_field(
+            N_1=3, N_2=2, B_1=5., B_2=5., H=100., D=2.5, r_b=0.05,
+            include_last_borehole=True)
+
+        The bore field is constructed line by line. For N_1=3 and N_2=3, the
+        bore field layout is as follows, if `include_last_borehole` is True::
+
+         6    7    8
+           3    4    5
+         0    1    2
+
+        and if `include_last_borehole` is False::
+
+         5    6    7
+           3    4
+         0    1    2
+
+        """
+        if N_1 == 1 or N_2 == 1:
+            borefield = cls.rectangle_field(
+                N_1, N_2, B_1, B_2, H, D, r_b, tilt, origin)
+            return borefield
+
+        if origin is None:
+            # When no origin is supplied, compute the origin to be at the
+            # center of the rectangle
+            if include_last_borehole:
+                x0 = (N_1 - 0.5) / 2 * B_1
+                y0 = (N_2 - 1) / 2 * B_2
+            else:
+                x0 = (N_1 - 1) / 2 * B_1
+                y0 = (N_2 - 1) / 2 * B_2
+        else:
+            x0, y0 = origin
+
+        # Borehole positions and orientation
+        x = np.array(
+            [i + (0.5 if j % 2 == 1 else 0.)
+             for j in range(N_2)
+             for i in range(N_1)
+             if i < (N_1 - 1) or include_last_borehole or (j % 2 == 0)]) * B_1
+        y = np.array(
+            [j
+             for j in range(N_2)
+             for i in range(N_1)
+             if i < (N_1 - 1) or include_last_borehole or (j % 2 == 0)]) * B_2
+        orientation = np.arctan2(y - y0, x - x0)
+        nBoreholes = len(x)
+        # Boreholes are inclined only if they do not lie on the origin
+        dis0 = np.sqrt((x - x0)**2 + (y - y0)**2)
+        if np.any(dis0 < r_b):
+            tilt = np.full(nBoreholes, tilt)
+            tilt[dis0 < r_b] = 0.
+
+        # Create the bore field
+        borefield = cls(H, D, r_b, x, y, tilt=tilt, orientation=orientation)
+        return borefield
+
+    @classmethod
+    def dense_rectangle_field(
+            cls, N_1: int, N_2:int, B: float, H: float, D: float,
+            r_b: float, include_last_borehole: bool, tilt: float = 0.,
+            origin: Union[Tuple[float, float], None] = None) -> Self:
+        """
+        Build a bore field in a dense rectangular bore field configuration.
+
+        Parameters
+        ----------
+        N_1 : int
+            Number of borehole in the x direction.
+        N_2 : int
+            Number of borehole in the y direction.
+        B : float
+            Distance (in meters) between adjacent boreholes.
+        H : float
+            Borehole length (in meters).
+        D : float
+            Borehole buried depth (in meters).
+        r_b : float
+            Borehole radius (in meters).
+        include_last_borehole : bool
+            If True, then each row of boreholes has equal numbers of boreholes.
+            If False, then the staggered rows have one borehole less so they
+            are contained within the imaginary 'box' around the borefield.
+        tilt : float, optional
+            Angle (in radians) from vertical of the axis of the borehole. The
+            orientation of the tilt is orthogonal to the origin coordinate.
+            Default is 0.
+        origin : tuple, optional
+            A coordinate indicating the origin of reference for orientation of
+            boreholes.
+            Default is the center of the rectangle.
+
+        Returns
+        -------
+        borefield : Borefield object
+            The dense rectangular bore field.
+
+        Notes
+        -----
+        Boreholes located at the origin will remain vertical.
+
+        Examples
+        --------
+        >>> borefield = gt.borefield.Borefield.dense_rectangle_field(
+                N_1=3, N_2=2, B=5., H=100., D=2.5, r_b=0.05,
+                include_last_borehole=True)
+
+        The bore field is constructed line by line. For N_1=3 and N_2=3, the bore
+        field layout is as follows, if `include_last_borehole` is True::
+
+         6    7    8
+           3    4    5
+         0    1    2
+
+        and if `include_last_borehole` is False::
+
+         5    6    7
+           3    4
+         0    1    2
+
+        """
+        borefield = cls.staggered_rectangle_field(
+            N_1, N_2, B, np.sqrt(3)/2 * B, H, D, r_b, include_last_borehole,
+            tilt=tilt, origin=origin)
+        return borefield
+
+    @classmethod
+    def L_shaped_field(
+            cls, N_1: int, N_2:int, B_1: float, B_2: float, H: float, D: float,
+            r_b: float, tilt: float = 0.,
+            origin: Union[Tuple[float, float], None] = None) -> Self:
+        """
+        Build a bore field in a L-shaped configuration.
+
+        Parameters
+        ----------
+        N_1 : int
+            Number of borehole in the x direction.
+        N_2 : int
+            Number of borehole in the y direction.
+        B_1 : float
+            Distance (in meters) between adjacent boreholes in the x direction.
+        B_2 : float
+            Distance (in meters) between adjacent boreholes in the y direction.
+        H : float
+            Borehole length (in meters).
+        D : float
+            Borehole buried depth (in meters).
+        r_b : float
+            Borehole radius (in meters).
+        tilt : float, optional
+            Angle (in radians) from vertical of the axis of the borehole. The
+            orientation of the tilt is orthogonal to the origin coordinate.
+            Default is 0.
+        origin : tuple, optional
+            A coordinate indicating the origin of reference for orientation of
+            boreholes.
+            Default is origin is placed at the center of an assumed rectangle.
+
+        Returns
+        -------
+        borefield : Borefield object
+            The L-shaped bore field.
+
+        Notes
+        -----
+        Boreholes located at the origin will remain vertical.
+
+        Examples
+        --------
+        >>> borefield = gt.borefield.Borefield.L_shaped_field(
+            N_1=3, N_2=2, B_1=5., B_2=5., H=100., D=2.5, r_b=0.05)
+
+        The bore field is constructed line by line. For N_1=3 and N_2=2, the
+        bore field layout is as follows::
+
+         3
+
+         0   1   2
+
+        """
+        if origin is None:
+            # When no origin is supplied, compute the origin to be at the
+            # center of the rectangle
+            x0 = (N_1 - 1) / 2 * B_1
+            y0 = (N_2 - 1) / 2 * B_2
+        else:
+            x0, y0 = origin
+
+        # Borehole positions and orientation
+        x = np.concatenate((np.arange(N_1), np.zeros(N_2 - 1))) * B_1
+        y = np.concatenate((np.zeros(N_1), np.arange(1, N_2))) * B_2
+        orientation = np.arctan2(y - y0, x - x0)
+        nBoreholes = len(x)
+        # Boreholes are inclined only if they do not lie on the origin
+        dis0 = np.sqrt((x - x0)**2 + (y - y0)**2)
+        if np.any(dis0 < r_b):
+            tilt = np.full(nBoreholes, tilt)
+            tilt[dis0 < r_b] = 0.
+
+        # Create the bore field
+        borefield = cls(H, D, r_b, x, y, tilt=tilt, orientation=orientation)
+        return borefield
+
+    @classmethod
+    def U_shaped_field(
+            cls, N_1: int, N_2:int, B_1: float, B_2: float, H: float, D: float,
+            r_b: float, tilt: float = 0.,
+            origin: Union[Tuple[float, float], None] = None) -> Self:
+        """
+        Build a bore field in a U-shaped configuration.
+
+        Parameters
+        ----------
+        N_1 : int
+            Number of borehole in the x direction.
+        N_2 : int
+            Number of borehole in the y direction.
+        B_1 : float
+            Distance (in meters) between adjacent boreholes in the x direction.
+        B_2 : float
+            Distance (in meters) between adjacent boreholes in the y direction.
+        H : float
+            Borehole length (in meters).
+        D : float
+            Borehole buried depth (in meters).
+        r_b : float
+            Borehole radius (in meters).
+        tilt : float, optional
+            Angle (in radians) from vertical of the axis of the borehole. The
+            orientation of the tilt is orthogonal to the origin coordinate.
+            Default is 0.
+        origin : tuple, optional
+            A coordinate indicating the origin of reference for orientation of
+            boreholes.
+            Default is the center considering an outer rectangle.
+
+        Returns
+        -------
+        borefield : Borefield object
+            The U-shaped bore field.
+
+        Notes
+        -----
+        Boreholes located at the origin will remain vertical.
+
+        Examples
+        --------
+        >>> boreField = gt.borefield.Borefield.U_shaped_field(
+            N_1=3, N_2=2, B_1=5., B_2=5., H=100., D=2.5, r_b=0.05)
+
+        The bore field is constructed line by line. For N_1=3 and N_2=2, the
+        bore field layout is as follows::
+
+         3       4
+
+         0   1   2
+
+        """
+        if origin is None:
+            # When no origin is supplied, compute the origin to be at the
+            # center of the rectangle
+            x0 = (N_1 - 1) / 2 * B_1
+            y0 = (N_2 - 1) / 2 * B_2
+        else:
+            x0, y0 = origin
+
+        # Borehole positions and orientation
+        n_vertical = np.minimum(N_1, 2)
+        x = np.concatenate(
+            (np.arange(N_1),
+             np.tile(np.arange(n_vertical), N_2 - 1) * (N_1 - 1)
+            )) * B_1
+        y = np.concatenate(
+            (np.zeros(N_1),
+             np.repeat(np.arange(1, N_2), n_vertical)
+            )) * B_2
+        orientation = np.arctan2(y - y0, x - x0)
+        nBoreholes = len(x)
+        # Boreholes are inclined only if they do not lie on the origin
+        dis0 = np.sqrt((x - x0)**2 + (y - y0)**2)
+        if np.any(dis0 < r_b):
+            tilt = np.full(nBoreholes, tilt)
+            tilt[dis0 < r_b] = 0.
+
+        # Create the bore field
+        borefield = cls(H, D, r_b, x, y, tilt=tilt, orientation=orientation)
+        return borefield
+
+    @classmethod
+    def box_shaped_field(
+            cls, N_1: int, N_2:int, B_1: float, B_2: float, H: float, D: float,
+            r_b: float, tilt: float = 0.,
+            origin: Union[Tuple[float, float], None] = None) -> Self:
+        """
+        Build a bore field in a box-shaped configuration.
+
+        Parameters
+        ----------
+        N_1 : int
+            Number of borehole in the x direction.
+        N_2 : int
+            Number of borehole in the y direction.
+        B_1 : float
+            Distance (in meters) between adjacent boreholes in the x direction.
+        B_2 : float
+            Distance (in meters) between adjacent boreholes in the y direction.
+        H : float
+            Borehole length (in meters).
+        D : float
+            Borehole buried depth (in meters).
+        r_b : float
+            Borehole radius (in meters).
+        tilt : float, optional
+            Angle (in radians) from vertical of the axis of the borehole. The
+            orientation of the tilt is orthogonal to the origin coordinate.
+            Default is 0.
+        origin : tuple, optional
+            A coordinate indicating the origin of reference for orientation of
+            boreholes.
+            Default is the center of the box.
+
+        Returns
+        -------
+        borefield : Borefield object
+            The box-shaped bore field.
+
+        Notes
+        -----
+        Boreholes located at the origin will remain vertical.
+
+        Examples
+        --------
+        >>> boreField = gt.borefield.Borefield.box_shaped_field(
+            N_1=4, N_2=3, B_1=5., B_2=5., H=100., D=2.5, r_b=0.05)
+
+        The bore field is constructed line by line. For N_1=4 and N_2=3, the
+        bore field layout is as follows::
+
+         6   7   8   9
+
+         4           5
+
+         0   1   2   3
+
+        """
+        if origin is None:
+            # When no origin is supplied, compute the origin to be at the
+            # center of the rectangle
+            x0 = (N_1 - 1) / 2 * B_1
+            y0 = (N_2 - 1) / 2 * B_2
+        else:
+            x0, y0 = origin
+
+        # Borehole positions and orientation
+        n_vertical = np.minimum(N_1, 2)
+        n_middle = np.maximum(0, N_2 - 2)
+        x = np.concatenate(
+            (np.arange(N_1),
+             np.tile(np.arange(n_vertical), n_middle) * (N_1 - 1),
+             np.arange(N_1 if N_2 > 1 else 0)
+            )) * B_1
+        y = np.concatenate(
+            (np.zeros(N_1),
+             np.repeat(np.arange(1, N_2 - 1), n_vertical),
+             np.zeros(N_1 if N_2 > 1 else 0)
+            )) * B_2
+        orientation = np.arctan2(y - y0, x - x0)
+        nBoreholes = len(x)
+        # Boreholes are inclined only if they do not lie on the origin
+        dis0 = np.sqrt((x - x0)**2 + (y - y0)**2)
+        if np.any(dis0 < r_b):
+            tilt = np.full(nBoreholes, tilt)
+            tilt[dis0 < r_b] = 0.
+
+        # Create the bore field
+        borefield = cls(H, D, r_b, x, y, tilt=tilt, orientation=orientation)
+        return borefield
+
+    @classmethod
+    def circle_field(
+            cls, N: int, R: float, H: float, D: float, r_b:float,
+            tilt: float = 0.,
+            origin: Union[Tuple[float, float], None] = None) -> Self:
+        """
+        Build a list of boreholes in a circular field configuration.
+
+        Parameters
+        ----------
+        N : int
+            Number of boreholes in the bore field.
+        R : float
+            Distance (in meters) of the boreholes from the center of the field.
+        H : float
+            Borehole length (in meters).
+        D : float
+            Borehole buried depth (in meters).
+        r_b : float
+            Borehole radius (in meters).
+        tilt : float, optional
+            Angle (in radians) from vertical of the axis of the borehole. The
+            orientation of the tilt is towards the exterior of the bore field.
+            Default is 0.
+        origin : tuple
+            A coordinate indicating the origin of reference for orientation of
+            boreholes.
+            Default is the origin (0, 0).
+
+        Returns
+        -------
+        borefield : Borefield object
+            The circular shaped bore field.
+
+        Notes
+        -----
+        Boreholes located at the origin will remain vertical.
+
+        Examples
+        --------
+        >>> boreField = gt.borefield.Borefield.circle_field(
+            N=8, R = 5., H=100., D=2.5, r_b=0.05)
+
+        The bore field is constructed counter-clockwise. For N=8, the bore
+        field layout is as follows::
+
+               2
+           3       1
+
+         4           0
+
+           5       7
+               6
+
+        """
+        if origin is None:
+            # When no origin is supplied, the origin is the center of the
+            # circle
+            x0 = 0.
+            y0 = 0.
+        else:
+            x0, y0 = origin
+
+        # Borehole positions and orientation
+        x = R * np.cos(2 * np.pi * np.arange(N) / N)
+        y = R * np.sin(2 * np.pi * np.arange(N) / N)
+        orientation = np.arctan2(y - y0, x - x0)
+        nBoreholes = len(x)
+        # Boreholes are inclined only if they do not lie on the origin
+        dis0 = np.sqrt((x - x0)**2 + (y - y0)**2)
+        if np.any(dis0 < r_b):
+            tilt = np.full(nBoreholes, tilt)
+            tilt[dis0 < r_b] = 0.
+
+        # Create the bore field
+        borefield = cls(H, D, r_b, x, y, tilt=tilt, orientation=orientation)
+        return borefield
