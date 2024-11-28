@@ -663,8 +663,12 @@ class Borefield:
          0    1    2
 
         """
+        if N_1 > 1:
+            B_2 = np.sqrt(3)/2 * B
+        else:
+            B_2 = B
         borefield = cls.staggered_rectangle_field(
-            N_1, N_2, B, np.sqrt(3)/2 * B, H, D, r_b, include_last_borehole,
+            N_1, N_2, B, B_2, H, D, r_b, include_last_borehole,
             tilt=tilt, origin=origin)
         return borefield
 
@@ -899,15 +903,16 @@ class Borefield:
         # Borehole positions and orientation
         n_vertical = np.minimum(N_1, 2)
         n_middle = np.maximum(0, N_2 - 2)
+        n_top = N_1 if N_2 > 1 else 0
         x = np.concatenate(
             (np.arange(N_1),
              np.tile(np.arange(n_vertical), n_middle) * (N_1 - 1),
-             np.arange(N_1 if N_2 > 1 else 0)
+             np.arange(n_top)
             )) * B_1
         y = np.concatenate(
             (np.zeros(N_1),
              np.repeat(np.arange(1, N_2 - 1), n_vertical),
-             np.zeros(N_1 if N_2 > 1 else 0)
+             np.full(n_top, N_2 - 1)
             )) * B_2
         orientation = np.arctan2(y - y0, x - x0)
         nBoreholes = len(x)
