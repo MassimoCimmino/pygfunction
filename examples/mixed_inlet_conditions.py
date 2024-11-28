@@ -11,7 +11,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import AutoMinorLocator
-from scipy import pi
 
 import pygfunction as gt
 
@@ -81,15 +80,12 @@ def main():
     # Borehole field
     # -------------------------------------------------------------------------
 
-    boreField = []
-    bore_connectivity = []
-    for i, H in enumerate(H_boreholes):
-        x = i*B
-        borehole = gt.boreholes.Borehole(H, D, r_b, x, 0.)
-        boreField.append(borehole)
-        # Boreholes are connected in series: The index of the upstream
-        # borehole is that of the previous borehole
-        bore_connectivity.append(i - 1)
+    nBoreholes = len(H_boreholes)
+    x = np.arange(nBoreholes) * B
+    borefield = gt.borefield.Borefield(H_boreholes, D, r_b, x, 0.)
+    # Boreholes are connected in series: The index of the upstream
+    # borehole is that of the previous borehole
+    bore_connectivity = [i - 1 for i in range(nBoreholes)]
 
     # -------------------------------------------------------------------------
     # Initialize pipe model
@@ -102,16 +98,16 @@ def main():
     m_flow_pipe = np.max(np.abs(m_flow_borehole))
     h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
         m_flow_pipe,  r_in, mu_f, rho_f, k_f, cp_f, epsilon)
-    R_f = 1.0/(h_f*2*pi*r_in)
+    R_f = 1.0 / (h_f * 2 * np.pi * r_in)
 
     # Single U-tube, same for all boreholes in the bore field
     UTubes = []
-    for borehole in boreField:
+    for borehole in borefield:
         SingleUTube = gt.pipes.SingleUTube(
             pos_pipes, r_in, r_out, borehole, k_s, k_g, R_f + R_p)
         UTubes.append(SingleUTube)
     network = gt.networks.Network(
-        boreField, UTubes, bore_connectivity=bore_connectivity)
+        borefield, UTubes, bore_connectivity=bore_connectivity)
 
     # -------------------------------------------------------------------------
     # Evaluate the g-functions for the borefield
@@ -119,7 +115,7 @@ def main():
 
     # Calculate the g-function for uniform temperature
     gfunc_Tb = gt.gfunction.gFunction(
-        boreField, alpha, time=time, boundary_condition='UBWT',
+        borefield, alpha, time=time, boundary_condition='UBWT',
         options=options, method=method)
 
     # Calculate the g-function for mixed inlet fluid conditions

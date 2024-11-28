@@ -67,14 +67,15 @@ def main():
         gt.utilities.cardinal_point('E')]
 
     # "Optimal" field of 8 boreholes
-    boreField1 = []
+    boreholes = []
     for i, orientation in enumerate(borehole_orientations):
         borehole = gt.boreholes.Borehole(
             H, D, r_b, i * B, 0., tilt=tilt, orientation=orientation)
-        boreField1.append(borehole)
+        boreholes.append(borehole)
+    borefield1 = gt.borefield.Borefield.from_boreholes(boreholes)
 
     # Visualize the borehole field
-    fig1 = gt.boreholes.visualize_field(boreField1)
+    fig1 = gt.boreholes.visualize_field(borefield1)
 
     """
     Bore field #2
@@ -87,23 +88,24 @@ def main():
     R = 3.  # Borehole spacing from the center of the field (m)
 
     # Field of 6 boreholes in a circle
-    boreField2 = gt.boreholes.circle_field(N, R, H, D, r_b, tilt=tilt)
+    borefield2 = gt.borefield.Borefield.circle_field(
+        N, R, H, D, r_b, tilt=tilt)
 
     # Visualize the borehole field
-    fig2 = gt.boreholes.visualize_field(boreField2)
+    fig2 = gt.boreholes.visualize_field(borefield2)
 
     # -------------------------------------------------------------------------
     # Evaluate g-functions for all fields
     # -------------------------------------------------------------------------
     # Bore field #1
     gfunc1 = gt.gfunction.gFunction(
-        boreField1, alpha, time=time, options=options, method='similarities')
+        borefield1, alpha, time=time, options=options, method='similarities')
     fig3 = gfunc1.visualize_g_function()
     fig3.suptitle('"Optimal" field of 8 boreholes')
     fig3.tight_layout()
     # Bore field #2
     gfunc2 = gt.gfunction.gFunction(
-        boreField2, alpha, time=time, options=options, method='similarities')
+        borefield2, alpha, time=time, options=options, method='similarities')
     fig4 = gfunc2.visualize_g_function()
     fig4.suptitle(f'Field of {N} boreholes in a circle')
     fig4.tight_layout()

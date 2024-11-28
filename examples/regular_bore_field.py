@@ -29,34 +29,39 @@ def main():
     # -------------------------------------------------------------------------
 
     # Rectangular field of 4 x 3 boreholes
-    rectangularField = gt.boreholes.rectangle_field(N_1, N_2, B, B, H, D, r_b)
+    rectangle_field = gt.borefield.Borefield.rectangle_field(
+        N_1, N_2, B, B, H, D, r_b)
 
     # Rectangular field triangular field of 4 x 3 borehole rows
-    staggeredRectangularField = gt.boreholes.staggered_rectangle_field(
+    staggered_rectangle_field = gt.borefield.Borefield.staggered_rectangle_field(
         N_1, N_2, B, B, H, D, r_b, False)
 
     # Dense field triangular field of 4 x 3 borehole rows
-    denseRectangularField = gt.boreholes.dense_rectangle_field(
+    dense_rectangle_field = gt.borefield.Borefield.dense_rectangle_field(
         N_1, N_2, B, H, D, r_b, False)
 
     # Box-shaped field of 4 x 3 boreholes
-    boxField = gt.boreholes.box_shaped_field(N_1, N_2, B, B, H, D, r_b)
+    box_shaped_field = gt.borefield.Borefield.box_shaped_field(
+        N_1, N_2, B, B, H, D, r_b)
 
     # U-shaped field of 4 x 3 boreholes
-    UField = gt.boreholes.U_shaped_field(N_1, N_2, B, B, H, D, r_b)
+    U_shaped_field = gt.borefield.Borefield.U_shaped_field(
+        N_1, N_2, B, B, H, D, r_b)
 
     # L-shaped field of 4 x 3 boreholes
-    LField = gt.boreholes.L_shaped_field(N_1, N_2, B, B, H, D, r_b)
+    L_shaped_field = gt.borefield.Borefield.L_shaped_field(
+        N_1, N_2, B, B, H, D, r_b)
 
     # Circular field of 8 boreholes
-    circleField = gt.boreholes.circle_field(N_b, R, H, D, r_b)
+    circle_field = gt.borefield.Borefield.circle_field(
+        N_b, R, H, D, r_b)
 
     # -------------------------------------------------------------------------
     # Draw bore fields
     # -------------------------------------------------------------------------
     for field in [
-            rectangularField, staggeredRectangularField, denseRectangularField,
-            boxField, UField, LField, circleField]:
+            rectangle_field, staggered_rectangle_field, dense_rectangle_field,
+            box_shaped_field, U_shaped_field, L_shaped_field, circle_field]:
         gt.boreholes.visualize_field(field)
         plt.show()
 

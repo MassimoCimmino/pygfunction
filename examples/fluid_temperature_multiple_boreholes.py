@@ -11,7 +11,6 @@
 """
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.constants import pi
 
 import pygfunction as gt
 
@@ -82,8 +81,9 @@ def main():
     # -------------------------------------------------------------------------
 
     # The field is a retangular array
-    boreField = gt.boreholes.rectangle_field(N_1, N_2, B, B, H, D, r_b)
-    nBoreholes = len(boreField)
+    borefield = gt.borefield.Borefield.rectangle_field(
+        N_1, N_2, B, B, H, D, r_b)
+    nBoreholes = len(borefield)
 
     # Pipe thermal resistance
     R_p = gt.pipes.conduction_thermal_resistance_circular_pipe(
@@ -93,17 +93,17 @@ def main():
     m_flow_pipe = m_flow_borehole/2
     h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
             m_flow_pipe, r_in, mu_f, rho_f, k_f, cp_f, epsilon)
-    R_f = 1.0/(h_f*2*pi*r_in)
+    R_f = 1.0 / (h_f * 2 * np.pi * r_in)
 
     # Double U-tube (parallel), same for all boreholes in the bore field
     UTubes = []
-    for borehole in boreField:
+    for borehole in borefield:
         UTube = gt.pipes.MultipleUTube(
             pos, r_in, r_out, borehole, k_s, k_g, R_f + R_p,
             nPipes=2, config='parallel')
         UTubes.append(UTube)
     # Build a network object from the list of UTubes
-    network = gt.networks.Network(boreField, UTubes)
+    network = gt.networks.Network(borefield, UTubes)
 
     # -------------------------------------------------------------------------
     # Calculate g-function
@@ -116,7 +116,7 @@ def main():
         network, alpha, time=time_req, m_flow_network=m_flow_network,
         cp_f=cp_f, boundary_condition='MIFT', options=options)
     # Initialize load aggregation scheme
-    LoadAgg.initialize(gFunc.gFunc / (2 * pi * k_s))
+    LoadAgg.initialize(gFunc.gFunc / (2 * np.pi * k_s))
 
     # -------------------------------------------------------------------------
     # Simulation
@@ -231,13 +231,13 @@ def synthetic_load(x):
 
     func = (168.0-C)/168.0
     for i in [1, 2, 3]:
-        func += 1.0/(i*pi)*(np.cos(C*pi*i/84.0)-1.0) \
-                          *(np.sin(pi*i/84.0*(x-B)))
-    func = func*A*np.sin(pi/12.0*(x-B)) \
-           *np.sin(pi/4380.0*(x-B))
+        func += 1.0/(i*np.pi)*(np.cos(C*np.pi*i/84.0)-1.0) \
+                          *(np.sin(np.pi*i/84.0*(x-B)))
+    func = func*A*np.sin(np.pi/12.0*(x-B)) \
+           *np.sin(np.pi/4380.0*(x-B))
 
     y = func + (-1.0)**np.floor(D/8760.0*(x-B))*abs(func) \
-      + E*(-1.0)**np.floor(D/8760.0*(x-B))/np.sign(np.cos(D*pi/4380.0*(x-F))+G)
+      + E*(-1.0)**np.floor(D/8760.0*(x-B))/np.sign(np.cos(D*np.pi/4380.0*(x-F))+G)
     return -y
 
 
