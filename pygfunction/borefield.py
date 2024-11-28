@@ -391,6 +391,31 @@ class Borefield:
         """
         return [borehole for borehole in self]
 
+    def to_file(self, filename: str) -> List[Borehole]:
+        """
+        Save the bore field into a text file.
+
+        Parameters
+        ----------
+        filename : str
+            The filename in which to save the bore field.
+
+        """
+        data = np.stack(
+            (self.x,
+             self.y,
+             self.H,
+             self.D,
+             self.r_b,
+             self.tilt,
+             self.orientation),
+            axis=-1)
+        np.savetxt(
+            filename,
+            data,
+            delimiter='\t',
+            header='x\ty\tH\tD\tr_b\ttilt\torientation')
+
     @classmethod
     def rectangle_field(
             cls, N_1: int, N_2:int, B_1: float, B_2: float, H: float, D: float,
