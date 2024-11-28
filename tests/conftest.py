@@ -5,7 +5,7 @@ import pygfunction as gt
 
 
 # =============================================================================
-# boreholes fixtures
+# borefield fixtures
 # =============================================================================
 @pytest.fixture
 def single_borehole():
@@ -14,7 +14,7 @@ def single_borehole():
     r_b = 0.075     # Borehole radius [m]
     x = 0.          # Borehole x-position [m]
     y = 0.          # Borehole y-position [m]
-    return [gt.boreholes.Borehole(H, D, r_b, x, y)]
+    return gt.borefield.Borefield(H, D, r_b, x, y)
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def single_borehole_short():
     r_b = 0.075     # Borehole radius [m]
     x = 3.          # Borehole x-position [m]
     y = 5.          # Borehole y-position [m]
-    return [gt.boreholes.Borehole(H, D, r_b, x, y)]
+    return gt.borefield.Borefield(H, D, r_b, x, y)
 
 
 @pytest.fixture
@@ -36,8 +36,8 @@ def single_borehole_inclined():
     y = 0.          # Borehole y-position [m]
     tilt = np.pi/6          # Borehole inclination [rad]
     orientation = np.pi/3   # Borehole orientation [rad]
-    return [gt.boreholes.Borehole(
-        H, D, r_b, x, y, tilt=tilt, orientation=orientation)]
+    return gt.borefield.Borefield(
+        H, D, r_b, x, y, tilt=tilt, orientation=orientation)
 
 
 @pytest.fixture
@@ -46,20 +46,26 @@ def ten_boreholes_rectangular():
     D = 4.              # Borehole buried depth [m]
     r_b = 0.075         # Borehole radius [m]
     B_1 = B_2 = 7.5     # Borehole spacing [m]
-    return gt.boreholes.rectangle_field(5, 2, B_1, B_2, H, D, r_b)
+    return gt.borefield.Borefield.rectangle_field(5, 2, B_1, B_2, H, D, r_b)
 
 
 @pytest.fixture
 def three_boreholes_unequal():
-    return [gt.boreholes.Borehole(150., 4., 0.075, -1., -2.),
-            gt.boreholes.Borehole(88., 2., 0.065, 5., 3.),
-            gt.boreholes.Borehole(177., 5., 0.085, -1., 7.),]
+    boreholes = [
+        gt.boreholes.Borehole(150., 4., 0.075, -1., -2.),
+        gt.boreholes.Borehole(88., 2., 0.065, 5., 3.),
+        gt.boreholes.Borehole(177., 5., 0.085, -1., 7.),]
+    borefield = gt.borefield.Borefield.from_boreholes(boreholes)
+    return borefield
 
 
 @pytest.fixture
 def two_boreholes_inclined():
-    return [gt.boreholes.Borehole(150., 4., 0.075, 0., 0., tilt=np.radians(20.), orientation=np.pi/2),
-            gt.boreholes.Borehole(150., 4., 0.075, 15., 0., tilt=np.radians(20.), orientation=3*np.pi/2),]
+    boreholes = [
+        gt.boreholes.Borehole(150., 4., 0.075, 0., 0., tilt=np.radians(20.), orientation=np.pi/2),
+        gt.boreholes.Borehole(150., 4., 0.075, 15., 0., tilt=np.radians(20.), orientation=3*np.pi/2),]
+    borefield = gt.borefield.Borefield.from_boreholes(boreholes)
+    return borefield
 
 
 # =============================================================================

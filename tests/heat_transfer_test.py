@@ -159,15 +159,15 @@ def test_finite_line_source_multiple_vertical_boreholes_single_time_step(
         three_boreholes_unequal, reaSource, imgSource, approximation, N,
         expected):
         # Extract boreholes from fixture
-        boreholes = three_boreholes_unequal
+        borefield = three_boreholes_unequal
         alpha = 1e-6    # Ground thermal diffusivity [m2/s]
         # Bore field characteristic time [s]
-        ts = np.mean([b.H for b in boreholes])**2 / (9 * alpha)
+        ts = np.mean(borefield.H)**2 / (9 * alpha)
         # Time for FLS calculation [s]
         time = ts
         # Evaluate FLS
         h = gt.heat_transfer.finite_line_source(
-            time, alpha, boreholes, boreholes, reaSource=reaSource,
+            time, alpha, borefield, borefield, reaSource=reaSource,
             imgSource=imgSource, approximation=approximation, N=N)
         assert np.allclose(h, expected)
 
@@ -245,15 +245,15 @@ def test_finite_line_source_multiple_vertical_boreholes_multiple_time_steps(
         three_boreholes_unequal, reaSource, imgSource, approximation, N,
         expected):
         # Extract boreholes from fixture
-        boreholes = three_boreholes_unequal
+        borefield = three_boreholes_unequal
         alpha = 1e-6    # Ground thermal diffusivity [m2/s]
         # Bore field characteristic time [s]
-        ts = np.mean([b.H for b in boreholes])**2 / (9 * alpha)
+        ts = np.mean(borefield.H)**2 / (9 * alpha)
         # Times for FLS calculation [s]
         time = np.array([0.1, 1., 10.]) * ts
         # Evaluate FLS
         h = gt.heat_transfer.finite_line_source(
-            time, alpha, boreholes, boreholes, reaSource=reaSource,
+            time, alpha, borefield, borefield, reaSource=reaSource,
             imgSource=imgSource, approximation=approximation, N=N)
         assert np.allclose(h, expected)
 
@@ -278,13 +278,13 @@ def test_finite_line_source_multiple_vertical_boreholes_multiple_time_steps(
 def test_finite_line_source_multiple_vertical_boreholes_steady_state(
         three_boreholes_unequal, reaSource, imgSource, expected):
         # Extract boreholes from fixture
-        boreholes = three_boreholes_unequal
+        borefield = three_boreholes_unequal
         alpha = 1e-6    # Ground thermal diffusivity [m2/s]
         # Time for FLS calculation [s]
         time = np.inf
         # Evaluate FLS
         h = gt.heat_transfer.finite_line_source(
-            time, alpha, boreholes, boreholes, reaSource=reaSource,
+            time, alpha, borefield, borefield, reaSource=reaSource,
             imgSource=imgSource)
         assert np.allclose(h, expected)
 
@@ -514,14 +514,14 @@ def test_finite_line_source_multiple_inclined_to_multiple_inclined(
         two_boreholes_inclined, tts, reaSource, imgSource, approximation, M, N,
         expected):
         # Extract boreholes from fixture
-        boreholes = two_boreholes_inclined
+        borefield = two_boreholes_inclined
         alpha = 1e-6    # Ground thermal diffusivity [m2/s]
         # Bore field characteristic time [s]
-        ts = np.mean([b.H for b in boreholes])**2 / (9 * alpha)
+        ts = np.mean(borefield.H)**2 / (9 * alpha)
         # Times for FLS calculation [s]
         time = ts * tts
         # Evaluate FLS
         h = gt.heat_transfer.finite_line_source(
-            time, alpha, boreholes, boreholes, reaSource=reaSource,
+            time, alpha, borefield, borefield, reaSource=reaSource,
             imgSource=imgSource, approximation=approximation, M=M, N=N)
         assert np.allclose(h, expected)
