@@ -56,7 +56,7 @@ class Borefield:
 
         # Identify tilted boreholes
         self._is_tilted = np.broadcast_to(
-            np.greater(tilt, 1e-6),
+            np.greater(np.abs(tilt), 1e-6),
             self.nBoreholes)
         # Vertical boreholes default to an orientation of zero
         if not np.any(self._is_tilted):
