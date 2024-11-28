@@ -5,6 +5,81 @@ import pygfunction as gt
 
 
 # =============================================================================
+# Test Borefield
+# =============================================================================
+# Compare __init__ and Borefield.from_boreholes for the initialization of
+# Borefield objects
+@pytest.mark.parametrize("field", [
+        ('single_borehole'),
+        ('single_borehole_short'),
+        ('ten_boreholes_rectangular'),
+        ('two_boreholes_inclined'),
+    ])
+def test_borefield_init(field, request):
+    # Extract the bore field from the fixture
+    boreholes = request.getfixturevalue(field)
+    # Borefield.from_boreholes
+    borefield_from_boreholes = gt.borefield.Borefield.from_boreholes(boreholes)
+    # Borefield.__init__
+    H = np.array([b.H for b in boreholes])
+    D = np.array([b.D for b in boreholes])
+    r_b = np.array([b.r_b for b in boreholes])
+    x = np.array([b.x for b in boreholes])
+    y = np.array([b.y for b in boreholes])
+    tilt = np.array([b.tilt for b in boreholes])
+    orientation = np.array([b.orientation for b in boreholes])
+    borefield = gt.borefield.Borefield(
+        H, D, r_b, x, y, tilt=tilt, orientation=orientation)
+    assert borefield == borefield_from_boreholes
+
+# Test borefield comparison using __eq__
+@pytest.mark.parametrize("field, other_field, expected", [
+        # Fields that are equal
+        ('single_borehole', 'single_borehole', True),
+        ('single_borehole_short', 'single_borehole_short', True),
+        ('ten_boreholes_rectangular', 'ten_boreholes_rectangular', True),
+        ('two_boreholes_inclined', 'two_boreholes_inclined', True),
+        # Fields that are not equal
+        ('single_borehole', 'single_borehole_short', False),
+        ('single_borehole', 'ten_boreholes_rectangular', False),
+        ('single_borehole', 'two_boreholes_inclined', False),
+        ('single_borehole_short', 'ten_boreholes_rectangular', False),
+        ('single_borehole_short', 'two_boreholes_inclined', False),
+        ('ten_boreholes_rectangular', 'two_boreholes_inclined', False),
+    ])
+def test_borefield_eq(field, other_field, expected, request):
+    # Extract the bore field from the fixture
+    boreholes = request.getfixturevalue(field)
+    borefield = gt.borefield.Borefield.from_boreholes(boreholes)
+    other_boreholes = request.getfixturevalue(other_field)
+    other_field = gt.borefield.Borefield.from_boreholes(other_boreholes)
+    assert (borefield == other_field) == expected
+
+# Test borefield comparison using __ne__
+@pytest.mark.parametrize("field, other_field, expected", [
+        # Fields that are equal
+        ('single_borehole', 'single_borehole', False),
+        ('single_borehole_short', 'single_borehole_short', False),
+        ('ten_boreholes_rectangular', 'ten_boreholes_rectangular', False),
+        ('two_boreholes_inclined', 'two_boreholes_inclined', False),
+        # Fields that are not equal
+        ('single_borehole', 'single_borehole_short', True),
+        ('single_borehole', 'ten_boreholes_rectangular', True),
+        ('single_borehole', 'two_boreholes_inclined', True),
+        ('single_borehole_short', 'ten_boreholes_rectangular', True),
+        ('single_borehole_short', 'two_boreholes_inclined', True),
+        ('ten_boreholes_rectangular', 'two_boreholes_inclined', True),
+    ])
+def test_borefield_ne(field, other_field, expected, request):
+    # Extract the bore field from the fixture
+    boreholes = request.getfixturevalue(field)
+    borefield = gt.borefield.Borefield.from_boreholes(boreholes)
+    other_boreholes = request.getfixturevalue(other_field)
+    other_field = gt.borefield.Borefield.from_boreholes(other_boreholes)
+    assert (borefield != other_field) == expected
+
+
+# =============================================================================
 # Test evaluate_g_function (vertical boreholes)
 # =============================================================================
 # Test 'UBWT' g-functions for different bore fields using all solvers,

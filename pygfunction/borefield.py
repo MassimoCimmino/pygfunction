@@ -78,9 +78,33 @@ class Borefield:
             self.H[key], self.D[key], self.r_b[key], self.x[key], self.y[key],
             tilt=self.tilt[key], orientation=self.orientation[key])
 
-    def __len__(self):
+    def __eq__(
+            self, other_field: Union[Borehole, List[Borehole], Self]) -> bool:
+        """Return True if other_field is the same as self"""
+        # Convert other_field into Borefield object
+        if isinstance(other_field, (Borehole, list)):
+            other_field = Borefield.from_boreholes(other_field)
+        check = bool(
+            self.nBoreholes == other_field.nBoreholes
+            and np.allclose(self.H, other_field.H)
+            and np.allclose(self.D, other_field.D)
+            and np.allclose(self.r_b, other_field.r_b)
+            and np.allclose(self.x, other_field.x)
+            and np.allclose(self.y, other_field.y)
+            and np.allclose(self.tilt, other_field.tilt)
+            and np.allclose(self.orientation, other_field.orientation)
+            )
+        return check
+
+    def __len__(self) -> int:
         """Returns the number of boreholes."""
         return self.nBoreholes
+
+    def __ne__(
+            self, other_field: Union[Borehole, List[Borehole], Self]) -> bool:
+        """Return True if other_field is not the same as self"""
+        check = not self == other_field
+        return check
 
     @classmethod
     def from_file(cls, filename: str) -> Self:
@@ -358,3 +382,15 @@ class Borefield:
         )
 
         return gfunc.gFunc
+
+    def to_boreholes(self) -> List[Borehole]:
+        """
+        Return a list of boreholes in the bore field.
+        
+        Returns
+        -------
+        boreholes : list of Borehole objects
+            List of boreholes in the bore field.
+        
+        """
+        return [borehole for borehole in self]
