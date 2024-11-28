@@ -36,7 +36,6 @@ class Borefield:
     These parameters are then broadcasted to (nBoreholes,) arrays.
 
     """
-
     def __init__(
             self, H: npt.ArrayLike, D: npt.ArrayLike, r_b: npt.ArrayLike,
             x: npt.ArrayLike, y: npt.ArrayLike, tilt: npt.ArrayLike = 0.,
@@ -382,12 +381,12 @@ class Borefield:
     def to_boreholes(self) -> List[Borehole]:
         """
         Return a list of boreholes in the bore field.
-        
+
         Returns
         -------
         boreholes : list of Borehole objects
             List of boreholes in the bore field.
-        
+
         """
         return [borehole for borehole in self]
 
