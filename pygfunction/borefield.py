@@ -136,22 +136,18 @@ class Borefield:
         # Load data from file
         data = np.loadtxt(filename, ndmin=2)
         # Build the bore field
-        borefield = []
-        for line in data:
-            x = line[0]
-            y = line[1]
-            H = line[2]
-            D = line[3]
-            r_b = line[4]
-            # Previous versions of pygfunction only required up to line[4].
-            # Now check to see if tilt and orientation exist.
-            if len(line) == 7:
-                tilt = line[5]
-                orientation = line[6]
-            else:
-                tilt = 0.
-                orientation = 0.
-        # Create the borefield object
+        x = data[:, 0]
+        y = data[:, 1]
+        H = data[:, 2]
+        D = data[:, 3]
+        r_b = data[:, 4]
+        if np.shape(data)[1] == 7:
+            tilt = data[:, 5]
+            orientation = data[:, 6]
+        else:
+            tilt = 0.
+            orientation = 0.
+        # Create the bore field
         borefield = cls(H, D, r_b, x, y, tilt=tilt, orientation=orientation)
         return borefield
 
