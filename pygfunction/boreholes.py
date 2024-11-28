@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import warnings
+
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.constants import pi
@@ -693,6 +695,11 @@ def rectangle_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
      0   1   2
 
     """
+    # This function is deprecated as of v2.3. It will be removed in v3.0.
+    warnings.warn("`pygfunction.boreholes.rectangle_field` is "
+                  "deprecated as of v2.3. It will be removed in v3.0. "
+                  "Use the `pygfunction.borefield.Borefield` class instead.",
+                  DeprecationWarning)
     borefield = []
 
     if origin is None:
@@ -782,6 +789,11 @@ def staggered_rectangle_field(
      0    1    2
 
     """
+    # This function is deprecated as of v2.3. It will be removed in v3.0.
+    warnings.warn("`pygfunction.boreholes.staggered_rectangle_field` is "
+                  "deprecated as of v2.3. It will be removed in v3.0. "
+                  "Use the `pygfunction.borefield.Borefield` class instead.",
+                  DeprecationWarning)
     borefield = []
 
     if N_1 == 1 or N_2 == 1:
@@ -880,6 +892,11 @@ def dense_rectangle_field(
      0    1    2
 
     """
+    # This function is deprecated as of v2.3. It will be removed in v3.0.
+    warnings.warn("`pygfunction.boreholes.dense_rectangle_field` is "
+                  "deprecated as of v2.3. It will be removed in v3.0. "
+                  "Use the `pygfunction.borefield.Borefield` class instead.",
+                  DeprecationWarning)
     if N_1 == 1:
         # line field
         return rectangle_field(N_1, N_2, B, B, H, D, r_b, tilt, origin)
@@ -939,6 +956,11 @@ def L_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
      0   1   2
 
     """
+    # This function is deprecated as of v2.3. It will be removed in v3.0.
+    warnings.warn("`pygfunction.boreholes.L_shaped_field` is "
+                  "deprecated as of v2.3. It will be removed in v3.0. "
+                  "Use the `pygfunction.borefield.Borefield` class instead.",
+                  DeprecationWarning)
     borefield = []
 
     if origin is None:
@@ -1026,6 +1048,11 @@ def U_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0., origin=None):
      0   1   2
 
     """
+    # This function is deprecated as of v2.3. It will be removed in v3.0.
+    warnings.warn("`pygfunction.boreholes.U_shaped_field` is "
+                  "deprecated as of v2.3. It will be removed in v3.0. "
+                  "Use the `pygfunction.borefield.Borefield` class instead.",
+                  DeprecationWarning)
     borefield = []
 
     if origin is None:
@@ -1129,6 +1156,11 @@ def box_shaped_field(N_1, N_2, B_1, B_2, H, D, r_b, tilt=0, origin=None):
      0   1   2   3
 
     """
+    # This function is deprecated as of v2.3. It will be removed in v3.0.
+    warnings.warn("`pygfunction.boreholes.box_shaped_field` is "
+                  "deprecated as of v2.3. It will be removed in v3.0. "
+                  "Use the `pygfunction.borefield.Borefield` class instead.",
+                  DeprecationWarning)
     borefield = []
 
     if origin is None:
@@ -1240,6 +1272,11 @@ def circle_field(N, R, H, D, r_b, tilt=0., origin=None):
            6
 
     """
+    # This function is deprecated as of v2.3. It will be removed in v3.0.
+    warnings.warn("`pygfunction.boreholes.circle_field` is "
+                  "deprecated as of v2.3. It will be removed in v3.0. "
+                  "Use the `pygfunction.borefield.Borefield` class instead.",
+                  DeprecationWarning)
     borefield = []
 
     if origin is None:
