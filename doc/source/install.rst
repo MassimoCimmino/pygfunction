@@ -4,11 +4,12 @@
 Setting up pygfunction
 **********************
 
-*pygfunction* uses Python 3.7, along with the following packages:
+*pygfunction* uses Python 3.8, along with the following packages:
 	- matplotlib (>= 3.5.1),
 	- numpy (>= 1.21.5)
 	- scipy (>= 1.7.3)
 	- SecondaryCoolantProps (>= 1.1)
+	- typing_extensions (>= 4.0.1)
 
 *pygfunction*'s- documentation is built using:
 	- sphinx (>= 4.4.0)
