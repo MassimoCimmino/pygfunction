@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from typing import Union, List, Dict, Tuple, Self
+from typing import Union, List, Dict, Tuple
+from typing_extensions import Self
 
 import numpy as np
 import numpy.typing as npt
