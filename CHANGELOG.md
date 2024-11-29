@@ -6,6 +6,7 @@
 
 * [Issue 215](https://github.com/MassimoCimmino/pygfunction/issues/215) - Implemented variable fluid mass flow rate g-functions. Bore fields with series-connected boreholes and reversible flow direction can now be simulated.
 * [Issue 282](https://github.com/MassimoCimmino/pygfunction/issues/282) - Enabled the use of negative mass flow rates in `Pipe` and `Network` classes to model reversed flow direction.
+* [Pull Request 308](https://github.com/MassimoCimmino/pygfunction/pull/308) - Introduced a new `borefield` module. The new `Borefield` class replaces lists of `Borehole` objects as the preferred way to configure bore fields. The `Borefield.evaluate_g_function` method evaluates g-functions using the 'UHTR' and 'UBWT' boundary conditions.
 
 ## Version 2.2.3 (2024-07-01)
 
