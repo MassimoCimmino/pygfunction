@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from typing import Union, List, Dict, Tuple
-from typing_extensions import Self
+from typing_extensions import Self # for compatibility with Python <= 3.10
 
 import numpy as np
 import numpy.typing as npt
@@ -65,7 +65,6 @@ class Borefield:
             self.orientation = np.broadcast_to(orientation, self.nBoreholes)
         else:
             self.orientation = np.multiply(orientation, self._is_tilted)
-        pass
 
     def __getitem__(self, key):
         if isinstance(key, (int, np.integer)):
@@ -109,12 +108,12 @@ class Borefield:
     @classmethod
     def from_file(cls, filename: str) -> Self:
         """
-        Build a borefield given coordinates and dimensions provided in a text file.
+        Build a bore field given coordinates and dimensions provided in a text file.
 
         Parameters
         ----------
         filename : str
-            Absolute path to text file.
+            Absolute path to the text file.
 
         Returns
         -------
@@ -389,9 +388,9 @@ class Borefield:
             List of boreholes in the bore field.
 
         """
-        return [borehole for borehole in self]
+        return list(self)
 
-    def to_file(self, filename: str) -> List[Borehole]:
+    def to_file(self, filename: str):
         """
         Save the bore field into a text file.
 
@@ -649,8 +648,8 @@ class Borefield:
                 N_1=3, N_2=2, B=5., H=100., D=2.5, r_b=0.05,
                 include_last_borehole=True)
 
-        The bore field is constructed line by line. For N_1=3 and N_2=3, the bore
-        field layout is as follows, if `include_last_borehole` is True::
+        The bore field is constructed line by line. For N_1=3 and N_2=3, the
+        bore field layout is as follows, if `include_last_borehole` is True::
 
          6    7    8
            3    4    5

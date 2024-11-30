@@ -95,7 +95,7 @@ def main():
     borefield = gt.borefield.Borefield.rectangle_field(
         N_1, N_2, B, B, H, D, r_b)
     nBoreholes = len(borefield)
-    H_tot = np.sum([b.H for b in borefield])
+    H_tot = np.sum(borefield.H)
 
     # Boreholes are connected in series
     bore_connectivity = [i-1 for i in range(nBoreholes)]
