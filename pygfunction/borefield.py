@@ -105,82 +105,6 @@ class Borefield:
         check = not self == other_field
         return check
 
-    @classmethod
-    def from_file(cls, filename: str) -> Self:
-        """
-        Build a bore field given coordinates and dimensions provided in a text file.
-
-        Parameters
-        ----------
-        filename : str
-            Absolute path to the text file.
-
-        Returns
-        -------
-        boreField : Borefield object
-            Borefield object.
-
-        Notes
-        -----
-        The text file should be formatted as follows::
-
-            # x   y     H     D     r_b     tilt   orientation
-            0.    0.    100.  2.5   0.075   0.     0.
-            5.    0.    100.  2.5   0.075   0.     0.
-            0.    5.    100.  2.5   0.075   0.     0.
-            0.    10.   100.  2.5   0.075   0.     0.
-            0.    20.   100.  2.5   0.075   0.     0.
-
-        """
-        # Load data from file
-        data = np.loadtxt(filename, ndmin=2)
-        # Build the bore field
-        x = data[:, 0]
-        y = data[:, 1]
-        H = data[:, 2]
-        D = data[:, 3]
-        r_b = data[:, 4]
-        if np.shape(data)[1] == 7:
-            tilt = data[:, 5]
-            orientation = data[:, 6]
-        else:
-            tilt = 0.
-            orientation = 0.
-        # Create the bore field
-        borefield = cls(H, D, r_b, x, y, tilt=tilt, orientation=orientation)
-        return borefield
-
-    @classmethod
-    def from_boreholes(
-            cls, boreholes: Union[Borehole, List[Borehole]]) -> Self:
-        """
-        Build a borefield given coordinates and dimensions provided in a text file.
-
-        Parameters
-        ----------
-        boreholes : list of Borehole objects
-            List of boreholes in the bore field.
-
-        Returns
-        -------
-        boreField : Borefield object
-            Borefield object.
-
-        """
-        if isinstance(boreholes, Borehole):
-            boreholes = [boreholes]
-        # Build parameter arrays from borehole objects
-        H = np.array([b.H for b in boreholes])
-        D = np.array([b.D for b in boreholes])
-        r_b = np.array([b.r_b for b in boreholes])
-        tilt = np.array([b.tilt for b in boreholes])
-        orientation = np.array([b.orientation for b in boreholes])
-        x = np.array([b.x for b in boreholes])
-        y = np.array([b.y for b in boreholes])
-        # Create the borefield object
-        borefield = cls(H, D, r_b, x, y, tilt=tilt, orientation=orientation)
-        return borefield
-
     def evaluate_g_function(
             self,
             alpha: float,
@@ -414,6 +338,82 @@ class Borefield:
             data,
             delimiter='\t',
             header='x\ty\tH\tD\tr_b\ttilt\torientation')
+
+    @classmethod
+    def from_boreholes(
+            cls, boreholes: Union[Borehole, List[Borehole]]) -> Self:
+        """
+        Build a borefield given coordinates and dimensions provided in a text file.
+
+        Parameters
+        ----------
+        boreholes : list of Borehole objects
+            List of boreholes in the bore field.
+
+        Returns
+        -------
+        boreField : Borefield object
+            Borefield object.
+
+        """
+        if isinstance(boreholes, Borehole):
+            boreholes = [boreholes]
+        # Build parameter arrays from borehole objects
+        H = np.array([b.H for b in boreholes])
+        D = np.array([b.D for b in boreholes])
+        r_b = np.array([b.r_b for b in boreholes])
+        tilt = np.array([b.tilt for b in boreholes])
+        orientation = np.array([b.orientation for b in boreholes])
+        x = np.array([b.x for b in boreholes])
+        y = np.array([b.y for b in boreholes])
+        # Create the borefield object
+        borefield = cls(H, D, r_b, x, y, tilt=tilt, orientation=orientation)
+        return borefield
+
+    @classmethod
+    def from_file(cls, filename: str) -> Self:
+        """
+        Build a bore field given coordinates and dimensions provided in a text file.
+
+        Parameters
+        ----------
+        filename : str
+            Absolute path to the text file.
+
+        Returns
+        -------
+        boreField : Borefield object
+            Borefield object.
+
+        Notes
+        -----
+        The text file should be formatted as follows::
+
+            # x   y     H     D     r_b     tilt   orientation
+            0.    0.    100.  2.5   0.075   0.     0.
+            5.    0.    100.  2.5   0.075   0.     0.
+            0.    5.    100.  2.5   0.075   0.     0.
+            0.    10.   100.  2.5   0.075   0.     0.
+            0.    20.   100.  2.5   0.075   0.     0.
+
+        """
+        # Load data from file
+        data = np.loadtxt(filename, ndmin=2)
+        # Build the bore field
+        x = data[:, 0]
+        y = data[:, 1]
+        H = data[:, 2]
+        D = data[:, 3]
+        r_b = data[:, 4]
+        if np.shape(data)[1] == 7:
+            tilt = data[:, 5]
+            orientation = data[:, 6]
+        else:
+            tilt = 0.
+            orientation = 0.
+        # Create the bore field
+        borefield = cls(H, D, r_b, x, y, tilt=tilt, orientation=orientation)
+        return borefield
 
     @classmethod
     def rectangle_field(
