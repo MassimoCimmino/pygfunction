@@ -59,10 +59,10 @@ def main():
     # -------------------------------------------------------------------------
     # Draw bore fields
     # -------------------------------------------------------------------------
-    for field in [
+    for borefield in [
             rectangle_field, staggered_rectangle_field, dense_rectangle_field,
             box_shaped_field, U_shaped_field, L_shaped_field, circle_field]:
-        gt.boreholes.visualize_field(field)
+        borefield.visualize_field()
         plt.show()
 
     return

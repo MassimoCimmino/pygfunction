@@ -2,10 +2,12 @@
 from typing import Union, List, Dict, Tuple
 from typing_extensions import Self # for compatibility with Python <= 3.10
 
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 
 from .boreholes import Borehole
+from .utilities import _initialize_figure, _format_axes, _format_axes_3d
 
 class Borefield:
     """
@@ -301,6 +303,96 @@ class Borefield:
         )
 
         return gfunc.gFunc
+
+    def visualize_field(
+            self, viewTop=True, view3D=True, labels=True, showTilt=True):
+        """
+        Plot the top view and 3D view of borehole positions.
+
+        Parameters
+        ----------
+        viewTop : bool, optional
+            Set to True to plot top view.
+            Default is True
+        view3D : bool, optional
+            Set to True to plot 3D view.
+            Default is True
+        labels : bool, optional
+            Set to True to annotate borehole indices to top view plot.
+            Default is True
+        showTilt : bool, optional
+            Set to True to show borehole inclination on top view plot.
+            Default is True
+
+        Returns
+        -------
+        fig : figure
+            Figure object (matplotlib).
+
+        """
+        # Configure figure and axes
+        fig = _initialize_figure()
+        if viewTop and view3D:
+            ax1 = fig.add_subplot(121)
+            ax2 = fig.add_subplot(122, projection='3d')
+        elif viewTop:
+            ax1 = fig.add_subplot(111)
+        elif view3D:
+            ax2 = fig.add_subplot(111, projection='3d')
+        if viewTop:
+            ax1.set_xlabel(r'$x$ [m]')
+            ax1.set_ylabel(r'$y$ [m]')
+            ax1.axis('equal')
+            _format_axes(ax1)
+        if view3D:
+            ax2.set_xlabel(r'$x$ [m]')
+            ax2.set_ylabel(r'$y$ [m]')
+            ax2.set_zlabel(r'$z$ [m]')
+            _format_axes_3d(ax2)
+            ax2.invert_zaxis()
+
+        # Bottom end of boreholes
+        x_H = self.x + self.H * np.sin(self.tilt) * np.cos(self.orientation)
+        y_H = self.y + self.H * np.sin(self.tilt) * np.sin(self.orientation)
+        z_H = self.D + self.H * np.cos(self.tilt)
+
+        # -------------------------------------------------------------------------
+        # Top view
+        # -------------------------------------------------------------------------
+        if viewTop:
+            if showTilt:
+                ax1.plot(
+                    np.stack((self.x, x_H), axis=0),
+                    np.stack((self.y, y_H), axis=0),
+                    'k--')
+            ax1.plot(self.x, self.y, 'ko')
+            if labels:
+                for i, borehole in enumerate(self):
+                    ax1.text(
+                        borehole.x,
+                        borehole.y,
+                        f' {i}',
+                        ha="left",
+                        va="bottom")
+
+        # -------------------------------------------------------------------------
+        # 3D view
+        # -------------------------------------------------------------------------
+        if view3D:
+            ax2.plot(self.x, self.y, self.D, 'ko')
+            for i in range(self.nBoreholes):
+                ax2.plot(
+                    (self.x[i], x_H[i]),
+                    (self.y[i], y_H[i]),
+                    (self.D[i], z_H[i]),
+                    'k-')
+
+        if viewTop and view3D:
+            plt.tight_layout(rect=[0, 0.0, 0.90, 1.0])
+        else:
+            plt.tight_layout()
+
+        return fig
 
     def to_boreholes(self) -> List[Borehole]:
         """

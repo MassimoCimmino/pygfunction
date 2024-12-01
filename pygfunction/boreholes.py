@@ -3,7 +3,6 @@ import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.constants import pi
 from scipy.spatial.distance import pdist
 
 from .utilities import _initialize_figure, _format_axes, _format_axes_3d
@@ -1288,8 +1287,8 @@ def circle_field(N, R, H, D, r_b, tilt=0., origin=None):
         x0, y0 = origin
 
     for i in range(N):
-        x = R * np.cos(2 * pi * i / N)
-        y = R * np.sin(2 * pi * i / N)
+        x = R * np.cos(2 * np.pi * i / N)
+        y = R * np.sin(2 * np.pi * i / N)
         orientation = np.arctan2(y - y0, x - x0)
         # The borehole is inclined only if it does not lie on the origin
         if np.sqrt((x - x0)**2 + (y - y0)**2) > r_b:
@@ -1382,7 +1381,11 @@ def visualize_field(
         Figure object (matplotlib).
 
     """
-    from mpl_toolkits.mplot3d import Axes3D
+    # This function is deprecated as of v2.3. It will be removed in v3.0.
+    warnings.warn("`pygfunction.boreholes.visualize_field` is "
+                  "deprecated as of v2.3. It will be removed in v3.0. "
+                  "Use the `pygfunction.borefield.Borefield` class instead.",
+                  DeprecationWarning)
 
     # Configure figure and axes
     fig = _initialize_figure()

@@ -35,14 +35,14 @@ def main():
     # -------------------------------------------------------------------------
     # Find and remove duplicates from borehole field
     # -------------------------------------------------------------------------
-
-    borefield = gt.boreholes.remove_duplicates(borefield, disp=True)
+    borefield = gt.borefield.Borefield.from_boreholes(
+        gt.boreholes.remove_duplicates(borefield, disp=True))
 
     # -------------------------------------------------------------------------
     # Draw bore field
     # -------------------------------------------------------------------------
 
-    gt.boreholes.visualize_field(borefield)
+    borefield.visualize_field(borefield)
 
     return
 

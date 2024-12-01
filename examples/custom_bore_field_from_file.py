@@ -24,7 +24,7 @@ def main():
     # Draw bore field
     # -------------------------------------------------------------------------
 
-    gt.boreholes.visualize_field(borefield)
+    borefield.visualize_field()
 
     return
 
