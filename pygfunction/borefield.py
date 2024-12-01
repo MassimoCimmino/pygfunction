@@ -3,6 +3,7 @@ from typing import Union, List, Dict, Tuple
 from typing_extensions import Self # for compatibility with Python <= 3.10
 
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 import numpy as np
 import numpy.typing as npt
 
@@ -305,7 +306,8 @@ class Borefield:
         return gfunc.gFunc
 
     def visualize_field(
-            self, viewTop=True, view3D=True, labels=True, showTilt=True):
+            self, viewTop: bool = True, view3D: bool = True,
+            labels: bool = True, showTilt: bool = True) -> Figure:
         """
         Plot the top view and 3D view of borehole positions.
 
