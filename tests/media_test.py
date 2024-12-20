@@ -55,7 +55,6 @@ import pygfunction as gt
 def test_media_density(fluid_str, percent, temperature, expected):
     f = gt.media.Fluid(fluid_str, percent, temperature).fluid
     val = f.density(temperature)
-    print(val)
     assert np.isclose(val, expected, rtol=1e-03)
 
 
@@ -107,7 +106,6 @@ def test_media_density(fluid_str, percent, temperature, expected):
 def test_media_dynamic_viscosity(fluid_str, percent, temperature, expected):
     f = gt.media.Fluid(fluid_str, percent, temperature).fluid
     val = f.viscosity(temperature)
-    print(val)
     assert np.isclose(val, expected, rtol=1e-03)
 
 # =============================================================================
@@ -158,7 +156,6 @@ def test_media_dynamic_viscosity(fluid_str, percent, temperature, expected):
 def test_media_specific_heat(fluid_str, percent, temperature, expected):
     f = gt.media.Fluid(fluid_str, percent, temperature).fluid
     val = f.specific_heat(temperature)
-    print(val)
     assert np.isclose(val, expected, rtol=1e-03)
 
 # =============================================================================
@@ -209,5 +206,4 @@ def test_media_specific_heat(fluid_str, percent, temperature, expected):
 def test_media_conductivity(fluid_str, percent, temperature, expected):
     f = gt.media.Fluid(fluid_str, percent, temperature).fluid
     val = f.conductivity(temperature)
-    print(val)
     assert np.isclose(val, expected, rtol=5e-03)

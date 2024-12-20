@@ -10,7 +10,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import AutoMinorLocator
-from scipy import pi
 
 import pygfunction as gt
 
@@ -74,8 +73,9 @@ def main():
     # Field of 6x4 (n=24) boreholes
     N_1 = 6
     N_2 = 4
-    boreField = gt.boreholes.rectangle_field(N_1, N_2, B, B, H, D, r_b)
-    nBoreholes = len(boreField)
+    borefield = gt.borefield.Borefield.rectangle_field(
+        N_1, N_2, B, B, H, D, r_b)
+    nBoreholes = len(borefield)
 
     # -------------------------------------------------------------------------
     # Initialize pipe model
@@ -88,16 +88,16 @@ def main():
     m_flow_pipe = m_flow_borehole
     h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
         m_flow_pipe, r_in, mu_f, rho_f, k_f, cp_f, epsilon)
-    R_f = 1.0/(h_f*2*pi*r_in)
+    R_f = 1.0 / (h_f * 2 * np.pi * r_in)
 
     # Single U-tube, same for all boreholes in the bore field
     UTubes = []
-    for borehole in boreField:
+    for borehole in borefield:
         SingleUTube = gt.pipes.SingleUTube(
             pos_pipes, r_in, r_out, borehole, k_s, k_g, R_f + R_p)
         UTubes.append(SingleUTube)
     m_flow_network = m_flow_borehole * nBoreholes
-    network = gt.networks.Network(boreField, UTubes)
+    network = gt.networks.Network(borefield, UTubes)
 
     # -------------------------------------------------------------------------
     # Evaluate the g-functions for the borefield
@@ -105,12 +105,12 @@ def main():
 
     # Calculate the g-function for uniform heat extraction rate
     gfunc_uniform_Q = gt.gfunction.gFunction(
-        boreField, alpha, time=time, boundary_condition='UHTR',
+        borefield, alpha, time=time, boundary_condition='UHTR',
         options=options)
 
     # Calculate the g-function for uniform borehole wall temperature
     gfunc_uniform_T = gt.gfunction.gFunction(
-        boreField, alpha, time=time, boundary_condition='UBWT',
+        borefield, alpha, time=time, boundary_condition='UBWT',
         options=options)
 
     # Calculate the g-function for equal inlet fluid temperature

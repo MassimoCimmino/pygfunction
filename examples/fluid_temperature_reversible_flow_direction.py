@@ -13,7 +13,6 @@
 """
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.constants import pi
 
 import pygfunction as gt
 
@@ -93,9 +92,10 @@ def main():
     # -------------------------------------------------------------------------
 
     # The field is a retangular array
-    boreField = gt.boreholes.rectangle_field(N_1, N_2, B, B, H, D, r_b)
-    nBoreholes = len(boreField)
-    H_tot = np.sum([b.H for b in boreField])
+    borefield = gt.borefield.Borefield.rectangle_field(
+        N_1, N_2, B, B, H, D, r_b)
+    nBoreholes = len(borefield)
+    H_tot = np.sum(borefield.H)
 
     # Boreholes are connected in series
     bore_connectivity = [i-1 for i in range(nBoreholes)]
@@ -108,17 +108,17 @@ def main():
     m_flow_pipe = np.max(np.abs(m_flow_borehole))
     h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
             m_flow_pipe, r_in, mu_f, rho_f, k_f, cp_f, epsilon)
-    R_f = 1.0 / (h_f * 2 * pi * r_in)
+    R_f = 1.0 / (h_f * 2 * np.pi * r_in)
 
     # Double U-tube (parallel), same for all boreholes in the bore field
     UTubes = []
-    for borehole in boreField:
+    for borehole in borefield:
         UTube = gt.pipes.SingleUTube(
             pos_pipes, r_in, r_out, borehole, k_s, k_g, R_f + R_p)
         UTubes.append(UTube)
     # Build a network object from the list of UTubes
     network = gt.networks.Network(
-        boreField, UTubes, bore_connectivity=bore_connectivity)
+        borefield, UTubes, bore_connectivity=bore_connectivity)
 
     # -------------------------------------------------------------------------
     # Calculate g-function
@@ -131,7 +131,7 @@ def main():
         network, alpha, time=time_req, boundary_condition='MIFT',
         m_flow_network=m_flow_network, cp_f=cp_f, options=options)
     # Initialize load aggregation scheme
-    LoadAgg.initialize(gFunc.gFunc / (2 * pi * k_s))
+    LoadAgg.initialize(gFunc.gFunc / (2 * np.pi * k_s))
 
     # -------------------------------------------------------------------------
     # Simulation

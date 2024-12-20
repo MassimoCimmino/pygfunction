@@ -58,22 +58,23 @@ def main():
     # Field of 6x4 (n=24) boreholes
     N_1 = 6
     N_2 = 4
-    field = gt.boreholes.rectangle_field(N_1, N_2, B, B, H, D, r_b)
+    borefield = gt.borefield.Borefield.rectangle_field(
+        N_1, N_2, B, B, H, D, r_b)
 
     # -------------------------------------------------------------------------
     # Evaluate g-functions
     # -------------------------------------------------------------------------
     t0 = perf_counter()
     gfunc_detailed = gt.gfunction.gFunction(
-        field, alpha, time=time, options=options, method='detailed')
+        borefield, alpha, time=time, options=options, method='detailed')
     t1 = perf_counter()
     t_detailed = t1 - t0
     gfunc_similarities = gt.gfunction.gFunction(
-        field, alpha, time=time, options=options, method='similarities')
+        borefield, alpha, time=time, options=options, method='similarities')
     t2 = perf_counter()
     t_similarities = t2 - t1
     gfunc_equivalent = gt.gfunction.gFunction(
-        field, alpha, time=time, options=options, method='equivalent')
+        borefield, alpha, time=time, options=options, method='equivalent')
     t3 = perf_counter()
     t_equivalent = t3 - t2
 

@@ -54,17 +54,20 @@ def main():
     # Field of 3x2 (n=6) boreholes
     N_1 = 3
     N_2 = 2
-    boreField1 = gt.boreholes.rectangle_field(N_1, N_2, B, B, H, D, r_b)
+    borefield1 = gt.borefield.Borefield.rectangle_field(
+        N_1, N_2, B, B, H, D, r_b)
 
     # Field of 6x4 (n=24) boreholes
     N_1 = 6
     N_2 = 4
-    boreField2 = gt.boreholes.rectangle_field(N_1, N_2, B, B, H, D, r_b)
+    borefield2 = gt.borefield.Borefield.rectangle_field(
+        N_1, N_2, B, B, H, D, r_b)
 
     # Field of 10x10 (n=100) boreholes
     N_1 = 10
     N_2 = 10
-    boreField3 = gt.boreholes.rectangle_field(N_1, N_2, B, B, H, D, r_b)
+    borefield3 = gt.borefield.Borefield.rectangle_field(
+        N_1, N_2, B, B, H, D, r_b)
 
     # -------------------------------------------------------------------------
     # Load data from Cimmino and Bernier (2014)
@@ -74,7 +77,7 @@ def main():
     # -------------------------------------------------------------------------
     # Evaluate g-functions for all fields
     # -------------------------------------------------------------------------
-    for i, field in enumerate([boreField1, boreField2, boreField3]):
+    for i, field in enumerate([borefield1, borefield2, borefield3]):
         nBoreholes = len(field)
         # Compare 'similarities' and 'equivalent' solvers
         t0 = perf_counter()

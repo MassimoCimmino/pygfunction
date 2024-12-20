@@ -5,3 +5,4 @@ numpydoc >= 1.2.0
 recommonmark >= 0.6.0
 sphinx >= 4.4.0
 secondarycoolantprops >= 1.1.0
+typing_extensions >= 4.0.1

@@ -13,7 +13,6 @@ import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import AutoMinorLocator
-from scipy import pi
 
 import pygfunction as gt
 
@@ -134,11 +133,11 @@ def main():
 def _pipePositions(Ds, nPipes):
     """ Positions pipes in an axisymetric configuration.
     """
-    dt = pi / float(nPipes)
+    dt = np.pi / float(nPipes)
     pos = [(0., 0.) for i in range(2*nPipes)]
     for i in range(nPipes):
-        pos[i] = (Ds*np.cos(2.0*i*dt+pi), Ds*np.sin(2.0*i*dt+pi))
-        pos[i+nPipes] = (Ds*np.cos(2.0*i*dt+pi+dt), Ds*np.sin(2.0*i*dt+pi+dt))
+        pos[i] = (Ds*np.cos(2.0*i*dt+np.pi), Ds*np.sin(2.0*i*dt+np.pi))
+        pos[i+nPipes] = (Ds*np.cos(2.0*i*dt+np.pi+dt), Ds*np.sin(2.0*i*dt+np.pi+dt))
     return pos
 
 

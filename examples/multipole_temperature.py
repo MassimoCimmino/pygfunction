@@ -13,7 +13,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import AutoMinorLocator
-from scipy import pi
 
 import pygfunction as gt
 
@@ -43,7 +42,7 @@ def main():
 
     # Fluid properties
     # Fluid to outer pipe wall thermal resistance (m.K/W)
-    R_fp = 1.2/(2*pi*k_g)*np.ones(n_p)
+    R_fp = 1.2 / (2 * np.pi * k_g) * np.ones(n_p)
 
     # Borehole wall temperature (degC)
     T_b = 0.0

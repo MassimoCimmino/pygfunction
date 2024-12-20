@@ -2,6 +2,8 @@
 """ Example of definition of a bore field using custom borehole positions.
 
 """
+import numpy as np
+
 import pygfunction as gt
 
 
@@ -20,32 +22,27 @@ def main():
     #       Position 1 has a borehole that is directly on top of another bore
     #       Position 2 has a borehole with radius inside of another bore
     #       The duplicates will be removed with the remove_duplicates function
-    pos = [(0.0, 0.0),
-           (0.0, 0.0),  # Duplicate (for example purposes)
-           (0.03, 0.0),   # Duplicate (for example purposes)
-           (5.0, 0.),
-           (3.5, 4.0),
-           (1.0, 7.0),
-           (5.5, 5.5)]
+    x = np.array([0., 0., 0.03, 5., 3.5, 1., 5.5])
+    y = np.array([0., 0., 0.00, 0., 4.0, 7., 5.5])
 
     # -------------------------------------------------------------------------
     # Borehole field
     # -------------------------------------------------------------------------
 
     # Build list of boreholes
-    field = [gt.boreholes.Borehole(H, D, r_b, x, y) for (x, y) in pos]
+    borefield = gt.borefield.Borefield(H, D, r_b, x, y)
 
     # -------------------------------------------------------------------------
     # Find and remove duplicates from borehole field
     # -------------------------------------------------------------------------
-
-    field = gt.boreholes.remove_duplicates(field, disp=True)
+    borefield = gt.borefield.Borefield.from_boreholes(
+        gt.boreholes.remove_duplicates(borefield, disp=True))
 
     # -------------------------------------------------------------------------
     # Draw bore field
     # -------------------------------------------------------------------------
 
-    gt.boreholes.visualize_field(field)
+    borefield.visualize_field()
 
     return
 

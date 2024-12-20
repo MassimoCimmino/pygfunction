@@ -9,7 +9,6 @@
 """
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.constants import pi
 from scipy.interpolate import interp1d
 from scipy.signal import fftconvolve
 
@@ -52,14 +51,14 @@ def main():
     # -------------------------------------------------------------------------
 
     # The field contains only one borehole
-    boreField = [gt.boreholes.Borehole(H, D, r_b, x=0., y=0.)]
+    borehole = gt.boreholes.Borehole(H, D, r_b, x=0., y=0.)
     # Get time values needed for g-function evaluation
     time_req = LoadAgg.get_times_for_simulation()
     # Calculate g-function
     gFunc = gt.gfunction.gFunction(
-        boreField, alpha, time=time_req, options=options)
+        borehole, alpha, time=time_req, options=options)
     # Initialize load aggregation scheme
-    LoadAgg.initialize(gFunc.gFunc/(2*pi*k_s))
+    LoadAgg.initialize(gFunc.gFunc / (2 * np.pi * k_s))
 
     # -------------------------------------------------------------------------
     # Simulation
@@ -89,7 +88,8 @@ def main():
     g = interp1d(time_req, gFunc.gFunc)(time)
 
     # Convolution in Fourier domain
-    T_b_exact = T_g - fftconvolve(dQ, g/(2.0*pi*k_s*H), mode='full')[0:Nt]
+    T_b_exact = T_g - fftconvolve(
+        dQ, g / (2.0 * np.pi * k_s * H), mode='full')[0:Nt]
 
     # -------------------------------------------------------------------------
     # plot results
@@ -146,13 +146,13 @@ def synthetic_load(x):
 
     func = (168.0-C)/168.0
     for i in [1,2,3]:
-        func += 1.0/(i*pi)*(np.cos(C*pi*i/84.0)-1.0) \
-                          *(np.sin(pi*i/84.0*(x-B)))
-    func = func*A*np.sin(pi/12.0*(x-B)) \
-           *np.sin(pi/4380.0*(x-B))
+        func += 1.0/(i*np.pi)*(np.cos(C*np.pi*i/84.0)-1.0) \
+                          *(np.sin(np.pi*i/84.0*(x-B)))
+    func = func*A*np.sin(np.pi/12.0*(x-B)) \
+           *np.sin(np.pi/4380.0*(x-B))
 
     y = func + (-1.0)**np.floor(D/8760.0*(x-B))*abs(func) \
-      + E*(-1.0)**np.floor(D/8760.0*(x-B))/np.sign(np.cos(D*pi/4380.0*(x-F))+G)
+      + E*(-1.0)**np.floor(D/8760.0*(x-B))/np.sign(np.cos(D*np.pi/4380.0*(x-F))+G)
     return -y
 
 

@@ -13,7 +13,6 @@
 """
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.constants import pi
 
 import pygfunction as gt
 
@@ -85,16 +84,13 @@ def main():
 
     # The field contains only one borehole
     borehole = gt.boreholes.Borehole(H, D, r_b, x=0., y=0.)
-    boreField = [borehole]
     # Get time values needed for g-function evaluation
     time_req = LoadAgg.get_times_for_simulation()
     # Calculate g-function
     gFunc = gt.gfunction.gFunction(
-        boreField, alpha, time=time_req, options=options)
-    # gt.gfunction.uniform_temperature(boreField, time_req, alpha,
-    #                                          nSegments=nSegments)
+        borehole, alpha, time=time_req, options=options)
     # Initialize load aggregation scheme
-    LoadAgg.initialize(gFunc.gFunc/(2*pi*k_s))
+    LoadAgg.initialize(gFunc.gFunc / (2 * np.pi * k_s))
 
     # -------------------------------------------------------------------------
     # Initialize pipe models
@@ -107,11 +103,11 @@ def main():
     # U-tube in series)
     h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
         m_flow, rp_in, visc_f, den_f, k_f, cp_f, epsilon)
-    R_f_ser = 1.0/(h_f*2*pi*rp_in)
+    R_f_ser = 1.0 / (h_f * 2 * np.pi * rp_in)
     # Fluid to inner pipe wall thermal resistance (Double U-tube in parallel)
     h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
         m_flow/2, rp_in, visc_f, den_f, k_f, cp_f, epsilon)
-    R_f_par = 1.0/(h_f*2*pi*rp_in)
+    R_f_par = 1.0 / (h_f * 2 * np.pi * rp_in)
 
     # Single U-tube
     SingleUTube = gt.pipes.SingleUTube(pos_single, rp_in, rp_out,
@@ -284,13 +280,13 @@ def synthetic_load(x):
 
     func = (168.0-C)/168.0
     for i in [1, 2, 3]:
-        func += 1.0/(i*pi)*(np.cos(C*pi*i/84.0)-1.0) \
-                          *(np.sin(pi*i/84.0*(x-B)))
-    func = func*A*np.sin(pi/12.0*(x-B)) \
-           *np.sin(pi/4380.0*(x-B))
+        func += 1.0/(i*np.pi)*(np.cos(C*np.pi*i/84.0)-1.0) \
+                          *(np.sin(np.pi*i/84.0*(x-B)))
+    func = func*A*np.sin(np.pi/12.0*(x-B)) \
+           *np.sin(np.pi/4380.0*(x-B))
 
     y = func + (-1.0)**np.floor(D/8760.0*(x-B))*abs(func) \
-      + E*(-1.0)**np.floor(D/8760.0*(x-B))/np.sign(np.cos(D*pi/4380.0*(x-F))+G)
+      + E*(-1.0)**np.floor(D/8760.0*(x-B))/np.sign(np.cos(D*np.pi/4380.0*(x-F))+G)
     return -y
 
 

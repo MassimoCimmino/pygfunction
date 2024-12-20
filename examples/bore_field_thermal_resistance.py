@@ -9,7 +9,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import AutoMinorLocator
-from scipy import pi
 
 import pygfunction as gt
 
@@ -61,15 +60,11 @@ def main():
     # Borehole field
     # -------------------------------------------------------------------------
 
-    boreField = []
-    bore_connectivity = []
-    for i in range(nBoreholes):
-        x = i*B
-        borehole = gt.boreholes.Borehole(H, D, r_b, x, 0.)
-        boreField.append(borehole)
-        # Boreholes are connected in series: The index of the upstream
-        # borehole is that of the previous borehole
-        bore_connectivity.append(i - 1)
+    x = np.arange(nBoreholes) * B
+    borefield = gt.borefield.Borefield(H, D, r_b, x, 0.)
+    # Boreholes are connected in series: The index of the upstream
+    # borehole is that of the previous borehole
+    bore_connectivity = [i - 1 for i in range(nBoreholes)]
 
     # -------------------------------------------------------------------------
     # Evaluate the effective bore field thermal resistance
@@ -91,16 +86,16 @@ def main():
             # Fluid to inner pipe wall thermal resistance (Single U-tube)
             h_f = gt.pipes.convective_heat_transfer_coefficient_circular_pipe(
                     m_flow_pipe, r_in, mu_f, rho_f, k_f, cp_f, epsilon)
-            R_f = 1.0/(h_f*2*pi*r_in)
+            R_f = 1.0 / (h_f * 2 * np.pi * r_in)
 
             # Single U-tube, same for all boreholes in the bore field
             UTubes = []
-            for borehole in boreField:
+            for borehole in borefield:
                 SingleUTube = gt.pipes.SingleUTube(
                     pos_pipes, r_in, r_out, borehole, k_s, k_g, R_f + R_p)
                 UTubes.append(SingleUTube)
             network = gt.networks.Network(
-                boreField[:nBoreholes],
+                borefield[:nBoreholes],
                 UTubes[:nBoreholes],
                 bore_connectivity=bore_connectivity[:nBoreholes])
 

@@ -18,13 +18,13 @@ def main():
     # -------------------------------------------------------------------------
 
     # Build list of boreholes
-    field = gt.boreholes.field_from_file(filename)
+    borefield = gt.borefield.Borefield.from_file(filename)
 
     # -------------------------------------------------------------------------
     # Draw bore field
     # -------------------------------------------------------------------------
 
-    gt.boreholes.visualize_field(field)
+    borefield.visualize_field()
 
     return
 

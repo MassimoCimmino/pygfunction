@@ -9,6 +9,7 @@ from scipy.constants import pi
 from scipy.interpolate import interp1d as interp1d
 
 from .boreholes import Borehole, _EquivalentBorehole, find_duplicates
+from .borefield import Borefield
 from .heat_transfer import finite_line_source, finite_line_source_vectorized, \
     finite_line_source_equivalent_boreholes_vectorized, \
     finite_line_source_inclined_vectorized
@@ -65,11 +66,11 @@ class gFunction(object):
         of
 
             - 'UHTR' :
-                **Uniform heat transfer rate**. This is corresponds to boundary
+                **Uniform heat transfer rate**. This corresponds to boundary
                 condition *BC-I* as defined by Cimmino and Bernier (2014)
                 [#gFunction-CimBer2014]_.
             - 'UBWT' :
-                **Uniform borehole wall temperature**. This is corresponds to
+                **Uniform borehole wall temperature**. This corresponds to
                 boundary condition *BC-III* as defined by Cimmino and Bernier
                 (2014) [#gFunction-CimBer2014]_.
             - 'MIFT' :
@@ -1284,7 +1285,7 @@ class gFunction(object):
         are what is expected.
 
         """
-        assert isinstance(self.boreholes, list), \
+        assert isinstance(self.boreholes, (list, Borefield)), \
             "Boreholes must be provided in a list."
         assert len(self.boreholes) > 0, \
             "The list of boreholes is empty."
@@ -2320,7 +2321,7 @@ class _BaseSolver(object):
         are what is expected.
 
         """
-        assert isinstance(self.boreholes, list), \
+        assert isinstance(self.boreholes, (list, Borefield)), \
             "Boreholes must be provided in a list."
         assert len(self.boreholes) > 0, \
             "The list of boreholes is empty."
