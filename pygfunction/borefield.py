@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from typing import Union, List, Dict, Tuple
-from typing_extensions import Self # for compatibility with Python <= 3.10
+from typing_extensions import Self     # for compatibility with Python <= 3.10
 
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
@@ -9,6 +9,7 @@ import numpy.typing as npt
 
 from .boreholes import Borehole
 from .utilities import _initialize_figure, _format_axes, _format_axes_3d
+
 
 class Borefield:
     """
@@ -82,7 +83,7 @@ class Borefield:
 
     def __eq__(
             self, other_field: Union[Borehole, List[Borehole], Self]) -> bool:
-        """Return True if other_field is the same as self"""
+        """Return True if other_field is the same as self."""
         # Convert other_field into Borefield object
         if isinstance(other_field, (Borehole, list)):
             other_field = Borefield.from_boreholes(other_field)
@@ -99,12 +100,12 @@ class Borefield:
         return check
 
     def __len__(self) -> int:
-        """Returns the number of boreholes."""
+        """Return the number of boreholes."""
         return self.nBoreholes
 
     def __ne__(
             self, other_field: Union[Borehole, List[Borehole], Self]) -> bool:
-        """Return True if other_field is not the same as self"""
+        """Return True if other_field is not the same as self."""
         check = not self == other_field
         return check
 
@@ -182,7 +183,7 @@ class Borefield:
                     Default is :func:`utilities.segment_ratios`.
                 approximate_FLS : bool, optional
                     Set to true to use the approximation of the FLS solution of
-                    Cimmino (2021) [#gFunction-Cimmin2021]_. This approximation
+                    Cimmino (2021) [#borefield-Cimmin2021]_. This approximation
                     does not require the numerical evaluation of any integral.
                     When using the 'equivalent' solver, the approximation is
                     only applied to the thermal response at the borehole
@@ -437,7 +438,7 @@ class Borefield:
     def from_boreholes(
             cls, boreholes: Union[Borehole, List[Borehole]]) -> Self:
         """
-        Build a borefield given coordinates and dimensions provided in a text file.
+        Build a borefield given a list of Borehole objects.
 
         Parameters
         ----------
@@ -446,7 +447,7 @@ class Borefield:
 
         Returns
         -------
-        boreField : Borefield object
+        borefield : Borefield object
             Borefield object.
 
         """
@@ -476,7 +477,7 @@ class Borefield:
 
         Returns
         -------
-        boreField : Borefield object
+        borefield : Borefield object
             Borefield object.
 
         Notes
@@ -511,8 +512,8 @@ class Borefield:
 
     @classmethod
     def rectangle_field(
-            cls, N_1: int, N_2:int, B_1: float, B_2: float, H: float, D: float,
-            r_b: float, tilt: float = 0.,
+            cls, N_1: int, N_2: int, B_1: float, B_2: float, H: float,
+            D: float, r_b: float, tilt: float = 0.,
             origin: Union[Tuple[float, float], None] = None) -> Self:
         """
         Build a bore field in a rectangular configuration.
@@ -588,8 +589,9 @@ class Borefield:
 
     @classmethod
     def staggered_rectangle_field(
-            cls, N_1: int, N_2:int, B_1: float, B_2: float, H: float, D: float,
-            r_b: float, include_last_borehole: bool, tilt: float = 0.,
+            cls, N_1: int, N_2: int, B_1: float, B_2: float, H: float,
+            D: float, r_b: float, include_last_borehole: bool,
+            tilt: float = 0.,
             origin: Union[Tuple[float, float], None] = None) -> Self:
         """
         Build a bore field in a staggered rectangular bore field configuration.
@@ -612,8 +614,8 @@ class Borefield:
             Borehole radius (in meters).
         include_last_borehole : bool
             If True, then each row of boreholes has equal numbers of boreholes.
-            If False, then the staggered rows have one borehole less so they are
-            contained within the imaginary 'box' around the borefield.
+            If False, then the staggered rows have one borehole less so they
+            are contained within the imaginary 'box' around the borefield.
         tilt : float, optional
             Angle (in radians) from vertical of the axis of the borehole. The
             orientation of the tilt is orthogonal to the origin coordinate.
@@ -694,7 +696,7 @@ class Borefield:
 
     @classmethod
     def dense_rectangle_field(
-            cls, N_1: int, N_2:int, B: float, H: float, D: float,
+            cls, N_1: int, N_2: int, B: float, H: float, D: float,
             r_b: float, include_last_borehole: bool, tilt: float = 0.,
             origin: Union[Tuple[float, float], None] = None) -> Self:
         """
@@ -767,8 +769,8 @@ class Borefield:
 
     @classmethod
     def L_shaped_field(
-            cls, N_1: int, N_2:int, B_1: float, B_2: float, H: float, D: float,
-            r_b: float, tilt: float = 0.,
+            cls, N_1: int, N_2: int, B_1: float, B_2: float, H: float,
+            D: float, r_b: float, tilt: float = 0.,
             origin: Union[Tuple[float, float], None] = None) -> Self:
         """
         Build a bore field in a L-shaped configuration.
@@ -845,8 +847,8 @@ class Borefield:
 
     @classmethod
     def U_shaped_field(
-            cls, N_1: int, N_2:int, B_1: float, B_2: float, H: float, D: float,
-            r_b: float, tilt: float = 0.,
+            cls, N_1: int, N_2: int, B_1: float, B_2: float, H: float,
+            D: float, r_b: float, tilt: float = 0.,
             origin: Union[Tuple[float, float], None] = None) -> Self:
         """
         Build a bore field in a U-shaped configuration.
@@ -930,8 +932,8 @@ class Borefield:
 
     @classmethod
     def box_shaped_field(
-            cls, N_1: int, N_2:int, B_1: float, B_2: float, H: float, D: float,
-            r_b: float, tilt: float = 0.,
+            cls, N_1: int, N_2: int, B_1: float, B_2: float, H: float,
+            D: float, r_b: float, tilt: float = 0.,
             origin: Union[Tuple[float, float], None] = None) -> Self:
         """
         Build a bore field in a box-shaped configuration.
@@ -1021,7 +1023,7 @@ class Borefield:
 
     @classmethod
     def circle_field(
-            cls, N: int, R: float, H: float, D: float, r_b:float,
+            cls, N: int, R: float, H: float, D: float, r_b: float,
             tilt: float = 0.,
             origin: Union[Tuple[float, float], None] = None) -> Self:
         """

@@ -23,7 +23,7 @@ def main():
     #       Position 2 has a borehole with radius inside of another bore
     #       The duplicates will be removed with the remove_duplicates function
     x = np.array([0., 0., 0.03, 5., 3.5, 1., 5.5])
-    y = np.array([0., 0., 0., 0., 4., 7., 5.5])
+    y = np.array([0., 0., 0.00, 0., 4.0, 7., 5.5])
 
     # -------------------------------------------------------------------------
     # Borehole field
@@ -42,7 +42,7 @@ def main():
     # Draw bore field
     # -------------------------------------------------------------------------
 
-    borefield.visualize_field(borefield)
+    borefield.visualize_field()
 
     return
 
