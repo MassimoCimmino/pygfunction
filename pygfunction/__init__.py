@@ -6,4 +6,5 @@ from . import load_aggregation
 from . import media
 from . import networks
 from . import pipes
+from . import solvers
 from . import utilities

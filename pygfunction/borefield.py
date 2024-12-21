@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from collections.abc import Callable
 from typing import Union, List, Dict, Tuple
 from typing_extensions import Self     # for compatibility with Python <= 3.10
 
@@ -7,7 +8,7 @@ from matplotlib.figure import Figure
 import numpy as np
 import numpy.typing as npt
 
-from .boreholes import Borehole
+from .boreholes import Borehole, _EquivalentBorehole
 from .utilities import _initialize_figure, _format_axes, _format_axes_3d
 
 
@@ -305,6 +306,77 @@ class Borefield:
         )
 
         return gfunc.gFunc
+
+    def segments(
+            self, nSegments: Union[int, npt.ArrayLike],
+            segment_ratios: Union[
+                None, npt.ArrayLike, List[npt.ArrayLike], Callable[[int], npt.ArrayLike]
+                ] = None) -> Self:
+        """
+        Split boreholes in the bore field into segments.
+
+        Parameters
+        ----------
+        nSegments : int or (nBoreholes,) array
+            Number of segments per borehole.
+        segment_ratios : array or list of arrays, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. The shape of the array is of
+            (nSegments,). If all boreholes have the same number of segments
+            and the same ratios, a single (nSegments,) array can be provided.
+            Otherwise, a list of (nSegments_i,) arrays with the ratios
+            associated with each borehole must be provided. If
+            segment_ratios==None, segments of equal lengths are considered.
+            Default is None.
+
+        Returns
+        -------
+        segments : Borefield object
+            Segments in the bore field.
+
+        Examples
+        --------
+        >>> borefield = gt.borefield.Borefield.rectangle_field(
+            N_1=2, N_2=3, B_1 = 7.5, B_2=7.5, H=150., D=4., r_b=0.075)
+        >>> borefield.segments(5)
+
+        """
+        nSegments = np.broadcast_to(nSegments, self.nBoreholes)
+        if callable(segment_ratios):
+            segment_ratios = [segment_ratios(nSeg) for nSeg in nSegments]
+        if segment_ratios is None:
+            # Local coordinates of the top-edges of the segments
+            xi = np.concatenate(
+                [np.arange(nSeg_i) / nSeg_i for nSeg_i in nSegments])
+            # Segment ratios
+            segment_ratios = np.concatenate(
+                [np.full(nSeg_i, 1. / nSeg_i) for nSeg_i in nSegments])
+        elif isinstance(segment_ratios, list):
+            # Local coordinates of the top-edges of the segments
+            xi = np.concatenate(
+                [np.cumsum(np.concatenate([[0.], seg_rat_i[:-1]]))
+                 for seg_rat_i in segment_ratios])
+            # Segment ratios
+            segment_ratios = np.concatenate(segment_ratios)
+        else:
+            # Local coordinates of the top-edges of the segments
+            xi = np.tile(
+                np.concatenate([[0.], segment_ratios[:-1]]),
+                self.nBoreholes)
+            # Segment ratios
+            segment_ratios = np.tile(segment_ratios, self.nBoreholes)
+        xi = xi * np.repeat(self.H, nSegments)
+
+        # Geometrical parameters of the segments
+        H = np.repeat(self.H, nSegments) * segment_ratios
+        r_b = np.repeat(self.r_b, nSegments)
+        tilt = np.repeat(self.tilt, nSegments)
+        orientation = np.repeat(self.orientation, nSegments)
+        D = np.repeat(self.D, nSegments) + xi * np.cos(tilt)
+        x = np.repeat(self.x, nSegments) + xi * np.sin(tilt) * np.cos(orientation)
+        y = np.repeat(self.y, nSegments) + xi * np.sin(tilt) * np.sin(orientation)
+
+        return Borefield(H, D, r_b, x, y, tilt=tilt, orientation=orientation)
 
     def visualize_field(
             self, viewTop: bool = True, view3D: bool = True,
@@ -1098,3 +1170,97 @@ class Borefield:
         # Create the bore field
         borefield = cls(H, D, r_b, x, y, tilt=tilt, orientation=orientation)
         return borefield
+
+
+class _EquivalentBorefield(object):
+
+    def __init__(
+            self, H: npt.ArrayLike, D: npt.ArrayLike, r_b: npt.ArrayLike,
+            x: List[npt.ArrayLike], y: List[npt.ArrayLike],
+            tilt: npt.ArrayLike, orientation: List[npt.ArrayLike]):
+        self.H = H
+        self.D = D
+        self.r_b = r_b
+        self.x = x
+        self.y = y
+        self.tilt = tilt
+        self.orientation = orientation
+        self.nBoreholes = len(x)
+
+        # Identify tilted boreholes
+        self._is_tilted = np.broadcast_to(
+            np.greater(np.abs(tilt), 1e-6),
+            self.nBoreholes)
+        # Vertical boreholes default to an orientation of zero
+        if not np.any(self._is_tilted):
+            self.orientation = [np.broadcast_to(0., len(x_i)) for x_i in x]
+        else:
+            self.orientation = [
+                np.multiply(orientation_i, _is_tilted_i)
+                for (orientation_i, _is_tilted_i)
+                in zip(self.orientation, self._is_tilted)]
+
+    def __getitem__(self, key):
+        if isinstance(key, (int, np.integer)):
+            # Returns a borehole object if only one borehole is indexed
+            output_class = _EquivalentBorehole
+        else:
+            # Returns a _EquivalentBorehole object for slices and lists of
+            # indexes
+            output_class = _EquivalentBorefield
+        return output_class(
+            self.H[key], self.D[key], self.r_b[key], self.x[key], self.y[key],
+            tilt=self.tilt[key], orientation=self.orientation[key])
+    
+    def __len__(self) -> int:
+        """Return the number of boreholes."""
+        return self.nBoreholes
+
+    def segments(
+            self, nSegments: int,
+            segment_ratios: Union[
+                None, npt.ArrayLike, Callable[[int], npt.ArrayLike]
+                ] = None) -> Self:
+        """
+        Split boreholes in the bore field into segments.
+
+        Parameters
+        ----------
+        nSegments : int or (nBoreholes,) array
+            Number of segments per borehole.
+        segment_ratios : array or list of arrays, optional
+            Ratio of the borehole length represented by each segment. The sum
+            of ratios must be equal to 1. The shape of the array is of
+            (nSegments,). If all boreholes have the same number of segments
+            and the same ratios, a single (nSegments,) array can be provided.
+            Otherwise, a list of (nSegments_i,) arrays with the ratios
+            associated with each borehole must be provided. If
+            segment_ratios==None, segments of equal lengths are considered.
+            Default is None.
+
+        Returns
+        -------
+        segments : Borefield object
+            Segments in the bore field.
+
+        Examples
+        --------
+        >>> borefield = gt.borefield.Borefield.rectangle_field(
+            N_1=2, N_2=3, B_1 = 7.5, B_2=7.5, H=150., D=4., r_b=0.075)
+        >>> borefield.segments(5)
+
+        """
+        return _EquivalentBorefield.from_equivalent_boreholes(
+            [seg for b in self for seg in b.segments(nSegments, segment_ratios=segment_ratios)
+             ])
+
+    @classmethod
+    def from_equivalent_boreholes(cls, equivalent_boreholes):
+        H = np.array([b.H for b in equivalent_boreholes])
+        D = np.array([b.D for b in equivalent_boreholes])
+        r_b = np.array([b.r_b for b in equivalent_boreholes])
+        x = [b.x for b in equivalent_boreholes]
+        y = [b.y for b in equivalent_boreholes]
+        tilt = np.array([b.tilt for b in equivalent_boreholes])
+        orientation = [b.orientation for b in equivalent_boreholes]
+        return cls(H, D, r_b, x, y, tilt, orientation)

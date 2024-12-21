@@ -2,6 +2,7 @@
 from time import perf_counter
 
 import numpy as np
+import numpy.typing as npt
 from scipy.interpolate import interp1d as interp1d
 
 from .base_solver import _BaseSolver
@@ -20,10 +21,10 @@ class Detailed(_BaseSolver):
 
     Parameters
     ----------
-    boreholes : list of Borehole objects
-        List of boreholes included in the bore field.
+    borefield : Borefield object
+        The bore field.
     network : network object
-        Model of the network.
+        The network.
     time : float or array
         Values of time (in seconds) for which the g-function is evaluated.
     boundary_condition : str
@@ -129,7 +130,7 @@ class Detailed(_BaseSolver):
        Transfer, 127, 105496.
 
     """
-    def initialize(self, **kwargs):
+    def initialize(self, **kwargs) -> int:
         """
         Split boreholes into segments.
 
@@ -142,11 +143,14 @@ class Detailed(_BaseSolver):
 
         """
         # Split boreholes into segments
-        self.boreSegments = self.borehole_segments()
-        nSources = len(self.boreSegments)
+        self.segments = self.borefield.segments(
+            self.nSegments, self.segment_ratios)
+        nSources = len(self.segments)
         return nSources
 
-    def thermal_response_factors(self, time, alpha, kind='linear'):
+    def thermal_response_factors(
+            self, time: npt.ArrayLike, alpha: float, kind: str = 'linear'
+            ) -> interp1d:
         """
         Evaluate the segment-to-segment thermal response factors for all pairs
         of segments in the borefield at all time steps using the finite line
@@ -186,36 +190,38 @@ class Detailed(_BaseSolver):
         tic = perf_counter()
         # Initialize segment-to-segment response factors
         h_ij = np.zeros((self.nSources, self.nSources, nt+1), dtype=self.dtype)
-        nBoreholes = len(self.boreholes)
-        segment_lengths = self.segment_lengths()
+        nBoreholes = len(self.borefield)
+        segment_lengths = self.segment_lengths
 
         # ---------------------------------------------------------------------
         # Segment-to-segment thermal response factors for same-borehole
         # thermal interactions
         # ---------------------------------------------------------------------
-        h, i_segment, j_segment = \
+        h, i, j = \
             self._thermal_response_factors_borehole_to_self(time, alpha)
         # Broadcast values to h_ij matrix
-        h_ij[j_segment, i_segment, 1:] = h
+        h_ij[j, i, 1:] = h
         # ---------------------------------------------------------------------
         # Segment-to-segment thermal response factors for
         # borehole-to-borehole thermal interactions
         # ---------------------------------------------------------------------
-        for i, (i0, i1) in enumerate(zip(self._i0Segments, self._i1Segments)):
+        i1 = np.cumsum(np.broadcast_to(self.nSegments, nBoreholes), dtype=int)
+        i0 = np.concatenate(([0], i1[:-1]), dtype=int)
+        for i, (_i0, _i1) in enumerate(zip(i0, i1)):
             # Segments of the receiving borehole
-            b2 = self.boreSegments[i0:i1]
+            b2 = self.segments[_i0:_i1]
             if i+1 < nBoreholes:
                 # Segments of the emitting borehole
-                b1 = self.boreSegments[i1:]
+                b1 = self.segments[_i1:]
                 h = finite_line_source(
                     time, alpha, b1, b2, approximation=self.approximate_FLS,
                     N=self.nFLS, M=self.mQuad)
                 # Broadcast values to h_ij matrix
-                h_ij[i0:i1, i1:, 1:] = h
-                h_ij[i1:, i0:i1, 1:] = \
+                h_ij[_i0:_i1, _i1:, 1:] = h
+                h_ij[_i1:, _i0:_i1, 1:] = \
                     np.swapaxes(h, 0, 1) * np.divide.outer(
-                        segment_lengths[i0:i1],
-                        segment_lengths[i1:]).T[:,:,np.newaxis]
+                        segment_lengths[_i0:_i1],
+                        segment_lengths[_i1:]).T[:, :, np.newaxis]
 
         # Return 2d array if time is a scalar
         if np.isscalar(time):
@@ -229,7 +235,8 @@ class Detailed(_BaseSolver):
 
         return h_ij
 
-    def _thermal_response_factors_borehole_to_self(self, time, alpha):
+    def _thermal_response_factors_borehole_to_self(
+            self, time: npt.ArrayLike, alpha: float) -> np.ndarray:
         """
         Evaluate the segment-to-segment thermal response factors for all pairs
         of segments between each borehole and itself.
@@ -251,40 +258,41 @@ class Detailed(_BaseSolver):
             Indices of the receiving segments in the bore field.
         """
         # Indices of the thermal response factors into h_ij
-        i_segment = np.concatenate(
-            [np.repeat(np.arange(i0, i1), nSegments)
-             for i0, i1, nSegments in zip(
-                     self._i0Segments, self._i1Segments, self.nBoreSegments)
-            ])
-        j_segment = np.concatenate(
-            [np.tile(np.arange(i0, i1), nSegments)
-             for i0, i1, nSegments in zip(
-                     self._i0Segments, self._i1Segments, self.nBoreSegments)
+        nBoreholes = len(self.borefield)
+        nSegments = np.broadcast_to(self.nSegments, nBoreholes)
+        i1 = np.cumsum(np.broadcast_to(self.nSegments, nBoreholes), dtype=int)
+        i0 = np.concatenate(([0], i1[:-1]), dtype=int)
+        i = np.repeat(
+            np.arange(self.nSources),
+            np.repeat(nSegments, self.nSegments))
+        j = np.concatenate(
+            [np.tile(np.arange(_j0, _j1), nSeg)
+             for _j0, _j1, nSeg in zip(i0, i1, nSegments)
             ])
         # Unpack parameters
-        x = np.array([b.x for b in self.boreSegments])
-        y = np.array([b.y for b in self.boreSegments])
-        H = np.array([b.H for b in self.boreSegments])
-        D = np.array([b.D for b in self.boreSegments])
-        r_b = np.array([b.r_b for b in self.boreSegments])
+        x = self.segments.x
+        y = self.segments.y
+        H = self.segments.H
+        D = self.segments.D
+        r_b = self.segments.r_b
         # Distances between boreholes
         dis = np.maximum(
-            np.sqrt((x[i_segment] - x[j_segment])**2 + (y[i_segment] - y[j_segment])**2),
-            r_b[i_segment])
+            np.sqrt((x[i] - x[j])**2 + (y[i] - y[j])**2),
+            r_b[i])
         # FLS solution
-        if np.all([b.is_vertical() for b in self.boreholes]):
+        if not np.any(self.borefield._is_tilted):
             h = finite_line_source_vectorized(
                 time, alpha,
-                dis, H[i_segment], D[i_segment], H[j_segment], D[j_segment],
+                dis, H[i], D[i], H[j], D[j],
                 approximation=self.approximate_FLS, N=self.nFLS)
         else:
-            tilt = np.array([b.tilt for b in self.boreSegments])
-            orientation = np.array([b.orientation for b in self.boreSegments])
+            tilt = self.segments.tilt
+            orientation = self.segments.orientation
             h = finite_line_source_inclined_vectorized(
                 time, alpha,
-                r_b[i_segment], x[i_segment], y[i_segment], H[i_segment],
-                D[i_segment], tilt[i_segment], orientation[i_segment],
-                x[j_segment], y[j_segment], H[j_segment], D[j_segment],
-                tilt[j_segment], orientation[j_segment], M=self.mQuad,
+                r_b[i], x[i], y[i], H[i],
+                D[i], tilt[i], orientation[i],
+                x[j], y[j], H[j], D[j],
+                tilt[j], orientation[j], M=self.mQuad,
                 approximation=self.approximate_FLS, N=self.nFLS)
-        return h, i_segment, j_segment
+        return h, i, j

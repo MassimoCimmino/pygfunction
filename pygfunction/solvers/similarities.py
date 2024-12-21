@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 from time import perf_counter
+from typing import Tuple, List
 
 import numpy as np
+import numpy.typing as npt
 from scipy.interpolate import interp1d as interp1d
 
+from ..boreholes import Borehole
+from ..borefield import Borefield
 from .base_solver import _BaseSolver
 from ..heat_transfer import finite_line_source_vectorized, \
     finite_line_source_inclined_vectorized
@@ -22,10 +26,10 @@ class Similarities(_BaseSolver):
 
     Parameters
     ----------
-    boreholes : list of Borehole objects
-        List of boreholes included in the bore field.
+    borefield : Borefield object
+        The bore field.
     network : network object
-        Model of the network.
+        The network.
     time : float or array
         Values of time (in seconds) for which the g-function is evaluated.
     boundary_condition : str
@@ -148,7 +152,8 @@ class Similarities(_BaseSolver):
        Transfer, 127, 105496.
 
     """
-    def initialize(self, disTol=0.01, tol=1.0e-6, **kwargs):
+    def initialize(
+            self, disTol: float = 0.01, tol: float = 1e-6, **kwargs) -> int:
         """
         Split boreholes into segments and identify similarities in the
         borefield.
@@ -166,12 +171,40 @@ class Similarities(_BaseSolver):
         # Check the validity of inputs
         self._check_solver_specific_inputs()
         # Split boreholes into segments
-        self.boreSegments = self.borehole_segments()
+        self.segments = self.borefield.segments(self.nSegments, self.segment_ratios)
+        # Shortcut for segment_ratios comparisons
+        if self.segment_ratios is None:
+            self._equal_segment_ratios = True
+            self._uniform_segment_ratios = np.ones(
+                self.borefield.nBoreholes, dtype=bool)
+        elif isinstance(self.segment_ratios, np.ndarray):
+            self._equal_segment_ratios = True
+            self._uniform_segment_ratios = np.full(
+                self.nBoreholes,
+                np.allclose(
+                    self.segment_ratios,
+                    self.segment_ratios[:1],
+                    rtol=1e-6),
+                dtype=bool)
+        else:
+            self._equal_segment_ratios = (
+                isinstance(self.nSegment, int)
+                or np.all(np.equal(self.nSegments, self.nSegments[0]))
+                and np.all([np.allclose(segment_ratios, self.segment_ratios[0]) for segment_ratios in self.segment_ratios])
+                )
+            # Boreholes with a uniform discretization
+            self._uniform_segment_ratios = np.array([
+                np.allclose(segment_ratios,
+                            segment_ratios[:1],
+                            rtol=1e-6)
+                for segment_ratios in self.segment_ratios], dtype=bool)
         # Initialize similarities
         self.find_similarities()
-        return len(self.boreSegments)
+        return len(self.segments)
 
-    def thermal_response_factors(self, time, alpha, kind='linear'):
+    def thermal_response_factors(
+            self, time: npt.ArrayLike, alpha: float, kind: str = 'linear'
+            ) -> interp1d:
         """
         Evaluate the segment-to-segment thermal response factors for all pairs
         of segments in the borefield at all time steps using the finite line
@@ -190,14 +223,14 @@ class Similarities(_BaseSolver):
             Values of time (in seconds) for which the g-function is evaluated.
         alpha : float
             Soil thermal diffusivity (in m2/s).
-        kind : string, optional
+        kind : str, optional
             Interpolation method used for segment-to-segment thermal response
             factors. See documentation for scipy.interpolate.interp1d.
             Default is 'linear'.
 
         Returns
         -------
-        h_ij : interp1d
+        h_ij : interp1d object
             interp1d object (scipy.interpolate) of the matrix of
             segment-to-segment thermal response factors.
 
@@ -205,6 +238,8 @@ class Similarities(_BaseSolver):
         if self.disp:
             print('Calculating segment to segment response factors ...',
                   end='')
+        nBoreholes = self.borefield.nBoreholes
+        nSegments = np.broadcast_to(self.nSegments, nBoreholes)
         # Number of time values
         nt = len(np.atleast_1d(time))
         # Initialize chrono
@@ -260,8 +295,8 @@ class Similarities(_BaseSolver):
                 approximation=self.approximate_FLS, N=self.nFLS)
             # Broadcast values to h_ij matrix
             h_ij[j_segment, i_segment, 1:] = h[l_segment, k_segment, :]
-            if (self._compare_boreholes(self.boreholes[j], self.boreholes[i]) and
-                self.nBoreSegments[i] == self.nBoreSegments[j] and
+            if (self._compare_boreholes(self.borefield[j], self.borefield[i]) and
+                nSegments[i] == nSegments[j] and
                 self._uniform_segment_ratios[i] and
                 self._uniform_segment_ratios[j]):
                 h_ij[i_segment, j_segment, 1:] = h[l_segment, k_segment, :]
@@ -293,7 +328,8 @@ class Similarities(_BaseSolver):
         return h_ij
 
     def _thermal_response_factors_borehole_to_borehole_inclined(
-            self, time, alpha):
+            self, time: npt.ArrayLike, alpha: float) -> Tuple[
+                np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Evaluate the segment-to-segment thermal response factors for all pairs
         of inclined segments.
@@ -311,11 +347,11 @@ class Similarities(_BaseSolver):
             Finite line source solution.
         hT : array
             Reciprocal finite line source solution.
-        i_segment : list
+        i_segment : array of int
             Indices of the emitting segments in the bore field.
-        j_segment : list
+        j_segment : array of int
             Indices of the receiving segments in the bore field.
-        k_segment : list
+        k_segment : array of int
             Indices of unique segment pairs in the (H1, D1, H2, D2) dimensions
             corresponding to all pairs in (i_pair, j_pair) in the bore field.
         """
@@ -332,9 +368,9 @@ class Similarities(_BaseSolver):
         D2 = np.array([])
         tilt2 = np.array([])
         orientation2 = np.array([])
-        i_segment = np.array([], dtype=np.uint)
-        j_segment = np.array([], dtype=np.uint)
-        k_segment = np.array([], dtype=np.uint)
+        i_segment = np.array([], dtype=int)
+        j_segment = np.array([], dtype=int)
+        k_segment = np.array([], dtype=int)
         k0 = 0
         for pairs in self.borehole_to_borehole_inclined:
             # Index of first borehole pair in group
@@ -373,7 +409,9 @@ class Similarities(_BaseSolver):
         hT = (h.T * H2 / H1).T
         return h, hT, i_segment, j_segment, k_segment
 
-    def _thermal_response_factors_borehole_to_self_inclined(self, time, alpha):
+    def _thermal_response_factors_borehole_to_self_inclined(
+            self, time: npt.ArrayLike, alpha: float) -> Tuple[
+                np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Evaluate the segment-to-segment thermal response factors for all pairs
         of segments between each inclined borehole and itself.
@@ -389,11 +427,11 @@ class Similarities(_BaseSolver):
         -------
         h : array
             Finite line source solution.
-        i_segment : list
+        i_segment : array of int
             Indices of the emitting segments in the bore field.
-        j_segment : list
+        j_segment : array of int
             Indices of the receiving segments in the bore field.
-        k_segment : list
+        k_segment : array of int
             Indices of unique segment pairs in the (H1, D1, H2, D2) dimensions
             corresponding to all pairs in (i_pair, j_pair) in the bore field.
         """
@@ -410,9 +448,9 @@ class Similarities(_BaseSolver):
         D2 = np.array([])
         tilt2 = np.array([])
         orientation2 = np.array([])
-        i_segment = np.array([], dtype=np.uint)
-        j_segment = np.array([], dtype=np.uint)
-        k_segment = np.array([], dtype=np.uint)
+        i_segment = np.array([], dtype=int)
+        j_segment = np.array([], dtype=int)
+        k_segment = np.array([], dtype=int)
         k0 = 0
         for group in self.borehole_to_self_inclined:
             # Index of first borehole in group
@@ -451,7 +489,9 @@ class Similarities(_BaseSolver):
             approximation=self.approximate_FLS, N=self.nFLS)
         return h, i_segment, j_segment, k_segment
 
-    def _thermal_response_factors_borehole_to_self_vertical(self, time, alpha):
+    def _thermal_response_factors_borehole_to_self_vertical(
+            self, time: npt.ArrayLike, alpha: float) -> Tuple[
+                np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Evaluate the segment-to-segment thermal response factors for all pairs
         of segments between each vertical borehole and itself.
@@ -467,11 +507,11 @@ class Similarities(_BaseSolver):
         -------
         h : array
             Finite line source solution.
-        i_segment : list
+        i_segment : array of int
             Indices of the emitting segments in the bore field.
-        j_segment : list
+        j_segment : array of int
             Indices of the receiving segments in the bore field.
-        k_segment : list
+        k_segment : array of int
             Indices of unique segment pairs in the (H1, D1, H2, D2) dimensions
             corresponding to all pairs in (i_pair, j_pair) in the bore field.
         """
@@ -480,9 +520,9 @@ class Similarities(_BaseSolver):
         H2 = np.array([])
         D2 = np.array([])
         dis = np.array([])
-        i_segment = np.array([], dtype=np.uint)
-        j_segment = np.array([], dtype=np.uint)
-        k_segment = np.array([], dtype=np.uint)
+        i_segment = np.array([], dtype=int)
+        j_segment = np.array([], dtype=int)
+        k_segment = np.array([], dtype=int)
         k0 = 0
         for group in self.borehole_to_self_vertical:
             # Index of first borehole in group
@@ -502,7 +542,7 @@ class Similarities(_BaseSolver):
             if len(self.borehole_to_self_vertical) > 1:
                 dis = np.append(dis, np.full(len(H1_i), self.boreholes[i].r_b))
             else:
-                dis = self.boreholes[i].r_b
+                dis = self.borefield.r_b[i]
             i_segment = np.append(i_segment, i_segment_i)
             j_segment = np.append(j_segment, j_segment_i)
             k_segment = np.append(k_segment, k_segment_i + k0)
@@ -529,11 +569,11 @@ class Similarities(_BaseSolver):
         # Boreholes can only be similar if their segments are similar
         self.borehole_to_self_vertical, self.borehole_to_self_inclined, \
             self.borehole_to_borehole_vertical, self.borehole_to_borehole_inclined = \
-                self._find_axial_borehole_pairs(self.boreholes)
+                self._find_axial_borehole_pairs(self.borefield)
         # Find distances for each similar pairs of vertical boreholes
         self.borehole_to_borehole_distances_vertical, self.borehole_to_borehole_indices_vertical = \
             self._find_distances(
-                self.boreholes, self.borehole_to_borehole_vertical)
+                self.borefield, self.borehole_to_borehole_vertical)
 
         # Stop chrono
         toc = perf_counter()
@@ -541,7 +581,8 @@ class Similarities(_BaseSolver):
 
         return
 
-    def _compare_boreholes(self, borehole1, borehole2):
+    def _compare_boreholes(
+            self, borehole1: Borehole, borehole2: Borehole) -> bool:
         """
         Compare two boreholes and checks if they have the same dimensions :
         H, D, r_b, and tilt.
@@ -569,7 +610,9 @@ class Similarities(_BaseSolver):
             similarity = False
         return similarity
 
-    def _compare_real_pairs_vertical(self, pair1, pair2):
+    def _compare_real_pairs_vertical(
+            self, pair1: Tuple[Borehole, Borehole],
+            pair2: Tuple[Borehole, Borehole]) -> bool:
         """
         Compare two pairs of vertical boreholes or segments and return True if
         the two pairs have the same FLS solution for real sources.
@@ -606,7 +649,9 @@ class Similarities(_BaseSolver):
             similarity = False
         return similarity
 
-    def _compare_image_pairs_vertical(self, pair1, pair2):
+    def _compare_image_pairs_vertical(
+            self, pair1: Tuple[Borehole, Borehole],
+            pair2: Tuple[Borehole, Borehole]) -> bool:
         """
         Compare two pairs of vertical boreholes or segments and return True if
         the two pairs have the same FLS solution for mirror sources.
@@ -638,7 +683,9 @@ class Similarities(_BaseSolver):
             similarity = False
         return similarity
 
-    def _compare_realandimage_pairs_vertical(self, pair1, pair2):
+    def _compare_realandimage_pairs_vertical(
+            self, pair1: Tuple[Borehole, Borehole],
+            pair2: Tuple[Borehole, Borehole]) -> bool:
         """
         Compare two pairs of vertical boreholes or segments and return True if
         the two pairs have the same FLS solution for both real and mirror
@@ -664,7 +711,9 @@ class Similarities(_BaseSolver):
             similarity = False
         return similarity
 
-    def _compare_real_pairs_inclined(self, pair1, pair2):
+    def _compare_real_pairs_inclined(
+            self, pair1: Tuple[Borehole, Borehole],
+            pair2: Tuple[Borehole, Borehole]) -> bool:
         """
         Compare two pairs of inclined boreholes or segments and return True if
         the two pairs have the same FLS solution for real sources.
@@ -712,7 +761,9 @@ class Similarities(_BaseSolver):
             similarity = False
         return similarity
 
-    def _compare_image_pairs_inclined(self, pair1, pair2):
+    def _compare_image_pairs_inclined(
+            self, pair1: Tuple[Borehole, Borehole],
+            pair2: Tuple[Borehole, Borehole]) -> bool:
         """
         Compare two pairs of inclined boreholes or segments and return True if
         the two pairs have the same FLS solution for mirror sources.
@@ -760,7 +811,9 @@ class Similarities(_BaseSolver):
             similarity = False
         return similarity
 
-    def _compare_realandimage_pairs_inclined(self, pair1, pair2):
+    def _compare_realandimage_pairs_inclined(
+            self, pair1: Tuple[Borehole, Borehole],
+            pair2: Tuple[Borehole, Borehole]) -> bool:
         """
         Compare two pairs of inclined boreholes or segments and return True if
         the two pairs have the same FLS solution for both real and mirror
@@ -815,7 +868,11 @@ class Similarities(_BaseSolver):
             similarity = False
         return similarity
 
-    def _find_axial_borehole_pairs(self, boreholes):
+    def _find_axial_borehole_pairs(
+            self, borefield: Borefield) -> Tuple[
+                List[List[int]], List[List[int]], List[List[Tuple[int, int]]],
+                List[List[Tuple[int, int]]]
+                ]:
         """
         Find axial (i.e. disregarding the radial distance) similarities between
         borehole pairs to simplify the evaluation of the FLS solution.
@@ -835,7 +892,12 @@ class Similarities(_BaseSolver):
             boreholes that share the same (pairwise) dimensions (H, D).
 
         """
-        nBoreholes = len(boreholes)
+        nBoreholes = len(borefield)
+        nSegments = np.broadcast_to(self.nSegments, nBoreholes)
+        if self.segment_ratios is None:
+            segment_ratios = [None] * nBoreholes
+        elif isinstance(self.segment_ratios, np.ndarray):
+            segment_ratios = [self.segment_ratios] * nBoreholes
         borehole_to_self_vertical = []
         borehole_to_self_inclined = []
         # Only check for similarities if there is more than one borehole
@@ -843,7 +905,7 @@ class Similarities(_BaseSolver):
             borehole_to_borehole_vertical = []
             borehole_to_borehole_inclined = []
             for i, (borehole_i, nSegments_i, ratios_i) in enumerate(
-                    zip(boreholes, self.nBoreSegments, self.segment_ratios)):
+                    zip(borefield, nSegments, segment_ratios)):
                 # Compare the borehole to all known unique sets of dimensions
                 if borehole_i.is_vertical():
                     borehole_to_self = borehole_to_self_vertical
@@ -855,11 +917,12 @@ class Similarities(_BaseSolver):
                     m = borehole_set[0]
                     # Add the borehole to the group if a similar borehole is
                     # found
-                    if (self._compare_boreholes(borehole_i, boreholes[m]) and
+                    if (self._compare_boreholes(borehole_i, borefield[m]) and
                         (self._equal_segment_ratios or
-                         (nSegments_i == self.nBoreSegments[m] and
+                         (nSegments_i == nSegments[m] and
+                          segment_ratios[m] is None or
                           np.allclose(ratios_i,
-                                      self.segment_ratios[m],
+                                      segment_ratios[m],
                                       rtol=self.tol)))):
                         borehole_set.append(i)
                         break
@@ -868,9 +931,9 @@ class Similarities(_BaseSolver):
                     borehole_to_self.append([i])
 
                 for j, (borehole_j, nSegments_j, ratios_j) in enumerate(
-                        zip(boreholes[i+1:],
-                            self.nBoreSegments[i+1:],
-                            self.segment_ratios[i+1:]),
+                        zip(borefield[i+1:],
+                            nSegments[i+1:],
+                            segment_ratios[i+1:]),
                         start=i+1):
                     pair0 = (borehole_i, borehole_j) # pair
                     pair1 = (borehole_j, borehole_i) # reciprocal pair
@@ -883,30 +946,34 @@ class Similarities(_BaseSolver):
                         compare_pairs = self._compare_realandimage_pairs_inclined
                     for pairs in borehole_to_borehole:
                         m, n = pairs[0]
-                        pair_ref = (boreholes[m], boreholes[n])
+                        pair_ref = (borefield[m], borefield[n])
                         # Add the pair (or the reciprocal pair) to a group
                         # if a similar one is found
                         if (compare_pairs(pair0, pair_ref) and
                             (self._equal_segment_ratios or
-                             (nSegments_i == self.nBoreSegments[m] and
-                              nSegments_j == self.nBoreSegments[n] and
+                             (nSegments_i == nSegments[m] and
+                              nSegments_j == nSegments[n] and
+                              segment_ratios[m] is None or
                               np.allclose(ratios_i,
-                                          self.segment_ratios[m],
+                                          segment_ratios[m],
                                           rtol=self.tol) and
+                              segment_ratios[n] is None or
                               np.allclose(ratios_j,
-                                          self.segment_ratios[n],
+                                          segment_ratios[n],
                                           rtol=self.tol)))):
                             pairs.append((i, j))
                             break
                         elif (compare_pairs(pair1, pair_ref) and
                               (self._equal_segment_ratios or
-                               (nSegments_j == self.nBoreSegments[m] and
-                                nSegments_i == self.nBoreSegments[n] and
+                               (nSegments_j == nSegments[m] and
+                                nSegments_i == nSegments[n] and
+                                segment_ratios[m] is None or
                                 np.allclose(ratios_j,
-                                            self.segment_ratios[m],
+                                            segment_ratios[m],
                                             rtol=self.tol) and
+                                segment_ratios[n] is None or
                                 np.allclose(ratios_i,
-                                            self.segment_ratios[n],
+                                            segment_ratios[n],
                                             rtol=self.tol)))):
                             pairs.append((j, i))
                             break
@@ -916,7 +983,7 @@ class Similarities(_BaseSolver):
 
         else:
             # Outputs for a single borehole
-            if boreholes[0].is_vertical:
+            if borefield[0].is_vertical:
                 borehole_to_self_vertical = [[0]]
                 borehole_to_self_inclined = []
             else:
@@ -927,14 +994,17 @@ class Similarities(_BaseSolver):
         return borehole_to_self_vertical, borehole_to_self_inclined, \
             borehole_to_borehole_vertical, borehole_to_borehole_inclined
 
-    def _find_distances(self, boreholes, borehole_to_borehole):
+    def _find_distances(
+            self, borefield: Borefield,
+            borehole_to_borehole: List[List[Tuple[int, int]]]
+            ) -> Tuple[List[List[float]], List[np.ndarray]]:
         """
         Find unique distances between pairs of boreholes for each unique pair
         of boreholes in the bore field.
 
         Parameters
         ----------
-        boreholes : list of Borehole objects
+        borefield : Borefield object
             Boreholes in the bore field.
         borehole_to_borehole : list
             Lists of tuples of borehole indexes for each unique pair of
@@ -952,7 +1022,7 @@ class Similarities(_BaseSolver):
         nGroups = len(borehole_to_borehole)
         borehole_to_borehole_distances = [[] for i in range(nGroups)]
         borehole_to_borehole_indices = \
-            [np.empty(len(group), dtype=np.uint) for group in borehole_to_borehole]
+            [np.empty(len(group), dtype=int) for group in borehole_to_borehole]
         # Find unique distances for each group
         for i, (pairs, distances, distance_indices) in enumerate(
                 zip(borehole_to_borehole,
@@ -961,7 +1031,7 @@ class Similarities(_BaseSolver):
             nPairs = len(pairs)
             # Array of all borehole-to-borehole distances within the group
             all_distances = np.array(
-                [boreholes[pair[0]].distance(boreholes[pair[1]])
+                [borefield[pair[0]].distance(borefield[pair[1]])
                  for pair in pairs])
             # Indices to sort the distance array
             i_sort = all_distances.argsort()
@@ -995,7 +1065,11 @@ class Similarities(_BaseSolver):
         return borehole_to_borehole_distances, borehole_to_borehole_indices
 
     def _map_axial_segment_pairs_vertical(
-            self, i, j, reaSource=True, imgSource=True):
+            self, i: int, j: int, reaSource: bool = True,
+            imgSource: bool = True) -> Tuple[
+                np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray,
+                np.ndarray, np.ndarray
+                ]:
         """
         Find axial (i.e. disregarding the radial distance) similarities between
         segment pairs along two boreholes to simplify the evaluation of the
@@ -1021,18 +1095,29 @@ class Similarities(_BaseSolver):
             Length of the receiving segments.
         D2 : array
             Array of buried depths of the receiving segments.
-        i_pair : list
+        i_pair : array of int
             Indices of the emitting segments along a borehole.
-        j_pair : list
+        j_pair : array of int
             Indices of the receiving segments along a borehole.
-        k_pair : list
+        k_pair : array of int
             Indices of unique segment pairs in the (H1, D1, H2, D2) dimensions
             corresponding to all pairs in (i_pair, j_pair).
 
         """
+        nBoreholes = self.borefield.nBoreholes
+        nSegments = np.broadcast_to(self.nSegments, nBoreholes)
+        if self.segment_ratios is None:
+            segment_ratios_i = None
+            segment_ratios_j = None
+        elif isinstance(self.segment_ratios, np.ndarray):
+            segment_ratios_i = self.segment_ratios
+            segment_ratios_j = self.segment_ratios
+        else:
+            segment_ratios_i = self.segment_ratios[i]
+            segment_ratios_j = self.segment_ratios[j]
         # Initialize local variables
-        borehole1 = self.boreholes[i]
-        borehole2 = self.boreholes[j]
+        borehole1 = self.borefield[i]
+        borehole2 = self.borefield[j]
         assert reaSource or imgSource, \
             "At least one of reaSource and imgSource must be True."
         if reaSource and imgSource:
@@ -1046,9 +1131,9 @@ class Similarities(_BaseSolver):
             compare_pairs = self._compare_image_pairs_vertical
         # Dive both boreholes into segments
         segments1 = borehole1.segments(
-            self.nBoreSegments[i], segment_ratios=self.segment_ratios[i])
+            nSegments[i], segment_ratios=segment_ratios_i)
         segments2 = borehole2.segments(
-            self.nBoreSegments[j], segment_ratios=self.segment_ratios[j])
+            nSegments[j], segment_ratios=segment_ratios_j)
         # Prepare lists of segment lengths
         H1 = []
         H2 = []
@@ -1056,13 +1141,13 @@ class Similarities(_BaseSolver):
         D1 = []
         D2 = []
         # All possible pairs (i, j) of indices between segments
-        i_pair = np.repeat(np.arange(self.nBoreSegments[i], dtype=np.uint),
-                           self.nBoreSegments[j])
-        j_pair = np.tile(np.arange(self.nBoreSegments[j], dtype=np.uint),
-                         self.nBoreSegments[i])
+        i_pair = np.repeat(np.arange(nSegments[i], dtype=int),
+                           nSegments[j])
+        j_pair = np.tile(np.arange(nSegments[j], dtype=int),
+                         nSegments[i])
         # Empty list of indices for unique pairs
-        k_pair = np.empty(self.nBoreSegments[i] * self.nBoreSegments[j],
-                          dtype=np.uint)
+        k_pair = np.empty(nSegments[i] * nSegments[j],
+                          dtype=int)
         unique_pairs = []
         nPairs = 0
 
@@ -1093,7 +1178,13 @@ class Similarities(_BaseSolver):
         return np.array(H1), np.array(D1), np.array(H2), np.array(D2), i_pair, j_pair, k_pair
 
     def _map_axial_segment_pairs_inclined(
-            self, i, j, reaSource=True, imgSource=True):
+            self, i: int, j: int, reaSource: bool = True,
+            imgSource: bool = True) -> Tuple[
+                np.ndarray, np.ndarray, np.ndarray, np.ndarray,
+                np.ndarray, np.ndarray, np.ndarray, np.ndarray,
+                np.ndarray, np.ndarray, np.ndarray, np.ndarray,
+                np.ndarray, np.ndarray, np.ndarray, np.ndarray
+                ]:
         """
         Find axial similarities between segment pairs along two boreholes to
         simplify the evaluation of the FLS solution.
@@ -1136,17 +1227,28 @@ class Similarities(_BaseSolver):
             Angles (in radians) from vertical of the receiving heat sources.
         orientation2 : array
             Directions (in radians) of the tilt the receiving heat sources.
-        i_pair : list
+        i_pair : array of int
             Indices of the emitting segments along a borehole.
-        j_pair : list
+        j_pair : array of int
             Indices of the receiving segments along a borehole.
-        k_pair : list
+        k_pair : array of int
             Indices of unique segment pairs in the (H1, D1, H2, D2) dimensions
             corresponding to all pairs in (i_pair, j_pair).
         """
+        nBoreholes = self.nBoreholes
+        nSegments = np.broadcast_to(self.nSegments, nBoreholes)
+        if self.segment_ratios is None:
+            segment_ratios_i = None
+            segment_ratios_j = None
+        elif isinstance(self.segment_ratios, np.ndarray):
+            segment_ratios_i = self.segment_ratios
+            segment_ratios_j = self.segment_ratios
+        else:
+            segment_ratios_i = self.segment_ratios[i]
+            segment_ratios_j = self.segment_ratios[j]
         # Initialize local variables
-        borehole1 = self.boreholes[i]
-        borehole2 = self.boreholes[j]
+        borehole1 = self.borefield[i]
+        borehole2 = self.borefield[j]
         assert reaSource or imgSource, \
             "At least one of reaSource and imgSource must be True."
         if reaSource and imgSource:
@@ -1160,9 +1262,9 @@ class Similarities(_BaseSolver):
             compare_pairs = self._compare_image_pairs_inclined
         # Dive both boreholes into segments
         segments1 = borehole1.segments(
-            self.nBoreSegments[i], segment_ratios=self.segment_ratios[i])
+            nSegments[i], segment_ratios=segment_ratios_i)
         segments2 = borehole2.segments(
-            self.nBoreSegments[j], segment_ratios=self.segment_ratios[j])
+            nSegments[j], segment_ratios=segment_ratios_j)
         # Prepare lists of FLS-inclined arguments
         rb1 = []
         x1 = []
@@ -1178,13 +1280,13 @@ class Similarities(_BaseSolver):
         tilt2 = []
         orientation2 = []
         # All possible pairs (i, j) of indices between segments
-        i_pair = np.repeat(np.arange(self.nBoreSegments[i], dtype=np.uint),
-                           self.nBoreSegments[j])
-        j_pair = np.tile(np.arange(self.nBoreSegments[j], dtype=np.uint),
-                         self.nBoreSegments[i])
+        i_pair = np.repeat(np.arange(nSegments[i], dtype=int),
+                           nSegments[j])
+        j_pair = np.tile(np.arange(nSegments[j], dtype=int),
+                         nSegments[i])
         # Empty list of indices for unique pairs
-        k_pair = np.empty(self.nBoreSegments[i] * self.nBoreSegments[j],
-                          dtype=np.uint)
+        k_pair = np.empty(nSegments[i] * nSegments[j],
+                          dtype=int)
         unique_pairs = []
         nPairs = 0
 
@@ -1227,8 +1329,11 @@ class Similarities(_BaseSolver):
             np.array(tilt2), np.array(orientation2), i_pair, j_pair, k_pair
 
     def _map_segment_pairs_vertical(
-            self, i_pair, j_pair, k_pair, borehole_to_borehole,
-            borehole_to_borehole_indices):
+            self, i_pair: npt.ArrayLike, j_pair: npt.ArrayLike,
+            k_pair: npt.ArrayLike, borehole_to_borehole: List[Tuple[int, int]],
+            borehole_to_borehole_indices: List[int]) -> Tuple[
+                np.ndarray, np.ndarray, np.ndarray, np.ndarray
+                ]:
         """
         Return the maping of the unique segment-to-segment thermal response
         factors (h) to the complete h_ij array of the borefield, such that:
@@ -1240,11 +1345,11 @@ class Similarities(_BaseSolver):
 
         Parameters
         ----------
-        i_pair : list
+        i_pair : array of int
             Indices of the emitting segments.
-        j_pair : list
+        j_pair : array of int
             Indices of the receiving segments.
-        k_pair : list
+        k_pair : array of int
             Indices of unique segment pairs in the (H1, D1, H2, D2) dimensions
             corresponding to all pairs in (i_pair, j_pair).
         borehole_to_borehole : list
@@ -1254,29 +1359,40 @@ class Similarities(_BaseSolver):
 
         Returns
         -------
-        i_segment : list
+        i_segment : array of int
             Indices of the emitting segments in the bore field.
-        j_segment : list
+        j_segment : array of int
             Indices of the receiving segments in the bore field.
-        k_segment : list
+        k_segment : array of int
             Indices of unique segment pairs in the (H1, D1, H2, D2) dimensions
             corresponding to all pairs in (i_pair, j_pair) in the bore field.
-        l_segment : list
+        l_segment : array of int
             Indices of unique distances for all pairs in (i_pair, j_pair)
             in the bore field.
 
         """
+        nBoreholes = self.borefield.nBoreholes
+        nSegments = np.broadcast_to(self.nSegments, nBoreholes)
+        i1 = np.cumsum(nSegments, dtype=int)
+        i0 = np.concatenate(([0], i1[:-1]), dtype=int)
         i_segment = np.concatenate(
-            [i_pair + self._i0Segments[i] for (i, j) in borehole_to_borehole])
+            [i_pair + i0[i] for (i, j) in borehole_to_borehole],
+            dtype=int)
         j_segment = np.concatenate(
-            [j_pair + self._i0Segments[j] for (i, j) in borehole_to_borehole])
-        k_segment = np.tile(k_pair, len(borehole_to_borehole))
+            [j_pair + i0[j] for (i, j) in borehole_to_borehole],
+            dtype=int)
+        k_segment = np.tile(
+            k_pair,
+            len(borehole_to_borehole))
         l_segment = np.concatenate(
-            [np.repeat(i, len(k_pair)) for i in borehole_to_borehole_indices])
+            [np.repeat(i, len(k_pair)) for i in borehole_to_borehole_indices],
+            dtype=int)
         return i_segment, j_segment, k_segment, l_segment
 
     def _map_segment_pairs_inclined(
-            self, i_pair, j_pair, k_pair, borehole_to_borehole):
+            self, i_pair: npt.ArrayLike, j_pair: npt.ArrayLike,
+            k_pair: npt.ArrayLike, borehole_to_borehole: List[Tuple[int, int]]
+            ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Return the maping of the unique segment-to-segment thermal response
         factors (h) to the complete h_ij array of the borefield, such that:
@@ -1288,11 +1404,11 @@ class Similarities(_BaseSolver):
 
         Parameters
         ----------
-        i_pair : list
+        i_pair : array of int
             Indices of the emitting segments.
-        j_pair : list
+        j_pair : array of int
             Indices of the receiving segments.
-        k_pair : list
+        k_pair : array of int
             Indices of unique segment pairs in the (H1, D1, H2, D2) dimensions
             corresponding to all pairs in (i_pair, j_pair).
         borehole_to_borehole : list
@@ -1300,20 +1416,28 @@ class Similarities(_BaseSolver):
 
         Returns
         -------
-        i_segment : list
+        i_segment : array of int
             Indices of the emitting segments in the bore field.
-        j_segment : list
+        j_segment : array of int
             Indices of the receiving segments in the bore field.
-        k_segment : list
+        k_segment : array of int
             Indices of unique segment pairs in the (H1, D1, H2, D2) dimensions
             corresponding to all pairs in (i_pair, j_pair) in the bore field.
 
         """
+        nBoreholes = self.borefield.nBoreholes
+        nSegments = np.broadcast_to(self.nSegments, nBoreholes)
+        i1 = np.cumsum(nSegments, dtype=int)
+        i0 = np.concatenate(([0], i1[:-1]), dtype=int)
         i_segment = np.concatenate(
-            [i_pair + self._i0Segments[i] for (i, j) in borehole_to_borehole])
+            [i_pair + i0[i] for (i, j) in borehole_to_borehole],
+            dtype=int)
         j_segment = np.concatenate(
-            [j_pair + self._i0Segments[j] for (i, j) in borehole_to_borehole])
-        k_segment = np.tile(k_pair, len(borehole_to_borehole))
+            [j_pair + i0[j] for (i, j) in borehole_to_borehole],
+            dtype=int)
+        k_segment = np.tile(
+            k_pair,
+            len(borehole_to_borehole))
         return i_segment, j_segment, k_segment
 
     def _check_solver_specific_inputs(self):
