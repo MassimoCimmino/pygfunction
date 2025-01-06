@@ -4,6 +4,8 @@ import numpy as np
 import numpy.polynomial.polynomial as poly
 from scipy.special import erf
 import warnings
+from typing import Union
+from numpy.typing import NDArray
 
 
 def cardinal_point(direction):
@@ -22,7 +24,10 @@ def cardinal_point(direction):
     return compass[direction]
 
 
-def erfint(x):
+sqrt_pi = 1 / np.sqrt(np.pi)
+
+
+def erf_int(x: Union[NDArray[np.float64], float]) -> NDArray[np.float64]:
     """
     Integral of the error function.
 
@@ -37,7 +42,30 @@ def erfint(x):
         Integral of the error function.
 
     """
-    return x * erf(x) - 1.0 / np.sqrt(np.pi) * (1.0 - np.exp(-x**2))
+    abs_x = np.abs(x)
+    y_new = abs_x-sqrt_pi
+    idx = np.less(abs_x, 4)
+    abs_2 = abs_x[idx]
+    y_new[idx] = abs_2 * erf(abs_2) - (1.0 - np.exp(-abs_2*abs_2)) * sqrt_pi
+    return y_new
+
+
+def erf_int_old(x: Union[NDArray[np.float64], float]) -> NDArray[np.float64]:
+    """
+    Integral of the error function.
+
+    Parameters
+    ----------
+    x : float or array
+        Argument.
+
+    Returns
+    -------
+    float or array
+        Integral of the error function.
+
+    """
+    return x * erf(x) - (1.0 - np.exp(-x*x)) / np.sqrt(np.pi)
 
 
 def exp1(x):

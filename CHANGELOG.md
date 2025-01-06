@@ -42,6 +42,10 @@
 * [Issue 229](https://github.com/MassimoCimmino/pygfunction/issues/229), [Issue 247](https://github.com/MassimoCimmino/pygfunction/issues/247) - Added citation to IGSHPA conference paper on *pygfunction* v2.2 in the documention. Added a `CITATION.cff` file to suggest a correct citation on github.
 * [Issue 230](https://github.com/MassimoCimmino/pygfunction/issues/230) - Configured github actions to publish *pygfunction* on Pypi on creation of a release on github.
 
+### Enhancements
+
+* [Issue 204](https://github.com/MassimoCimmino/pygfunction/issues/204) - Added support for Python 3.9 and 3.10. [CoolProp](https://www.coolprop.org/) is removed from the dependencies and replace with [SecondaryCoolantProps](https://github.com/mitchute/SecondaryCoolantProps).
+
 ## Version 2.2.1 (2022-08-12)
 
 ### Bug fixes
