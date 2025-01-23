@@ -398,11 +398,11 @@ class gFunction(object):
         """
         # If iBoreholes is None, then plot all boreholes
         if iBoreholes is None:
-            iBoreholes = range(len(self.solver.boreholes))
+            iBoreholes = range(len(self.solver.borefield))
         # Import heat extraction rates
         Q_t = self._heat_extraction_rates(iBoreholes)
         # Borefield characteristic time
-        ts = np.mean([b.H for b in self.solver.boreholes])**2/(9.*self.alpha)
+        ts = np.mean([b.H for b in self.solver.borefield])**2/(9.*self.alpha)
         # Dimensionless time (log)
         lntts = np.log(self.time/ts)
 
@@ -420,7 +420,7 @@ class gFunction(object):
             _format_axes(ax2)
 
             # Plot curves for requested boreholes
-            for i, borehole in enumerate(self.solver.boreholes):
+            for i, borehole in enumerate(self.solver.borefield):
                 if i in iBoreholes:
                     # Draw heat extraction rate
                     line = ax2.plot(lntts, Q_t[iBoreholes.index(i)])
@@ -475,7 +475,7 @@ class gFunction(object):
                 _format_axes(ax2)
 
                 # Plot curves for requested boreholes
-                for i, borehole in enumerate(self.solver.boreholes):
+                for i, borehole in enumerate(self.solver.borefield):
                     if i in iBoreholes:
                         # Draw heat extraction rate
                         line = ax2.plot(lntts, Q_t[iBoreholes.index(i)][n])
@@ -547,7 +547,7 @@ class gFunction(object):
         """
         # If iBoreholes is None, then plot all boreholes
         if iBoreholes is None:
-            iBoreholes = range(len(self.solver.boreholes))
+            iBoreholes = range(len(self.solver.borefield))
         # Import heat extraction rate profiles
         z, Q_b = self._heat_extraction_rate_profiles(time, iBoreholes)
 
@@ -566,7 +566,7 @@ class gFunction(object):
             _format_axes(ax2)
 
             # Plot curves for requested boreholes
-            for i, borehole in enumerate(self.solver.boreholes):
+            for i, borehole in enumerate(self.solver.borefield):
                 if i in iBoreholes:
                     # Draw heat extraction rate profile
                     line = ax2.plot(
@@ -623,7 +623,7 @@ class gFunction(object):
                 _format_axes(ax2)
 
                 # Plot curves for requested boreholes
-                for i, borehole in enumerate(self.solver.boreholes):
+                for i, borehole in enumerate(self.solver.borefield):
                     if i in iBoreholes:
                         # Draw heat extraction rate profile
                         line = ax2.plot(
@@ -691,11 +691,11 @@ class gFunction(object):
         """
         # If iBoreholes is None, then plot all boreholes
         if iBoreholes is None:
-            iBoreholes = range(len(self.solver.boreholes))
+            iBoreholes = range(len(self.solver.borefield))
         # Import temperatures
         T_b = self._temperatures(iBoreholes)
         # Borefield characteristic time
-        ts = np.mean([b.H for b in self.solver.boreholes])**2/(9.*self.alpha)
+        ts = np.mean([b.H for b in self.solver.borefield])**2/(9.*self.alpha)
         # Dimensionless time (log)
         lntts = np.log(self.time/ts)
 
@@ -713,7 +713,7 @@ class gFunction(object):
             ax2.set_ylabel(r'$\bar{T}_b$')
             _format_axes(ax2)
             # Plot curves for requested boreholes
-            for i, borehole in enumerate(self.solver.boreholes):
+            for i, borehole in enumerate(self.solver.borefield):
                 if i in iBoreholes:
                     # Draw borehole wall temperature
                     line = ax2.plot(lntts, T_b[iBoreholes.index(i)])
@@ -767,7 +767,7 @@ class gFunction(object):
                 ax2.set_ylabel(r'$\bar{T}_b$')
                 _format_axes(ax2)
                 # Plot curves for requested boreholes
-                for i, borehole in enumerate(self.solver.boreholes):
+                for i, borehole in enumerate(self.solver.borefield):
                     if i in iBoreholes:
                         # Draw borehole wall temperature
                         line = ax2.plot(lntts, T_b[iBoreholes.index(i)][n])
@@ -855,7 +855,7 @@ class gFunction(object):
             _format_axes(ax2)
 
             # Plot curves for requested boreholes
-            for i, borehole in enumerate(self.solver.boreholes):
+            for i, borehole in enumerate(self.solver.borefield):
                 if i in iBoreholes:
                     # Draw borehole wall temperature profile
                     line = ax2.plot(
@@ -912,7 +912,7 @@ class gFunction(object):
                 _format_axes(ax2)
 
                 # Plot curves for requested boreholes
-                for i, borehole in enumerate(self.solver.boreholes):
+                for i, borehole in enumerate(self.solver.borefield):
                     if i in iBoreholes:
                         # Draw borehole wall temperature profile
                         line = ax2.plot(
@@ -978,7 +978,11 @@ class gFunction(object):
                 # heat extraction rate.
                 i0 = self.solver._i0Segments[i]
                 i1 = self.solver._i1Segments[i]
-                segment_ratios = self.solver.segment_ratios[i]
+                segment_ratios = self.solver.segment_ratios
+                if segment_ratios is None:
+                    segment_ratios = np.full(i1 - i0, 1. / (i1 - i0))
+                if isinstance(segment_ratios, list):
+                    segment_ratios = segment_ratios[i]
                 if self.solver.nMassFlow == 0:
                     Q_t.append(
                         np.sum(
@@ -1017,6 +1021,9 @@ class gFunction(object):
         # Initialize lists
         z = []
         Q_b = []
+        nBoreSegments = np.broadcast_to(
+            self.solver.nSegments,
+            len(self.solver.borefield))
         for i in iBoreholes:
             if self.boundary_condition == 'UHTR':
                 # For the UHTR boundary condition, the solver only returns one
@@ -1024,8 +1031,8 @@ class gFunction(object):
                 # The heat extraction rate is duplicated to draw from
                 # z = D to z = D + H.
                 z.append(
-                    np.array([self.solver.boreholes[i].D,
-                              self.solver.boreholes[i].D + self.solver.boreholes[i].H]))
+                    np.array([self.solver.borefield[i].D,
+                              self.solver.borefield[i].D + self.solver.borefield[i].H]))
                 Q_b.append(np.array(2*[self.solver.Q_b]))
             else:
                 i0 = self.solver._i0Segments[i]
@@ -1053,21 +1060,25 @@ class gFunction(object):
                             kind='linear',
                             copy=False,
                             axis=2)(time)
-                if self.solver.nBoreSegments[i] > 1:
+                if nBoreSegments[i] > 1:
                     # Borehole length ratio at the mid-depth of each segment
-                    segment_ratios = self.solver.segment_ratios[i]
+                    segment_ratios = self.solver.segment_ratios
+                    if segment_ratios is None:
+                        segment_ratios = np.full(i1 - i0, 1. / (i1 - i0))
+                    if isinstance(segment_ratios, list):
+                        segment_ratios = segment_ratios[i]
                     z.append(
-                        self.solver.boreholes[i].D \
-                        + self.solver.boreholes[i]._segment_midpoints(
-                            self.solver.nBoreSegments[i],
+                        self.solver.borefield[i].D \
+                        + self.solver.borefield[i]._segment_midpoints(
+                            nBoreSegments[i],
                             segment_ratios=segment_ratios))
                     Q_b.append(Q_bi)
                 else:
                     # If there is only one segment, the heat extraction rate is
                     # duplicated to draw from z = D to z = D + H.
                     z.append(
-                        np.array([self.solver.boreholes[i].D,
-                                  self.solver.boreholes[i].D + self.solver.boreholes[i].H]))
+                        np.array([self.solver.borefield[i].D,
+                                  self.solver.borefield[i].D + self.solver.borefield[i].H]))
                     if self.solver.nMassFlow == 0:
                         Q_b.append(np.repeat(Q_bi, 2, axis=0))
                     else:
@@ -1102,7 +1113,11 @@ class gFunction(object):
                 # borehole wall temperature.
                 i0 = self.solver._i0Segments[i]
                 i1 = self.solver._i1Segments[i]
-                segment_ratios = self.solver.segment_ratios[i]
+                segment_ratios = self.solver.segment_ratios
+                if segment_ratios is None:
+                    segment_ratios = np.full(i1 - i0, 1. / (i1 - i0))
+                if isinstance(segment_ratios, list):
+                    segment_ratios = segment_ratios[i]
                 if self.solver.nMassFlow == 0:
                     T_b.append(
                         np.sum(
@@ -1140,6 +1155,9 @@ class gFunction(object):
         # Initialize lists
         z = []
         T_b = []
+        nBoreSegments = np.broadcast_to(
+            self.solver.nSegments,
+            len(self.solver.borefield))
         for i in iBoreholes:
             if self.boundary_condition == 'UBWT':
                 # For the UBWT boundary condition, the solver only returns one
@@ -1147,8 +1165,8 @@ class gFunction(object):
                 # boreholes). The temperature is duplicated to draw from
                 # z = D to z = D + H.
                 z.append(
-                    np.array([self.solver.boreholes[i].D,
-                              self.solver.boreholes[i].D + self.solver.boreholes[i].H]))
+                    np.array([self.solver.borefield[i].D,
+                              self.solver.borefield[i].D + self.solver.borefield[i].H]))
                 if time is None:
                     # If time is None, temperatures are extracted at the last
                     # time step.
@@ -1192,22 +1210,26 @@ class gFunction(object):
                             kind='linear',
                             copy=False,
                             axis=2)(time)
-                if self.solver.nBoreSegments[i] > 1:
+                if nBoreSegments[i] > 1:
                     # Borehole length ratio at the mid-depth of each segment
 
-                    segment_ratios = self.solver.segment_ratios[i]
+                    segment_ratios = self.solver.segment_ratios
+                    if segment_ratios is None:
+                        segment_ratios = np.full(i1 - i0, 1. / (i1 - i0))
+                    if isinstance(segment_ratios, list):
+                        segment_ratios = segment_ratios[i]
                     z.append(
-                        self.solver.boreholes[i].D \
-                        + self.solver.boreholes[i]._segment_midpoints(
-                            self.solver.nBoreSegments[i],
+                        self.solver.borefield[i].D \
+                        + self.solver.borefield[i]._segment_midpoints(
+                            nBoreSegments[i],
                             segment_ratios=segment_ratios))
                     T_b.append(T_bi)
                 else:
                     # If there is only one segment, the temperature is
                     # duplicated to draw from z = D to z = D + H.
                     z.append(
-                        np.array([self.solver.boreholes[i].D,
-                                  self.solver.boreholes[i].D + self.solver.boreholes[i].H]))
+                        np.array([self.solver.borefield[i].D,
+                                  self.solver.borefield[i].D + self.solver.borefield[i].H]))
                     if self.solver.nMassFlow == 0:
                         T_b.append(np.repeat(T_bi, 2, axis=0))
                     else:

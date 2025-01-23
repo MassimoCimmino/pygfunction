@@ -9,8 +9,7 @@ from scipy.interpolate import interp1d as interp1d
 from ..boreholes import Borehole
 from ..borefield import Borefield
 from .base_solver import _BaseSolver
-from ..heat_transfer import finite_line_source_vectorized, \
-    finite_line_source_inclined_vectorized
+from ..heat_transfer import finite_line_source
 
 
 class Similarities(_BaseSolver):
@@ -172,6 +171,12 @@ class Similarities(_BaseSolver):
         self._check_solver_specific_inputs()
         # Split boreholes into segments
         self.segments = self.borefield.segments(self.nSegments, self.segment_ratios)
+        self._i1Segments = np.cumsum(
+            np.broadcast_to(self.nSegments, len(self.borefield)),
+            dtype=int)
+        self._i0Segments = np.concatenate(
+            ([0], self._i1Segments[:-1]),
+            dtype=int)
         # Shortcut for segment_ratios comparisons
         if self.segment_ratios is None:
             self._equal_segment_ratios = True
@@ -285,23 +290,28 @@ class Similarities(_BaseSolver):
                 self._map_segment_pairs_vertical(
                     i_pair, j_pair, k_pair, pairs, distance_indices)
             # Evaluate FLS at all time steps
-            dis = np.reshape(distances, (-1, 1))
-            H1 = H1.reshape(1, -1)
-            H2 = H2.reshape(1, -1)
-            D1 = D1.reshape(1, -1)
-            D2 = D2.reshape(1, -1)
-            h = finite_line_source_vectorized(
-                time, alpha, dis, H1, D1, H2, D2,
+            nSeg = len(H1)
+            nDis = len(distances)
+            H1 = np.tile(H1, nDis)
+            H2 = np.tile(H2, nDis)
+            D1 = np.tile(D1, nDis)
+            D2 = np.tile(D2, nDis)
+            distances = np.repeat(distances, nSeg)
+            borefield_1 = Borefield(H1, D1, self.borefield[i].r_b, np.zeros_like(distances), 0.)
+            borefield_2 = Borefield(H2, D2, self.borefield[j].r_b, distances, 0.)
+            h = finite_line_source(
+                time, alpha, borefield_1, borefield_2, outer=False,
                 approximation=self.approximate_FLS, N=self.nFLS)
             # Broadcast values to h_ij matrix
-            h_ij[j_segment, i_segment, 1:] = h[l_segment, k_segment, :]
+            k_segment = k_segment + l_segment * nSeg
+            h_ij[j_segment, i_segment, 1:] = h[k_segment, :]
             if (self._compare_boreholes(self.borefield[j], self.borefield[i]) and
                 nSegments[i] == nSegments[j] and
                 self._uniform_segment_ratios[i] and
                 self._uniform_segment_ratios[j]):
-                h_ij[i_segment, j_segment, 1:] = h[l_segment, k_segment, :]
+                h_ij[i_segment, j_segment, 1:] = h[k_segment, :]
             else:
-                h_ij[i_segment, j_segment, 1:] = (h * H2.T / H1.T)[l_segment, k_segment, :]
+                h_ij[i_segment, j_segment, 1:] = (h.T * H2 / H1).T[k_segment, :]
         # ---------------------------------------------------------------------
         # Segment-to-segment thermal response factors for borehole-to-borehole
         # thermal interactions (inclined boreholes)
@@ -402,10 +412,13 @@ class Similarities(_BaseSolver):
             k_segment = np.append(k_segment, k_segment_i + k0)
             k0 += len(k_pair)
         # Evaluate FLS at all time steps
-        h = finite_line_source_inclined_vectorized(
-            time, alpha, rb1, x1, y1, H1, D1, tilt1, orientation1,
-            x2, y2, H2, D2, tilt2, orientation2, M=self.mQuad,
-            approximation=self.approximate_FLS, N=self.nFLS)
+        borefield_1 = Borefield(
+            H1, D1, rb1, x1, y1, tilt=tilt1, orientation=orientation1)
+        borefield_2 = Borefield(
+            H2, D2, rb1, x2, y2, tilt=tilt2, orientation=orientation2)
+        h = finite_line_source(
+            time, alpha, borefield_1, borefield_2, outer=False,
+            approximation=self.approximate_FLS, M=self.mQuad, N=self.nFLS)
         hT = (h.T * H2 / H1).T
         return h, hT, i_segment, j_segment, k_segment
 
@@ -483,10 +496,13 @@ class Similarities(_BaseSolver):
             k_segment = np.append(k_segment, k_segment_i + k0)
             k0 += len(k_pair)
         # Evaluate FLS at all time steps
-        h = finite_line_source_inclined_vectorized(
-            time, alpha, rb1, x1, y1, H1, D1, tilt1, orientation1,
-            x2, y2, H2, D2, tilt2, orientation2, M=self.mQuad,
-            approximation=self.approximate_FLS, N=self.nFLS)
+        borefield_1 = Borefield(
+            H1, D1, rb1, x1, y1, tilt=tilt1, orientation=orientation1)
+        borefield_2 = Borefield(
+            H2, D2, rb1, x2, y2, tilt=tilt2, orientation=orientation2)
+        h = finite_line_source(
+            time, alpha, borefield_1, borefield_2, outer=False,
+            approximation=self.approximate_FLS, M=self.mQuad, N=self.nFLS)
         return h, i_segment, j_segment, k_segment
 
     def _thermal_response_factors_borehole_to_self_vertical(
@@ -548,9 +564,13 @@ class Similarities(_BaseSolver):
             k_segment = np.append(k_segment, k_segment_i + k0)
             k0 += np.max(k_pair) + 1
         # Evaluate FLS at all time steps
-        h = finite_line_source_vectorized(
-            time, alpha, dis, H1, D1, H2, D2,
-            approximation=self.approximate_FLS, N=self.nFLS)
+        borefield_1 = Borefield(
+            H1, D1, dis, np.zeros_like(H1), 0.)
+        borefield_2 = Borefield(
+            H2, D2, dis, np.zeros_like(H2), 0.)
+        h = finite_line_source(
+            time, alpha, borefield_1, borefield_2, outer=False,
+            approximation=self.approximate_FLS, M=self.mQuad, N=self.nFLS)
         return h, i_segment, j_segment, k_segment
 
     def find_similarities(self):
@@ -1373,8 +1393,8 @@ class Similarities(_BaseSolver):
         """
         nBoreholes = self.borefield.nBoreholes
         nSegments = np.broadcast_to(self.nSegments, nBoreholes)
-        i1 = np.cumsum(nSegments, dtype=int)
-        i0 = np.concatenate(([0], i1[:-1]), dtype=int)
+        i1 = self._i1Segments
+        i0 = self._i0Segments
         i_segment = np.concatenate(
             [i_pair + i0[i] for (i, j) in borehole_to_borehole],
             dtype=int)
@@ -1427,8 +1447,8 @@ class Similarities(_BaseSolver):
         """
         nBoreholes = self.borefield.nBoreholes
         nSegments = np.broadcast_to(self.nSegments, nBoreholes)
-        i1 = np.cumsum(nSegments, dtype=int)
-        i0 = np.concatenate(([0], i1[:-1]), dtype=int)
+        i1 = self._i1Segments
+        i0 = self._i0Segments
         i_segment = np.concatenate(
             [i_pair + i0[i] for (i, j) in borehole_to_borehole],
             dtype=int)

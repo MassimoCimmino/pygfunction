@@ -507,4 +507,4 @@ def _erf_coeffs(N):
         approximations and bounds for the Gaussian Q-function by sums of
         exponentials. IEEE Transactions on communications, 68(10), 6514-6524.
     """
-    return _a_erf[N], _b_erf[N]
+    return _a_erf[N-1], _b_erf[N-1]

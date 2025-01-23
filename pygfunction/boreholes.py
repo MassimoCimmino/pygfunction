@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import warnings
+from typing import Union
+from typing_extensions import Self     # for compatibility with Python <= 3.10
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -363,7 +365,7 @@ class _EquivalentBorehole(object):
         orientation = np.array([b.orientation for b in boreholes])
         return cls(H, D, r_b, x, y, tilt=tilt, orientation=orientation)
 
-    def distance(self, target):
+    def distance(self, other_borehole: Self) -> np.ndarray:
         """
         Evaluate the distance between the current borehole and a target
         borehole.
@@ -393,10 +395,13 @@ class _EquivalentBorehole(object):
         """
         dis = np.maximum(
             np.sqrt(
-                np.add.outer(target.x, -self.x)**2 + np.add.outer(target.y, -self.y)**2),
+                np.add.outer(other_borehole.x, -self.x)**2
+                + np.add.outer(other_borehole.y, -self.y)**2
+                ),
             self.r_b)
         return dis
 
+    @property
     def is_tilted(self):
         """
         Returns true if the borehole is inclined.
@@ -409,6 +414,7 @@ class _EquivalentBorehole(object):
         """
         return self._is_tilted
 
+    @property
     def is_vertical(self):
         """
         Returns true if the borehole is vertical.

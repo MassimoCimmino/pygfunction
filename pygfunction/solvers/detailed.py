@@ -6,8 +6,7 @@ import numpy.typing as npt
 from scipy.interpolate import interp1d as interp1d
 
 from .base_solver import _BaseSolver
-from ..heat_transfer import finite_line_source, \
-    finite_line_source_vectorized, finite_line_source_inclined_vectorized
+from ..heat_transfer import finite_line_source
 
 
 class Detailed(_BaseSolver):
@@ -146,6 +145,12 @@ class Detailed(_BaseSolver):
         self.segments = self.borefield.segments(
             self.nSegments, self.segment_ratios)
         nSources = len(self.segments)
+        self._i1Segments = np.cumsum(
+            np.broadcast_to(self.nSegments, len(self.borefield)),
+            dtype=int)
+        self._i0Segments = np.concatenate(
+            ([0], self._i1Segments[:-1]),
+            dtype=int)
         return nSources
 
     def thermal_response_factors(
@@ -200,13 +205,13 @@ class Detailed(_BaseSolver):
         h, i, j = \
             self._thermal_response_factors_borehole_to_self(time, alpha)
         # Broadcast values to h_ij matrix
-        h_ij[j, i, 1:] = h
+        h_ij[i, j, 1:] = h
         # ---------------------------------------------------------------------
         # Segment-to-segment thermal response factors for
         # borehole-to-borehole thermal interactions
         # ---------------------------------------------------------------------
-        i1 = np.cumsum(np.broadcast_to(self.nSegments, nBoreholes), dtype=int)
-        i0 = np.concatenate(([0], i1[:-1]), dtype=int)
+        i1 = self._i1Segments
+        i0 = self._i0Segments
         for i, (_i0, _i1) in enumerate(zip(i0, i1)):
             # Segments of the receiving borehole
             b2 = self.segments[_i0:_i1]
@@ -260,39 +265,18 @@ class Detailed(_BaseSolver):
         # Indices of the thermal response factors into h_ij
         nBoreholes = len(self.borefield)
         nSegments = np.broadcast_to(self.nSegments, nBoreholes)
-        i1 = np.cumsum(np.broadcast_to(self.nSegments, nBoreholes), dtype=int)
-        i0 = np.concatenate(([0], i1[:-1]), dtype=int)
-        i = np.repeat(
-            np.arange(self.nSources),
-            np.repeat(nSegments, self.nSegments))
-        j = np.concatenate(
+        i1 = self._i1Segments
+        i0 = self._i0Segments
+        i = np.concatenate(
             [np.tile(np.arange(_j0, _j1), nSeg)
              for _j0, _j1, nSeg in zip(i0, i1, nSegments)
             ])
-        # Unpack parameters
-        x = self.segments.x
-        y = self.segments.y
-        H = self.segments.H
-        D = self.segments.D
-        r_b = self.segments.r_b
-        # Distances between boreholes
-        dis = np.maximum(
-            np.sqrt((x[i] - x[j])**2 + (y[i] - y[j])**2),
-            r_b[i])
-        # FLS solution
-        if not np.any(self.borefield._is_tilted):
-            h = finite_line_source_vectorized(
-                time, alpha,
-                dis, H[i], D[i], H[j], D[j],
-                approximation=self.approximate_FLS, N=self.nFLS)
-        else:
-            tilt = self.segments.tilt
-            orientation = self.segments.orientation
-            h = finite_line_source_inclined_vectorized(
-                time, alpha,
-                r_b[i], x[i], y[i], H[i],
-                D[i], tilt[i], orientation[i],
-                x[j], y[j], H[j], D[j],
-                tilt[j], orientation[j], M=self.mQuad,
-                approximation=self.approximate_FLS, N=self.nFLS)
+        j = np.repeat(
+            np.arange(self.nSources),
+            np.repeat(nSegments, self.nSegments))
+        segments_i = self.segments[i]
+        segments_j = self.segments[j]
+        h = finite_line_source(
+            time, alpha, segments_j, segments_i, outer=False,
+            approximation=self.approximate_FLS, M=self.mQuad, N=self.nFLS)
         return h, i, j

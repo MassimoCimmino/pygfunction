@@ -11,7 +11,6 @@ from .base_solver import _BaseSolver
 from ..borefield import Borefield, _EquivalentBorefield
 from ..boreholes import Borehole, _EquivalentBorehole
 from ..heat_transfer import finite_line_source, \
-    finite_line_source_vectorized, \
     finite_line_source_equivalent_boreholes_vectorized
 from ..networks import _EquivalentNetwork
 
@@ -189,6 +188,14 @@ class Equivalent(_BaseSolver):
         nSources = self.find_groups()
         # Split boreholes into segments
         self.segments = self.borefield.segments(self.nSegments, self.segment_ratios)
+        nEqBoreholes = self.nEqBoreholes
+        nSegments = np.broadcast_to(self.nSegments, nEqBoreholes)
+        self._i1Segments = np.cumsum(
+            nSegments,
+            dtype=int)
+        self._i0Segments = np.concatenate(
+            ([0], self._i1Segments[:-1]),
+            dtype=int)
         return nSources
 
     def thermal_response_factors(
@@ -229,8 +236,8 @@ class Equivalent(_BaseSolver):
                   end='')
         nEqBoreholes = self.nEqBoreholes
         nSegments = np.broadcast_to(self.nSegments, nEqBoreholes)
-        i1 = np.cumsum(nSegments, dtype=int)
-        i0 = np.concatenate(([0], i1[:-1]), dtype=int)
+        i1 = self._i1Segments
+        i0 = self._i0Segments
         # Number of time values
         nt = len(np.atleast_1d(time))
         # Initialize chrono
@@ -281,19 +288,17 @@ class Equivalent(_BaseSolver):
                 self._map_axial_segment_pairs(i, i)
             # Evaluate FLS at all time steps
             dis = self.borefield[i].r_b
-            H1 = H1.reshape(1, -1)
-            H2 = H2.reshape(1, -1)
-            D1 = D1.reshape(1, -1)
-            D2 = D2.reshape(1, -1)
-            h = finite_line_source_vectorized(
-                time, alpha, dis, H1, D1, H2, D2,
+            borefield_1 = Borefield(H1, D1, dis, np.zeros_like(H1), 0.)
+            borefield_2 = Borefield(H2, D2, dis, np.zeros_like(H1), 0.)
+            h = finite_line_source(
+                time, alpha, borefield_1, borefield_2, outer=False,
                 approximation=self.approximate_FLS, N=self.nFLS)
             # Broadcast values to h_ij matrix
             for i in group:
                 i_segment = i0[i] + i_pair
                 j_segment = i0[i] + j_pair
                 h_ij[j_segment, i_segment, 1:] = \
-                    h_ij[j_segment, i_segment, 1:] + h[0, k_pair, :]
+                    h_ij[j_segment, i_segment, 1:] + h[k_pair, :]
 
         # Return 2d array if time is a scalar
         if np.isscalar(time):
