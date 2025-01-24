@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from typing import Union, List, Tuple, Callable
+from collections.abc import Callable
+from typing import Union, List, Tuple
 
 import numpy as np
 import numpy.typing as npt
