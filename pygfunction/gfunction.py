@@ -983,6 +983,8 @@ class gFunction(object):
                     segment_ratios = np.full(i1 - i0, 1. / (i1 - i0))
                 if isinstance(segment_ratios, list):
                     segment_ratios = segment_ratios[i]
+                if callable(segment_ratios):
+                    segment_ratios = self.solver.segment_ratios(i1 - i0)
                 if self.solver.nMassFlow == 0:
                     Q_t.append(
                         np.sum(

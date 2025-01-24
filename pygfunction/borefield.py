@@ -46,10 +46,9 @@ class Borefield:
             self, H: npt.ArrayLike, D: npt.ArrayLike, r_b: npt.ArrayLike,
             x: npt.ArrayLike, y: npt.ArrayLike, tilt: npt.ArrayLike = 0.,
             orientation: npt.ArrayLike = 0.):
-        # Convert x and y coordinates to arrays
-        x = np.atleast_1d(x)
-        y = np.atleast_1d(y)
-        self.nBoreholes = np.maximum(len(x), len(y))
+        self.nBoreholes = np.max(
+            [len(np.atleast_1d(var))
+             for var in (H, D, r_b, x, y, tilt, orientation)])
 
         # Broadcast all variables to arrays of length `nBoreholes`
         self.H = np.broadcast_to(H, self.nBoreholes)

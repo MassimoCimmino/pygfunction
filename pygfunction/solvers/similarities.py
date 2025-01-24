@@ -9,7 +9,7 @@ from scipy.interpolate import interp1d as interp1d
 from ..boreholes import Borehole
 from ..borefield import Borefield
 from .base_solver import _BaseSolver
-from ..heat_transfer import finite_line_source
+from ..heat_transfer import finite_line_source, finite_line_source_vertical
 
 
 class Similarities(_BaseSolver):
@@ -192,17 +192,24 @@ class Similarities(_BaseSolver):
                     rtol=1e-6),
                 dtype=bool)
         else:
+            if callable(self.segment_ratios):
+                if isinstance(self.nSegments, int):
+                    segment_ratios = [self.segment_ratios(self.nSegments)]
+                else:
+                    segment_ratios = [self.segment_ratios(nSeg) for nSeg in self.nSegments]
+            else:
+                segment_ratios = self.segment_ratios
             self._equal_segment_ratios = (
-                isinstance(self.nSegment, int)
+                isinstance(self.nSegments, int)
                 or np.all(np.equal(self.nSegments, self.nSegments[0]))
-                and np.all([np.allclose(segment_ratios, self.segment_ratios[0]) for segment_ratios in self.segment_ratios])
+                and np.all([np.allclose(segment_ratios, segment_ratios[0]) for ratios in segment_ratios])
                 )
             # Boreholes with a uniform discretization
             self._uniform_segment_ratios = np.array([
-                np.allclose(segment_ratios,
-                            segment_ratios[:1],
+                np.allclose(ratios,
+                            ratios[:1],
                             rtol=1e-6)
-                for segment_ratios in self.segment_ratios], dtype=bool)
+                for ratios in segment_ratios], dtype=bool)
         # Initialize similarities
         self.find_similarities()
         return len(self.segments)
@@ -290,28 +297,20 @@ class Similarities(_BaseSolver):
                 self._map_segment_pairs_vertical(
                     i_pair, j_pair, k_pair, pairs, distance_indices)
             # Evaluate FLS at all time steps
-            nSeg = len(H1)
-            nDis = len(distances)
-            H1 = np.tile(H1, nDis)
-            H2 = np.tile(H2, nDis)
-            D1 = np.tile(D1, nDis)
-            D2 = np.tile(D2, nDis)
-            distances = np.repeat(distances, nSeg)
-            borefield_1 = Borefield(H1, D1, self.borefield[i].r_b, np.zeros_like(distances), 0.)
-            borefield_2 = Borefield(H2, D2, self.borefield[j].r_b, distances, 0.)
-            h = finite_line_source(
-                time, alpha, borefield_1, borefield_2, outer=False,
+            borefield_1 = Borefield(H1, D1, self.borefield[i].r_b, 0., 0.)
+            borefield_2 = Borefield(H2, D2, self.borefield[j].r_b, 0., 0.)
+            h = finite_line_source_vertical(
+                time, alpha, borefield_1, borefield_2, outer=False, distances=distances,
                 approximation=self.approximate_FLS, N=self.nFLS)
             # Broadcast values to h_ij matrix
-            k_segment = k_segment + l_segment * nSeg
-            h_ij[j_segment, i_segment, 1:] = h[k_segment, :]
+            h_ij[j_segment, i_segment, 1:] = h[k_segment, l_segment, :]
             if (self._compare_boreholes(self.borefield[j], self.borefield[i]) and
                 nSegments[i] == nSegments[j] and
                 self._uniform_segment_ratios[i] and
                 self._uniform_segment_ratios[j]):
-                h_ij[i_segment, j_segment, 1:] = h[k_segment, :]
+                h_ij[i_segment, j_segment, 1:] = h[k_segment, l_segment, :]
             else:
-                h_ij[i_segment, j_segment, 1:] = (h.T * H2 / H1).T[k_segment, :]
+                h_ij[i_segment, j_segment, 1:] = (h.T * H2 / H1).T[k_segment, l_segment, :]
         # ---------------------------------------------------------------------
         # Segment-to-segment thermal response factors for borehole-to-borehole
         # thermal interactions (inclined boreholes)
@@ -918,6 +917,8 @@ class Similarities(_BaseSolver):
             segment_ratios = [None] * nBoreholes
         elif isinstance(self.segment_ratios, np.ndarray):
             segment_ratios = [self.segment_ratios] * nBoreholes
+        elif callable(self.segment_ratios):
+            segment_ratios = [self.segment_ratios(nSeg) for nSeg in nSegments]
         borehole_to_self_vertical = []
         borehole_to_self_inclined = []
         # Only check for similarities if there is more than one borehole
@@ -1132,6 +1133,9 @@ class Similarities(_BaseSolver):
         elif isinstance(self.segment_ratios, np.ndarray):
             segment_ratios_i = self.segment_ratios
             segment_ratios_j = self.segment_ratios
+        elif callable(self.segment_ratios):
+            segment_ratios_i = self.segment_ratios(nSegments[i])
+            segment_ratios_j = self.segment_ratios(nSegments[j])
         else:
             segment_ratios_i = self.segment_ratios[i]
             segment_ratios_j = self.segment_ratios[j]
