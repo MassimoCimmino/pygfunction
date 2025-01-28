@@ -4634,7 +4634,7 @@ class _Equivalent(_BaseSolver):
 
     def _find_unique_distances(self, dis, indices):
         """
-        Find the number of occurences of each unique distances between pairs
+        Find the number of occurrences of each unique distances between pairs
         of boreholes.
 
         Parameters

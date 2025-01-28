@@ -87,7 +87,7 @@ def main():
 
     # Check the geometry to make sure it is physically possible
 
-    # This class method is automatically called at the instanciation of the
+    # This class method is automatically called at the instantiation of the
     # pipe object and raises an error if the pipe geometry is invalid. It is
     # manually called here for demonstration.
     check_single = SingleUTube._check_geometry()

@@ -532,18 +532,18 @@ def finite_line_source_inclined_approximation(
                 rb1, x1, y1, H1, D1, tilt1, orientation1,
                 x2, y2, H2, D2, tilt2, orientation2)])
     # Number of dimensions of the output, excluding time
-    ouput_ndim = len(output_shape)
+    output_ndim = len(output_shape)
     # Shape of the time variable
     time_shape = np.shape(time)
     # Number of dimensions of the time variable
     time_ndim = len(time_shape)
     # Roots for Gauss-Legendre quadrature
     x, w = roots_legendre(M)
-    u = (0.5 * x + 0.5).reshape((-1, 1) + (1,) * ouput_ndim)
+    u = (0.5 * x + 0.5).reshape((-1, 1) + (1,) * output_ndim)
     w = w / 2
     # Coefficients of the approximation of the error function
     a, b = _erf_coeffs(N)
-    b = b.reshape((1, -1) + (1,) * ouput_ndim)
+    b = b.reshape((1, -1) + (1,) * output_ndim)
     # Sines and cosines of tilt (b: beta) and orientation (t: theta)
     sb1 = np.sin(tilt1)
     sb2 = np.sin(tilt2)

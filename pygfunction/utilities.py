@@ -480,7 +480,7 @@ def _erf_coeffs(N):
     """
     Return the coefficients of the approximation of the error function.
 
-    This returns the coefficents (a_n, b_n) of the approximation of the error
+    This returns the coefficients (a_n, b_n) of the approximation of the error
     function adapted from the work of Tanash and Riihonen (2020)
     [#erf-TanRii2020]_. The approximation of the error function is given by:
 
@@ -497,9 +497,9 @@ def _erf_coeffs(N):
     Returns
     -------
     a : array
-        Array of oefficients a_n.
+        Array of coefficients a_n.
     b : array
-        Array of oefficients b_n.
+        Array of coefficients b_n.
 
     References
     ----------

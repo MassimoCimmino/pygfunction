@@ -17,7 +17,7 @@ This allows for the very fast calculation of *g*-functions, even for very large
 bore fields with hundreds of boreholes.
 
 Using *pygfunction*, *g*-functions can be calculated for any bore field
-configuration (i.e. arbitrarily positionned in space), including fields of
+configuration (i.e. arbitrarily positioned in space), including fields of
 boreholes with individually different lengths and radiuses. For regular fields
 of boreholes of equal size, setting-up the calculation of the *g*-function is
 as simple as a few lines of code. For example, the code for the calculation of

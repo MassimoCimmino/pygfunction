@@ -5,7 +5,7 @@ Simulation of a borehole using load aggregation
 ***********************************************
 
 This example demonstrates the use of the
-:doc:`load agggregation <load_aggregation>` module to predict the borehole
+:doc:`load aggregation <load_aggregation>` module to predict the borehole
 wall temperature of a single temperature with known heat extraction rates.
 
 The g-function of a single borehole is first calculated. Then, the borehole wall

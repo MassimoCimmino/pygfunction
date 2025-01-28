@@ -39,7 +39,7 @@ class _LoadAggregation(object):
     def temporal_superposition(self):
         raise NotImplementedError(
             'temporal_superposition class method not implemented, this '
-            'method should return the borehole wall tempreatures at the '
+            'method should return the borehole wall temperatures at the '
             'current time step.')
 
 
@@ -122,7 +122,7 @@ class ClaessonJaved(_LoadAggregation):
             Array of **dimensional** thermal response factor increments used
             for temporal superposition
             (:math:`g(t_{i+1})/(2 \\pi k_s) - g(t_{i})/(2 \\pi k_s)`),
-            in correspondance with the intialized values of the thermal
+            in correspondence with the initialized values of the thermal
             response factors in
             :func:`~load_aggregation.ClaessonJaved.initialize`.
             The output size of the array is (nSources, nSources, Nt) if

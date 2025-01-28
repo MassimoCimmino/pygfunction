@@ -72,7 +72,7 @@ def main():
         # Apply current load
         LoadAgg.set_current_load(Q_b_i/H)
 
-        # Evaluate borehole wall temeprature
+        # Evaluate borehole wall temperature
         deltaT_b = LoadAgg.temporal_superposition()
         T_b[i] = T_g - deltaT_b
 

@@ -15,7 +15,7 @@ constant.
 
 The following script generates the *g*-functions of a field of 5 equally spaced
 borehole on a straight line and connected in series. The boreholes have
-different lengths. The *g*-function considering piping conections is compared to
+different lengths. The *g*-function considering piping connections is compared to
 the *g*-function obtained using a boundary condition of uniform borehole wall
 temperature.
 
