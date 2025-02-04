@@ -108,7 +108,7 @@ def segment_ratios(nSegments, end_length_ratio=0.02):
     def is_even(n):
         "Returns True if n is even."
         return not(n & 0x1)
-    assert nSegments >= 1 and isinstance(nSegments, int), \
+    assert nSegments >= 1 and isinstance(nSegments, (int, np.integer)), \
             "The number of segments `nSegments` should be greater or equal " \
             "to 1 and of type int."
     assert nSegments <= 2 or 0. < end_length_ratio < 0.5 and \
@@ -507,4 +507,4 @@ def _erf_coeffs(N):
         approximations and bounds for the Gaussian Q-function by sums of
         exponentials. IEEE Transactions on communications, 68(10), 6514-6524.
     """
-    return _a_erf[N], _b_erf[N]
+    return _a_erf[N-1], _b_erf[N-1]
