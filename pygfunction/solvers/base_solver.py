@@ -550,7 +550,7 @@ class _BaseSolver(object):
             "Time should be an array."
         assert (isinstance(self.nSegments, (int, np.integer))
                 and self.nSegments >= 1) \
-            or (isinstance(self.nSegments, (list, np.array))
+            or (isinstance(self.nSegments, (list, np.ndarray))
                 and len(self.nSegments) == len(self.borefield)
                 and np.min(self.nSegments) >=1), \
             "The argument for number of segments `nSegments` should be " \

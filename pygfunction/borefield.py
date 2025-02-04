@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 import numpy as np
 import numpy.typing as npt
+from scipy.spatial.distance import pdist, squareform
 
 from .boreholes import Borehole, _EquivalentBorehole
 from .utilities import _initialize_figure, _format_axes, _format_axes_3d
@@ -62,6 +63,8 @@ class Borefield:
         self._is_tilted = np.broadcast_to(
             np.greater(np.abs(tilt), 1e-6),
             self.nBoreholes)
+        self._all_tilted = np.all(self._is_tilted)
+        self._all_vertical = not np.any(self._is_tilted)
         # Vertical boreholes default to an orientation of zero
         if not np.any(self._is_tilted):
             self.orientation = np.broadcast_to(0., self.nBoreholes)
@@ -108,6 +111,16 @@ class Borefield:
         """Return True if other_field is not the same as self."""
         check = not self == other_field
         return check
+
+    @property
+    def all_tilted(self) -> np.ndarray:
+        """Return a bool. True if the all boreholes are inclined."""
+        return self._all_tilted
+
+    @property
+    def all_vertical(self) -> np.ndarray:
+        """Return an bool. True if all boreholes are vertical."""
+        return self._all_vertical
 
     @property
     def is_tilted(self) -> np.ndarray:
@@ -159,6 +172,37 @@ class Borefield:
                 np.sqrt(
                     (other_field.x - self.x)**2 + (other_field.y - self.y)**2),
                 self.r_b)
+        return dis
+
+    def distance_to_self(
+            self, outer: bool = True) -> np.ndarray:
+        """
+        Evaluate horizontal distances between boreholes within the borefield.
+
+        Parameters
+        ----------
+        outer : , optional
+            True if the horizontal distance is to be evaluated for all
+            boreholes of the borefield onto all of the boreholesto return a
+            (nBoreholes, nBoreholes,) array. If false, a condensed distance
+            vector corresponding to the upper triangle of the distance matrix
+            is return (excluding the diagonal elements).
+            Default is True.
+
+        Returns
+        -------
+        dis : array, shape (nBoreholes, nBoreholes,) or (nBoreholes,)
+            Horizontal distances between boreholes (in meters).
+
+        """
+        # Condensed vector of the distances between boreholes
+        dis = pdist(np.stack((self.x, self.y), axis=1))
+        if outer:
+            # Convert to a square matrix
+            dis = squareform(dis)
+            # Overwrite the diagonal with the borehole radii
+            i, j = np.diag_indices(len(self))
+            dis[i, j] = self.r_b
         return dis
 
     def evaluate_g_function(
@@ -412,7 +456,7 @@ class Borefield:
         else:
             # Local coordinates of the top-edges of the segments
             xi = np.tile(
-                np.concatenate([[0.], segment_ratios[:-1]]),
+                np.cumsum(np.concatenate([[0.], segment_ratios[:-1]])),
                 self.nBoreholes)
             # Segment ratios
             segment_ratios = np.tile(segment_ratios, self.nBoreholes)
