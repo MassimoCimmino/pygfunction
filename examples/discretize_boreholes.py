@@ -11,10 +11,11 @@
     can be calculated accurately using a small number of segments.
 """
 
-import pygfunction as gt
-from numpy import pi
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy import pi
+
+import pygfunction as gt
 
 
 def main():

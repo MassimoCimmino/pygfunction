@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import warnings
 
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial.distance import pdist
 
@@ -1386,6 +1385,8 @@ def visualize_field(
                   "deprecated as of v2.3. It will be removed in v3.0. "
                   "Use the `pygfunction.borefield.Borefield` class instead.",
                   DeprecationWarning)
+
+    from ._mpl import plt
 
     # Configure figure and axes
     fig = _initialize_figure()

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-import matplotlib.pyplot as plt
+import warnings
+
 import numpy as np
 from scipy.constants import pi
 from scipy.special import binom
-import warnings
 
 from .utilities import _initialize_figure, _format_axes
 
@@ -735,7 +735,6 @@ class _BasePipe(object):
             'update_thermal_resistances class method not implemented, '
             'this method should update the array of delta-circuit thermal '
             'resistances.')
-        return
 
     def visualize_pipes(self):
         """
@@ -747,6 +746,8 @@ class _BasePipe(object):
             Figure object (matplotlib).
 
         """
+        from ._mpl import plt
+
         # Configure figure and axes
         fig = _initialize_figure()
         ax = fig.add_subplot(111)
@@ -2645,6 +2646,8 @@ class Coaxial(SingleUTube):
             Figure object (matplotlib).
 
         """
+        from ._mpl import plt
+
         # Configure figure and axes
         fig = _initialize_figure()
         ax = fig.add_subplot(111)

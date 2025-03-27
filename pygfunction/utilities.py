@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-import matplotlib.pyplot as plt
+import warnings
+
 import numpy as np
 import numpy.polynomial.polynomial as poly
 from scipy.special import erf
-import warnings
 
 
 def cardinal_point(direction):
@@ -366,6 +366,8 @@ def _initialize_figure():
         Figure object (matplotlib).
 
     """
+    from ._mpl import plt
+
     plt.rc('font', size=9)
     plt.rc('xtick', labelsize=9)
     plt.rc('ytick', labelsize=9)
@@ -385,7 +387,8 @@ def _format_axes(ax):
         Axis object (matplotlib).
 
     """
-    from matplotlib.ticker import AutoMinorLocator
+    from ._mpl import AutoMinorLocator
+
     # Draw major and minor tick marks inwards
     ax.tick_params(
         axis='both', which='both', direction='in',
@@ -406,7 +409,6 @@ def _format_axes_3d(ax):
         Axis object (matplotlib).
 
     """
-    from matplotlib.ticker import AutoMinorLocator
     # Draw major and minor tick marks inwards
     ax.tick_params(
         axis='both', which='major', direction='in',

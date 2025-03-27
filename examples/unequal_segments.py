@@ -6,7 +6,6 @@
     number of segments.
 """
 import matplotlib.pyplot as plt
-from matplotlib.ticker import AutoMinorLocator
 import numpy as np
 
 import pygfunction as gt

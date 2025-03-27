@@ -7,3 +7,6 @@ addopts = "--cov=pygfunction"
 testpaths = [
     "tests",
 ]
+
+[tool.coverage.run]
+omit = ["pygfunction/_mpl.py"]

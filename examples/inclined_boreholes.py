@@ -14,9 +14,9 @@
     extraction boreholes". Ph.D. Thesis, University of Lund, Lund, Sweden.
 """
 
-import pygfunction as gt
 import numpy as np
-import matplotlib.pyplot as plt
+
+import pygfunction as gt
 
 
 def main():

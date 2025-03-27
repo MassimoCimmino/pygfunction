@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 from typing import Union, List, Dict, Tuple
-from typing_extensions import Self     # for compatibility with Python <= 3.10
 
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
 import numpy as np
 import numpy.typing as npt
+from typing_extensions import Self  # for compatibility with Python <= 3.10
 
 from .boreholes import Borehole
 from .utilities import _initialize_figure, _format_axes, _format_axes_3d
@@ -308,7 +306,7 @@ class Borefield:
 
     def visualize_field(
             self, viewTop: bool = True, view3D: bool = True,
-            labels: bool = True, showTilt: bool = True) -> Figure:
+            labels: bool = True, showTilt: bool = True):
         """
         Plot the top view and 3D view of borehole positions.
 
@@ -333,6 +331,8 @@ class Borefield:
             Figure object (matplotlib).
 
         """
+        from ._mpl import plt
+
         # Configure figure and axes
         fig = _initialize_figure()
         if viewTop and view3D:

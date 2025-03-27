@@ -9,10 +9,11 @@
     Cimmino (2016).
 
 """
+import os
+
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.ticker import AutoMinorLocator
 
 import pygfunction as gt
 
@@ -55,7 +56,8 @@ def main():
     T_f_in = np.array([6.0, -6.0, 5.0, -5.0])
 
     # Path to validation data
-    filePath = './data/Cimmi16_multiple_independent_Utubes.txt'
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(base_dir, 'data', 'Cimmi16_multiple_independent_Utubes.txt')
 
     # -------------------------------------------------------------------------
     # Initialize pipe model
@@ -112,7 +114,7 @@ def main():
     # -------------------------------------------------------------------------
     # Load data from Cimmino (2016)
     # -------------------------------------------------------------------------
-    data = np.loadtxt(filePath, skiprows=1)
+    data = np.loadtxt(file_path, skiprows=1)
     ax1.plot(data[:,2:], data[:,0], 'b-',)
     reference = mlines.Line2D([], [],
                               color='blue',
