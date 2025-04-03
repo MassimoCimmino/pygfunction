@@ -59,7 +59,7 @@ following packages are needed to build the documentation:
 **Users** - [Download pip](https://pip.pypa.io/en/latest/) and install the latest release:
 
 ```
-pip install pygfunction
+pip install pygfunction[plot]
 ```
 
 Alternatively, [download the latest release](https://github.com/MassimoCimmino/pygfunction/releases) and run the installation script:
