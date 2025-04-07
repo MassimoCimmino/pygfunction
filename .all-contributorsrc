@@ -63,6 +63,15 @@
         "ideas",
         "bug"
       ]
+    },
+    {
+      "login": "axelstudios",
+      "name": "Alex Swindler",
+      "avatar_url": "https://avatars.githubusercontent.com/u/411466?v=4",
+      "profile": "https://github.com/axelstudios",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
