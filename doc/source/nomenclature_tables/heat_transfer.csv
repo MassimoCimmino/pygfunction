@@ -14,5 +14,5 @@ Q_t,Watts,Total net heat extraction rate of a borehole or network
 R_b,m.K/W,Effective borehole thermal resistance
 R_fp,m.K/W,Fluid to outer pipe wall thermal resistance
 R_p,m.K/W,Conduction thermal resistance of a pipe wall
-T_b,degC,Effective borehole wall temprature
+T_b,degC,Effective borehole wall temperature
 T_f,degC,Fluid temperature

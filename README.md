@@ -17,7 +17,7 @@ This allows for the very fast calculation of *g*-functions, even for very large
 bore fields with hundreds of boreholes.
 
 Using *pygfunction*, *g*-functions can be calculated for any bore field
-configuration (i.e. arbitrarily positionned in space), including fields of
+configuration (i.e. arbitrarily positioned in space), including fields of
 boreholes with individually different lengths and radiuses. For regular fields
 of boreholes of equal size, setting-up the calculation of the *g*-function is
 as simple as a few lines of code. For example, the code for the calculation of
@@ -40,12 +40,13 @@ fluid temperatures in the boreholes for several U-tube pipe configurations.
 
 ## Requirements
 
-*pygfunction* was developed and tested using Python 3.7. In addition, the
+*pygfunction* was developed and tested using Python 3.8. In addition, the
 following packages are needed to run *pygfunction* and its examples:
-- matplotlib (>= 3.5.1),
+- matplotlib (>= 3.8.4),
 - numpy (>= 1.21.5)
 - scipy (>= 1.7.3)
 - SecondaryCoolantProps (>= 1.1)
+- typing_extensions >= 4.0.1
 
 The documentation is generated using [Sphinx](http://www.sphinx-doc.org). The
 following packages are needed to build the documentation:
@@ -58,7 +59,7 @@ following packages are needed to build the documentation:
 **Users** - [Download pip](https://pip.pypa.io/en/latest/) and install the latest release:
 
 ```
-pip install pygfunction
+pip install pygfunction[plot]
 ```
 
 Alternatively, [download the latest release](https://github.com/MassimoCimmino/pygfunction/releases) and run the installation script:

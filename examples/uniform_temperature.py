@@ -7,6 +7,8 @@
     boreholes, equal for all boreholes.
 
 """
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 from time import perf_counter
@@ -29,7 +31,8 @@ def main():
     alpha = 1.0e-6      # Ground thermal diffusivity (m2/s)
 
     # Path to validation data
-    filePath = './data/CiBe14_uniform_temperature.txt'
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(base_dir, 'data', 'CiBe14_uniform_temperature.txt')
 
     # g-Function calculation options
     # A uniform discretization is used to compare results with Cimmino and
@@ -72,7 +75,7 @@ def main():
     # -------------------------------------------------------------------------
     # Load data from Cimmino and Bernier (2014)
     # -------------------------------------------------------------------------
-    data = np.loadtxt(filePath, skiprows=55)
+    data = np.loadtxt(file_path, skiprows=55)
 
     # -------------------------------------------------------------------------
     # Evaluate g-functions for all fields

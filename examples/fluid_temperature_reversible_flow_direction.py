@@ -45,7 +45,7 @@ def main():
     # Ground properties
     alpha = 2.5/2.2e6   # Ground thermal diffusivity (m2/s)
     k_s = 2.5           # Ground thermal conductivity (W/m.K)
-    T_g = 10.           # Undisturbed ground temperatue (degC)
+    T_g = 10.           # Undisturbed ground temperature (degC)
 
     # Grout properties
     k_g = 1.5           # Grout thermal conductivity (W/m.K)
@@ -91,7 +91,7 @@ def main():
     # Initialize bore field and pipe models
     # -------------------------------------------------------------------------
 
-    # The field is a retangular array
+    # The field is a rectangular array
     borefield = gt.borefield.Borefield.rectangle_field(
         N_1, N_2, B, B, H, D, r_b)
     nBoreholes = len(borefield)

@@ -8,6 +8,10 @@
 * [Issue 282](https://github.com/MassimoCimmino/pygfunction/issues/282) - Enabled the use of negative mass flow rates in `Pipe` and `Network` classes to model reversed flow direction.
 * [Pull Request 308](https://github.com/MassimoCimmino/pygfunction/pull/308) - Introduced a new `borefield` module. The new `Borefield` class replaces lists of `Borehole` objects as the preferred way to configure bore fields. The `Borefield.evaluate_g_function` method evaluates g-functions using the 'UHTR' and 'UBWT' boundary conditions. Deprecated bore field creation functions in the `boreholes` module (e.g. `boreholes.rectangle_field()`). These functions are replaced by methods of the new `Borefield` class. They will be removed in `v3.0.0`.
 
+### Other changes
+
+* [Issue 312](https://github.com/MassimoCimmino/pygfunction/issues/312) - The installation of `matplotlib` is now optional. Using `pip install pygfunction` will not install `matplotlib` and `pip install pygfunction[plot]` should be used instead.
+
 ## Version 2.2.3 (2024-07-01)
 
 ### New features

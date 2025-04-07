@@ -6,7 +6,7 @@ Compare the accuracy and speed of different load aggregation algorithms
 
 This example compares the simulation times and the accuracy of borehole wall
 temperature predictions of different load aggregation algorithms implemented
-into the :doc:`load agggregation <load_aggregation>` module.
+into the :doc:`load aggregation <load_aggregation>` module.
 
 The g-function of a single borehole is first calculated. Then, the borehole wall
 temperature variations are calculated using the load aggregation schemes of
