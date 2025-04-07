@@ -109,7 +109,7 @@ To contribute code to *pygfunction*, follow the
 ## Contributors
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-5-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-6-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
@@ -123,6 +123,7 @@ To contribute code to *pygfunction*, follow the
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/mitchute"><img src="https://avatars.githubusercontent.com/u/2985979?v=4?s=100" width="100px;" alt="Matt Mitchell"/><br /><sub><b>Matt Mitchell</b></sub></a><br /><a href="https://github.com/MassimoCimmino/pygfunction/commits?author=mitchute" title="Code">💻</a> <a href="#ideas-mitchute" title="Ideas, Planning, & Feedback">🤔</a></td>
       <td align="center" valign="top" width="14.28%"><a href="http://ghetool.eu"><img src="https://avatars.githubusercontent.com/u/52632307?v=4?s=100" width="100px;" alt="Wouter Peere"/><br /><sub><b>Wouter Peere</b></sub></a><br /><a href="https://github.com/MassimoCimmino/pygfunction/commits?author=wouterpeere" title="Code">💻</a> <a href="#ideas-wouterpeere" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/MassimoCimmino/pygfunction/issues?q=author%3Awouterpeere" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/tblanke"><img src="https://avatars.githubusercontent.com/u/86232208?v=4?s=100" width="100px;" alt="Tobias Blanke"/><br /><sub><b>Tobias Blanke</b></sub></a><br /><a href="https://github.com/MassimoCimmino/pygfunction/commits?author=tblanke" title="Code">💻</a> <a href="#ideas-tblanke" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/MassimoCimmino/pygfunction/issues?q=author%3Atblanke" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/axelstudios"><img src="https://avatars.githubusercontent.com/u/411466?v=4?s=100" width="100px;" alt="Alex Swindler"/><br /><sub><b>Alex Swindler</b></sub></a><br /><a href="https://github.com/MassimoCimmino/pygfunction/commits?author=axelstudios" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
