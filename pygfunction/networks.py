@@ -9,7 +9,7 @@ class Network(object):
     connections between the boreholes.
 
     Contains information regarding the physical dimensions and thermal
-    characteristics of the pipes and the grout material in each boreholes, the
+    characteristics of the pipes and the grout material in each borehole, the
     topology of the connections between boreholes, as well as methods to
     evaluate fluid temperatures and heat extraction rates based on the work of
     Cimmino (2018, 2019, 2024) [#Network-Cimmin2018]_, [#Network-Cimmin2019]_,

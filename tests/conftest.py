@@ -508,7 +508,7 @@ def single_borehole_network(single_borehole):
     epsilon = 1.0e-06       # Pipe surface roughness [m]
     m_flow_borehole = 0.05  # Nominal fluid mass flow rate [kg/s]
     m_flow_pipe = m_flow_borehole
-    m_flow_network = m_flow_borehole
+    # m_flow_network = m_flow_borehole
     # Fluid is propylene-glycol (20 %) at 20 degC
     fluid = gt.media.Fluid('MPG', 20.)
     # Pipe thermal resistance [m.K/W]
@@ -549,7 +549,7 @@ def single_borehole_network_short(single_borehole_short):
     epsilon = 1.0e-06       # Pipe surface roughness [m]
     m_flow_borehole = 0.05  # Nominal fluid mass flow rate [kg/s]
     m_flow_pipe = m_flow_borehole
-    m_flow_network = m_flow_borehole
+    # m_flow_network = m_flow_borehole
     # Fluid is propylene-glycol (20 %) at 20 degC
     fluid = gt.media.Fluid('MPG', 20.)
     # Pipe thermal resistance [m.K/W]
@@ -590,7 +590,7 @@ def ten_boreholes_network_rectangular(ten_boreholes_rectangular):
     epsilon = 1.0e-06       # Pipe surface roughness [m]
     m_flow_borehole = 0.05  # Nominal fluid mass flow rate [kg/s]
     m_flow_pipe = m_flow_borehole
-    m_flow_network = m_flow_borehole * 5
+    # m_flow_network = m_flow_borehole * 5
     # Fluid is propylene-glycol (20 %) at 20 degC
     fluid = gt.media.Fluid('MPG', 20.)
     # Pipe thermal resistance [m.K/W]
@@ -631,7 +631,7 @@ def ten_boreholes_network_rectangular_series(ten_boreholes_rectangular):
     epsilon = 1.0e-06       # Pipe surface roughness [m]
     m_flow_borehole = 0.05  # Nominal fluid mass flow rate [kg/s]
     m_flow_pipe = m_flow_borehole
-    m_flow_network = m_flow_borehole
+    # m_flow_network = m_flow_borehole
     # Fluid is propylene-glycol (20 %) at 20 degC
     fluid = gt.media.Fluid('MPG', 20.)
     # Pipe thermal resistance [m.K/W]
@@ -672,7 +672,7 @@ def three_boreholes_network_series_unequal(three_boreholes_unequal):
     epsilon = 1.0e-06       # Pipe surface roughness [m]
     m_flow_borehole = 0.05  # Nominal fluid mass flow rate [kg/s]
     m_flow_pipe = m_flow_borehole
-    m_flow_network = m_flow_borehole
+    # m_flow_network = m_flow_borehole
     # Fluid is propylene-glycol (20 %) at 20 degC
     fluid = gt.media.Fluid('MPG', 20.)
     # Pipe thermal resistance [m.K/W]

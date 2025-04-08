@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 import warnings
-
+from typing import List, Union
 import numpy as np
+from copy import deepcopy
 from scipy.constants import pi
 from scipy.special import binom
 
+from .media import Fluid
 from .utilities import _initialize_figure, _format_axes
 
 
@@ -2307,7 +2309,7 @@ class IndependentMultipleUTube(MultipleUTube):
         """
         Update the delta-circuit of thermal resistances.
 
-        This methods updates the values of the delta-circuit thermal
+        This method updates the values of the delta-circuit thermal
         resistances based on the provided fluid to outer pipe wall thermal
         resistance.
 
@@ -2606,7 +2608,7 @@ class Coaxial(SingleUTube):
         """
         Update the delta-circuit of thermal resistances.
 
-        This methods updates the values of the delta-circuit thermal
+        This method updates the values of the delta-circuit thermal
         resistances based on the provided fluid to fluid and fluid to outer
         pipe wall thermal resistances.
 
@@ -3613,3 +3615,89 @@ def _Nusselt_number_turbulent_flow(Re, Pr, fDarcy):
     Nu = 0.125 * fDarcy * (Re - 1.0e3) * Pr / \
         (1.0 + 12.7 * np.sqrt(0.125*fDarcy) * (Pr**(2.0/3.0) - 1.0))
     return Nu
+
+
+def compute_R_fp(
+        pipe_type: str, m_flow_borehole: float, r_out: float, r_in: float,
+        k_p: float, epsilon: float, fluid: Fluid, double_u_config: Union[str, None] = None
+    ) -> float:
+
+    if pipe_type == "SingleUTube":
+
+        # single u-tube
+        R_p = conduction_thermal_resistance_circular_pipe(
+            r_in, r_out, k_p)
+        # Convection heat transfer coefficient [W/m2.K]
+        h_f = convective_heat_transfer_coefficient_circular_pipe(
+            m_flow_borehole, r_in, fluid.mu, fluid.rho, fluid.k, fluid.cp,
+            epsilon)
+        # Film thermal resistance [m.K/W]
+        R_f = 1.0 / (h_f * 2 * np.pi * r_in)
+
+        return R_p + R_f
+
+    elif pipe_type == "MultipleUTube":
+        raise NotImplementedError(f"pipe_type: '{pipe_type}' is not implemented.")
+    elif pipe_type == "IndependentMultipleUTube":
+        raise NotImplementedError(f"pipe_type: '{pipe_type}' is not implemented.")
+    elif pipe_type == "Coaxial":
+        raise NotImplementedError(f"pipe_type: '{pipe_type}' is not implemented.")
+    else:
+        raise ValueError(f"Unknown pipe_type: '{pipe_type}'")
+
+
+def compute_R_ff(m_flow_borehole):
+    pass
+
+
+def get_pipes(
+        nbh: int,
+        pipe_type: str,
+        pos: List[tuple],
+        r_in: Union[float, tuple],
+        r_out: Union[float, tuple],
+        k_s: float,
+        k_g: float,
+        k_p: float,
+        m_flow_network: float,
+        epsilon: float,
+        fluid: Fluid,
+        J: int = 2,
+        reversible_flow: bool = True
+):
+    m_flow_borehole = m_flow_network / nbh
+
+    if pipe_type.upper() == "SINGLEUTUBE":
+
+        R_fp = compute_R_fp(
+            pipe_type,
+            m_flow_borehole,
+            r_out,
+            r_in,
+            k_p,
+            epsilon,
+            fluid
+        )
+
+        pipe = SingleUTube(
+            pos,
+            r_in,
+            r_out,
+            k_s,
+            k_g,
+            R_fp,
+            J,
+            reversible_flow
+        )
+
+    elif pipe_type.upper() == "MULTIPLEUTUBE":
+        raise NotImplementedError(f"pipe_type: '{pipe_type}' is not implemented.")
+    elif pipe_type.upper() == "INDEPENDENTMULTIPLEUTUBE":
+        raise NotImplementedError(f"pipe_type: '{pipe_type}' is not implemented.")
+    elif pipe_type.upper() == "COAXIAL":
+        raise NotImplementedError(f"pipe_type: '{pipe_type}' is not implemented.")
+    else:
+        raise ValueError(f"Unknown pipe_type: '{pipe_type}'")
+
+    # check if this returns different instances
+    return [pipe] * nbh

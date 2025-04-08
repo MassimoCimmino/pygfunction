@@ -339,3 +339,56 @@ def test_gfunctions_UBWT_linearization(field, method, opts, expected, request):
         borefield, alpha, time=time, method=method, options=options,
         boundary_condition='UBWT')
     assert np.allclose(gFunc.gFunc, expected)
+
+@pytest.mark.parametrize("field, method, opts, boundary_condition, m_flow_network, fluid_name, fluid_conc, expected", [
+        #  'equivalent' solver - unequal segments - UBWT
+        ('single_borehole', 'equivalent', 'unequal_segments', 'UBWT', None, None, None, np.array([5.59717446, 6.36257605, 6.60517223])),
+        ('single_borehole_short', 'equivalent', 'unequal_segments', 'UBWT', None, None, None, np.array([4.15784411, 4.98477603, 5.27975732])),
+        ('ten_boreholes_rectangular', 'equivalent', 'unequal_segments', 'UBWT', None, None, None, np.array([10.89935004, 17.09864925, 19.0795435])),
+        #  'equivalent' solver - unequal segments - UHTR
+        ('single_borehole', 'equivalent', 'unequal_segments', 'UHTR', None, None, None, np.array([5.61855789, 6.41336758, 6.66933682])),
+        ('single_borehole_short', 'equivalent', 'unequal_segments', 'UHTR', None, None, None, np.array([4.18276733, 5.03671562, 5.34369772])),
+        ('ten_boreholes_rectangular', 'equivalent', 'unequal_segments', 'UHTR', None, None, None, np.array([11.27831804, 18.48075762, 21.00669237])),
+        #  'equivalent' solver - unequal segments
+        ('single_borehole', 'equivalent', 'unequal_segments', 'MIFT', 0.05, 'MPG', 20, np.array([5.76597302, 6.51058473, 6.73746895])),
+        ('single_borehole_short', 'equivalent', 'unequal_segments', 'MIFT', 0.05, 'MPG', 20, np.array([4.17105954, 5.00930075, 5.30832133])),
+        ('ten_boreholes_rectangular', 'equivalent', 'unequal_segments', 'MIFT', 0.25, 'MPG', 20, np.array([12.66229998, 18.57852681, 20.33535907])),
+    ])
+def test_evaluate_gfunctions(field, method, opts, expected, boundary_condition, m_flow_network, fluid_name, fluid_conc, request):
+    # Extract the bore field from the fixture for convenience
+    borefield = request.getfixturevalue(field)
+
+    # convert to lists for testing
+    H = list(borefield.H)
+    D = list(borefield.D)
+    r_b = list(borefield.r_b)
+    x = list(borefield.x)
+    y = list(borefield.y)
+
+    # Extract the g-function options from the fixture
+    options = request.getfixturevalue(opts)
+
+    # Mean borehole length [m]
+    H_mean = np.mean(H)
+    alpha = 1e-6  # Ground thermal diffusivity [m2/s]
+    # Bore field characteristic time [s]
+    ts = H_mean ** 2 / (9 * alpha)
+    # Times for the g-function [s]
+    time = np.array([0.1, 1., 10.]) * ts
+    # g-Function
+    gFunc = gt.gfunction.evaluate_g_function(
+        H=H,
+        D=D,
+        r_b=r_b,
+        x=x,
+        y=y,
+        alpha=alpha,
+        time=time,
+        method=method,
+        options=options,
+        boundary_condition=boundary_condition,
+        m_flow_network=m_flow_network,
+        fluid_name=fluid_name,
+        fluid_concentration=fluid_conc,
+    )
+    assert np.allclose(gFunc, expected)

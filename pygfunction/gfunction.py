@@ -1,19 +1,25 @@
 # -*- coding: utf-8 -*-
 import warnings
 from time import perf_counter
+from typing import Union, Dict, List
 
+import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 from scipy.cluster.hierarchy import cut_tree, dendrogram, linkage
 from scipy.constants import pi
 from scipy.interpolate import interp1d as interp1d
 
+from . import utilities
 from .borefield import Borefield
 from .boreholes import Borehole, _EquivalentBorehole, find_duplicates
 from .heat_transfer import finite_line_source, finite_line_source_vectorized, \
     finite_line_source_equivalent_boreholes_vectorized, \
     finite_line_source_inclined_vectorized
+from .media import Fluid
 from .networks import Network, _EquivalentNetwork, network_thermal_resistance
-from .utilities import _initialize_figure, _format_axes, segment_ratios
+from .pipes import get_pipes
+from .utilities import _initialize_figure, _format_axes
 
 
 class gFunction(object):
@@ -333,8 +339,6 @@ class gFunction(object):
             Figure object (matplotlib).
 
         """
-        from ._mpl import plt
-
         # Configure figure and axes
         fig = _initialize_figure()
         ax = fig.add_subplot(111)
@@ -400,8 +404,6 @@ class gFunction(object):
             Figure object (matplotlib).
 
         """
-        from ._mpl import plt
-
         # If iBoreholes is None, then plot all boreholes
         if iBoreholes is None:
             iBoreholes = range(len(self.solver.boreholes))
@@ -516,7 +518,7 @@ class gFunction(object):
 
                 # Adjust figure to window
                 plt.tight_layout()
-            
+
         return fig
 
     def visualize_heat_extraction_rate_profiles(
@@ -551,8 +553,6 @@ class gFunction(object):
             Figure object (matplotlib).
 
         """
-        from ._mpl import plt
-
         # If iBoreholes is None, then plot all boreholes
         if iBoreholes is None:
             iBoreholes = range(len(self.solver.boreholes))
@@ -697,8 +697,6 @@ class gFunction(object):
             Figure object (matplotlib).
 
         """
-        from ._mpl import plt
-
         # If iBoreholes is None, then plot all boreholes
         if iBoreholes is None:
             iBoreholes = range(len(self.solver.boreholes))
@@ -844,8 +842,6 @@ class gFunction(object):
             Figure object (matplotlib).
 
         """
-        from ._mpl import plt
-
         # If iBoreholes is None, then plot all boreholes
         if iBoreholes is None:
             iBoreholes = range(len(self.boreholes))
@@ -1421,7 +1417,7 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
 
 
 def uniform_temperature(boreholes, time, alpha, nSegments=8,
-                        segment_ratios=segment_ratios, kind='linear',
+                        segment_ratios=utilities.segment_ratios, kind='linear',
                         use_similarities=True, disTol=0.01, tol=1.0e-6,
                         dtype=np.double, disp=False, **kwargs):
     """
@@ -1531,7 +1527,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=8,
 
 def equal_inlet_temperature(
         boreholes, UTubes, m_flow_borehole, cp_f, time, alpha,
-        kind='linear', nSegments=8, segment_ratios=segment_ratios,
+        kind='linear', nSegments=8, segment_ratios=utilities.segment_ratios,
         use_similarities=True, disTol=0.01, tol=1.0e-6, dtype=np.double,
         disp=False, **kwargs):
     """
@@ -1640,7 +1636,7 @@ def equal_inlet_temperature(
 
 def mixed_inlet_temperature(
         network, m_flow_network, cp_f, time, alpha, kind='linear',
-        nSegments=8, segment_ratios=segment_ratios,
+        nSegments=8, segment_ratios=utilities.segment_ratios,
         use_similarities=True, disTol=0.01, tol=1.0e-6, dtype=np.double,
         disp=False, **kwargs):
     """
@@ -1864,7 +1860,7 @@ class _BaseSolver(object):
     """
     def __init__(self, boreholes, network, time, boundary_condition,
                  m_flow_borehole=None, m_flow_network=None, cp_f=None,
-                 nSegments=8, segment_ratios=segment_ratios,
+                 nSegments=8, segment_ratios=utilities.segment_ratios,
                  approximate_FLS=False, mQuad=11, nFLS=10,
                  linear_threshold=None, disp=False, profiles=False,
                  kind='linear', dtype=np.double, **other_options):
@@ -4657,7 +4653,7 @@ class _Equivalent(_BaseSolver):
         dis : array
             Array of unique distances (in meters) in the bore field.
         wDis : array
-            Array of number of occurences of each unique distance for each
+            Array of number of occurrences of each unique distance for each
             pair of equivalent boreholes in indices.
 
         """
@@ -4820,3 +4816,90 @@ class _Equivalent(_BaseSolver):
                  for pipe in self.network.p]), \
                 "All boreholes must have the same piping configuration."
         return
+
+
+def evaluate_g_function(
+        H: npt.ArrayLike,
+        D: npt.ArrayLike,
+        r_b: npt.ArrayLike,
+        x: npt.ArrayLike,
+        y: npt.ArrayLike,
+        alpha: float,
+        time: npt.ArrayLike,
+        method: str = "equivalent",
+        boundary_condition: str = "MIFT",
+        options: Union[Dict[str, str], None] = None,
+        tilt: npt.ArrayLike = 0.,
+        orientation: npt.ArrayLike = 0.,
+        pipe_type: Union[str, None] = None,
+        pos: Union[List[tuple], None] = None,
+        r_in: Union[float, tuple, None] = None,
+        r_out: Union[float, tuple, None] = None,
+        k_s: Union[float, None] = None,
+        k_g: Union[float, None] = None,
+        k_p: Union[float, None] = None,
+        epsilon: Union[float, None] = None,
+        J: int = 2,
+        reversible_flow: bool = True,
+        m_flow_network: Union[float, None] = None,
+        fluid_name: Union[str, None] = None,
+        fluid_concentration: Union[float, None] = None,
+        nSegments: Union[int, None] = None,
+        segment_ratios=None
+):
+
+    if options is None:
+        options = {}
+
+    borefield = Borefield(H, D, r_b, x, y, tilt, orientation)
+    nbh = len(borefield.H)
+
+    if boundary_condition == "MIFT":
+
+        fluid = Fluid(fluid_name, fluid_concentration)
+
+        pipes = get_pipes(
+            nbh,
+            pipe_type,
+            pos,
+            r_in,
+            r_out,
+            k_s,
+            k_g,
+            k_p,
+            m_flow_network,
+            epsilon,
+            fluid,
+            J,
+            reversible_flow
+        )
+
+        network = Network(
+            borefield.to_boreholes(),
+            pipes,
+        )
+
+        gfunc = gFunction(
+            network,
+            alpha,
+            time=time,
+            method=method,
+            boundary_condition=boundary_condition,
+            options=options,
+        )
+
+    elif boundary_condition in ["UHTR", "UBWT"]:
+
+        gfunc = gFunction(
+            borefield,
+            alpha,
+            time=time,
+            method=method,
+            boundary_condition=boundary_condition,
+            options=options,
+        )
+
+    else:
+        raise ValueError("boundary_condition must be 'MIFT', 'UHTR', or 'UBWT'")
+
+    return gfunc.gFunc
