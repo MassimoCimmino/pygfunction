@@ -3,7 +3,6 @@ import warnings
 from time import perf_counter
 from typing import Union, Dict, List
 
-import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 from scipy.cluster.hierarchy import cut_tree, dendrogram, linkage
@@ -19,7 +18,7 @@ from .heat_transfer import finite_line_source, finite_line_source_vectorized, \
 from .media import Fluid
 from .networks import Network, _EquivalentNetwork, network_thermal_resistance
 from .pipes import get_pipes, PipeTypes
-from .utilities import _initialize_figure, _format_axes
+from .utilities import _initialize_figure, _format_axes, segment_ratios
 
 
 class gFunction(object):
@@ -339,6 +338,8 @@ class gFunction(object):
             Figure object (matplotlib).
 
         """
+        from ._mpl import plt
+
         # Configure figure and axes
         fig = _initialize_figure()
         ax = fig.add_subplot(111)
@@ -404,6 +405,8 @@ class gFunction(object):
             Figure object (matplotlib).
 
         """
+        from ._mpl import plt
+
         # If iBoreholes is None, then plot all boreholes
         if iBoreholes is None:
             iBoreholes = range(len(self.solver.boreholes))
@@ -518,7 +521,7 @@ class gFunction(object):
 
                 # Adjust figure to window
                 plt.tight_layout()
-
+            
         return fig
 
     def visualize_heat_extraction_rate_profiles(
@@ -553,6 +556,8 @@ class gFunction(object):
             Figure object (matplotlib).
 
         """
+        from ._mpl import plt
+
         # If iBoreholes is None, then plot all boreholes
         if iBoreholes is None:
             iBoreholes = range(len(self.solver.boreholes))
@@ -697,6 +702,8 @@ class gFunction(object):
             Figure object (matplotlib).
 
         """
+        from ._mpl import plt
+
         # If iBoreholes is None, then plot all boreholes
         if iBoreholes is None:
             iBoreholes = range(len(self.solver.boreholes))
@@ -842,6 +849,8 @@ class gFunction(object):
             Figure object (matplotlib).
 
         """
+        from ._mpl import plt
+
         # If iBoreholes is None, then plot all boreholes
         if iBoreholes is None:
             iBoreholes = range(len(self.boreholes))
@@ -1417,7 +1426,7 @@ def uniform_heat_extraction(boreholes, time, alpha, use_similarities=True,
 
 
 def uniform_temperature(boreholes, time, alpha, nSegments=8,
-                        segment_ratios=utilities.segment_ratios, kind='linear',
+                        segment_ratios=segment_ratios, kind='linear',
                         use_similarities=True, disTol=0.01, tol=1.0e-6,
                         dtype=np.double, disp=False, **kwargs):
     """
@@ -1527,7 +1536,7 @@ def uniform_temperature(boreholes, time, alpha, nSegments=8,
 
 def equal_inlet_temperature(
         boreholes, UTubes, m_flow_borehole, cp_f, time, alpha,
-        kind='linear', nSegments=8, segment_ratios=utilities.segment_ratios,
+        kind='linear', nSegments=8, segment_ratios=segment_ratios,
         use_similarities=True, disTol=0.01, tol=1.0e-6, dtype=np.double,
         disp=False, **kwargs):
     """
@@ -1636,7 +1645,7 @@ def equal_inlet_temperature(
 
 def mixed_inlet_temperature(
         network, m_flow_network, cp_f, time, alpha, kind='linear',
-        nSegments=8, segment_ratios=utilities.segment_ratios,
+        nSegments=8, segment_ratios=segment_ratios,
         use_similarities=True, disTol=0.01, tol=1.0e-6, dtype=np.double,
         disp=False, **kwargs):
     """
@@ -1860,7 +1869,7 @@ class _BaseSolver(object):
     """
     def __init__(self, boreholes, network, time, boundary_condition,
                  m_flow_borehole=None, m_flow_network=None, cp_f=None,
-                 nSegments=8, segment_ratios=utilities.segment_ratios,
+                 nSegments=8, segment_ratios=segment_ratios,
                  approximate_FLS=False, mQuad=11, nFLS=10,
                  linear_threshold=None, disp=False, profiles=False,
                  kind='linear', dtype=np.double, **other_options):
