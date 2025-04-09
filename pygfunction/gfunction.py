@@ -4827,8 +4827,8 @@ def evaluate_g_function_MIFT(
         alpha: float,
         time: npt.ArrayLike,
         pos: List[tuple],
-        r_in: Union[float, tuple],
-        r_out: Union[float, tuple],
+        r_in: Union[float, tuple, list],
+        r_out: Union[float, tuple, list],
         k_s: float,
         k_g: float,
         k_p: float,
@@ -4843,7 +4843,6 @@ def evaluate_g_function_MIFT(
         orientation: npt.ArrayLike = 0.,
         reversible_flow: bool = True,
 ):
-
     if options is None:
         options = {}
 

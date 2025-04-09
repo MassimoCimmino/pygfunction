@@ -16,8 +16,8 @@ class PipeTypes(Enum):
     SINGLEUTUBE = auto()
     DOUBLEUTUBEPARALLEL = auto()
     DOUBLEUTUBESERIES = auto()
-    COAXIAL = auto()
-
+    COAXIALANNULARINLET = auto()
+    COAXIALPIPEINLET = auto()
 
 class _BasePipe(object):
     """
@@ -3627,10 +3627,8 @@ def _Nusselt_number_turbulent_flow(Re, Pr, fDarcy):
 
 
 def compute_R_fp(
-        pipe_type: PipeTypes, m_flow_borehole: float, r_in: float, r_out: float,
-        k_p: float, epsilon: float, fluid: Fluid, double_u_config: Union[str, None] = None
-    ) -> float:
-
+        pipe_type: PipeTypes, m_flow_borehole: float, r_in: Union[float, tuple, list],
+        r_out: Union[float, tuple, list], k_p: float, epsilon: float, fluid: Fluid) -> float:
     if pipe_type in [PipeTypes.SINGLEUTUBE, PipeTypes.DOUBLEUTUBESERIES]:
 
         m_flow_pipe = m_flow_borehole
@@ -3663,20 +3661,123 @@ def compute_R_fp(
 
         return R_p + R_f
 
+    elif pipe_type == PipeTypes.COAXIALANNULARINLET:
+
+        m_flow_pipe = m_flow_borehole
+
+        r_in_out = r_out[1]
+        r_out_in = r_in[0]
+        r_out_out = r_out[0]
+
+        # Outer pipe
+        R_p_out = conduction_thermal_resistance_circular_pipe(
+            r_out_in, r_out_out, k_p)
+
+        # Outer pipe
+        h_f_a_in, h_f_a_out = \
+            convective_heat_transfer_coefficient_concentric_annulus(
+                m_flow_pipe, r_in_out, r_out_in, fluid.mu, fluid.rho, fluid.k,
+                fluid.cp, epsilon)
+
+        # Coaxial GHE in borehole
+        R_f_out_out = 1.0 / (h_f_a_out * 2 * np.pi * r_out_in)
+        return R_p_out + R_f_out_out
+
+    elif pipe_type == PipeTypes.COAXIALPIPEINLET:
+
+        m_flow_pipe = m_flow_borehole
+
+        r_in_out = r_out[0]
+        r_out_in = r_in[1]
+        r_out_out = r_out[1]
+
+        # Outer pipe
+        R_p_out = conduction_thermal_resistance_circular_pipe(
+            r_out_in, r_out_out, k_p)
+        # Fluid-to-fluid thermal resistance [m.K/W]
+
+        # Outer pipe
+        h_f_a_in, h_f_a_out = \
+            convective_heat_transfer_coefficient_concentric_annulus(
+                m_flow_pipe, r_in_out, r_out_in, fluid.mu, fluid.rho, fluid.k,
+                fluid.cp, epsilon)
+
+        # Coaxial GHE in borehole
+        R_f_out_out = 1.0 / (h_f_a_out * 2 * np.pi * r_out_in)
+
+        return R_p_out + R_f_out_out
+
     else:
-        raise ValueError(f"Unknown pipe_type: '{pipe_type}'")
+        raise ValueError(f"Unsupported pipe_type: '{pipe_type}'")
 
 
-def compute_R_ff(m_flow_borehole):
-    pass
+def compute_R_ff(pipe_type: PipeTypes, m_flow_borehole: float, r_in: Union[float, tuple, list],
+                 r_out: Union[float, tuple, list], k_p: float, epsilon: float, fluid: Fluid) -> float:
+    if pipe_type == PipeTypes.COAXIALANNULARINLET:
+
+        m_flow_pipe = m_flow_borehole
+
+        r_in_in = r_in[1]
+        r_in_out = r_out[1]
+        r_out_in = r_in[0]
+
+        # Inner pipe
+        R_p_in = conduction_thermal_resistance_circular_pipe(
+            r_in_in, r_in_out, k_p)
+
+        # Fluid-to-fluid thermal resistance [m.K/W]
+        # Inner pipe
+        h_f_in = convective_heat_transfer_coefficient_circular_pipe(
+            m_flow_pipe, r_in_in, fluid.mu, fluid.rho, fluid.k, fluid.cp, epsilon)
+        R_f_in = 1.0 / (h_f_in * 2 * np.pi * r_in_in)
+
+        # Outer pipe
+        h_f_a_in, h_f_a_out = \
+            convective_heat_transfer_coefficient_concentric_annulus(
+                m_flow_borehole, r_in_out, r_out_in, fluid.mu, fluid.rho, fluid.k,
+                fluid.cp, epsilon)
+        R_f_out_in = 1.0 / (h_f_a_in * 2 * np.pi * r_in_out)
+
+        return R_f_in + R_p_in + R_f_out_in
+
+    elif pipe_type == PipeTypes.COAXIALPIPEINLET:
+
+        m_flow_pipe = m_flow_borehole
+
+        r_in_in = r_in[0]
+        r_in_out = r_out[0]
+        r_out_in = r_in[1]
+
+        # Pipe thermal resistances [m.K/W]
+        # Inner pipe
+        R_p_in = conduction_thermal_resistance_circular_pipe(
+            r_in_in, r_in_out, k_p)
+
+        # Fluid-to-fluid thermal resistance [m.K/W]
+        # Inner pipe
+        h_f_in = convective_heat_transfer_coefficient_circular_pipe(
+            m_flow_pipe, r_in_in, fluid.mu, fluid.rho, fluid.k, fluid.cp, epsilon)
+        R_f_in = 1.0 / (h_f_in * 2 * np.pi * r_in_in)
+
+        # Outer pipe
+        h_f_a_in, h_f_a_out = \
+            convective_heat_transfer_coefficient_concentric_annulus(
+                m_flow_pipe, r_in_out, r_out_in, fluid.mu, fluid.rho, fluid.k,
+                fluid.cp, epsilon)
+        R_f_out_in = 1.0 / (h_f_a_in * 2 * np.pi * r_in_out)
+
+        return R_f_in + R_p_in + R_f_out_in
+
+    else:
+        raise ValueError(f"Unsupported pipe_type: '{pipe_type}'")
 
 
 def get_pipes(
         boreholes: list[Borehole],
         pipe_type: PipeTypes,
         pos: List[tuple],
-        r_in: Union[float, tuple],
-        r_out: Union[float, tuple],
+        r_in: Union[float, tuple, list],
+        r_out: Union[float, tuple, list],
         k_s: float,
         k_g: float,
         k_p: float,
@@ -3707,7 +3808,14 @@ def get_pipes(
             R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
             pipes.append(MultipleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, 2, 'series', J, reversible_flow))
 
+    elif pipe_type in [PipeTypes.COAXIALANNULARINLET, PipeTypes.COAXIALPIPEINLET]:
+
+        for borehole in boreholes:
+            R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+            R_ff = compute_R_ff(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+            pipes.append(Coaxial(pos, r_in, r_out, borehole, k_s, k_g, R_ff, R_fp))
+
     else:
-        raise ValueError(f"Unknown pipe_type: '{pipe_type}'")
+        raise ValueError(f"Unsupported pipe_type: '{pipe_type.name}'")
 
     return pipes

@@ -361,6 +361,14 @@ def test_gfunctions_UBWT_linearization(field, method, opts, expected, request):
         ('single_borehole', 'equivalent', 'unequal_segments', 'double_Utube_series_asymmetrical', 0.05, np.array([5.69174709, 6.4441862, 6.67709693])),
         ('single_borehole_short', 'equivalent', 'unequal_segments', 'double_Utube_series_asymmetrical', 0.05, np.array([4.16851817, 5.00453267, 5.30282913])),
         ('ten_boreholes_rectangular', 'equivalent', 'unequal_segments', 'double_Utube_series_asymmetrical', 0.25, np.array([11.96927941, 18.00481705, 19.856554])),
+        #  'equivalent' solver - unequal segments - MIFT - coaxial annular inlet
+        ('single_borehole', 'equivalent', 'unequal_segments', 'coaxial_annular_in', 0.05, np.array([6.10236427, 6.77069069, 6.95941276])),
+        ('single_borehole_short', 'equivalent', 'unequal_segments', 'coaxial_annular_in', 0.05, np.array([4.06874781, 4.89701125, 5.19157017])),
+        ('ten_boreholes_rectangular', 'equivalent', 'unequal_segments', 'coaxial_annular_in', 0.25, np.array([16.03433989, 21.18241954, 22.49479982])),
+        #  'equivalent' solver - unequal segments - MIFT - coaxial annular outlet
+        ('single_borehole', 'equivalent', 'unequal_segments', 'coaxial_annular_out', 0.05, np.array([6.10236427, 6.77069069, 6.95941276])),
+        ('single_borehole_short', 'equivalent', 'unequal_segments', 'coaxial_annular_out', 0.05, np.array([4.06874781, 4.89701125, 5.19157017])),
+        ('ten_boreholes_rectangular', 'equivalent', 'unequal_segments', 'coaxial_annular_out', 0.25, np.array([16.03433989, 21.18241954, 22.49510883])),
     ])
 def test_evaluate_g_function_MIFT(field, method, opts, pipe_type, m_flow_network, expected, request):
     # Extract the bore field from the fixture for convenience
@@ -390,6 +398,10 @@ def test_evaluate_g_function_MIFT(field, method, opts, pipe_type, m_flow_network
             pipe_type = gt.pipes.PipeTypes.DOUBLEUTUBEPARALLEL
         elif pipe_type in ['double_Utube_series', 'double_Utube_series_asymmetrical']:
             pipe_type = gt.pipes.PipeTypes.DOUBLEUTUBESERIES
+        elif pipe_type == 'coaxial_annular_in':
+            pipe_type = gt.pipes.PipeTypes.COAXIALANNULARINLET
+        elif pipe_type == 'coaxial_annular_out':
+            pipe_type = gt.pipes.PipeTypes.COAXIALPIPEINLET
         else:
             raise ValueError(f"test pipe_type not recognized: '{pipe_type}'")
     else:
