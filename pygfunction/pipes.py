@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from enum import Enum, auto
 import warnings
 from typing import List, Union
 
@@ -9,6 +10,13 @@ from scipy.special import binom
 from .boreholes import Borehole
 from .media import Fluid
 from .utilities import _initialize_figure, _format_axes
+
+
+class PipeTypes(Enum):
+    SINGLEUTUBE = auto()
+    DOUBLEUTUBEPARALLEL = auto()
+    DOUBLEUTUBESERIES = auto()
+    COAXIAL = auto()
 
 
 class _BasePipe(object):
@@ -3619,30 +3627,42 @@ def _Nusselt_number_turbulent_flow(Re, Pr, fDarcy):
 
 
 def compute_R_fp(
-        pipe_type: str, m_flow_borehole: float, r_in: float, r_out: float,
+        pipe_type: PipeTypes, m_flow_borehole: float, r_in: float, r_out: float,
         k_p: float, epsilon: float, fluid: Fluid, double_u_config: Union[str, None] = None
     ) -> float:
 
-    if pipe_type == "SINGLEUTUBE":
+    if pipe_type in [PipeTypes.SINGLEUTUBE, PipeTypes.DOUBLEUTUBESERIES]:
+
+        m_flow_pipe = m_flow_borehole
 
         # single u-tube
         R_p = conduction_thermal_resistance_circular_pipe(
             r_in, r_out, k_p)
         # Convection heat transfer coefficient [W/m2.K]
         h_f = convective_heat_transfer_coefficient_circular_pipe(
-            m_flow_borehole, r_in, fluid.mu, fluid.rho, fluid.k, fluid.cp,
+            m_flow_pipe, r_in, fluid.mu, fluid.rho, fluid.k, fluid.cp,
             epsilon)
         # Film thermal resistance [m.K/W]
         R_f = 1.0 / (h_f * 2 * np.pi * r_in)
 
         return R_p + R_f
 
-    elif pipe_type == "MULTIPLEUTUBE":
-        raise NotImplementedError(f"pipe_type: '{pipe_type}' is not implemented.")
-    elif pipe_type == "INDEPENDENTMULTIPLEUTUBE":
-        raise NotImplementedError(f"pipe_type: '{pipe_type}' is not implemented.")
-    elif pipe_type == "COAXIAL":
-        raise NotImplementedError(f"pipe_type: '{pipe_type}' is not implemented.")
+    elif pipe_type == PipeTypes.DOUBLEUTUBEPARALLEL:
+
+        m_flow_pipe = m_flow_borehole / 2
+
+        # single u-tube
+        R_p = conduction_thermal_resistance_circular_pipe(
+            r_in, r_out, k_p)
+        # Convection heat transfer coefficient [W/m2.K]
+        h_f = convective_heat_transfer_coefficient_circular_pipe(
+            m_flow_pipe, r_in, fluid.mu, fluid.rho, fluid.k, fluid.cp,
+            epsilon)
+        # Film thermal resistance [m.K/W]
+        R_f = 1.0 / (h_f * 2 * np.pi * r_in)
+
+        return R_p + R_f
+
     else:
         raise ValueError(f"Unknown pipe_type: '{pipe_type}'")
 
@@ -3653,7 +3673,7 @@ def compute_R_ff(m_flow_borehole):
 
 def get_pipes(
         boreholes: list[Borehole],
-        pipe_type: str,
+        pipe_type: PipeTypes,
         pos: List[tuple],
         r_in: Union[float, tuple],
         r_out: Union[float, tuple],
@@ -3663,24 +3683,30 @@ def get_pipes(
         m_flow_network: float,
         epsilon: float,
         fluid: Fluid,
-        J: int = 2,
         reversible_flow: bool = True
 ):
+    J = 2
     m_flow_borehole = m_flow_network / len(boreholes)
     pipes = []
 
-    if pipe_type.upper() == "SINGLEUTUBE":
+    if pipe_type == PipeTypes.SINGLEUTUBE:
 
         for borehole in boreholes:
             R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
             pipes.append(SingleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, J, reversible_flow))
 
-    elif pipe_type.upper() == "MULTIPLEUTUBE":
-        raise NotImplementedError(f"pipe_type: '{pipe_type}' is not implemented.")
-    elif pipe_type.upper() == "INDEPENDENTMULTIPLEUTUBE":
-        raise NotImplementedError(f"pipe_type: '{pipe_type}' is not implemented.")
-    elif pipe_type.upper() == "COAXIAL":
-        raise NotImplementedError(f"pipe_type: '{pipe_type}' is not implemented.")
+    elif pipe_type == PipeTypes.DOUBLEUTUBEPARALLEL:
+
+        for borehole in boreholes:
+            R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+            pipes.append(MultipleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, 2, 'parallel', J, reversible_flow))
+
+    elif pipe_type == PipeTypes.DOUBLEUTUBESERIES:
+
+        for borehole in boreholes:
+            R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+            pipes.append(MultipleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, 2, 'series', J, reversible_flow))
+
     else:
         raise ValueError(f"Unknown pipe_type: '{pipe_type}'")
 

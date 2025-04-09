@@ -18,7 +18,7 @@ from .heat_transfer import finite_line_source, finite_line_source_vectorized, \
     finite_line_source_inclined_vectorized
 from .media import Fluid
 from .networks import Network, _EquivalentNetwork, network_thermal_resistance
-from .pipes import get_pipes
+from .pipes import get_pipes, PipeTypes
 from .utilities import _initialize_figure, _format_axes
 
 
@@ -4818,7 +4818,7 @@ class _Equivalent(_BaseSolver):
         return
 
 
-def evaluate_g_function(
+def evaluate_g_function_MIFT(
         H: npt.ArrayLike,
         D: npt.ArrayLike,
         r_b: npt.ArrayLike,
@@ -4826,68 +4826,54 @@ def evaluate_g_function(
         y: npt.ArrayLike,
         alpha: float,
         time: npt.ArrayLike,
+        pos: List[tuple],
+        r_in: Union[float, tuple],
+        r_out: Union[float, tuple],
+        k_s: float,
+        k_g: float,
+        k_p: float,
+        epsilon: float,
+        pipe_type: PipeTypes,
+        m_flow_network: float,
+        fluid_name: str,
+        fluid_concentration_pct: float,
         method: str = "equivalent",
-        boundary_condition: str = "MIFT",
         options: Union[Dict[str, str], None] = None,
         tilt: npt.ArrayLike = 0.,
         orientation: npt.ArrayLike = 0.,
-        pipe_type: Union[str, None] = None,
-        pos: Union[List[tuple], None] = None,
-        r_in: Union[float, tuple, None] = None,
-        r_out: Union[float, tuple, None] = None,
-        k_s: Union[float, None] = None,
-        k_g: Union[float, None] = None,
-        k_p: Union[float, None] = None,
-        epsilon: Union[float, None] = None,
-        J: int = 2,
         reversible_flow: bool = True,
-        m_flow_network: Union[float, None] = None,
-        fluid_name: Union[str, None] = None,
-        fluid_concentration_pct: Union[float, None] = None,
-        # nSegments: Union[int, None] = None,
-        # segment_ratios=None
 ):
 
     if options is None:
         options = {}
 
     borefield = Borefield(H, D, r_b, x, y, tilt, orientation)
+    boreholes = borefield.to_boreholes()
+    fluid = Fluid(fluid_name, fluid_concentration_pct)
 
-    if boundary_condition == "MIFT":
+    pipes = get_pipes(
+        boreholes,
+        pipe_type,
+        pos,
+        r_in,
+        r_out,
+        k_s,
+        k_g,
+        k_p,
+        m_flow_network,
+        epsilon,
+        fluid,
+        reversible_flow
+    )
 
-        boreholes = borefield.to_boreholes()
-        fluid = Fluid(fluid_name, fluid_concentration_pct)
-
-        pipes = get_pipes(
-            boreholes,
-            pipe_type,
-            pos,
-            r_in,
-            r_out,
-            k_s,
-            k_g,
-            k_p,
-            m_flow_network,
-            epsilon,
-            fluid,
-            J,
-            reversible_flow
-        )
-
-        network = Network(boreholes, pipes, m_flow_network=m_flow_network, cp_f=fluid.cp)
-        network_or_borefield = network
-
-    elif boundary_condition in ["UHTR", "UBWT"]:
-        network_or_borefield = borefield
-    else:
-        raise ValueError("boundary_condition must be 'MIFT', 'UHTR', or 'UBWT'")
+    network = Network(boreholes, pipes, m_flow_network=m_flow_network, cp_f=fluid.cp)
 
     gfunc = gFunction(
-        network_or_borefield,
+        network,
         alpha,
         time=time,
         method=method,
-        boundary_condition=boundary_condition,
+        boundary_condition='MIFT',
         options=options,
     )
 

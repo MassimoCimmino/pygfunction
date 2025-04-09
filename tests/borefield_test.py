@@ -143,7 +143,7 @@ def test_gfunctions_UBWT(field, method, opts, expected, request):
     # Times for the g-function [s]
     time = np.array([0.1, 1., 10.]) * ts
     # g-Function
-    gFunc = borefield.evaluate_g_function(
+    gFunc = borefield.evaluate_g_function_MIFT(
         alpha, time, method=method, options=options, boundary_condition='UBWT')
     assert np.allclose(gFunc, expected)
 
@@ -213,7 +213,7 @@ def test_gfunctions_UHTR(field, method, opts, expected, request):
     # Times for the g-function [s]
     time = np.array([0.1, 1., 10.]) * ts
     # g-Function
-    gFunc = borefield.evaluate_g_function(
+    gFunc = borefield.evaluate_g_function_MIFT(
         alpha, time, method=method, options=options, boundary_condition='UHTR')
     assert np.allclose(gFunc, expected)
 
@@ -254,7 +254,7 @@ def test_gfunctions_inclined_UBWT(two_boreholes_inclined, method, opts, expected
     # Times for the g-function [s]
     time = np.array([0.1, 1., 10.]) * ts
     # g-Function
-    gFunc = borefield.evaluate_g_function(
+    gFunc = borefield.evaluate_g_function_MIFT(
         alpha, time, method=method, options=options, boundary_condition='UBWT')
     assert np.allclose(gFunc, expected)
 
