@@ -3708,7 +3708,7 @@ def compute_R_fp(
         return R_p_out + R_f_out_out
 
     else:
-        raise ValueError(f"Unsupported pipe_type: '{pipe_type}'")
+        raise ValueError(f"Unsupported pipe_type: '{pipe_type.name}'")
 
 
 def compute_R_ff(pipe_type: PipeTypes, m_flow_borehole: float, r_in: Union[float, tuple, list],
@@ -3769,7 +3769,7 @@ def compute_R_ff(pipe_type: PipeTypes, m_flow_borehole: float, r_in: Union[float
         return R_f_in + R_p_in + R_f_out_in
 
     else:
-        raise ValueError(f"Unsupported pipe_type: '{pipe_type}'")
+        raise ValueError(f"Unsupported pipe_type: '{pipe_type.name}'")
 
 
 def get_pipes(
