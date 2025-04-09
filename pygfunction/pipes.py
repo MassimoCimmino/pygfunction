@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 import warnings
 from typing import List, Union
+
 import numpy as np
-from copy import deepcopy
 from scipy.constants import pi
 from scipy.special import binom
 
+from .boreholes import Borehole
 from .media import Fluid
 from .utilities import _initialize_figure, _format_axes
 
@@ -3618,11 +3619,11 @@ def _Nusselt_number_turbulent_flow(Re, Pr, fDarcy):
 
 
 def compute_R_fp(
-        pipe_type: str, m_flow_borehole: float, r_out: float, r_in: float,
+        pipe_type: str, m_flow_borehole: float, r_in: float, r_out: float,
         k_p: float, epsilon: float, fluid: Fluid, double_u_config: Union[str, None] = None
     ) -> float:
 
-    if pipe_type == "SingleUTube":
+    if pipe_type == "SINGLEUTUBE":
 
         # single u-tube
         R_p = conduction_thermal_resistance_circular_pipe(
@@ -3636,11 +3637,11 @@ def compute_R_fp(
 
         return R_p + R_f
 
-    elif pipe_type == "MultipleUTube":
+    elif pipe_type == "MULTIPLEUTUBE":
         raise NotImplementedError(f"pipe_type: '{pipe_type}' is not implemented.")
-    elif pipe_type == "IndependentMultipleUTube":
+    elif pipe_type == "INDEPENDENTMULTIPLEUTUBE":
         raise NotImplementedError(f"pipe_type: '{pipe_type}' is not implemented.")
-    elif pipe_type == "Coaxial":
+    elif pipe_type == "COAXIAL":
         raise NotImplementedError(f"pipe_type: '{pipe_type}' is not implemented.")
     else:
         raise ValueError(f"Unknown pipe_type: '{pipe_type}'")
@@ -3651,7 +3652,7 @@ def compute_R_ff(m_flow_borehole):
 
 
 def get_pipes(
-        nbh: int,
+        boreholes: list[Borehole],
         pipe_type: str,
         pos: List[tuple],
         r_in: Union[float, tuple],
@@ -3665,30 +3666,14 @@ def get_pipes(
         J: int = 2,
         reversible_flow: bool = True
 ):
-    m_flow_borehole = m_flow_network / nbh
+    m_flow_borehole = m_flow_network / len(boreholes)
+    pipes = []
 
     if pipe_type.upper() == "SINGLEUTUBE":
 
-        R_fp = compute_R_fp(
-            pipe_type,
-            m_flow_borehole,
-            r_out,
-            r_in,
-            k_p,
-            epsilon,
-            fluid
-        )
-
-        pipe = SingleUTube(
-            pos,
-            r_in,
-            r_out,
-            k_s,
-            k_g,
-            R_fp,
-            J,
-            reversible_flow
-        )
+        for borehole in boreholes:
+            R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+            pipes.append(SingleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, J, reversible_flow))
 
     elif pipe_type.upper() == "MULTIPLEUTUBE":
         raise NotImplementedError(f"pipe_type: '{pipe_type}' is not implemented.")
@@ -3699,5 +3684,4 @@ def get_pipes(
     else:
         raise ValueError(f"Unknown pipe_type: '{pipe_type}'")
 
-    # check if this returns different instances
-    return [pipe] * nbh
+    return pipes

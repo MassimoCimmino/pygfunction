@@ -4843,7 +4843,7 @@ def evaluate_g_function(
         reversible_flow: bool = True,
         m_flow_network: Union[float, None] = None,
         fluid_name: Union[str, None] = None,
-        fluid_concentration: Union[float, None] = None,
+        fluid_concentration_pct: Union[float, None] = None,
         nSegments: Union[int, None] = None,
         segment_ratios=None
 ):
@@ -4852,14 +4852,14 @@ def evaluate_g_function(
         options = {}
 
     borefield = Borefield(H, D, r_b, x, y, tilt, orientation)
-    nbh = len(borefield.H)
 
     if boundary_condition == "MIFT":
 
-        fluid = Fluid(fluid_name, fluid_concentration)
+        boreholes = borefield.to_boreholes()
+        fluid = Fluid(fluid_name, fluid_concentration_pct)
 
         pipes = get_pipes(
-            nbh,
+            boreholes,
             pipe_type,
             pos,
             r_in,
@@ -4874,32 +4874,21 @@ def evaluate_g_function(
             reversible_flow
         )
 
-        network = Network(
-            borefield.to_boreholes(),
-            pipes,
-        )
-
-        gfunc = gFunction(
-            network,
-            alpha,
-            time=time,
-            method=method,
-            boundary_condition=boundary_condition,
-            options=options,
-        )
+        network = Network(boreholes, pipes, m_flow_network=m_flow_network, cp_f=fluid.cp)
+        network_or_borefield = network
 
     elif boundary_condition in ["UHTR", "UBWT"]:
-
-        gfunc = gFunction(
-            borefield,
-            alpha,
-            time=time,
-            method=method,
-            boundary_condition=boundary_condition,
-            options=options,
-        )
-
+        network_or_borefield = borefield
     else:
         raise ValueError("boundary_condition must be 'MIFT', 'UHTR', or 'UBWT'")
+
+    gfunc = gFunction(
+        network_or_borefield,
+        alpha,
+        time=time,
+        method=method,
+        boundary_condition=boundary_condition,
+        options=options,
+    )
 
     return gfunc.gFunc

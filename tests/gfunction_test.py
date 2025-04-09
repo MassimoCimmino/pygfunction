@@ -340,21 +340,21 @@ def test_gfunctions_UBWT_linearization(field, method, opts, expected, request):
         boundary_condition='UBWT')
     assert np.allclose(gFunc.gFunc, expected)
 
-@pytest.mark.parametrize("field, method, opts, boundary_condition, m_flow_network, fluid_name, fluid_conc, expected", [
+@pytest.mark.parametrize("field, method, opts, boundary_condition, pipe_type, m_flow_network, expected", [
         #  'equivalent' solver - unequal segments - UBWT
-        ('single_borehole', 'equivalent', 'unequal_segments', 'UBWT', None, None, None, np.array([5.59717446, 6.36257605, 6.60517223])),
-        ('single_borehole_short', 'equivalent', 'unequal_segments', 'UBWT', None, None, None, np.array([4.15784411, 4.98477603, 5.27975732])),
-        ('ten_boreholes_rectangular', 'equivalent', 'unequal_segments', 'UBWT', None, None, None, np.array([10.89935004, 17.09864925, 19.0795435])),
+        ('single_borehole', 'equivalent', 'unequal_segments', 'UBWT', None, None, np.array([5.59717446, 6.36257605, 6.60517223])),
+        ('single_borehole_short', 'equivalent', 'unequal_segments', 'UBWT', None, None, np.array([4.15784411, 4.98477603, 5.27975732])),
+        ('ten_boreholes_rectangular', 'equivalent', 'unequal_segments', 'UBWT', None, None, np.array([10.89935004, 17.09864925, 19.0795435])),
         #  'equivalent' solver - unequal segments - UHTR
-        ('single_borehole', 'equivalent', 'unequal_segments', 'UHTR', None, None, None, np.array([5.61855789, 6.41336758, 6.66933682])),
-        ('single_borehole_short', 'equivalent', 'unequal_segments', 'UHTR', None, None, None, np.array([4.18276733, 5.03671562, 5.34369772])),
-        ('ten_boreholes_rectangular', 'equivalent', 'unequal_segments', 'UHTR', None, None, None, np.array([11.27831804, 18.48075762, 21.00669237])),
+        ('single_borehole', 'equivalent', 'unequal_segments', 'UHTR', None, None, np.array([5.61855789, 6.41336758, 6.66933682])),
+        ('single_borehole_short', 'equivalent', 'unequal_segments', 'UHTR', None, None, np.array([4.18276733, 5.03671562, 5.34369772])),
+        ('ten_boreholes_rectangular', 'equivalent', 'unequal_segments', 'UHTR', None, None, np.array([11.27831804, 18.48075762, 21.00669237])),
         #  'equivalent' solver - unequal segments
-        ('single_borehole', 'equivalent', 'unequal_segments', 'MIFT', 0.05, 'MPG', 20, np.array([5.76597302, 6.51058473, 6.73746895])),
-        ('single_borehole_short', 'equivalent', 'unequal_segments', 'MIFT', 0.05, 'MPG', 20, np.array([4.17105954, 5.00930075, 5.30832133])),
-        ('ten_boreholes_rectangular', 'equivalent', 'unequal_segments', 'MIFT', 0.25, 'MPG', 20, np.array([12.66229998, 18.57852681, 20.33535907])),
+        ('single_borehole', 'equivalent', 'unequal_segments', 'MIFT', 'single_Utube', 0.05,  np.array([5.76597302, 6.51058473, 6.73746895])),
+        ('single_borehole_short', 'equivalent', 'unequal_segments', 'MIFT', 'single_Utube', 0.05, np.array([4.17105954, 5.00930075, 5.30832133])),
+        ('ten_boreholes_rectangular', 'equivalent', 'unequal_segments', 'MIFT', 'single_Utube', 0.25, np.array([12.66229998, 18.57852681, 20.33535907])),
     ])
-def test_evaluate_gfunctions(field, method, opts, expected, boundary_condition, m_flow_network, fluid_name, fluid_conc, request):
+def test_evaluate_gfunctions(field, method, opts, boundary_condition, pipe_type, m_flow_network, expected, request):
     # Extract the bore field from the fixture for convenience
     borefield = request.getfixturevalue(field)
 
@@ -367,6 +367,31 @@ def test_evaluate_gfunctions(field, method, opts, expected, boundary_condition, 
 
     # Extract the g-function options from the fixture
     options = request.getfixturevalue(opts)
+
+    # Extract the pipe options from the fixture, if needed
+    if pipe_type is not None:
+        pipe = request.getfixturevalue(pipe_type)
+        pos = pipe.pos
+        r_in = pipe.r_in
+        r_out = pipe.r_out
+        # replace pipe_type from fixture
+        if pipe_type == 'single_Utube':
+            pipe_type = 'SINGLEUTUBE'
+        else:
+            raise ValueError(f"test pipe_type not recognized: '{pipe_type}'")
+    else:
+        pos = None
+        r_in = None
+        r_out = None
+        pipe_type = None
+
+    # Static params
+    k_s = 2.0
+    k_g = 1.0
+    k_p = 0.4
+    epsilon = 1e-6
+    fluid_name = 'MPG'
+    fluid_pct = 20.
 
     # Mean borehole length [m]
     H_mean = np.mean(H)
@@ -385,10 +410,24 @@ def test_evaluate_gfunctions(field, method, opts, expected, boundary_condition, 
         alpha=alpha,
         time=time,
         method=method,
-        options=options,
         boundary_condition=boundary_condition,
+        options=options,
+        # tilt
+        # orientation
+        pipe_type=pipe_type,
+        pos=pos,
+        r_in=r_in,
+        r_out=r_out,
+        k_s=k_s,
+        k_g=k_g,
+        k_p=k_p,
+        epsilon=epsilon,
+        # J
+        # reversible_flow
         m_flow_network=m_flow_network,
         fluid_name=fluid_name,
-        fluid_concentration=fluid_conc,
+        fluid_concentration_pct=fluid_pct,
+        # nSegments
+        # segment_ratios
     )
     assert np.allclose(gFunc, expected)
