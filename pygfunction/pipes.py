@@ -3792,27 +3792,27 @@ def get_pipes(
 
     if pipe_type == PipeTypes.SINGLEUTUBE:
 
+        R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
         for borehole in boreholes:
-            R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
             pipes.append(SingleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, J, reversible_flow))
 
     elif pipe_type == PipeTypes.DOUBLEUTUBEPARALLEL:
 
+        R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
         for borehole in boreholes:
-            R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
             pipes.append(MultipleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, 2, 'parallel', J, reversible_flow))
 
     elif pipe_type == PipeTypes.DOUBLEUTUBESERIES:
 
+        R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
         for borehole in boreholes:
-            R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
             pipes.append(MultipleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, 2, 'series', J, reversible_flow))
 
     elif pipe_type in [PipeTypes.COAXIALANNULARINLET, PipeTypes.COAXIALPIPEINLET]:
 
+        R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+        R_ff = compute_R_ff(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
         for borehole in boreholes:
-            R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
-            R_ff = compute_R_ff(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
             pipes.append(Coaxial(pos, r_in, r_out, borehole, k_s, k_g, R_ff, R_fp))
 
     else:
