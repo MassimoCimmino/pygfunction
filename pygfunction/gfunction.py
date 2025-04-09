@@ -1,18 +1,23 @@
 # -*- coding: utf-8 -*-
 import warnings
 from time import perf_counter
+from typing import Union, Dict, List
 
 import numpy as np
+import numpy.typing as npt
 from scipy.cluster.hierarchy import cut_tree, dendrogram, linkage
 from scipy.constants import pi
 from scipy.interpolate import interp1d as interp1d
 
+from . import utilities
 from .borefield import Borefield
 from .boreholes import Borehole, _EquivalentBorehole, find_duplicates
 from .heat_transfer import finite_line_source, finite_line_source_vectorized, \
     finite_line_source_equivalent_boreholes_vectorized, \
     finite_line_source_inclined_vectorized
+from .media import Fluid
 from .networks import Network, _EquivalentNetwork, network_thermal_resistance
+from .pipes import get_pipes, PipeTypes
 from .utilities import _initialize_figure, _format_axes, segment_ratios
 
 
@@ -4657,7 +4662,7 @@ class _Equivalent(_BaseSolver):
         dis : array
             Array of unique distances (in meters) in the bore field.
         wDis : array
-            Array of number of occurences of each unique distance for each
+            Array of number of occurrences of each unique distance for each
             pair of equivalent boreholes in indices.
 
         """
@@ -4820,3 +4825,64 @@ class _Equivalent(_BaseSolver):
                  for pipe in self.network.p]), \
                 "All boreholes must have the same piping configuration."
         return
+
+
+def evaluate_g_function_MIFT(
+        H: npt.ArrayLike,
+        D: npt.ArrayLike,
+        r_b: npt.ArrayLike,
+        x: npt.ArrayLike,
+        y: npt.ArrayLike,
+        alpha: float,
+        time: npt.ArrayLike,
+        pos: List[tuple],
+        r_in: Union[float, tuple, list],
+        r_out: Union[float, tuple, list],
+        k_s: float,
+        k_g: float,
+        k_p: float,
+        epsilon: float,
+        pipe_type: PipeTypes,
+        m_flow_network: float,
+        fluid_name: str,
+        fluid_concentration_pct: float,
+        method: str = "equivalent",
+        options: Union[Dict[str, str], None] = None,
+        tilt: npt.ArrayLike = 0.,
+        orientation: npt.ArrayLike = 0.,
+        reversible_flow: bool = True,
+):
+    if options is None:
+        options = {}
+
+    borefield = Borefield(H, D, r_b, x, y, tilt, orientation)
+    boreholes = borefield.to_boreholes()
+    fluid = Fluid(fluid_name, fluid_concentration_pct)
+
+    pipes = get_pipes(
+        boreholes,
+        pipe_type,
+        pos,
+        r_in,
+        r_out,
+        k_s,
+        k_g,
+        k_p,
+        m_flow_network,
+        epsilon,
+        fluid,
+        reversible_flow
+    )
+
+    network = Network(boreholes, pipes, m_flow_network=m_flow_network, cp_f=fluid.cp)
+
+    gfunc = gFunction(
+        network,
+        alpha,
+        time=time,
+        method=method,
+        boundary_condition='MIFT',
+        options=options,
+    )
+
+    return gfunc.gFunc
