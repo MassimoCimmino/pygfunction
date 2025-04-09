@@ -1328,7 +1328,7 @@ class SingleUTube(_BasePipe):
         """
         Update the delta-circuit of thermal resistances.
 
-        This methods updates the values of the delta-circuit thermal
+        This method updates the values of the delta-circuit thermal
         resistances based on the provided fluid to outer pipe wall thermal
         resistance.
 
@@ -1866,7 +1866,7 @@ class MultipleUTube(_BasePipe):
         """
         Update the delta-circuit of thermal resistances.
 
-        This methods updates the values of the delta-circuit thermal
+        This method updates the values of the delta-circuit thermal
         resistances based on the provided fluid to outer pipe wall thermal
         resistance.
 

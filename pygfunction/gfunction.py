@@ -4844,8 +4844,8 @@ def evaluate_g_function(
         m_flow_network: Union[float, None] = None,
         fluid_name: Union[str, None] = None,
         fluid_concentration_pct: Union[float, None] = None,
-        nSegments: Union[int, None] = None,
-        segment_ratios=None
+        # nSegments: Union[int, None] = None,
+        # segment_ratios=None
 ):
 
     if options is None:

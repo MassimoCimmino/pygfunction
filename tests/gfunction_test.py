@@ -341,6 +341,8 @@ def test_gfunctions_UBWT_linearization(field, method, opts, expected, request):
     assert np.allclose(gFunc.gFunc, expected)
 
 @pytest.mark.parametrize("field, method, opts, boundary_condition, pipe_type, m_flow_network, expected", [
+
+        # test values taken from test above
         #  'equivalent' solver - unequal segments - UBWT
         ('single_borehole', 'equivalent', 'unequal_segments', 'UBWT', None, None, np.array([5.59717446, 6.36257605, 6.60517223])),
         ('single_borehole_short', 'equivalent', 'unequal_segments', 'UBWT', None, None, np.array([4.15784411, 4.98477603, 5.27975732])),
@@ -349,7 +351,7 @@ def test_gfunctions_UBWT_linearization(field, method, opts, expected, request):
         ('single_borehole', 'equivalent', 'unequal_segments', 'UHTR', None, None, np.array([5.61855789, 6.41336758, 6.66933682])),
         ('single_borehole_short', 'equivalent', 'unequal_segments', 'UHTR', None, None, np.array([4.18276733, 5.03671562, 5.34369772])),
         ('ten_boreholes_rectangular', 'equivalent', 'unequal_segments', 'UHTR', None, None, np.array([11.27831804, 18.48075762, 21.00669237])),
-        #  'equivalent' solver - unequal segments
+        #  'equivalent' solver - unequal segments - MIFT - single u-tube
         ('single_borehole', 'equivalent', 'unequal_segments', 'MIFT', 'single_Utube', 0.05,  np.array([5.76597302, 6.51058473, 6.73746895])),
         ('single_borehole_short', 'equivalent', 'unequal_segments', 'MIFT', 'single_Utube', 0.05, np.array([4.17105954, 5.00930075, 5.30832133])),
         ('ten_boreholes_rectangular', 'equivalent', 'unequal_segments', 'MIFT', 'single_Utube', 0.25, np.array([12.66229998, 18.57852681, 20.33535907])),
