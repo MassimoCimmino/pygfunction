@@ -4,23 +4,21 @@
 Setting up pygfunction
 **********************
 
-*pygfunction* uses Python 3.8, along with the following packages:
-	- numpy (>= 1.21.5)
-	- scipy (>= 1.7.3)
-	- SecondaryCoolantProps (>= 1.1)
-	- typing_extensions (>= 4.0.1)
-	- (optionally) matplotlib (>= 3.8.4)
+*pygfunction* uses Python 3.9, along with the following packages:
+	- numpy (>= 1.26.4)
+	- scipy (>= 1.13.1)
+	- SecondaryCoolantProps (>= 1.3)
+	- typing_extensions (>= 4.11.0)
+	- (optionally) matplotlib (>= 3.9.2)
 
 *pygfunction*'s- documentation is built using:
-	- sphinx (>= 4.4.0)
-	- numpydoc (>= 1.2.0)
+	- sphinx (>= 7.3.7)
+	- numpydoc (>= 1.7.0)
 
 **Users** - `Download pip <https://pip.pypa.io/en/latest/>`_ and install the
 latest release:
 
 .. code:: shell
-
-	pip install pygfunction
 
 	pip install pygfunction[plot]
 
