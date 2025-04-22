@@ -1,12 +1,23 @@
 # -*- coding: utf-8 -*-
+from enum import Enum, auto
 import warnings
+from typing import List, Union
 
 import numpy as np
 from scipy.constants import pi
 from scipy.special import binom
 
+from .boreholes import Borehole
+from .media import Fluid
 from .utilities import _initialize_figure, _format_axes
 
+
+class PipeTypes(Enum):
+    SINGLEUTUBE = auto()
+    DOUBLEUTUBEPARALLEL = auto()
+    DOUBLEUTUBESERIES = auto()
+    COAXIALANNULARINLET = auto()
+    COAXIALPIPEINLET = auto()
 
 class _BasePipe(object):
     """
@@ -1325,7 +1336,7 @@ class SingleUTube(_BasePipe):
         """
         Update the delta-circuit of thermal resistances.
 
-        This methods updates the values of the delta-circuit thermal
+        This method updates the values of the delta-circuit thermal
         resistances based on the provided fluid to outer pipe wall thermal
         resistance.
 
@@ -1863,7 +1874,7 @@ class MultipleUTube(_BasePipe):
         """
         Update the delta-circuit of thermal resistances.
 
-        This methods updates the values of the delta-circuit thermal
+        This method updates the values of the delta-circuit thermal
         resistances based on the provided fluid to outer pipe wall thermal
         resistance.
 
@@ -2307,7 +2318,7 @@ class IndependentMultipleUTube(MultipleUTube):
         """
         Update the delta-circuit of thermal resistances.
 
-        This methods updates the values of the delta-circuit thermal
+        This method updates the values of the delta-circuit thermal
         resistances based on the provided fluid to outer pipe wall thermal
         resistance.
 
@@ -2606,7 +2617,7 @@ class Coaxial(SingleUTube):
         """
         Update the delta-circuit of thermal resistances.
 
-        This methods updates the values of the delta-circuit thermal
+        This method updates the values of the delta-circuit thermal
         resistances based on the provided fluid to fluid and fluid to outer
         pipe wall thermal resistances.
 
@@ -3613,3 +3624,198 @@ def _Nusselt_number_turbulent_flow(Re, Pr, fDarcy):
     Nu = 0.125 * fDarcy * (Re - 1.0e3) * Pr / \
         (1.0 + 12.7 * np.sqrt(0.125*fDarcy) * (Pr**(2.0/3.0) - 1.0))
     return Nu
+
+
+def compute_R_fp(
+        pipe_type: PipeTypes, m_flow_borehole: float, r_in: Union[float, tuple, list],
+        r_out: Union[float, tuple, list], k_p: float, epsilon: float, fluid: Fluid) -> float:
+    if pipe_type in [PipeTypes.SINGLEUTUBE, PipeTypes.DOUBLEUTUBESERIES]:
+
+        m_flow_pipe = m_flow_borehole
+
+        # single u-tube
+        R_p = conduction_thermal_resistance_circular_pipe(
+            r_in, r_out, k_p)
+        # Convection heat transfer coefficient [W/m2.K]
+        h_f = convective_heat_transfer_coefficient_circular_pipe(
+            m_flow_pipe, r_in, fluid.mu, fluid.rho, fluid.k, fluid.cp,
+            epsilon)
+        # Film thermal resistance [m.K/W]
+        R_f = 1.0 / (h_f * 2 * np.pi * r_in)
+
+        return R_p + R_f
+
+    elif pipe_type == PipeTypes.DOUBLEUTUBEPARALLEL:
+
+        m_flow_pipe = m_flow_borehole / 2
+
+        # single u-tube
+        R_p = conduction_thermal_resistance_circular_pipe(
+            r_in, r_out, k_p)
+        # Convection heat transfer coefficient [W/m2.K]
+        h_f = convective_heat_transfer_coefficient_circular_pipe(
+            m_flow_pipe, r_in, fluid.mu, fluid.rho, fluid.k, fluid.cp,
+            epsilon)
+        # Film thermal resistance [m.K/W]
+        R_f = 1.0 / (h_f * 2 * np.pi * r_in)
+
+        return R_p + R_f
+
+    elif pipe_type == PipeTypes.COAXIALANNULARINLET:
+
+        m_flow_pipe = m_flow_borehole
+
+        r_in_out = r_out[1]
+        r_out_in = r_in[0]
+        r_out_out = r_out[0]
+
+        # Outer pipe
+        R_p_out = conduction_thermal_resistance_circular_pipe(
+            r_out_in, r_out_out, k_p)
+
+        # Outer pipe
+        h_f_a_in, h_f_a_out = \
+            convective_heat_transfer_coefficient_concentric_annulus(
+                m_flow_pipe, r_in_out, r_out_in, fluid.mu, fluid.rho, fluid.k,
+                fluid.cp, epsilon)
+
+        # Coaxial GHE in borehole
+        R_f_out_out = 1.0 / (h_f_a_out * 2 * np.pi * r_out_in)
+        return R_p_out + R_f_out_out
+
+    elif pipe_type == PipeTypes.COAXIALPIPEINLET:
+
+        m_flow_pipe = m_flow_borehole
+
+        r_in_out = r_out[0]
+        r_out_in = r_in[1]
+        r_out_out = r_out[1]
+
+        # Outer pipe
+        R_p_out = conduction_thermal_resistance_circular_pipe(
+            r_out_in, r_out_out, k_p)
+        # Fluid-to-fluid thermal resistance [m.K/W]
+
+        # Outer pipe
+        h_f_a_in, h_f_a_out = \
+            convective_heat_transfer_coefficient_concentric_annulus(
+                m_flow_pipe, r_in_out, r_out_in, fluid.mu, fluid.rho, fluid.k,
+                fluid.cp, epsilon)
+
+        # Coaxial GHE in borehole
+        R_f_out_out = 1.0 / (h_f_a_out * 2 * np.pi * r_out_in)
+
+        return R_p_out + R_f_out_out
+
+    else:
+        raise ValueError(f"Unsupported pipe_type: '{pipe_type.name}'")
+
+
+def compute_R_ff(pipe_type: PipeTypes, m_flow_borehole: float, r_in: Union[float, tuple, list],
+                 r_out: Union[float, tuple, list], k_p: float, epsilon: float, fluid: Fluid) -> float:
+    if pipe_type == PipeTypes.COAXIALANNULARINLET:
+
+        m_flow_pipe = m_flow_borehole
+
+        r_in_in = r_in[1]
+        r_in_out = r_out[1]
+        r_out_in = r_in[0]
+
+        # Inner pipe
+        R_p_in = conduction_thermal_resistance_circular_pipe(
+            r_in_in, r_in_out, k_p)
+
+        # Fluid-to-fluid thermal resistance [m.K/W]
+        # Inner pipe
+        h_f_in = convective_heat_transfer_coefficient_circular_pipe(
+            m_flow_pipe, r_in_in, fluid.mu, fluid.rho, fluid.k, fluid.cp, epsilon)
+        R_f_in = 1.0 / (h_f_in * 2 * np.pi * r_in_in)
+
+        # Outer pipe
+        h_f_a_in, h_f_a_out = \
+            convective_heat_transfer_coefficient_concentric_annulus(
+                m_flow_borehole, r_in_out, r_out_in, fluid.mu, fluid.rho, fluid.k,
+                fluid.cp, epsilon)
+        R_f_out_in = 1.0 / (h_f_a_in * 2 * np.pi * r_in_out)
+
+        return R_f_in + R_p_in + R_f_out_in
+
+    elif pipe_type == PipeTypes.COAXIALPIPEINLET:
+
+        m_flow_pipe = m_flow_borehole
+
+        r_in_in = r_in[0]
+        r_in_out = r_out[0]
+        r_out_in = r_in[1]
+
+        # Pipe thermal resistances [m.K/W]
+        # Inner pipe
+        R_p_in = conduction_thermal_resistance_circular_pipe(
+            r_in_in, r_in_out, k_p)
+
+        # Fluid-to-fluid thermal resistance [m.K/W]
+        # Inner pipe
+        h_f_in = convective_heat_transfer_coefficient_circular_pipe(
+            m_flow_pipe, r_in_in, fluid.mu, fluid.rho, fluid.k, fluid.cp, epsilon)
+        R_f_in = 1.0 / (h_f_in * 2 * np.pi * r_in_in)
+
+        # Outer pipe
+        h_f_a_in, h_f_a_out = \
+            convective_heat_transfer_coefficient_concentric_annulus(
+                m_flow_pipe, r_in_out, r_out_in, fluid.mu, fluid.rho, fluid.k,
+                fluid.cp, epsilon)
+        R_f_out_in = 1.0 / (h_f_a_in * 2 * np.pi * r_in_out)
+
+        return R_f_in + R_p_in + R_f_out_in
+
+    else:
+        raise ValueError(f"Unsupported pipe_type: '{pipe_type.name}'")
+
+
+def get_pipes(
+        boreholes: list[Borehole],
+        pipe_type: PipeTypes,
+        pos: List[tuple],
+        r_in: Union[float, tuple, list],
+        r_out: Union[float, tuple, list],
+        k_s: float,
+        k_g: float,
+        k_p: float,
+        m_flow_network: float,
+        epsilon: float,
+        fluid: Fluid,
+        reversible_flow: bool = True
+):
+    J = 2
+    m_flow_borehole = m_flow_network / len(boreholes)
+    pipes = []
+
+    if pipe_type == PipeTypes.SINGLEUTUBE:
+
+        R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+        for borehole in boreholes:
+            pipes.append(SingleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, J, reversible_flow))
+
+    elif pipe_type == PipeTypes.DOUBLEUTUBEPARALLEL:
+
+        R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+        for borehole in boreholes:
+            pipes.append(MultipleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, 2, 'parallel', J, reversible_flow))
+
+    elif pipe_type == PipeTypes.DOUBLEUTUBESERIES:
+
+        R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+        for borehole in boreholes:
+            pipes.append(MultipleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, 2, 'series', J, reversible_flow))
+
+    elif pipe_type in [PipeTypes.COAXIALANNULARINLET, PipeTypes.COAXIALPIPEINLET]:
+
+        R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+        R_ff = compute_R_ff(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+        for borehole in boreholes:
+            pipes.append(Coaxial(pos, r_in, r_out, borehole, k_s, k_g, R_ff, R_fp))
+
+    else:
+        raise ValueError(f"Unsupported pipe_type: '{pipe_type.name}'")
+
+    return pipes
