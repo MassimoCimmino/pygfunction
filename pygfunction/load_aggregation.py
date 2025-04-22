@@ -93,6 +93,10 @@ class ClaessonJaved(_LoadAggregation):
             If nSources=1, g_d can be 1 dimensional.
 
         """
+        if g_d.ndim == 1:
+            self._scalar_output = True
+        else:
+            self._scalar_output = False
         if self.nSources==1:
             g_d = g_d.reshape(1, 1, -1)
         # Build matrix of thermal response factor increments
@@ -187,6 +191,8 @@ class ClaessonJaved(_LoadAggregation):
         #        deltaT += (self.dg[:,:,i]).dot(self.q_b[:,i])
 
         deltaT = np.einsum('ijk,jk', self.dg, self.q_b)
+        if self._scalar_output:
+            deltaT = deltaT.item()
         return deltaT
 
     def _build_cells(self, dt, tmax, nSources, cells_per_level):
