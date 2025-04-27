@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
+from collections.abc import Callable
 from typing import Union, List, Dict, Tuple
+from typing_extensions import Self     # for compatibility with Python <= 3.10
 
 import numpy as np
 import numpy.typing as npt
-from typing_extensions import Self  # for compatibility with Python <= 3.10
 
 from .boreholes import Borehole
 from .utilities import _initialize_figure, _format_axes, _format_axes_3d
@@ -106,6 +107,58 @@ class Borefield:
         """Return True if other_field is not the same as self."""
         check = not self == other_field
         return check
+
+    @property
+    def is_tilted(self) -> np.ndarray:
+        """Return an boolean array. True if the corresponding borehole is inclined."""
+        return self._is_tilted
+
+    @property
+    def is_vertical(self) -> np.ndarray:
+        """Return an boolean array. True if the corresponding borehole is vertical."""
+        return np.logical_not(self._is_tilted)
+
+    def distance(
+            self, other_field: Union[Borehole, Self, List[Borehole]],
+            outer: bool = True
+            ) -> np.ndarray:
+        """
+        Evaluate horizontal distances to boreholes of another borefield.
+
+        Parameters
+        ----------
+        other_field : Borehole or Borefield object
+            Borefield with which to evaluate distances.
+        outer : , optional
+            True if the horizontal distance is to be evaluated for all
+            boreholes of the borefield onto all boreholes of the other
+            borefield to return a (nBoreholes_other_field, nBoreholes,)
+            array. If false, the horizontal distance is evaluated pairwise
+            between boreholes of the borefield and boreholes of the other
+            borefield. The numbers of boreholes should be the same
+            (i.e. nBoreholes == nBoreholes_other_field) and a (nBoreholes,)
+            array is returned.
+            Default is True.
+
+        Returns
+        -------
+        dis : array, shape (nBoreholes_other_field, nBoreholes,) or (nBoreholes,)
+            Horizontal distances between boreholes (in meters).
+
+        """
+        if outer:
+            dis = np.maximum(
+                np.sqrt(
+                    np.subtract.outer(other_field.x, self.x)**2
+                    + np.subtract.outer(other_field.y, self.y)**2
+                    ),
+                self.r_b)
+        else:
+            dis = np.maximum(
+                np.sqrt(
+                    (other_field.x - self.x)**2 + (other_field.y - self.y)**2),
+                self.r_b)
+        return dis
 
     def evaluate_g_function(
             self,

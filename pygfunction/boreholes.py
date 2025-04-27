@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from typing_extensions import Self     # for compatibility with Python <= 3.10
 import warnings
 
 import numpy as np
@@ -54,6 +55,32 @@ class Borehole(object):
              f' orientation={self.orientation})')
         return s
 
+    @property
+    def is_tilted(self) -> bool:
+        """
+        Returns true if the borehole is inclined.
+
+        Returns
+        -------
+        bool
+            True if borehole is inclined.
+
+        """
+        return self._is_tilted
+
+    @property
+    def is_vertical(self) -> bool:
+        """
+        Returns true if the borehole is vertical.
+
+        Returns
+        -------
+        bool
+            True if borehole is vertical.
+
+        """
+        return not self._is_tilted
+
     def distance(self, target):
         """
         Evaluate the distance between the current borehole and a target
@@ -85,30 +112,6 @@ class Borehole(object):
         dis = max(self.r_b,
                   np.sqrt((self.x - target.x)**2 + (self.y - target.y)**2))
         return dis
-
-    def is_tilted(self):
-        """
-        Returns true if the borehole is inclined.
-
-        Returns
-        -------
-        bool
-            True if borehole is inclined.
-
-        """
-        return self._is_tilted
-
-    def is_vertical(self):
-        """
-        Returns true if the borehole is vertical.
-
-        Returns
-        -------
-        bool
-            True if borehole is vertical.
-
-        """
-        return not self._is_tilted
 
     def position(self):
         """
