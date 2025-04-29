@@ -160,6 +160,8 @@ class Borehole(object):
         """
         if segment_ratios is None:
             segment_ratios = np.full(nSegments, 1. / nSegments)
+        elif callable(segment_ratios):
+            segment_ratios = segment_ratios(nSegments)
         z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1]
         boreSegments = []
         for z_i, ratios in zip(z, segment_ratios):
@@ -208,6 +210,8 @@ class Borehole(object):
         """
         if segment_ratios is None:
             segment_ratios = np.full(nSegments, 1. / nSegments)
+        elif callable(segment_ratios):
+            segment_ratios = segment_ratios(nSegments)
         z = np.concatenate(([0.], np.cumsum(segment_ratios))) * self.H
         return z
 
@@ -241,6 +245,8 @@ class Borehole(object):
         """
         if segment_ratios is None:
             segment_ratios = np.full(nSegments, 1. / nSegments)
+        elif callable(segment_ratios):
+            segment_ratios = segment_ratios(nSegments)
         z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1] \
             + segment_ratios * self.H / 2
         return z
@@ -290,36 +296,70 @@ class _EquivalentBorehole(object):
         Simulation, 14 (4), 446-460.
 
     """
-    def __init__(self, boreholes):
-        if isinstance(boreholes[0], Borehole):
-            self.H = boreholes[0].H
-            self.D = boreholes[0].D
-            self.r_b = boreholes[0].r_b
-            self.x = np.array([b.x for b in boreholes])
-            self.y = np.array([b.y for b in boreholes])
-            self.tilt = boreholes[0].tilt
-            self.orientation = np.array([b.orientation for b in boreholes])
-        elif isinstance(boreholes[0], _EquivalentBorehole):
-            self.H = boreholes[0].H
-            self.D = boreholes[0].D
-            self.r_b = boreholes[0].r_b
-            self.x = np.concatenate([b.x for b in boreholes])
-            self.y = np.concatenate([b.y for b in boreholes])
-            self.tilt = boreholes[0].tilt
-            self.orientation = np.concatenate(
-                [b.orientation for b in boreholes])
-        elif type(boreholes) is tuple:
-            self.H, self.D, self.r_b, self.x, self.y = boreholes[:5]
-            self.x = np.atleast_1d(self.x)
-            self.y = np.atleast_1d(self.y)
-            if len(boreholes)==7:
-                self.tilt, self.orientation = boreholes[5:]
+    def __init__(self, H, D, r_b, x, y, tilt=0., orientation=0.):
+        self.nBoreholes = np.maximum(len(x), len(y))
+    
+        # Broadcast all variables to arrays of length `nBoreholes`
+        self.H = H
+        self.D = D
+        self.r_b = r_b
+        self.x = x
+        self.y = y
+        self.tilt = tilt
+    
+        # Identify tilted boreholes
+        self._is_tilted = np.abs(tilt) > 1e-6
+        # Vertical boreholes default to an orientation of zero
+        if not self._is_tilted:
+            self.orientation = np.broadcast_to(0., self.nBoreholes)
+        elif np.all(self._is_tilted):
+            self.orientation = np.broadcast_to(orientation, self.nBoreholes)
+        else:
+            self.orientation = np.multiply(orientation, self._is_tilted)
 
-        self.nBoreholes = len(self.x)
-        # Check if borehole is inclined
-        self._is_tilted = np.abs(self.tilt) > 1.0e-6
+    def __getitem__(self, key):
+        if isinstance(key, (int, np.integer)):
+            # Returns a borehole object if only one borehole is indexed
+            output_class = Borehole
+        else:
+            # Returns a _EquivalentBorehole object for slices and lists of
+            # indexes
+            output_class = _EquivalentBorehole
+        return output_class(
+            self.H, self.D, self.r_b, self.x[key], self.y[key],
+            tilt=self.tilt, orientation=self.orientation[key])
 
-    def distance(self, target):
+    def __len__(self) -> int:
+        """Return the number of boreholes."""
+        return self.nBoreholes
+
+    @property
+    def is_tilted(self):
+        """
+        Returns true if the borehole is inclined.
+
+        Returns
+        -------
+        bool
+            True if borehole is inclined.
+
+        """
+        return self._is_tilted
+
+    @property
+    def is_vertical(self):
+        """
+        Returns true if the borehole is vertical.
+
+        Returns
+        -------
+        bool
+            True if borehole is vertical.
+
+        """
+        return not self._is_tilted
+
+    def distance(self, other_borehole: Self) -> np.ndarray:
         """
         Evaluate the distance between the current borehole and a target
         borehole.
@@ -349,33 +389,11 @@ class _EquivalentBorehole(object):
         """
         dis = np.maximum(
             np.sqrt(
-                np.add.outer(target.x, -self.x)**2 + np.add.outer(target.y, -self.y)**2),
+                np.add.outer(other_borehole.x, -self.x)**2
+                + np.add.outer(other_borehole.y, -self.y)**2
+                ),
             self.r_b)
         return dis
-
-    def is_tilted(self):
-        """
-        Returns true if the borehole is inclined.
-
-        Returns
-        -------
-        bool
-            True if borehole is inclined.
-
-        """
-        return self._is_tilted
-
-    def is_vertical(self):
-        """
-        Returns true if the borehole is vertical.
-
-        Returns
-        -------
-        bool
-            True if borehole is vertical.
-
-        """
-        return not self._is_tilted
 
     def position(self):
         """
@@ -423,15 +441,17 @@ class _EquivalentBorehole(object):
         """
         if segment_ratios is None:
             segment_ratios = np.full(nSegments, 1. / nSegments)
+        elif callable(segment_ratios):
+            segment_ratios = segment_ratios(nSegments)
         z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1]
         segments = [_EquivalentBorehole(
-            (ratios * self.H,
-             self.D + z_i * np.cos(self.tilt),
-             self.r_b,
-             self.x + z_i * np.sin(self.tilt) * np.cos(self.orientation),
-             self.y + z_i * np.sin(self.tilt) * np.sin(self.orientation),
-             self.tilt,
-             self.orientation)
+            ratios * self.H,
+            self.D + z_i * np.cos(self.tilt),
+            self.r_b,
+            self.x + z_i * np.sin(self.tilt) * np.cos(self.orientation),
+            self.y + z_i * np.sin(self.tilt) * np.sin(self.orientation),
+            tilt=self.tilt,
+            orientation=self.orientation
             ) for z_i, ratios in zip(z, segment_ratios)]
         return segments
 
@@ -527,6 +547,8 @@ class _EquivalentBorehole(object):
         """
         if segment_ratios is None:
             segment_ratios = np.full(nSegments, 1. / nSegments)
+        elif callable(segment_ratios):
+            segment_ratios = segment_ratios(nSegments)
         z = np.concatenate(([0.], np.cumsum(segment_ratios))) * self.H
         return z
 
@@ -560,9 +582,43 @@ class _EquivalentBorehole(object):
         """
         if segment_ratios is None:
             segment_ratios = np.full(nSegments, 1. / nSegments)
+        elif callable(segment_ratios):
+            segment_ratios = segment_ratios(nSegments)
         z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1] \
             + segment_ratios * self.H / 2
         return z
+
+    @classmethod
+    def from_borefield(cls, borefield):
+        assert np.allclose(borefield.H, borefield.H[0], rtol=1e-6)
+        assert np.allclose(borefield.D, borefield.D[0], rtol=1e-6)
+        assert np.allclose(borefield.r_b, borefield.r_b[0], rtol=1e-6)
+        assert np.allclose(borefield.tilt, borefield.tilt[0], rtol=1e-6)
+        H = borefield.H[0]
+        D = borefield.D[0]
+        r_b = borefield.r_b[0]
+        x = borefield.x
+        y = borefield.y
+        tilt = borefield.tilt[0]
+        orientation = borefield.orientation
+        return cls(H, D, r_b, x, y, tilt=tilt, orientation=orientation)
+
+    @classmethod
+    def from_boreholes(cls, boreholes):
+        assert np.allclose([b.H for b in boreholes], boreholes[0].H, rtol=1e-6)
+        assert np.allclose([b.D for b in boreholes], boreholes[0].D, rtol=1e-6)
+        assert np.allclose(
+            [b.r_b for b in boreholes], boreholes[0].r_b, rtol=1e-6)
+        assert np.allclose(
+            [b.tilt for b in boreholes], boreholes[0].tilt, rtol=1e-6)
+        H = boreholes[0].H
+        D = boreholes[0].D
+        r_b = boreholes[0].r_b
+        x = np.array([b.x for b in boreholes])
+        y = np.array([b.y for b in boreholes])
+        tilt = boreholes[0].tilt
+        orientation = np.array([b.orientation for b in boreholes])
+        return cls(H, D, r_b, x, y, tilt=tilt, orientation=orientation)
 
 
 def find_duplicates(boreField, disp=False):

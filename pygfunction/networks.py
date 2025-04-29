@@ -1136,6 +1136,9 @@ class Network(object):
             self._segment_ratios = [segment_ratios] * self.nBoreholes
         elif isinstance(segment_ratios, list):
             self._segment_ratios = segment_ratios
+        elif callable(segment_ratios):
+            self._segment_ratios = [
+                segment_ratios(nSegments_i) for nSegments_i in self.nSegments]
         else:
             raise ValueError(
                 'Incorrect format of the segment ratios list.')
@@ -1497,6 +1500,9 @@ class _EquivalentNetwork(Network):
             self._segment_ratios = [segment_ratios] * self.nBoreholes
         elif isinstance(segment_ratios, list):
             self._segment_ratios = segment_ratios
+        elif callable(segment_ratios):
+            self._segment_ratios = [
+                segment_ratios(nSegments_i) for nSegments_i in self.nSegments]
         else:
             raise ValueError(
                 'Incorrect format of the segment ratios list.')
