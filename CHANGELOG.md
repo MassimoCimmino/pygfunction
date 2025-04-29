@@ -1,6 +1,6 @@
 # History of changes
 
-## Version 2.3 (in development)
+## Version 2.3 (2025-04-29)
 
 ### New features
 

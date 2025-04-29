@@ -44,6 +44,8 @@ def exp1(x):
     """
     Exponential integral E1.
 
+    Based on the approximation presented by Barry et al. [#BaPaLi2000]_.
+
     Parameters
     ----------
     x : float or array
