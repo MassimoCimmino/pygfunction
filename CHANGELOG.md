@@ -2,6 +2,10 @@
 
 ## Version 2.4 (in development)
 
+### Enhancements
+
+* [Issue 211](https://github.com/MassimoCimmino/pygfunction/issues/211) - Refactored the `heat_transfer` module. The `finite_line_source`, `finite_line_source_vertical` and `finite_line_source_inclined` functions now use `Borefield` objects as arguments instead of the geometrical parameters of the boreholes. This simplifies calls to these functions.
+
 ### Other changes
 
 * [Issue 319](https://github.com/MassimoCimmino/pygfunction/issues/319) - Created `solvers` module. `Solver` classes are moved out of the `gfunction` module and into the new module.
@@ -16,7 +20,7 @@
 
 ### Bug fixes
 
-* [Issue 305](https://github.com/MassimoCimmino/pygfunction/issues/305) - Fixed `ClaessonJaved` to return a float when the *g*-function is a vector (i.e. when there is only one heat source). This is required for compatibility with `numpy` version `2.x`.
+* [Issue 307](https://github.com/MassimoCimmino/pygfunction/issues/307) - Fixed `ClaessonJaved` to return a float when the *g*-function is a vector (i.e. when there is only one heat source). This is required for compatibility with `numpy` version `2.x`.
 
 ### Other changes
 
