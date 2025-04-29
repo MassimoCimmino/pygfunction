@@ -76,17 +76,17 @@ class Equivalent(_BaseSolver):
         (nMassFlow, nInlets,) array is supplied, the
         (nMassFlow, nMassFlow,) variable mass flow rate g-functions
         will be evaluated using the method of Cimmino (2024)
-        [#gFunction-CimBer2024]_. Only required for the 'MIFT' boundary
-         condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
-         provided.
+        [#Equivalent-Cimmin2024]_. Only required for the 'MIFT' boundary
+        condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
+        provided.
         Default is None.
     m_flow_network : float or (nMassFlow,) array, optional
         Fluid mass flow rate into the network of boreholes. If an array
         is supplied, the (nMassFlow, nMassFlow,) variable mass flow
         rate g-functions will be evaluated using the method of Cimmino
-        (2024) [#gFunction-CimBer2024]_. Only required for the 'MIFT' boundary
-         condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
-         provided.
+        (2024) [#Equivalent-Cimmin2024]_. Only required for the 'MIFT' boundary
+        condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
+        provided.
         Default is None.
     cp_f : float, optional
         Fluid specific isobaric heat capacity (in J/kg.degC). Only required
@@ -155,10 +155,10 @@ class Equivalent(_BaseSolver):
        thermal resistances and fluid flow rate on the g-functions of geothermal
        bore fields. International Journal of Heat and Mass Transfer, 91,
        1119-1127.
-    .. [#Equivalent-Cimmin2018] Cimmino, M. (2018). Fast calculation of the
-       g-functions of geothermal borehole fields using similarities in the
-       evaluation of the finite line source solution. Journal of Building
-       Performance Simulation, 11 (6), 655-668.
+    .. [#Equivalent-Cimmin2019] Cimmino, M. (2019). Semi-analytical method
+       for g-function calculation of bore fields with series- and
+       parallel-connected boreholes. Science and Technology for the Built
+       Environment, 25 (8), 1007-1022.
     .. [#Equivalent-PriCim2021] Prieto, C., & Cimmino, M.
        (2021). Thermal interactions in large irregular fields of geothermal
        boreholes: the method of equivalent borehole. Journal of Building
@@ -167,6 +167,9 @@ class Equivalent(_BaseSolver):
        finite line source solution to model thermal interactions between
        geothermal boreholes. International Communications in Heat and Mass
        Transfer, 127, 105496.
+    .. [#Equivalent-Cimmin2024] Cimmino, M. (2024). g-Functions for fields of
+       series- and parallel-connected boreholes with variable fluid mass flow
+       rate and reversible flow direction. Renewable Energy, 228, 120661.
 
     """
     def initialize(self, disTol=0.01, tol=1.0e-6, kClusters=1, **kwargs):

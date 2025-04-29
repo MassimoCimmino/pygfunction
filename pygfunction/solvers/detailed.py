@@ -43,7 +43,7 @@ class Detailed(_BaseSolver):
                 (2014) [#Detailed-CimBer2014]_.
             - 'MIFT' :
                 **Mixed inlet fluid temperatures**. This boundary condition was
-                introduced by Cimmino (2015) [#gFunction-Cimmin2015]_ for
+                introduced by Cimmino (2015) [#Detailed-Cimmin2015]_ for
                 parallel-connected boreholes and extended to mixed
                 configurations by Cimmino (2019) [#Detailed-Cimmin2019]_.
 
@@ -65,17 +65,17 @@ class Detailed(_BaseSolver):
         (nMassFlow, nInlets,) array is supplied, the
         (nMassFlow, nMassFlow,) variable mass flow rate g-functions
         will be evaluated using the method of Cimmino (2024)
-        [#gFunction-CimBer2024]_. Only required for the 'MIFT' boundary
-         condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
-         provided.
+        [#Detailed-Cimmin2024]_. Only required for the 'MIFT' boundary
+        condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
+        provided.
         Default is None.
     m_flow_network : float or (nMassFlow,) array, optional
         Fluid mass flow rate into the network of boreholes. If an array
         is supplied, the (nMassFlow, nMassFlow,) variable mass flow
         rate g-functions will be evaluated using the method of Cimmino
-        (2024) [#gFunction-CimBer2024]_. Only required for the 'MIFT' boundary
-         condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
-         provided.
+        (2024) [#Detailed-Cimmin2024]_. Only required for the 'MIFT' boundary
+        condition. Only one of 'm_flow_borehole' and 'm_flow_network' can be
+        provided.
         Default is None.
     cp_f : float, optional
         Fluid specific isobaric heat capacity (in J/kg.degC). Only required
@@ -122,6 +122,10 @@ class Detailed(_BaseSolver):
     .. [#Detailed-CimBer2014] Cimmino, M., & Bernier, M. (2014). A
        semi-analytical method to generate g-functions for geothermal bore
        fields. International Journal of Heat and Mass Transfer, 70, 641-650.
+    .. [#Detailed-Cimmin2015] Cimmino, M. (2015). The effects of borehole
+       thermal resistances and fluid flow rate on the g-functions of geothermal
+       bore fields. International Journal of Heat and Mass Transfer, 91,
+       1119-1127.
     .. [#Detailed-Cimmin2019] Cimmino, M. (2019). Semi-analytical method for
        g-function calculation of bore fields with series- and
        parallel-connected boreholes. Science and Technology for the Built
@@ -130,6 +134,9 @@ class Detailed(_BaseSolver):
        finite line source solution to model thermal interactions between
        geothermal boreholes. International Communications in Heat and Mass
        Transfer, 127, 105496.
+    .. [#Detailed-Cimmin2024] Cimmino, M. (2024). g-Functions for fields of
+       series- and parallel-connected boreholes with variable fluid mass flow
+       rate and reversible flow direction. Renewable Energy, 228, 120661.
 
     """
     def initialize(self, **kwargs):
