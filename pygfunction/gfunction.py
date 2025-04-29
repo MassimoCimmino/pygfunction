@@ -262,17 +262,17 @@ class gFunction(object):
         self._check_inputs()
 
         # Load the chosen solver
-        if self.method.lower()=='similarities':
+        if self.method.lower() == 'similarities':
             self.solver = Similarities(
                 self.borefield, self.network, self.time,
                 self.boundary_condition, self.m_flow_borehole,
                 self.m_flow_network, self.cp_f, **self.options)
-        elif self.method.lower()=='detailed':
+        elif self.method.lower() == 'detailed':
             self.solver = Detailed(
                 self.borefield, self.network, self.time,
                 self.boundary_condition, self.m_flow_borehole,
                 self.m_flow_network, self.cp_f, **self.options)
-        elif self.method.lower()=='equivalent':
+        elif self.method.lower() == 'equivalent':
             self.solver = Equivalent(
                 self.borefield, self.network, self.time,
                 self.boundary_condition, self.m_flow_borehole,
