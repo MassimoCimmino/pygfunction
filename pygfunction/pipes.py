@@ -3190,9 +3190,9 @@ def convective_heat_transfer_coefficient_concentric_annulus(
     Evaluate the inner and outer convective heat transfer coefficient for the
     annulus region of a concentric pipe.
 
-    Grundmann (2016) referenced Hellström (1991) [#Hellstrom1991b]_ in the
-    discussion about inner and outer convection coefficients in an annulus
-    region of a concentric pipe arrangement.
+    Grundmann (2016) [#Grundmann2016]_ referenced Hellström (1991)
+    [#Hellstrom1991b]_ in the discussion about inner and outer convection
+    coefficients in an annulus region of a concentric pipe arrangement.
 
     The following is valid for :math:`Re < 2300` and
     :math:`0.1 \\leq Pr \\leq 1000` :
