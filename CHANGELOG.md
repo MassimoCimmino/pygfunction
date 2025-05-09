@@ -1,5 +1,11 @@
 # History of changes
 
+## Version 2.4 (in development)
+
+### Other changes
+
+* [Issue 319](https://github.com/MassimoCimmino/pygfunction/issues/319) - Created `solvers` module. `Solver` classes are moved out of the `gfunction` module and into the new module.
+
 ## Version 2.3 (2025-04-29)
 
 ### New features
