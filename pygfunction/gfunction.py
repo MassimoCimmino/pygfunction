@@ -9,16 +9,38 @@ from scipy.cluster.hierarchy import cut_tree, dendrogram, linkage
 from scipy.constants import pi
 from scipy.interpolate import interp1d as interp1d
 
-from . import utilities
 from .borefield import Borefield
-from .boreholes import Borehole, _EquivalentBorehole, find_duplicates
-from .heat_transfer import finite_line_source, finite_line_source_vectorized, \
-    finite_line_source_equivalent_boreholes_vectorized, \
+from .boreholes import (
+    Borehole,
+    find_duplicates,
+    _EquivalentBorehole
+)
+from .heat_transfer import (
+    finite_line_source,
+    finite_line_source_vectorized,
+    finite_line_source_equivalent_boreholes_vectorized,
     finite_line_source_inclined_vectorized
+)
 from .media import Fluid
-from .networks import Network, _EquivalentNetwork, network_thermal_resistance
-from .pipes import get_pipes, PipeTypes
-from .utilities import _initialize_figure, _format_axes, segment_ratios
+from .networks import (
+    Network,
+    network_thermal_resistance,
+    _EquivalentNetwork
+)
+from .pipes import (
+    PipeTypes,
+    get_pipes
+)
+from .solvers import (
+    Detailed,
+    Equivalent,
+    Similarities
+)
+from .utilities import (
+    segment_ratios,
+    _initialize_figure,
+    _format_axes
+)
 
 
 class gFunction(object):
@@ -262,17 +284,17 @@ class gFunction(object):
 
         # Load the chosen solver
         if self.method.lower()=='similarities':
-            self.solver = _Similarities(
+            self.solver = Similarities(
                 self.boreholes, self.network, self.time,
                 self.boundary_condition, self.m_flow_borehole,
                 self.m_flow_network, self.cp_f, **self.options)
         elif self.method.lower()=='detailed':
-            self.solver = _Detailed(
+            self.solver = Detailed(
                 self.boreholes, self.network, self.time,
                 self.boundary_condition, self.m_flow_borehole,
                 self.m_flow_network, self.cp_f, **self.options)
         elif self.method.lower()=='equivalent':
-            self.solver = _Equivalent(
+            self.solver = Equivalent(
                 self.boreholes, self.network, self.time,
                 self.boundary_condition, self.m_flow_borehole,
                 self.m_flow_network, self.cp_f, **self.options)
@@ -521,7 +543,7 @@ class gFunction(object):
 
                 # Adjust figure to window
                 plt.tight_layout()
-            
+
         return fig
 
     def visualize_heat_extraction_rate_profiles(

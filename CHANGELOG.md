@@ -1,12 +1,22 @@
 # History of changes
 
-## Version 2.3 (in development)
+## Version 2.4 (in development)
+
+### Other changes
+
+* [Issue 319](https://github.com/MassimoCimmino/pygfunction/issues/319) - Created `solvers` module. `Solver` classes are moved out of the `gfunction` module and into the new module.
+
+## Version 2.3 (2025-04-29)
 
 ### New features
 
 * [Issue 215](https://github.com/MassimoCimmino/pygfunction/issues/215) - Implemented variable fluid mass flow rate g-functions. Bore fields with series-connected boreholes and reversible flow direction can now be simulated.
 * [Issue 282](https://github.com/MassimoCimmino/pygfunction/issues/282) - Enabled the use of negative mass flow rates in `Pipe` and `Network` classes to model reversed flow direction.
 * [Pull Request 308](https://github.com/MassimoCimmino/pygfunction/pull/308) - Introduced a new `borefield` module. The new `Borefield` class replaces lists of `Borehole` objects as the preferred way to configure bore fields. The `Borefield.evaluate_g_function` method evaluates g-functions using the 'UHTR' and 'UBWT' boundary conditions. Deprecated bore field creation functions in the `boreholes` module (e.g. `boreholes.rectangle_field()`). These functions are replaced by methods of the new `Borefield` class. They will be removed in `v3.0.0`.
+
+### Bug fixes
+
+* [Issue 305](https://github.com/MassimoCimmino/pygfunction/issues/305) - Fixed `ClaessonJaved` to return a float when the *g*-function is a vector (i.e. when there is only one heat source). This is required for compatibility with `numpy` version `2.x`.
 
 ### Other changes
 
