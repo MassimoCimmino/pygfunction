@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
+from typing import Union, Dict
+
 import numpy as np
+import numpy.typing as npt
 from scipy.linalg import block_diag
+
+from .enums import GHEType
+from .gfunction import gFunction
 
 
 class Network(object):
@@ -74,6 +80,7 @@ class Network(object):
     def __init__(self, boreholes, pipes, bore_connectivity=None,
                  m_flow_network=None, cp_f=None, nSegments=None,
                  segment_ratios=None):
+        self.ghe_type = GHEType.NETWORK
         self.b = boreholes
         self.H_tot = sum([b.H for b in self.b])
         self.nBoreholes = len(boreholes)
@@ -992,11 +999,11 @@ class Network(object):
     def _initialize_stored_coefficients(
             self, m_flow_network, cp_f, nSegments, segment_ratios):
         nMethods = 7    # Number of class methods
-        self._stored_coefficients = [() for i in range(nMethods)]
+        self._stored_coefficients = [() for _ in range(nMethods)]
         self._stored_m_flow_cp = [np.empty(self.nInlets)*np.nan
-                                  for i in range(nMethods)]
-        self._stored_nSegments = [np.nan for i in range(nMethods)]
-        self._stored_segment_ratios = [np.nan for i in range(nMethods)]
+                                  for _ in range(nMethods)]
+        self._stored_nSegments = [np.nan for _ in range(nMethods)]
+        self._stored_segment_ratios = [np.nan for _ in range(nMethods)]
         self._m_flow_cp_model_variables = np.empty(self.nInlets)*np.nan
         self._nSegments_model_variables = np.nan
         self._segment_ratios_model_variables = np.nan
@@ -1249,6 +1256,23 @@ class Network(object):
                         'The borehole connectivity list is invalid.')
         return
 
+    def evaluate_g_function(self, alpha: float,
+            time: npt.ArrayLike,
+            method: str = "equivalent",
+            boundary_condition: str = "MIFT",
+            options: Union[Dict[str, str], None] = None):
+
+        gfunc = gFunction(
+            self,
+            alpha,
+            time=time,
+            method=method,
+            boundary_condition=boundary_condition,
+            options=options,
+        )
+        return gfunc.gFunc
+
+
 
 class _EquivalentNetwork(Network):
     """
@@ -1256,7 +1280,7 @@ class _EquivalentNetwork(Network):
     between the equivalent boreholes.
 
     Contains information regarding the physical dimensions and thermal
-    characteristics of the pipes and the grout material in each boreholes, the
+    characteristics of the pipes and the grout material in each borehole, the
     topology of the connections between boreholes, as well as methods to
     evaluate fluid temperatures and heat extraction rates based on the work of
     Cimmino (2018, 2019, 2024) [#Network-Cimmin2018]_, [#Network-Cimmin2019]_,
@@ -1442,7 +1466,7 @@ class _EquivalentNetwork(Network):
         m_flow_in = np.atleast_1d(m_flow_network)
         if len(m_flow_in) == 1:
             m_flow_in = np.array(
-                [m_flow_network/self.nBoreholes_total for b in self.b])
+                [m_flow_network/self.nBoreholes_total for _ in self.b])
         elif not len(m_flow_in) == self.nInlets:
             raise ValueError(
                 'Incorrect length of mass flow vector.')
@@ -1527,7 +1551,7 @@ def network_thermal_resistance(network, m_flow_network, cp_f):
 
     """
     # Number of boreholes
-    nBoreholes = len(network.b)
+    # nBoreholes = len(network.b)
 
     # Total borehole length
     H_tot = network.H_tot

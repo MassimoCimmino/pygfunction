@@ -6,6 +6,7 @@ import numpy.typing as npt
 from typing_extensions import Self  # for compatibility with Python <= 3.10
 
 from .boreholes import Borehole
+from .enums import GHEType
 from .utilities import _initialize_figure, _format_axes, _format_axes_3d
 
 
@@ -43,6 +44,8 @@ class Borefield:
             self, H: npt.ArrayLike, D: npt.ArrayLike, r_b: npt.ArrayLike,
             x: npt.ArrayLike, y: npt.ArrayLike, tilt: npt.ArrayLike = 0.,
             orientation: npt.ArrayLike = 0.):
+        self.ghe_type = GHEType.BOREFIElD
+
         # Convert x and y coordinates to arrays
         x = np.atleast_1d(x)
         y = np.atleast_1d(y)

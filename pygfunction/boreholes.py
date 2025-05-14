@@ -4,6 +4,7 @@ import warnings
 import numpy as np
 from scipy.spatial.distance import pdist
 
+from .enums import GHEType
 from .utilities import _initialize_figure, _format_axes, _format_axes_3d
 
 
@@ -33,6 +34,7 @@ class Borehole(object):
 
     """
     def __init__(self, H, D, r_b, x, y, tilt=0., orientation=0.):
+        self.ghe_type = GHEType.BOREHOLE
         self.H = float(H)      # Borehole length
         self.D = float(D)      # Borehole buried depth
         self.r_b = float(r_b)  # Borehole radius
