@@ -3811,7 +3811,7 @@ def get_pipes(
         R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
         R_ff = compute_R_ff(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
         for borehole in boreholes:
-            pipes.append(Coaxial(pos, r_in, r_out, borehole, k_s, k_g, R_ff, R_fp))
+            pipes.append(Coaxial(pos, np.array(r_in), np.array(r_out), borehole, k_s, k_g, R_ff, R_fp))
 
     else:
         raise ValueError(f"Unsupported pipe_type: '{pipe_type.name}'")
