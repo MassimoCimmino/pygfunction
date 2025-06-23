@@ -23,7 +23,7 @@ class GroundHeatExchanger:
                  r_out: Union[float, tuple, list],
                  k_s: float,
                  k_g: float,
-                 k_p: float,
+                 k_p: Union[float, tuple, list],
                  fluid_name: str,
                  fluid_concentration_pct: float,
                  m_flow_ghe,

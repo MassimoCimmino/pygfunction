@@ -3622,7 +3622,7 @@ def _Nusselt_number_turbulent_flow(Re, Pr, fDarcy):
 
 def compute_R_fp(
         pipe_type: PipeType, m_flow_borehole: float, r_in: Union[float, tuple, list],
-        r_out: Union[float, tuple, list], k_p: float, epsilon: float, fluid: Fluid) -> float:
+        r_out: Union[float, tuple, list], k_p: Union[float, tuple, list], epsilon: float, fluid: Fluid) -> float:
     if pipe_type in [PipeType.SINGLEUTUBE, PipeType.DOUBLEUTUBESERIES]:
 
         m_flow_pipe = m_flow_borehole
@@ -3662,10 +3662,11 @@ def compute_R_fp(
         r_in_out = r_out[1]
         r_out_in = r_in[0]
         r_out_out = r_out[0]
+        k_p_out = k_p[0]
 
         # Outer pipe
         R_p_out = conduction_thermal_resistance_circular_pipe(
-            r_out_in, r_out_out, k_p)
+            r_out_in, r_out_out, k_p_out)
 
         # Outer pipe
         h_f_a_in, h_f_a_out = \
@@ -3684,10 +3685,11 @@ def compute_R_fp(
         r_in_out = r_out[0]
         r_out_in = r_in[1]
         r_out_out = r_out[1]
+        k_p_out = k_p[0]
 
         # Outer pipe
         R_p_out = conduction_thermal_resistance_circular_pipe(
-            r_out_in, r_out_out, k_p)
+            r_out_in, r_out_out, k_p_out)
         # Fluid-to-fluid thermal resistance [m.K/W]
 
         # Outer pipe
@@ -3706,7 +3708,7 @@ def compute_R_fp(
 
 
 def compute_R_ff(pipe_type: PipeType, m_flow_borehole: float, r_in: Union[float, tuple, list],
-                 r_out: Union[float, tuple, list], k_p: float, epsilon: float, fluid: Fluid) -> float:
+                 r_out: Union[float, tuple, list], k_p: Union[float, tuple, list], epsilon: float, fluid: Fluid) -> float:
     if pipe_type == PipeType.COAXIALANNULARINLET:
 
         m_flow_pipe = m_flow_borehole
@@ -3714,10 +3716,11 @@ def compute_R_ff(pipe_type: PipeType, m_flow_borehole: float, r_in: Union[float,
         r_in_in = r_in[1]
         r_in_out = r_out[1]
         r_out_in = r_in[0]
+        k_p_in = k_p[1]
 
         # Inner pipe
         R_p_in = conduction_thermal_resistance_circular_pipe(
-            r_in_in, r_in_out, k_p)
+            r_in_in, r_in_out, k_p_in)
 
         # Fluid-to-fluid thermal resistance [m.K/W]
         # Inner pipe
@@ -3741,11 +3744,12 @@ def compute_R_ff(pipe_type: PipeType, m_flow_borehole: float, r_in: Union[float,
         r_in_in = r_in[0]
         r_in_out = r_out[0]
         r_out_in = r_in[1]
+        k_p_in = k_p[1]
 
         # Pipe thermal resistances [m.K/W]
         # Inner pipe
         R_p_in = conduction_thermal_resistance_circular_pipe(
-            r_in_in, r_in_out, k_p)
+            r_in_in, r_in_out, k_p_in)
 
         # Fluid-to-fluid thermal resistance [m.K/W]
         # Inner pipe
@@ -3774,7 +3778,7 @@ def get_pipes(
         r_out: Union[float, tuple, list],
         k_s: float,
         k_g: float,
-        k_p: float,
+        k_p: Union[float, tuple, list],
         m_flow_network: float,
         epsilon: float,
         fluid: Fluid,

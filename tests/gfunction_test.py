@@ -393,35 +393,33 @@ def test_evaluate_ground_heat_exchanger_evaluate_g_function(field, boundary_cond
     options = request.getfixturevalue(opts)
 
     # Extract the pipe options from the fixture, if needed
-    if pipe_type is not None:
-        pipe = request.getfixturevalue(pipe_type)
-        pos = pipe.pos
-        r_in = pipe.r_in
-        r_out = pipe.r_out
+    pipe = request.getfixturevalue(pipe_type)
+    pos = pipe.pos
+    r_in = pipe.r_in
+    r_out = pipe.r_out
 
-        # replace pipe_type from fixture
-        if pipe_type == 'single_Utube':
-            pipe_type = gt.enums.PipeType.SINGLEUTUBE
-        elif pipe_type == 'double_Utube_parallel':
-            pipe_type = gt.enums.PipeType.DOUBLEUTUBEPARALLEL
-        elif pipe_type in ['double_Utube_series', 'double_Utube_series_asymmetrical']:
-            pipe_type = gt.enums.PipeType.DOUBLEUTUBESERIES
-        elif pipe_type == 'coaxial_annular_in':
-            pipe_type = gt.enums.PipeType.COAXIALANNULARINLET
-        elif pipe_type == 'coaxial_annular_out':
-            pipe_type = gt.enums.PipeType.COAXIALPIPEINLET
-        else:
-            raise ValueError(f"test pipe_type not recognized: '{pipe_type}'")
+    # replace pipe_type from fixture
+    if pipe_type == 'single_Utube':
+        pipe_type = gt.enums.PipeType.SINGLEUTUBE
+        k_p = 0.4
+    elif pipe_type == 'double_Utube_parallel':
+        pipe_type = gt.enums.PipeType.DOUBLEUTUBEPARALLEL
+        k_p = 0.4
+    elif pipe_type in ['double_Utube_series', 'double_Utube_series_asymmetrical']:
+        pipe_type = gt.enums.PipeType.DOUBLEUTUBESERIES
+        k_p = 0.4
+    elif pipe_type == 'coaxial_annular_in':
+        pipe_type = gt.enums.PipeType.COAXIALANNULARINLET
+        k_p = (0.4, 0.4)
+    elif pipe_type == 'coaxial_annular_out':
+        pipe_type = gt.enums.PipeType.COAXIALPIPEINLET
+        k_p = (0.4, 0.4)
     else:
-        pos = None
-        r_in = None
-        r_out = None
-        pipe_type = None
+        raise ValueError(f"test pipe_type not recognized: '{pipe_type}'")
 
     # Static params
     k_s = 2.0
     k_g = 1.0
-    k_p = 0.4
     epsilon = 1e-6
     fluid_name = 'MPG'
     fluid_pct = 20.
