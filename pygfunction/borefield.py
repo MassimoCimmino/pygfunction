@@ -107,6 +107,15 @@ class Borefield:
         check = not self == other_field
         return check
 
+    def __add__(self,
+                other_field: Union[Borehole, List[Borehole], Self]) -> Self:
+        """Add two borefields together"""
+        if isinstance(other_field, Borehole):
+            return Borefield.from_boreholes(self.to_boreholes() + other_field)
+        if isinstance(other_field, list):
+            return Borefield.from_boreholes(self.to_boreholes() + other_field)
+        return Borefield.from_boreholes(self.to_boreholes() + other_field.to_boreholes())
+
     def evaluate_g_function(
             self,
             alpha: float,
