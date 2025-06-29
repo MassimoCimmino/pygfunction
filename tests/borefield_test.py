@@ -75,6 +75,15 @@ def test_borefield_ne(field, other_field, expected, request):
     assert (borefield != other_field) == expected
 
 
+def test_borefield_add():
+    borehole = gt.boreholes.Borehole(100, 1, 0.075, 15, 10)
+    borefield = gt.borefield.Borefield.rectangle_field(2, 1, 6, 6, 100, 1, 0.075)
+    borefield_2 = gt.borefield.Borefield.from_boreholes([borehole, gt.boreholes.Borehole(110, 1, 0.075, 20, 15)])
+    assert borefield + borehole == gt.borefield.Borefield.from_boreholes(borefield.to_boreholes() + [borehole])
+    assert borefield + [borehole] == gt.borefield.Borefield.from_boreholes(borefield.to_boreholes() + [borehole])
+    assert borefield + borefield_2 == gt.borefield.Borefield.from_boreholes(borefield.to_boreholes()+borefield_2.to_boreholes())
+
+
 # =============================================================================
 # Test evaluate_g_function (vertical boreholes)
 # =============================================================================
