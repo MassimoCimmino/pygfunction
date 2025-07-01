@@ -1,23 +1,28 @@
 # -*- coding: utf-8 -*-
 import warnings
 from time import perf_counter
+from typing import Union, List
 
 import numpy as np
+import numpy.typing as npt
 from scipy.interpolate import interp1d as interp1d
 
 from .borefield import Borefield
 from .boreholes import Borehole, find_duplicates
+from .enums import PipeType
+from .media import Fluid
 from .networks import Network
+from .pipes import get_pipes
 from .solvers import (
     Detailed,
     Equivalent,
     Similarities
-    )
+)
 from .utilities import (
     segment_ratios,
     _initialize_figure,
     _format_axes
-    )
+)
 
 
 class gFunction(object):
@@ -320,6 +325,67 @@ class gFunction(object):
             print(60*'-')
         return self.gFunc
 
+    @classmethod
+    def evaluate_g_function_from_static_params(cls,
+                                               H: npt.ArrayLike,
+                                               D: npt.ArrayLike,
+                                               r_b: npt.ArrayLike,
+                                               x: npt.ArrayLike,
+                                               y: npt.ArrayLike,
+                                               tilt: npt.ArrayLike = 0.,
+                                               orientation: npt.ArrayLike = 0.,
+                                               boundary_condition: str = 'UHTR',
+                                               pipe_type_str: str = None,
+                                               pos: List[tuple] = None,
+                                               r_in: Union[float, tuple, list] = None,
+                                               r_out: Union[float, tuple, list] = None,
+                                               k_s: float = None,
+                                               k_g: float = None,
+                                               k_p: Union[float, tuple, list] = None,
+                                               fluid_name: str = None,
+                                               fluid_concentration_pct: float = None,
+                                               m_flow_ghe=None,
+                                               epsilon=None,
+
+                                               reversible_flow: bool = True,
+                                               ):
+
+        # verify required input params are present
+        if boundary_condition in ['UBWT', 'UHRT']:
+            pass
+        elif boundary_condition == 'MIFT':
+            pass
+        else:
+            raise ValueError(f"'{boundary_condition}' is not a valid boundary condition.")
+
+        # construct all required pieces
+        borefield = Borefield(H, D, r_b, x, y, tilt, orientation)
+
+        if boundary_condition == 'MIFT':
+            boreholes = borefield.to_boreholes()
+            fluid = Fluid(fluid_name, fluid_concentration_pct)
+            pipes = get_pipes(
+                boreholes,
+                PipeType[pipe_type_str],
+                pos,
+                r_in,
+                r_out,
+                k_s,
+                k_g,
+                k_p,
+                m_flow_ghe,
+                epsilon,
+                fluid,
+                reversible_flow
+            )
+            boreholes_or_network = Network(boreholes, pipes, m_flow_network=m_flow_ghe, cp_f=fluid.cp)
+        else:
+            boreholes_or_network = borefield
+
+        return cls(boreholes_or_network, alpha, time, method, boundary_condition, m_flow_borehole, m_flow_network,
+                   cp_f, options).gFunc
+
+
     def visualize_g_function(self, which=None):
         """
         Plot the g-function of the borefield.
@@ -520,7 +586,7 @@ class gFunction(object):
 
                 # Adjust figure to window
                 plt.tight_layout()
-            
+
         return fig
 
     def visualize_heat_extraction_rate_profiles(
