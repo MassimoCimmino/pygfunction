@@ -339,3 +339,103 @@ def test_gfunctions_UBWT_linearization(field, method, opts, expected, request):
         borefield, alpha, time=time, method=method, options=options,
         boundary_condition='UBWT')
     assert np.allclose(gFunc.gFunc, expected)
+
+
+@pytest.mark.parametrize("field, boundary_condition, method, opts, pipe_type, m_flow_network, expected", [
+    #  'equivalent' solver - unequal segments - UBWT - single u-tube
+    ('single_borehole', 'UBWT', 'equivalent', 'unequal_segments', 'single_Utube', 0.05, np.array([5.59717446, 6.36257605, 6.60517223])),
+    ('single_borehole_short', 'UBWT', 'equivalent', 'unequal_segments', 'single_Utube', 0.05, np.array([4.15784411, 4.98477603, 5.27975732])),
+    ('ten_boreholes_rectangular', 'UBWT', 'equivalent', 'unequal_segments', 'single_Utube', 0.25, np.array([10.89935004, 17.09864925, 19.0795435])),
+    #  'equivalent' solver - unequal segments - UHTR - single u-tube
+    ('single_borehole', 'UHTR', 'equivalent', 'unequal_segments', 'single_Utube', 0.05, np.array([5.61855789, 6.41336758, 6.66933682])),
+    ('single_borehole_short', 'UHTR', 'equivalent', 'unequal_segments', 'single_Utube', 0.05, np.array([4.18276733, 5.03671562, 5.34369772])),
+    ('ten_boreholes_rectangular', 'UHTR', 'equivalent', 'unequal_segments', 'single_Utube', 0.25, np.array([11.27831804, 18.48075762, 21.00669237])),
+    # #  'equivalent' solver - unequal segments - MIFT - single u-tube
+    # ('single_borehole', 'MIFT', 'equivalent', 'unequal_segments', 'single_Utube', 0.05,  np.array([5.76597302, 6.51058473, 6.73746895])),
+    # ('single_borehole_short', 'MIFT', 'equivalent', 'unequal_segments', 'single_Utube', 0.05, np.array([4.17105954, 5.00930075, 5.30832133])),
+    # ('ten_boreholes_rectangular', 'MIFT', 'equivalent', 'unequal_segments', 'single_Utube', 0.25, np.array([12.66229998, 18.57852681, 20.33535907])),
+    # #  'equivalent' solver - unequal segments - MIFT - double u-tube parallel
+    # ('single_borehole', 'MIFT', 'equivalent', 'unequal_segments', 'double_Utube_parallel', 0.05, np.array([6.47497545, 7.18728277, 7.39167598])),
+    # ('single_borehole_short', 'MIFT', 'equivalent', 'unequal_segments', 'double_Utube_parallel', 0.05, np.array([4.17080765, 5.00341368, 5.2989709])),
+    # ('ten_boreholes_rectangular', 'MIFT', 'equivalent', 'unequal_segments', 'double_Utube_parallel', 0.25, np.array([15.96448954, 21.43320976, 22.90761598])),
+    # #  'equivalent' solver - unequal segments - MIFT - double u-tube series
+    # ('single_borehole', 'MIFT', 'equivalent', 'unequal_segments', 'double_Utube_series', 0.05, np.array([5.69118368, 6.44386342, 6.67721347])),
+    # ('single_borehole_short', 'MIFT','equivalent', 'unequal_segments', 'double_Utube_series', 0.05, np.array([4.16750616, 5.00249502, 5.30038701])),
+    # ('ten_boreholes_rectangular', 'MIFT', 'equivalent', 'unequal_segments', 'double_Utube_series', 0.25, np.array([11.94256058, 17.97858109, 19.83460231])),
+    # #  'equivalent' solver - unequal segments - MIFT - double u-tube series asymmetrical
+    # ('single_borehole', 'MIFT', 'equivalent', 'unequal_segments', 'double_Utube_series_asymmetrical', 0.05, np.array([5.69174709, 6.4441862 , 6.67709693])),
+    # ('single_borehole_short', 'MIFT', 'equivalent', 'unequal_segments', 'double_Utube_series_asymmetrical', 0.05, np.array([4.16851817, 5.00453267, 5.30282913])),
+    # ('ten_boreholes_rectangular', 'MIFT', 'equivalent', 'unequal_segments', 'double_Utube_series_asymmetrical', 0.25, np.array([11.96927941, 18.00481705, 19.856554])),
+    # #  'equivalent' solver - unequal segments - MIFT - double u-tube series asymmetrical
+    # ('single_borehole', 'MIFT', 'equivalent', 'unequal_segments', 'double_Utube_series_asymmetrical', 0.05, np.array([5.69174709, 6.4441862, 6.67709693])),
+    # ('single_borehole_short', 'MIFT', 'equivalent', 'unequal_segments', 'double_Utube_series_asymmetrical', 0.05, np.array([4.16851817, 5.00453267, 5.30282913])),
+    # ('ten_boreholes_rectangular', 'MIFT', 'equivalent', 'unequal_segments', 'double_Utube_series_asymmetrical', 0.25, np.array([11.96927941, 18.00481705, 19.856554])),
+    # #  'equivalent' solver - unequal segments - MIFT - coaxial annular inlet
+    # ('single_borehole', 'MIFT', 'equivalent', 'unequal_segments', 'coaxial_annular_in', 0.05, np.array([6.10236427, 6.77069069, 6.95941276])),
+    # ('single_borehole_short', 'MIFT', 'equivalent', 'unequal_segments', 'coaxial_annular_in', 0.05, np.array([4.06874781, 4.89701125, 5.19157017])),
+    # ('ten_boreholes_rectangular', 'MIFT', 'equivalent', 'unequal_segments', 'coaxial_annular_in', 0.25, np.array([16.03433989, 21.18241954, 22.49479982])),
+    # #  'equivalent' solver - unequal segments - MIFT - coaxial annular outlet
+    # ('single_borehole', 'MIFT', 'equivalent', 'unequal_segments', 'coaxial_annular_out', 0.05, np.array([6.10236427, 6.77069069, 6.95941276])),
+    # ('single_borehole_short', 'MIFT', 'equivalent', 'unequal_segments', 'coaxial_annular_out', 0.05, np.array([4.06874781, 4.89701125, 5.19157017])),
+    # ('ten_boreholes_rectangular', 'MIFT', 'equivalent', 'unequal_segments', 'coaxial_annular_out', 0.25, np.array([16.03433989, 21.18241954, 22.49510883])),
+    ])
+def test_gfunction_from_static_params(field, boundary_condition, method, opts, pipe_type, m_flow_network, expected,
+                                      request):
+    # Extract the bore field from the fixture for convenience
+    borefield = request.getfixturevalue(field)
+
+    # convert to lists for testing
+    H = list(borefield.H)
+    D = list(borefield.D)
+    r_b = list(borefield.r_b)
+    x = list(borefield.x)
+    y = list(borefield.y)
+
+    # Extract the g-function options from the fixture
+    options = request.getfixturevalue(opts)
+
+    # Extract the pipe options from the fixture, if needed
+    pipe = request.getfixturevalue(pipe_type)
+    pos = pipe.pos
+    r_in = pipe.r_in
+    r_out = pipe.r_out
+
+    # replace pipe_type from fixture
+    if pipe_type in ['single_Utube', 'double_Utube_parallel', 'double_Utube_series',
+                     'double_Utube_series_asymmetrical']:
+        k_p = 0.4
+    elif pipe_type in ['coaxial_annular_in', 'coaxial_annular_out']:
+        k_p = (0.4, 0.4)
+    else:
+        raise ValueError(f"test pipe_type not recognized: '{pipe_type}'")
+
+    # Static params
+    k_s = 2.0
+    k_g = 1.0
+    epsilon = 1e-6
+    fluid_name = 'MPG'
+    fluid_pct = 20.
+
+    # Mean borehole length [m]
+    H_mean = np.mean(H)
+    alpha = 1e-6  # Ground thermal diffusivity [m2/s]
+    # Bore field characteristic time [s]
+    ts = H_mean ** 2 / (9 * alpha)
+    # Times for the g-function [s]
+    time = np.array([0.1, 1., 10.]) * ts
+
+    gfunc = gt.gfunction.gFunction.from_static_params(
+        H=H,
+        D=D,
+        r_b=r_b,
+        x=x,
+        y=y,
+        alpha=alpha,
+        options=options,
+        method=method,
+        boundary_condition=boundary_condition,
+    )
+
+    # g-Function
+    gFunc = gfunc.evaluate_g_function(time=time)
+    assert np.allclose(gFunc, expected)

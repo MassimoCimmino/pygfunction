@@ -992,11 +992,11 @@ class Network(object):
     def _initialize_stored_coefficients(
             self, m_flow_network, cp_f, nSegments, segment_ratios):
         nMethods = 7    # Number of class methods
-        self._stored_coefficients = [() for i in range(nMethods)]
+        self._stored_coefficients = [() for _ in range(nMethods)]
         self._stored_m_flow_cp = [np.empty(self.nInlets)*np.nan
-                                  for i in range(nMethods)]
-        self._stored_nSegments = [np.nan for i in range(nMethods)]
-        self._stored_segment_ratios = [np.nan for i in range(nMethods)]
+                                  for _ in range(nMethods)]
+        self._stored_nSegments = [np.nan for _ in range(nMethods)]
+        self._stored_segment_ratios = [np.nan for _ in range(nMethods)]
         self._m_flow_cp_model_variables = np.empty(self.nInlets)*np.nan
         self._nSegments_model_variables = np.nan
         self._segment_ratios_model_variables = np.nan

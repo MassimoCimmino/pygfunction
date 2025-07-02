@@ -45,11 +45,11 @@ class Equivalent(_BaseSolver):
         of
 
             - 'UHTR' :
-                **Uniform heat transfer rate**. This is corresponds to boundary
+                **Uniform heat transfer rate**. This corresponds to boundary
                 condition *BC-I* as defined by Cimmino and Bernier (2014)
                 [#Equivalent-CimBer2014]_.
             - 'UBWT' :
-                **Uniform borehole wall temperature**. This is corresponds to
+                **Uniform borehole wall temperature**. This corresponds to
                 boundary condition *BC-III* as defined by Cimmino and Bernier
                 (2014) [#Equivalent-CimBer2014]_.
             - 'MIFT' :

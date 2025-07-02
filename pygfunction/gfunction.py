@@ -287,6 +287,75 @@ class gFunction(object):
         if self.time is not None:
             self.gFunc = self.evaluate_g_function(self.time)
 
+    @classmethod
+    def from_static_params(cls,
+                           H: npt.ArrayLike,
+                           D: npt.ArrayLike,
+                           r_b: npt.ArrayLike,
+                           x: npt.ArrayLike,
+                           y: npt.ArrayLike,
+                           alpha: float,
+                           time: npt.ArrayLike=None,
+                           method: str='equivalent',
+                           m_flow_borehole:float =None,
+                           m_flow_network=None,
+                           cp_f=None,
+                           options={},
+                           tilt: npt.ArrayLike = 0.,
+                           orientation: npt.ArrayLike = 0.,
+                           boundary_condition: str = 'UHTR',
+                           pipe_type_str: str = None,
+                           pos: List[tuple] = None,
+                           r_in: Union[float, tuple, list] = None,
+                           r_out: Union[float, tuple, list] = None,
+                           k_s: float = None,
+                           k_g: float = None,
+                           k_p: Union[float, tuple, list] = None,
+                           fluid_name: str = None,
+                           fluid_concentration_pct: float = None,
+                           epsilon=None,
+                           reversible_flow: bool = True,
+                           ):
+
+        # verify required input params are present
+        if boundary_condition in ['UBWT', 'UHTR']:
+            pass
+        elif boundary_condition == 'MIFT':
+            pass
+        else:
+            raise ValueError(f"'{boundary_condition}' is not a valid boundary condition.")
+
+        # construct all required pieces
+        borefield = Borefield(H, D, r_b, x, y, tilt, orientation)
+
+        if boundary_condition == 'MIFT':
+            boreholes = borefield.to_boreholes()
+            fluid = Fluid(fluid_name, fluid_concentration_pct)
+            # pipes = get_pipes(
+            #     boreholes,
+            #     PipeType[pipe_type_str],
+            #     pos,
+            #     r_in,
+            #     r_out,
+            #     k_s,
+            #     k_g,
+            #     k_p,
+            #     m_flow_ghe,
+            #     epsilon,
+            #     fluid,
+            #     reversible_flow
+            # )
+            # boreholes_or_network = Network(boreholes=boreholes, pipes=pipes, bore_connectivity=None,
+            #                                m_flow_network=None, cp_f=None, nSegments=None,
+            #                                segment_ratios=None)
+        else:
+            boreholes_or_network = borefield
+
+
+        return cls(boreholes_or_network, alpha, time=time, method=method, boundary_condition=boundary_condition,
+                   m_flow_borehole=m_flow_borehole, m_flow_network=m_flow_network,
+                   cp_f=cp_f, options=options)
+
     def evaluate_g_function(self, time):
         """
         Evaluate the g-function.
@@ -324,67 +393,6 @@ class gFunction(object):
                   f'{toc - tic:.3f} sec')
             print(60*'-')
         return self.gFunc
-
-    @classmethod
-    def evaluate_g_function_from_static_params(cls,
-                                               H: npt.ArrayLike,
-                                               D: npt.ArrayLike,
-                                               r_b: npt.ArrayLike,
-                                               x: npt.ArrayLike,
-                                               y: npt.ArrayLike,
-                                               tilt: npt.ArrayLike = 0.,
-                                               orientation: npt.ArrayLike = 0.,
-                                               boundary_condition: str = 'UHTR',
-                                               pipe_type_str: str = None,
-                                               pos: List[tuple] = None,
-                                               r_in: Union[float, tuple, list] = None,
-                                               r_out: Union[float, tuple, list] = None,
-                                               k_s: float = None,
-                                               k_g: float = None,
-                                               k_p: Union[float, tuple, list] = None,
-                                               fluid_name: str = None,
-                                               fluid_concentration_pct: float = None,
-                                               m_flow_ghe=None,
-                                               epsilon=None,
-
-                                               reversible_flow: bool = True,
-                                               ):
-
-        # verify required input params are present
-        if boundary_condition in ['UBWT', 'UHRT']:
-            pass
-        elif boundary_condition == 'MIFT':
-            pass
-        else:
-            raise ValueError(f"'{boundary_condition}' is not a valid boundary condition.")
-
-        # construct all required pieces
-        borefield = Borefield(H, D, r_b, x, y, tilt, orientation)
-
-        if boundary_condition == 'MIFT':
-            boreholes = borefield.to_boreholes()
-            fluid = Fluid(fluid_name, fluid_concentration_pct)
-            pipes = get_pipes(
-                boreholes,
-                PipeType[pipe_type_str],
-                pos,
-                r_in,
-                r_out,
-                k_s,
-                k_g,
-                k_p,
-                m_flow_ghe,
-                epsilon,
-                fluid,
-                reversible_flow
-            )
-            boreholes_or_network = Network(boreholes, pipes, m_flow_network=m_flow_ghe, cp_f=fluid.cp)
-        else:
-            boreholes_or_network = borefield
-
-        return cls(boreholes_or_network, alpha, time, method, boundary_condition, m_flow_borehole, m_flow_network,
-                   cp_f, options).gFunc
-
 
     def visualize_g_function(self, which=None):
         """
