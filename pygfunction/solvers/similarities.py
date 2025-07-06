@@ -186,7 +186,7 @@ class Similarities(_BaseSolver):
         of thermal response factors, containing a copy of the matrix accessible
         by h_ij.y[:nSources,:nSources,:nt+1]. The first index along the
         third axis corresponds to time t=0. The interp1d object can be used to
-        obtain thermal response factors at any intermediat time by
+        obtain thermal response factors at any intermediate time by
         h_ij(t)[:nSources,:nSources].
 
         Attributes

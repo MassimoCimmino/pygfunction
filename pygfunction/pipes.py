@@ -3621,7 +3621,7 @@ def _Nusselt_number_turbulent_flow(Re, Pr, fDarcy):
 def compute_R_fp(
         pipe_type: PipeType, m_flow_borehole: float, r_in: Union[float, tuple, list],
         r_out: Union[float, tuple, list], k_p: Union[float, tuple, list], epsilon: float, fluid: Fluid) -> float:
-    if pipe_type in [PipeType.SINGLEUTUBE, PipeType.DOUBLEUTUBESERIES]:
+    if pipe_type in [PipeType.SINGLE_UTUBE, PipeType.DOUBLE_UTUBE_SERIES, PipeType.DOUBLE_UTUBE_SERIES_ASYMMETRICAL]:
 
         m_flow_pipe = m_flow_borehole
 
@@ -3637,7 +3637,7 @@ def compute_R_fp(
 
         return R_p + R_f
 
-    elif pipe_type == PipeType.DOUBLEUTUBEPARALLEL:
+    elif pipe_type == PipeType.DOUBLE_UTUBE_PARALLEL:
 
         m_flow_pipe = m_flow_borehole / 2
 
@@ -3653,7 +3653,7 @@ def compute_R_fp(
 
         return R_p + R_f
 
-    elif pipe_type == PipeType.COAXIALANNULARINLET:
+    elif pipe_type == PipeType.COAXIAL_ANNULAR_IN:
 
         m_flow_pipe = m_flow_borehole
 
@@ -3676,7 +3676,7 @@ def compute_R_fp(
         R_f_out_out = 1.0 / (h_f_a_out * 2 * np.pi * r_out_in)
         return R_p_out + R_f_out_out
 
-    elif pipe_type == PipeType.COAXIALPIPEINLET:
+    elif pipe_type == PipeType.COAXIAL_ANNULAR_OUT:
 
         m_flow_pipe = m_flow_borehole
 
@@ -3708,7 +3708,7 @@ def compute_R_fp(
 def compute_R_ff(pipe_type: PipeType, m_flow_borehole: float, r_in: Union[float, tuple, list],
                  r_out: Union[float, tuple, list], k_p: Union[float, tuple, list], epsilon: float,
                  fluid: Fluid) -> float:
-    if pipe_type == PipeType.COAXIALANNULARINLET:
+    if pipe_type == PipeType.COAXIAL_ANNULAR_IN:
 
         m_flow_pipe = m_flow_borehole
 
@@ -3736,7 +3736,7 @@ def compute_R_ff(pipe_type: PipeType, m_flow_borehole: float, r_in: Union[float,
 
         return R_f_in + R_p_in + R_f_out_in
 
-    elif pipe_type == PipeType.COAXIALPIPEINLET:
+    elif pipe_type == PipeType.COAXIAL_ANNULAR_OUT:
 
         m_flow_pipe = m_flow_borehole
 
@@ -3781,31 +3781,37 @@ def get_pipes(
         m_flow_network: float,
         epsilon: float,
         fluid: Fluid,
-        reversible_flow: bool = True
+        reversible_flow: bool = True,
+        bore_connectivity: list = None,
+        J: int = 2
 ):
-    J = 2
-    m_flow_borehole = m_flow_network / len(boreholes)
+
+    if bore_connectivity is None:
+        m_flow_borehole = abs(m_flow_network / len(boreholes))
+    else:
+        m_flow_borehole = abs(m_flow_network / bore_connectivity.count(-1))
+
     pipes = []
 
-    if pipe_type == PipeType.SINGLEUTUBE:
+    if pipe_type == PipeType.SINGLE_UTUBE:
 
         R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
         for borehole in boreholes:
             pipes.append(SingleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, J, reversible_flow))
 
-    elif pipe_type == PipeType.DOUBLEUTUBEPARALLEL:
+    elif pipe_type == PipeType.DOUBLE_UTUBE_PARALLEL:
 
         R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
         for borehole in boreholes:
             pipes.append(MultipleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, 2, 'parallel', J, reversible_flow))
 
-    elif pipe_type == PipeType.DOUBLEUTUBESERIES:
+    elif pipe_type in [PipeType.DOUBLE_UTUBE_SERIES, PipeType.DOUBLE_UTUBE_SERIES_ASYMMETRICAL]:
 
         R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
         for borehole in boreholes:
             pipes.append(MultipleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, 2, 'series', J, reversible_flow))
 
-    elif pipe_type in [PipeType.COAXIALANNULARINLET, PipeType.COAXIALPIPEINLET]:
+    elif pipe_type in [PipeType.COAXIAL_ANNULAR_IN, PipeType.COAXIAL_ANNULAR_OUT]:
 
         R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
         R_ff = compute_R_ff(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
