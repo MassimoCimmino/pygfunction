@@ -80,7 +80,6 @@ def test_gfunctions_UBWT(field, method, opts, expected, request):
         boundary_condition='UBWT')
     assert np.allclose(gFunc.gFunc, expected)
 
-    # TODO: verify all tests are running. I'm currently only seeing 8 tests execute.
     # test from static parameters
 
     # convert to lists for testing
@@ -399,7 +398,7 @@ def test_gfunctions_MIFT_variable_mass_flow_rate(
         # 'detailed' solver - uniform segments, FLS approximation
         ('detailed', 'uniform_segments_approx', np.array([5.67916493, 6.7395222 , 7.16339216])),
     ])
-def test_gfunctions_UBWT(two_boreholes_inclined, method, opts, expected, request):
+def test_gfunctions_UBWT_inclined(two_boreholes_inclined, method, opts, expected, request):
     # Extract the bore field from the fixture
     borefield = two_boreholes_inclined
     # Extract the g-function options from the fixture
