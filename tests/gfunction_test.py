@@ -560,6 +560,8 @@ def test_gfunctions_from_static_params(field, boundary_condition, method, opts, 
     else:
         raise ValueError(f"test pipe_type not recognized: '{pipe_type}'")
 
+    pipe_type = pipe_type.removesuffix('_asymmetrical')
+
     # Static params
     k_s = 2.0
     k_g = 1.0

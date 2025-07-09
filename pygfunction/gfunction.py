@@ -12,7 +12,6 @@ from .boreholes import Borehole, find_duplicates
 from .enums import PipeType
 from .media import Fluid
 from .networks import Network
-from .pipes import get_pipes
 from .solvers import (
     Detailed,
     Equivalent,
@@ -297,20 +296,19 @@ class gFunction(object):
                            alpha: float,
                            time: npt.ArrayLike = None,
                            method: str = 'equivalent',
-                           m_flow_borehole: float = None,
                            m_flow_network: float = None,
                            cp_f=None,
                            options={},
                            tilt: npt.ArrayLike = 0.,
                            orientation: npt.ArrayLike = 0.,
-                           boundary_condition: str = 'UHTR',
+                           boundary_condition: str = 'MIFT',
                            pipe_type: str = None,
                            pos: List[tuple] = None,
-                           r_in: Union[float, tuple, list] = None,
-                           r_out: Union[float, tuple, list] = None,
+                           r_in: Union[float, tuple, npt.ArrayLike] = None,
+                           r_out: Union[float, tuple, npt.ArrayLike] = None,
                            k_s: float = None,
                            k_g: float = None,
-                           k_p: Union[float, tuple, list] = None,
+                           k_p: Union[float, tuple, npt.ArrayLike] = None,
                            fluid_name: str = None,
                            fluid_concentration_pct: float = None,
                            epsilon=None,
@@ -331,7 +329,7 @@ class gFunction(object):
             if cp_f is None:
                 cp_f = fluid.cp
 
-            pipes = get_pipes(
+            boreholes_or_network= Network.from_static_params(
                 boreholes,
                 PipeType[pipe_type.upper()],
                 pos,
@@ -341,20 +339,19 @@ class gFunction(object):
                 k_g,
                 k_p,
                 m_flow_network,
+                cp_f,
                 epsilon,
                 fluid,
                 reversible_flow,
                 bore_connectivity,
                 J,
             )
-            boreholes_or_network = Network(boreholes=boreholes, pipes=pipes, m_flow_network=m_flow_network,
-                                           bore_connectivity=bore_connectivity, cp_f=cp_f)
+
         else:
             boreholes_or_network = borefield
 
         return cls(boreholes_or_network, alpha, time=time, method=method, boundary_condition=boundary_condition,
-                   m_flow_borehole=m_flow_borehole, m_flow_network=m_flow_network,
-                   cp_f=cp_f, options=options)
+                   m_flow_network=m_flow_network, cp_f=cp_f, options=options)
 
     def evaluate_g_function(self, time):
         """

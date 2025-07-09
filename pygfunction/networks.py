@@ -1,6 +1,16 @@
 # -*- coding: utf-8 -*-
+from typing import Union, List
+
 import numpy as np
+import numpy.typing as npt
 from scipy.linalg import block_diag
+
+from .borefield import Borefield
+from .boreholes import Borehole
+from .enums import PipeType
+from .media import Fluid
+from .pipes import SingleUTube, MultipleUTube, Coaxial
+from .pipes import fluid_to_pipe_thermal_resistance, fluid_to_fluid_thermal_resistance
 
 
 class Network(object):
@@ -9,7 +19,7 @@ class Network(object):
     connections between the boreholes.
 
     Contains information regarding the physical dimensions and thermal
-    characteristics of the pipes and the grout material in each boreholes, the
+    characteristics of the pipes and the grout material in each borehole, the
     topology of the connections between boreholes, as well as methods to
     evaluate fluid temperatures and heat extraction rates based on the work of
     Cimmino (2018, 2019, 2024) [#Network-Cimmin2018]_, [#Network-Cimmin2019]_,
@@ -92,6 +102,66 @@ class Network(object):
         self._initialize_coefficients_connectivity()
         self._initialize_stored_coefficients(
             m_flow_network, cp_f, nSegments, segment_ratios)
+
+    @classmethod
+    def from_static_params(cls,
+                           boreholes: Union[List[Borehole], Borefield] ,
+                           pipe_type: PipeType,
+                           pos: List[tuple],
+                           r_in: Union[float, tuple, npt.ArrayLike],
+                           r_out: Union[float, tuple, npt.ArrayLike],
+                           k_s: float,
+                           k_g: float,
+                           k_p: Union[float, tuple, npt.ArrayLike],
+                           m_flow_network: float,
+                           cp_f: float,
+                           epsilon: float,
+                           fluid: Fluid,
+                           reversible_flow: bool = True,
+                           bore_connectivity: list = None,
+                           J: int = 2):
+
+        if isinstance(boreholes, Borefield):
+            boreholes = boreholes.to_boreholes()
+
+        if bore_connectivity is None:
+            m_flow_borehole = abs(m_flow_network / len(boreholes))
+        else:
+            m_flow_borehole = abs(m_flow_network / bore_connectivity.count(-1))
+
+        pipes = []
+
+        if pipe_type == PipeType.SINGLE_UTUBE:
+
+            R_fp = fluid_to_pipe_thermal_resistance(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+            for borehole in boreholes:
+                pipes.append(SingleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, J, reversible_flow))
+
+        elif pipe_type == PipeType.DOUBLE_UTUBE_PARALLEL:
+
+            R_fp = fluid_to_pipe_thermal_resistance(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+            for borehole in boreholes:
+                pipes.append(
+                    MultipleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, 2, 'parallel', J, reversible_flow))
+
+        elif pipe_type == PipeType.DOUBLE_UTUBE_SERIES:
+
+            R_fp = fluid_to_pipe_thermal_resistance(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+            for borehole in boreholes:
+                pipes.append(MultipleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, 2, 'series', J, reversible_flow))
+
+        elif pipe_type in [PipeType.COAXIAL_ANNULAR_IN, PipeType.COAXIAL_ANNULAR_OUT]:
+
+            R_fp = fluid_to_pipe_thermal_resistance(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+            R_ff = fluid_to_fluid_thermal_resistance(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+            for borehole in boreholes:
+                pipes.append(Coaxial(pos, np.array(r_in), np.array(r_out), borehole, k_s, k_g, R_ff, R_fp))
+
+        else:
+            raise ValueError(f"Unsupported pipe_type: '{pipe_type.name}'")
+
+        return cls(boreholes=boreholes, pipes=pipes, m_flow_network=m_flow_network, bore_connectivity=bore_connectivity,
+                   cp_f=cp_f)
 
     def get_inlet_temperature(
             self, T_f_in, T_b, m_flow_network, cp_f, nSegments,

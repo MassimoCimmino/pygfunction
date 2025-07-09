@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 import warnings
-from typing import Union, List
+from typing import Union
 
 import numpy as np
+import numpy.typing as npt
 from scipy.constants import pi
 from scipy.special import binom
 
-from .boreholes import Borehole
 from .enums import PipeType
 from .media import Fluid
 from .utilities import _initialize_figure, _format_axes
@@ -3618,10 +3618,12 @@ def _Nusselt_number_turbulent_flow(Re, Pr, fDarcy):
     return Nu
 
 
-def compute_R_fp(
-        pipe_type: PipeType, m_flow_borehole: float, r_in: Union[float, tuple, list],
-        r_out: Union[float, tuple, list], k_p: Union[float, tuple, list], epsilon: float, fluid: Fluid) -> float:
-    if pipe_type in [PipeType.SINGLE_UTUBE, PipeType.DOUBLE_UTUBE_SERIES, PipeType.DOUBLE_UTUBE_SERIES_ASYMMETRICAL]:
+def fluid_to_pipe_thermal_resistance(
+        pipe_type: PipeType, m_flow_borehole: float,
+        r_in: Union[float, tuple, npt.ArrayLike], r_out: Union[float, tuple, npt.ArrayLike],
+        k_p: Union[float, tuple, npt.ArrayLike], epsilon: float,
+        fluid: Fluid) -> float:
+    if pipe_type in [PipeType.SINGLE_UTUBE, PipeType.DOUBLE_UTUBE_SERIES]:
 
         m_flow_pipe = m_flow_borehole
 
@@ -3705,9 +3707,11 @@ def compute_R_fp(
         raise ValueError(f"Unsupported pipe_type: '{pipe_type.name}'")
 
 
-def compute_R_ff(pipe_type: PipeType, m_flow_borehole: float, r_in: Union[float, tuple, list],
-                 r_out: Union[float, tuple, list], k_p: Union[float, tuple, list], epsilon: float,
-                 fluid: Fluid) -> float:
+def fluid_to_fluid_thermal_resistance(pipe_type: PipeType, m_flow_borehole: float,
+                                      r_in: Union[float, tuple, npt.ArrayLike],
+                                      r_out: Union[float, tuple, npt.ArrayLike],
+                                      k_p: Union[float, tuple, npt.ArrayLike], epsilon: float,
+                                      fluid: Fluid) -> float:
     if pipe_type == PipeType.COAXIAL_ANNULAR_IN:
 
         m_flow_pipe = m_flow_borehole
@@ -3767,58 +3771,3 @@ def compute_R_ff(pipe_type: PipeType, m_flow_borehole: float, r_in: Union[float,
 
     else:
         raise ValueError(f"Unsupported pipe_type: '{pipe_type.name}'")
-
-
-def get_pipes(
-        boreholes: list[Borehole],
-        pipe_type: PipeType,
-        pos: List[tuple],
-        r_in: Union[float, tuple, list],
-        r_out: Union[float, tuple, list],
-        k_s: float,
-        k_g: float,
-        k_p: Union[float, tuple, list],
-        m_flow_network: float,
-        epsilon: float,
-        fluid: Fluid,
-        reversible_flow: bool = True,
-        bore_connectivity: list = None,
-        J: int = 2
-):
-
-    if bore_connectivity is None:
-        m_flow_borehole = abs(m_flow_network / len(boreholes))
-    else:
-        m_flow_borehole = abs(m_flow_network / bore_connectivity.count(-1))
-
-    pipes = []
-
-    if pipe_type == PipeType.SINGLE_UTUBE:
-
-        R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
-        for borehole in boreholes:
-            pipes.append(SingleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, J, reversible_flow))
-
-    elif pipe_type == PipeType.DOUBLE_UTUBE_PARALLEL:
-
-        R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
-        for borehole in boreholes:
-            pipes.append(MultipleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, 2, 'parallel', J, reversible_flow))
-
-    elif pipe_type in [PipeType.DOUBLE_UTUBE_SERIES, PipeType.DOUBLE_UTUBE_SERIES_ASYMMETRICAL]:
-
-        R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
-        for borehole in boreholes:
-            pipes.append(MultipleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, 2, 'series', J, reversible_flow))
-
-    elif pipe_type in [PipeType.COAXIAL_ANNULAR_IN, PipeType.COAXIAL_ANNULAR_OUT]:
-
-        R_fp = compute_R_fp(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
-        R_ff = compute_R_ff(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
-        for borehole in boreholes:
-            pipes.append(Coaxial(pos, np.array(r_in), np.array(r_out), borehole, k_s, k_g, R_ff, R_fp))
-
-    else:
-        raise ValueError(f"Unsupported pipe_type: '{pipe_type.name}'")
-
-    return pipes
