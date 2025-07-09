@@ -251,7 +251,7 @@ class Borehole(object):
         Adds two boreholes together to form a borefield
         """
         from .borefield import Borefield
-        if isinstance(other, self):
+        if isinstance(other, self.__class__):
             return Borefield.from_boreholes([self, other])
         return other.__add__(self)
 
