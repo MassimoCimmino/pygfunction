@@ -9,7 +9,6 @@ from scipy.interpolate import interp1d as interp1d
 
 from .borefield import Borefield
 from .boreholes import Borehole, find_duplicates
-from .enums import PipeType
 from .media import Fluid
 from .networks import Network
 from .solvers import (
@@ -297,25 +296,110 @@ class gFunction(object):
                            time: npt.ArrayLike = None,
                            method: str = 'equivalent',
                            m_flow_network: float = None,
-                           cp_f=None,
                            options={},
                            tilt: npt.ArrayLike = 0.,
                            orientation: npt.ArrayLike = 0.,
                            boundary_condition: str = 'MIFT',
-                           pipe_type: str = None,
+                           pipe_type_str: str = None,
                            pos: List[tuple] = None,
                            r_in: Union[float, tuple, npt.ArrayLike] = None,
                            r_out: Union[float, tuple, npt.ArrayLike] = None,
                            k_s: float = None,
                            k_g: float = None,
                            k_p: Union[float, tuple, npt.ArrayLike] = None,
-                           fluid_name: str = None,
+                           fluid_str: str = None,
                            fluid_concentration_pct: float = None,
                            epsilon=None,
                            reversible_flow: bool = True,
                            bore_connectivity: list = None,
                            J: int = 2,
                            ):
+
+        """
+        Constructs the 'gFunction' class from static parameters.
+
+        Parameters
+        ----------
+        H : float or (nBoreholes,) array
+            Borehole lengths (in meters).
+        D : float or (nBoreholes,) array
+            Borehole buried depths (in meters).
+        r_b : float or (nBoreholes,) array
+            Borehole radii (in meters).
+        x : float or (nBoreholes,) array
+            Position (in meters) of the head of the boreholes along the x-axis.
+        y : float or (nBoreholes,) array
+            Position (in meters) of the head of the boreholes along the y-axis.
+        alpha : float
+            Soil thermal diffusivity (in m2/s).
+        time : float or array, optional
+            Values of time (in seconds) for which the g-function is evaluated. The
+            g-function is only evaluated at initialization if a value is provided.
+            Default is None.
+        method : str, optional
+            Method for the evaluation of the g-function. Should be one of 'similarities', 'detailed', or 'equivalent'.
+            Default is 'equivalent'. See 'gFunction' __init__ for more details.
+        m_flow_network : float, optional
+            Fluid mass flow rate into the network of boreholes.
+            Default is None.
+        options : dict, optional
+            A dictionary of solver options. See 'gFunction' __init__ for more details.
+        tilt : float or (nBoreholes,) array, optional
+            Angle (in radians) from vertical of the axis of the boreholes.
+            Default is 0.
+        orientation : float or (nBoreholes,) array, optional
+            Direction (in radians) of the tilt of the boreholes. Defaults to zero
+            if the borehole is vertical.
+            Default is 0.
+        boundary_condition : str, optional
+            Boundary condition for the evaluation of the g-function. Should be one of 'UHTR', 'UBWT', or 'MIFT'.
+            Default is 'MIFT'.
+        pipe_type_str : str, optional
+            Pipe type used for 'MIFT' boundary condition. Should be one of 'COAXIAL_ANNULAR_IN', 'COAXIAL_ANNULAR_OUT',
+            'DOUBLE_UTUBE_PARALLEL', 'DOUBLE_UTUBE_SERIES', or 'SINGLE_UTUBE'.
+        pos : list of tuples, optional
+            Position (x, y) (in meters) of the pipes inside the borehole.
+        r_in : float, optional
+            Inner radius (in meters) of the U-Tube pipes.
+        r_out : float, optional
+            Outer radius (in meters) of the U-Tube pipes.
+        k_s : float, optional
+            Soil thermal conductivity (in W/m-K).
+        k_g : float, optional
+            Grout thermal conductivity (in W/m-K).
+        k_p : float, optional
+            Pipe thermal conductivity (in W/m-K).
+        fluid_str: str, optional
+            The mixer for this application should be one of:
+                - 'Water' - Complete water solution
+                - 'MEG' - Ethylene glycol mixed with water
+                - 'MPG' - Propylene glycol mixed with water
+                - 'MEA' - Ethanol mixed with water
+                - 'MMA' - Methanol mixed with water
+        fluid_concentration_pct: float, optional
+            Mass fraction of the mixing fluid added to water (in %).
+            Lower bound = 0. Upper bound is dependent on the mixture.
+        epsilon : float, optional
+            Pipe roughness (in meters).
+        reversible_flow : bool, optional
+            True to treat a negative mass flow rate as the reversal of flow
+            direction within the borehole. If False, the direction of flow is not
+            reversed when the mass flow rate is negative, and the absolute value is
+            used for calculations. Equals to True.
+        bore_connectivity : list, optional
+            Index of fluid inlet into each borehole. -1 corresponds to a borehole
+            connected to the bore field inlet. If this parameter is not provided,
+            parallel connections between boreholes is used.
+            Default is None.
+        J : int, optional
+            Number of multipoles per pipe to evaluate the thermal resistances.
+            J=1 or J=2 usually gives sufficient accuracy. J=0 corresponds to the
+            line source approximation.
+
+        Returns
+        -------
+        gFunction : float or array values of the g-function if 'time' if passed. otherwise, returns the 'gFunction' object.
+        """
 
         if boundary_condition.upper() not in ['UBWT', 'UHTR', 'MIFT']:
             raise ValueError(f"'{boundary_condition}' is not a valid boundary condition.")
@@ -325,13 +409,10 @@ class gFunction(object):
 
         if boundary_condition.upper() == 'MIFT':
             boreholes = borefield.to_boreholes()
-            fluid = Fluid(fluid_name, fluid_concentration_pct)
-            if cp_f is None:
-                cp_f = fluid.cp
-
+            cp_f = Fluid(fluid_str, fluid_concentration_pct).cp
             boreholes_or_network= Network.from_static_params(
                 boreholes,
-                PipeType[pipe_type.upper()],
+                pipe_type_str,
                 pos,
                 r_in,
                 r_out,
@@ -339,16 +420,16 @@ class gFunction(object):
                 k_g,
                 k_p,
                 m_flow_network,
-                cp_f,
                 epsilon,
-                fluid,
+                fluid_str,
+                fluid_concentration_pct,
                 reversible_flow,
                 bore_connectivity,
                 J,
             )
-
         else:
             boreholes_or_network = borefield
+            cp_f = None
 
         return cls(boreholes_or_network, alpha, time=time, method=method, boundary_condition=boundary_condition,
                    m_flow_network=m_flow_network, cp_f=cp_f, options=options)

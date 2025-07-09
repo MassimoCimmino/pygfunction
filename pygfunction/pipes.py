@@ -3509,7 +3509,7 @@ def _F_mk(q_p, P, n_p, J, r_b, r_out, z, pikg, sigma):
     P : array
         Multipoles.
     n_p : int
-        Total numper of pipes.
+        Total number of pipes.
     J : int
         Number of multipoles per pipe to evaluate the thermal resistances.
         J=1 or J=2 usually gives sufficient accuracy. J=0 corresponds to the
@@ -3623,6 +3623,32 @@ def fluid_to_pipe_thermal_resistance(
         r_in: Union[float, tuple, npt.ArrayLike], r_out: Union[float, tuple, npt.ArrayLike],
         k_p: Union[float, tuple, npt.ArrayLike], epsilon: float,
         fluid: Fluid) -> float:
+    """
+       Computes the fluid to pipe thermal resistance.
+
+       Parameters
+       ----------
+        pipe_type : PipeType
+            Should be one of 'PipeType.COAXIAL_ANNULAR_IN', 'PipeType.COAXIAL_ANNULAR_OUT',
+            'PipeType.DOUBLE_UTUBE_PARALLEL', 'PipeType.DOUBLE_UTUBE_SERIES', or 'PipeType.SINGLE_UTUBE'.
+        m_flow_borehole : float
+            Fluid mass flow rate the borehole.
+        r_in : float
+            Inner radius (in meters) of the U-Tube pipes.
+        r_out : float
+            Outer radius (in meters) of the U-Tube pipes.
+        k_p : float
+            Pipe thermal conductivity (in W/m-K).
+        epsilon : float
+            Pipe roughness (in meters).
+        fluid : Fluid
+            'Fluid' class object. used for evaluating fluid properties
+
+        Returns
+        -------
+        fluid to pipe thermal resistance (in K/(W/m))
+    """
+
     if pipe_type in [PipeType.SINGLE_UTUBE, PipeType.DOUBLE_UTUBE_SERIES]:
 
         m_flow_pipe = m_flow_borehole
@@ -3712,6 +3738,33 @@ def fluid_to_fluid_thermal_resistance(pipe_type: PipeType, m_flow_borehole: floa
                                       r_out: Union[float, tuple, npt.ArrayLike],
                                       k_p: Union[float, tuple, npt.ArrayLike], epsilon: float,
                                       fluid: Fluid) -> float:
+    """
+       Computes the fluid to fluid thermal resistance.
+
+       Parameters
+       ----------
+        pipe_type : PipeType
+            Should be one of 'PipeType.COAXIAL_ANNULAR_IN', 'PipeType.COAXIAL_ANNULAR_OUT',
+            'PipeType.DOUBLE_UTUBE_PARALLEL', 'PipeType.DOUBLE_UTUBE_SERIES', or 'PipeType.SINGLE_UTUBE'.
+        m_flow_borehole : float
+            Fluid mass flow rate the borehole.
+        r_in : float
+            Inner radius (in meters) of the U-Tube pipes.
+        r_out : float
+            Outer radius (in meters) of the U-Tube pipes.
+        k_p : float
+            Pipe thermal conductivity (in W/m-K).
+        epsilon : float
+            Pipe roughness (in meters).
+        fluid : Fluid
+            'Fluid' class object. used for evaluating fluid properties
+
+        Returns
+        -------
+        fluid to fluid thermal resistance (in K/(W/m))
+    """
+
+
     if pipe_type == PipeType.COAXIAL_ANNULAR_IN:
 
         m_flow_pipe = m_flow_borehole
