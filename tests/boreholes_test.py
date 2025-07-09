@@ -307,3 +307,9 @@ def test_circle_field(N, R):
          len(field) == 1 or np.isclose(np.min(dis), B_min),
          len(field) == 1 or np.max(dis) <= (2 + 1e-6) * R,
          ])
+
+
+def test_add_boreholes():
+    borehole1 = gt.boreholes.Borehole(100, 1, 0.075, 0, 0)
+    borehole2 = gt.boreholes.Borehole(110, 1, 0.075, 0, 0)
+    assert gt.borefield.Borefield.from_boreholes([borehole1, borehole2]) == borehole1 + borehole2

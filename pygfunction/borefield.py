@@ -110,6 +110,8 @@ class Borefield:
     def __add__(self,
                 other_field: Union[Borehole, List[Borehole], Self]) -> Self:
         """Add two borefields together"""
+        from .boreholes import Borehole
+
         if isinstance(other_field, Borehole):
             return Borefield.from_boreholes(self.to_boreholes() + [other_field])
         if isinstance(other_field, list):

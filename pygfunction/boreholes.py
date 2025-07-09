@@ -3,8 +3,12 @@ import warnings
 
 import numpy as np
 from scipy.spatial.distance import pdist
+from typing import TYPE_CHECKING
 
 from .utilities import _initialize_figure, _format_axes, _format_axes_3d
+
+if TYPE_CHECKING:
+    from .borefield import Borefield
 
 
 class Borehole(object):
@@ -241,6 +245,15 @@ class Borehole(object):
         z = self._segment_edges(nSegments, segment_ratios=segment_ratios)[:-1] \
             + segment_ratios * self.H / 2
         return z
+
+    def __add__(self, other):
+        """
+        Adds two boreholes together to form a borefield
+        """
+        from .borefield import Borefield
+        if isinstance(other, self):
+            return Borefield.from_boreholes([self, other])
+        return other.__add__(self)
 
 
 class _EquivalentBorehole(object):
