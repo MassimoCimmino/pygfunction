@@ -81,7 +81,30 @@ class Borehole(object):
             field = Borefield.from_boreholes([self, other])
         return field
 
-    
+    def __radd__(self, other: Union[Self, list]):
+        """
+        Adds two boreholes together to form a borefield
+        """
+        if not isinstance(other, (self.__class__, list)):
+            # Check if other is a borefield and try the operation using
+            # other.__radd__
+            try:
+                field = other.__add__(self)
+            except:
+                # Invalid input
+                raise TypeError(
+                    f'Expected Borefield, list or Borehole input;'
+                    f' got {other}'
+                    )
+        elif isinstance(other, list):
+            # Create a borefield from the borehole and a list
+            from .borefield import Borefield
+            field = Borefield.from_boreholes(other + [self])
+        else:
+            # Create a borefield from the two boreholes
+            from .borefield import Borefield
+            field = Borefield.from_boreholes([other, self])
+        return field
 
     def distance(self, target):
         """
