@@ -120,7 +120,7 @@ class Borefield:
         # Convert other_field to a list if it is a Borehole
         if isinstance(other_field, Borehole):
             other_field = [other_field]
-        # Convert borehole to a list if it is a Borefield
+        # Convert borefield to a list if it is a Borefield
         if isinstance(other_field, self.__class__):
             other_field = other_field.to_boreholes()
         return Borefield.from_boreholes(field + other_field)
@@ -138,7 +138,7 @@ class Borefield:
         # Convert other_field to a list if it is a Borehole
         if isinstance(other_field, Borehole):
             other_field = [other_field]
-        # Convert borehole to a list if it is a Borefield
+        # Convert borefield to a list if it is a Borefield
         if isinstance(other_field, self.__class__):
             other_field = other_field.to_boreholes()
         return Borefield.from_boreholes(other_field + field)
