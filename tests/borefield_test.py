@@ -32,6 +32,30 @@ def test_borefield_init(field, request):
         H, D, r_b, x, y, tilt=tilt, orientation=orientation)
     assert borefield == borefield_from_boreholes
 
+
+# Test Borefield.__add__ and Borefield.__radd__
+@pytest.mark.parametrize("field, other_field, field_list, other_field_list", [
+        # Using Borefield and Borehole objects
+        ('single_borehole', 'two_boreholes_inclined', False, False),
+        ('ten_boreholes_rectangular', 'single_borehole_short', False, False),
+        ('ten_boreholes_rectangular', 'two_boreholes_inclined', False, False),
+        # Using Borefield as lists
+        ('ten_boreholes_rectangular', 'two_boreholes_inclined', False, True),
+        ('ten_boreholes_rectangular', 'two_boreholes_inclined', True, False),
+    ])
+def test_borefield_add(field, other_field, field_list, other_field_list, request):
+    field = request.field
+    other_field = request.other_field
+    reference_field = gt.borefield.Borefield.from_boreholes(
+        field.to_boreholes() + other_field.to_boreholes()
+        )
+    if field_list:
+        field = field.to_boreholes()
+    if other_field_list:
+        other_field = other_field.to_boreholes()
+    assert field + other_field_list == reference_field
+
+
 # Test borefield comparison using __eq__
 @pytest.mark.parametrize("field, other_field, expected", [
         # Fields that are equal
@@ -53,6 +77,7 @@ def test_borefield_eq(field, other_field, expected, request):
     other_field = request.getfixturevalue(other_field)
     assert (borefield == other_field) == expected
 
+
 # Test borefield comparison using __ne__
 @pytest.mark.parametrize("field, other_field, expected", [
         # Fields that are equal
@@ -73,16 +98,6 @@ def test_borefield_ne(field, other_field, expected, request):
     borefield = request.getfixturevalue(field)
     other_field = request.getfixturevalue(other_field)
     assert (borefield != other_field) == expected
-
-
-def test_borefield_add():
-    borehole = gt.boreholes.Borehole(100, 1, 0.075, 15, 10)
-    borefield = gt.borefield.Borefield.rectangle_field(2, 1, 6, 6, 100, 1, 0.075)
-    borefield_2 = gt.borefield.Borefield.from_boreholes([borehole, gt.boreholes.Borehole(110, 1, 0.075, 20, 15)])
-    assert borefield + borehole == gt.borefield.Borefield.from_boreholes(borefield.to_boreholes() + [borehole])
-    assert borehole + borefield == gt.borefield.Borefield.from_boreholes(borefield.to_boreholes() + [borehole])
-    assert borefield + [borehole] == gt.borefield.Borefield.from_boreholes(borefield.to_boreholes() + [borehole])
-    assert borefield + borefield_2 == gt.borefield.Borefield.from_boreholes(borefield.to_boreholes()+borefield_2.to_boreholes())
 
 
 # =============================================================================
