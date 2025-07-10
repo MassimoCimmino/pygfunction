@@ -58,7 +58,7 @@ def test_borefield_add(field, other_field, field_list, other_field_list, field_b
         field = field[0]
     if other_field_borehole:
         other_field = other_field[0]
-    assert field + other_field_list == reference_field
+    assert field + other_field == reference_field
 
 
 # Test borefield comparison using __eq__
