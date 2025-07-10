@@ -40,8 +40,8 @@ def test_borehole_init():
         ('single_borehole', 'single_borehole_short', False, True),
     ])
 def test_borehole_add(borehole, other_borehole, borehole_list, other_borehole_list, request):
-    borehole = request.borehole
-    other_borehole = request.other_borehole
+    borehole = request.getfixturevalue(borehole)[0]
+    other_borehole = request.getfixturevalue(other_borehole)[0]
     field = gt.borefield.Borefield.from_boreholes(
         [borehole, other_borehole])
     if borehole_list:
