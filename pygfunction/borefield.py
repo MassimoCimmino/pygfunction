@@ -110,13 +110,38 @@ class Borefield:
     def __add__(self,
                 other_field: Union[Borehole, List[Borehole], Self]) -> Self:
         """Add two borefields together"""
-        from .boreholes import Borehole
-
+        if not isinstance(other_field, (Borehole, list, self.__class__)):
+            raise TypeError(
+                f'Expected Borefield, list or Borehole input;'
+                f' got {other_field}'
+                )
+        # List of boreholes
+        field = self.to_boreholes()
+        # Convert other_field to a list if it is a Borehole
         if isinstance(other_field, Borehole):
-            return Borefield.from_boreholes(self.to_boreholes() + [other_field])
-        if isinstance(other_field, list):
-            return Borefield.from_boreholes(self.to_boreholes() + other_field)
-        return Borefield.from_boreholes(self.to_boreholes() + other_field.to_boreholes())
+            other_field = [other_field]
+        # Convert borehole to a list if it is a Borefield
+        if isinstance(other_field, self.__class__):
+            other_field = other_field.to_boreholes()
+        return Borefield.from_boreholes(field + other_field)
+
+    def __radd__(self,
+                other_field: Union[Borehole, List[Borehole], Self]) -> Self:
+        """Add two borefields together"""
+        if not isinstance(other_field, (Borehole, list, self.__class__)):
+            raise TypeError(
+                f'Expected Borefield, list or Borehole input;'
+                f' got {other_field}'
+                )
+        # List of boreholes
+        field = self.to_boreholes()
+        # Convert other_field to a list if it is a Borehole
+        if isinstance(other_field, Borehole):
+            other_field = [other_field]
+        # Convert borehole to a list if it is a Borefield
+        if isinstance(other_field, self.__class__):
+            other_field = other_field.to_boreholes()
+        return Borefield.from_boreholes(other_field + field)
 
     def evaluate_g_function(
             self,
