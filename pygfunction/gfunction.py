@@ -309,6 +309,7 @@ class gFunction(object):
                            k_p: Union[float, tuple, npt.ArrayLike] = None,
                            fluid_str: str = None,
                            fluid_concentration_pct: float = None,
+                           fluid_temperature: float = 20,
                            epsilon=None,
                            reversible_flow: bool = True,
                            bore_connectivity: list = None,
@@ -379,6 +380,9 @@ class gFunction(object):
         fluid_concentration_pct: float, optional
             Mass fraction of the mixing fluid added to water (in %).
             Lower bound = 0. Upper bound is dependent on the mixture.
+        fluid_temperature: float, optional
+            Temperature used for evaluating fluid properties (in degC).
+            Default is 20.
         epsilon : float, optional
             Pipe roughness (in meters).
         reversible_flow : bool, optional
@@ -423,6 +427,7 @@ class gFunction(object):
                 epsilon,
                 fluid_str,
                 fluid_concentration_pct,
+                fluid_temperature,
                 reversible_flow,
                 bore_connectivity,
                 J,

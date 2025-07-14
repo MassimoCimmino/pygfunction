@@ -117,6 +117,7 @@ class Network(object):
                            epsilon: float,
                            fluid_str: str,
                            fluid_concentraton_percent: float,
+                           fluid_temperature: float,
                            reversible_flow: bool = True,
                            bore_connectivity: list = None,
                            J: int = 2):
@@ -156,6 +157,9 @@ class Network(object):
         fluid_concentration_pct: float
             Mass fraction of the mixing fluid added to water (in %).
             Lower bound = 0. Upper bound is dependent on the mixture.
+        fluid_temperature: float, optional
+            Temperature used for evaluating fluid properties (in degC).
+            Default is 20.
         reversible_flow : bool, optional
             True to treat a negative mass flow rate as the reversal of flow
             direction within the borehole. If False, the direction of flow is not
@@ -187,7 +191,7 @@ class Network(object):
         pipes = []
 
         pipe_type = PipeType[pipe_type_str.upper()]
-        fluid = Fluid(fluid_str, fluid_concentraton_percent)
+        fluid = Fluid(fluid_str, fluid_concentraton_percent, fluid_temperature)
 
         if pipe_type == PipeType.SINGLE_UTUBE:
 
