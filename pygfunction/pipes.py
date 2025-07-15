@@ -3718,7 +3718,7 @@ def fluid_to_pipe_thermal_resistance(
         r_in_out = r_out[0]
         r_out_in = r_in[1]
         r_out_out = r_out[1]
-        k_p_out = k_p[0]
+        k_p_out = k_p[1]
 
         # Outer pipe
         R_p_out = conduction_thermal_resistance_circular_pipe(
@@ -3811,7 +3811,7 @@ def fluid_to_fluid_thermal_resistance(pipe_type: PipeType, m_flow_borehole: floa
         r_in_in = r_in[0]
         r_in_out = r_out[0]
         r_out_in = r_in[1]
-        k_p_in = k_p[1]
+        k_p_in = k_p[0]
 
         # Pipe thermal resistances [m.K/W]
         # Inner pipe
