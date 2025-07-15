@@ -177,47 +177,65 @@ class Network(object):
 
         Returns
         -------
-        Network : returns the 'Network' object.
-        """
+        Network : 'Network' object.
+            The network.
 
+        """
+        # Convert borefield to list
         if isinstance(boreholes, Borefield):
             boreholes = boreholes.to_boreholes()
 
+        # The total fluid mass flow rate is divided equally amongst inlets
         if bore_connectivity is None:
             m_flow_borehole = abs(m_flow_network / len(boreholes))
         else:
             m_flow_borehole = abs(m_flow_network / bore_connectivity.count(-1))
 
-        pipes = []
-
+        # Pipe and fluid types
         pipe_type = PipeType[pipe_type_str.upper()]
         fluid = Fluid(fluid_str, fluid_concentraton_percent, fluid_temperature)
 
         if pipe_type == PipeType.SINGLE_UTUBE:
-
-            R_fp = fluid_to_pipe_thermal_resistance(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
-            for borehole in boreholes:
-                pipes.append(SingleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, J, reversible_flow))
+            # Single U-tube borehole
+            R_fp = fluid_to_pipe_thermal_resistance(
+                pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+            pipes = [
+                SingleUTube(
+                    pos, r_in, r_out, borehole, k_s, k_g, R_fp, J, reversible_flow)
+                for borehole in boreholes
+                ]
 
         elif pipe_type == PipeType.DOUBLE_UTUBE_PARALLEL:
-
-            R_fp = fluid_to_pipe_thermal_resistance(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
-            for borehole in boreholes:
-                pipes.append(
-                    MultipleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, 2, 'parallel', J, reversible_flow))
+            # Double U-tube borehole (parallel)
+            R_fp = fluid_to_pipe_thermal_resistance(
+                pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+            pipes = [
+                MultipleUTube(
+                    pos, r_in, r_out, borehole, k_s, k_g, R_fp, 2, 'parallel', J, reversible_flow)
+                for borehole in boreholes
+                ]
 
         elif pipe_type == PipeType.DOUBLE_UTUBE_SERIES:
-
-            R_fp = fluid_to_pipe_thermal_resistance(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
-            for borehole in boreholes:
-                pipes.append(MultipleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp, 2, 'series', J, reversible_flow))
+            # Double U-tube borehole (series)
+            R_fp = fluid_to_pipe_thermal_resistance(
+                pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+            pipes = [
+                MultipleUTube(
+                    pos, r_in, r_out, borehole, k_s, k_g, R_fp, 2, 'series', J, reversible_flow)
+                for borehole in boreholes
+                ]
 
         elif pipe_type in [PipeType.COAXIAL_ANNULAR_IN, PipeType.COAXIAL_ANNULAR_OUT]:
-
-            R_fp = fluid_to_pipe_thermal_resistance(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
-            R_ff = fluid_to_fluid_thermal_resistance(pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
-            for borehole in boreholes:
-                pipes.append(Coaxial(pos, np.array(r_in), np.array(r_out), borehole, k_s, k_g, R_ff, R_fp))
+            # Coaxial borehole
+            R_fp = fluid_to_pipe_thermal_resistance(
+                pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+            R_ff = fluid_to_fluid_thermal_resistance(
+                pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+            pipes = [
+                Coaxial(
+                    pos, np.array(r_in), np.array(r_out), borehole, k_s, k_g, R_ff, R_fp, J, reversible_flow)
+                for borehole in boreholes
+                ]
 
         else:
             raise ValueError(f"Unsupported pipe_type: '{pipe_type_str}'")

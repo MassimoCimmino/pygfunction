@@ -310,7 +310,7 @@ class gFunction(object):
                            fluid_str: str = None,
                            fluid_concentration_pct: float = None,
                            fluid_temperature: float = 20,
-                           epsilon=None,
+                           epsilon: float = None,
                            reversible_flow: bool = True,
                            bore_connectivity: list = None,
                            J: int = 2,
@@ -389,7 +389,8 @@ class gFunction(object):
             True to treat a negative mass flow rate as the reversal of flow
             direction within the borehole. If False, the direction of flow is not
             reversed when the mass flow rate is negative, and the absolute value is
-            used for calculations. Equals to True.
+            used for calculations.
+            Default True.
         bore_connectivity : list, optional
             Index of fluid inlet into each borehole. -1 corresponds to a borehole
             connected to the bore field inlet. If this parameter is not provided,
@@ -399,10 +400,19 @@ class gFunction(object):
             Number of multipoles per pipe to evaluate the thermal resistances.
             J=1 or J=2 usually gives sufficient accuracy. J=0 corresponds to the
             line source approximation.
+            Default is 2.
 
         Returns
         -------
-        gFunction : float or array values of the g-function if 'time' if passed. otherwise, returns the 'gFunction' object.
+        gFunction : 'gFunction' object
+            The g-function.
+
+        Notes
+        -----
+        - When using the 'MIFT' boundary condition, the parameters `pipe_type_str`,
+          `fluid_str`, `fluid_concentration_pct`, `fluid_temperature`, and
+          `epsilon` are required.
+
         """
 
         if boundary_condition.upper() not in ['UBWT', 'UHTR', 'MIFT']:

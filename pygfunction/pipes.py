@@ -3646,14 +3646,16 @@ def fluid_to_pipe_thermal_resistance(
 
     Returns
     -------
-    fluid to pipe thermal resistance (in K/(W/m))
+    fluid to pipe thermal resistance (in m-K/W)
+
     """
 
     if pipe_type in [PipeType.SINGLE_UTUBE, PipeType.DOUBLE_UTUBE_SERIES]:
 
+        # The fluid mass flow rate corresponds to the total flow
         m_flow_pipe = m_flow_borehole
 
-        # single u-tube
+        # Pipe thermal resistance
         R_p = conduction_thermal_resistance_circular_pipe(
             r_in, r_out, k_p)
         # Convection heat transfer coefficient [W/m2.K]
@@ -3667,9 +3669,10 @@ def fluid_to_pipe_thermal_resistance(
 
     elif pipe_type == PipeType.DOUBLE_UTUBE_PARALLEL:
 
+        # The fluid mass flow rate is divided into the two parallel pipes
         m_flow_pipe = m_flow_borehole / 2
 
-        # single u-tube
+        # Pipe thermal resistance
         R_p = conduction_thermal_resistance_circular_pipe(
             r_in, r_out, k_p)
         # Convection heat transfer coefficient [W/m2.K]
@@ -3683,8 +3686,10 @@ def fluid_to_pipe_thermal_resistance(
 
     elif pipe_type == PipeType.COAXIAL_ANNULAR_IN:
 
+        # The fluid mass flow rate corresponds to the total flow
         m_flow_pipe = m_flow_borehole
 
+        # The annular channel is at index 0
         r_in_out = r_out[1]
         r_out_in = r_in[0]
         r_out_out = r_out[0]
@@ -3706,8 +3711,10 @@ def fluid_to_pipe_thermal_resistance(
 
     elif pipe_type == PipeType.COAXIAL_ANNULAR_OUT:
 
+        # The fluid mass flow rate corresponds to the total flow
         m_flow_pipe = m_flow_borehole
 
+        # The annular channel is at index 1
         r_in_out = r_out[0]
         r_out_in = r_in[1]
         r_out_out = r_out[1]
@@ -3761,14 +3768,16 @@ def fluid_to_fluid_thermal_resistance(pipe_type: PipeType, m_flow_borehole: floa
 
     Returns
     -------
-    fluid to fluid thermal resistance (in K/(W/m))
-    """
+    fluid to fluid thermal resistance (in m-K/W)
 
+    """
 
     if pipe_type == PipeType.COAXIAL_ANNULAR_IN:
 
+        # The fluid mass flow rate corresponds to the total flow
         m_flow_pipe = m_flow_borehole
 
+        # The annular channel is at index 0
         r_in_in = r_in[1]
         r_in_out = r_out[1]
         r_out_in = r_in[0]
@@ -3795,8 +3804,10 @@ def fluid_to_fluid_thermal_resistance(pipe_type: PipeType, m_flow_borehole: floa
 
     elif pipe_type == PipeType.COAXIAL_ANNULAR_OUT:
 
+        # The fluid mass flow rate corresponds to the total flow
         m_flow_pipe = m_flow_borehole
 
+        # The annular channel is at index 1
         r_in_in = r_in[0]
         r_in_out = r_out[0]
         r_out_in = r_in[1]
