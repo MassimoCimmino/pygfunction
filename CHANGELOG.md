@@ -2,6 +2,10 @@
 
 ## Version 2.4 (in development)
 
+### New features
+
+* [Pull Request 325](https://github.com/MassimoCimmino/pygfunction/pull/325) - Borefields and boreholes can now be concatenated using the `+` operator, e.g. using `new_field = field_1 + field_2`.
+
 ### Other changes
 
 * [Issue 319](https://github.com/MassimoCimmino/pygfunction/issues/319) - Created `solvers` module. `Solver` classes are moved out of the `gfunction` module and into the new module.
