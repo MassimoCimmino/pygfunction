@@ -32,6 +32,35 @@ def test_borefield_init(field, request):
         H, D, r_b, x, y, tilt=tilt, orientation=orientation)
     assert borefield == borefield_from_boreholes
 
+
+# Test Borefield.__add__ and Borefield.__radd__
+@pytest.mark.parametrize("field, other_field, field_list, other_field_list, field_borehole, other_field_borehole", [
+        # Using Borefield objects
+        ('ten_boreholes_rectangular', 'two_boreholes_inclined', False, False, False, False),
+        # Using Borefield objects
+        ('single_borehole', 'two_boreholes_inclined', False, False, True, False),
+        ('ten_boreholes_rectangular', 'single_borehole_short', False, False, False, True),
+        # Using Borefield as lists
+        ('ten_boreholes_rectangular', 'two_boreholes_inclined', False, True, False, False),
+        ('ten_boreholes_rectangular', 'two_boreholes_inclined', True, False, False, False),
+    ])
+def test_borefield_add(field, other_field, field_list, other_field_list, field_borehole, other_field_borehole, request):
+    field = request.getfixturevalue(field)
+    other_field = request.getfixturevalue(other_field)
+    reference_field = gt.borefield.Borefield.from_boreholes(
+        field.to_boreholes() + other_field.to_boreholes()
+        )
+    if field_list:
+        field = field.to_boreholes()
+    if other_field_list:
+        other_field = other_field.to_boreholes()
+    if field_borehole:
+        field = field[0]
+    if other_field_borehole:
+        other_field = other_field[0]
+    assert field + other_field == reference_field
+
+
 # Test borefield comparison using __eq__
 @pytest.mark.parametrize("field, other_field, expected", [
         # Fields that are equal
@@ -52,6 +81,7 @@ def test_borefield_eq(field, other_field, expected, request):
     borefield = request.getfixturevalue(field)
     other_field = request.getfixturevalue(other_field)
     assert (borefield == other_field) == expected
+
 
 # Test borefield comparison using __ne__
 @pytest.mark.parametrize("field, other_field, expected", [

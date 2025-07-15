@@ -33,6 +33,24 @@ def test_borehole_init():
          ])
 
 
+# Test Borehole.__add__
+@pytest.mark.parametrize("borehole, other_borehole, borehole_list, other_borehole_list", [
+        ('single_borehole', 'single_borehole_short', False, False),
+        ('single_borehole', 'single_borehole_short', True, False),
+        ('single_borehole', 'single_borehole_short', False, True),
+    ])
+def test_borehole_add(borehole, other_borehole, borehole_list, other_borehole_list, request):
+    borehole = request.getfixturevalue(borehole)[0]
+    other_borehole = request.getfixturevalue(other_borehole)[0]
+    field = gt.borefield.Borefield.from_boreholes(
+        [borehole, other_borehole])
+    if borehole_list:
+        borehole = [borehole]
+    if other_borehole_list:
+        other_borehole = [other_borehole]
+    assert field == borehole + other_borehole
+
+
 # Test Borehole.distance
 @pytest.mark.parametrize("borehole1, borehole2", [
         # Same borehole
