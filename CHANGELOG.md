@@ -5,7 +5,7 @@
 ### New features
 
 * [Pull Request 325](https://github.com/MassimoCimmino/pygfunction/pull/325) - Borefields and boreholes can now be concatenated using the `+` operator, e.g. using `new_field = field_1 + field_2`.
-* [Pull Request 326](https://github.com/MassimoCimmino/pygfunction/pull/326) - Introduced `gFunction.from_static_params` and `Network.from_static_params` methods. These methods facilitate the creation of `Network` objects and the evaluation g-functions by automatically evaluating the required thermal resistances for the creation of `Pipe` objects.
+* [Pull Request 326](https://github.com/MassimoCimmino/pygfunction/pull/326) - Introduced `gFunction.from_static_params` and `Network.from_static_params` methods. These methods facilitate the creation of `Network` objects and the evaluation of g-functions by automatically evaluating the required thermal resistances for the creation of `Pipe` objects.
 
 ### Other changes
 

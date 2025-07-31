@@ -341,7 +341,7 @@ class gFunction(object):
             Method for the evaluation of the g-function. Should be one of 'similarities', 'detailed', or 'equivalent'.
             Default is 'equivalent'. See 'gFunction' __init__ for more details.
         m_flow_network : float, optional
-            Fluid mass flow rate into the network of boreholes.
+            Fluid mass flow rate into the network of boreholes (in kg/s).
             Default is None.
         options : dict, optional
             A dictionary of solver options. See 'gFunction' __init__ for more details.

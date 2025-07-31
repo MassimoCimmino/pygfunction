@@ -144,7 +144,7 @@ class Network(object):
         k_p : float, tuple, or (2,) array
             Pipe thermal conductivity (in W/m-K).
         m_flow_network : float
-            Fluid mass flow rate into the network of boreholes.
+            Fluid mass flow rate into the network of boreholes (in kg/s).
         epsilon : float
             Pipe roughness (in meters).
        fluid_str: str
@@ -164,7 +164,8 @@ class Network(object):
             True to treat a negative mass flow rate as the reversal of flow
             direction within the borehole. If False, the direction of flow is not
             reversed when the mass flow rate is negative, and the absolute value is
-            used for calculations. Equals to True.
+            used for calculations.
+            Default is True.
         bore_connectivity : list, optional
             Index of fluid inlet into each borehole. -1 corresponds to a borehole
             connected to the bore field inlet. If this parameter is not provided,
@@ -174,6 +175,7 @@ class Network(object):
             Number of multipoles per pipe to evaluate the thermal resistances.
             J=1 or J=2 usually gives sufficient accuracy. J=0 corresponds to the
             line source approximation.
+            Default is 2.
 
         Returns
         -------

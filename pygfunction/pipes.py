@@ -3632,7 +3632,7 @@ def fluid_to_pipe_thermal_resistance(
         Should be one of 'PipeType.COAXIAL_ANNULAR_IN', 'PipeType.COAXIAL_ANNULAR_OUT',
         'PipeType.DOUBLE_UTUBE_PARALLEL', 'PipeType.DOUBLE_UTUBE_SERIES', or 'PipeType.SINGLE_UTUBE'.
     m_flow_borehole : float
-        Fluid mass flow rate the borehole.
+        Fluid mass flow rate the borehole (in kg/s).
     r_in : float
         Inner radius (in meters) of the U-Tube pipes.
     r_out : float
@@ -3642,11 +3642,12 @@ def fluid_to_pipe_thermal_resistance(
     epsilon : float
         Pipe roughness (in meters).
     fluid : Fluid
-        'Fluid' class object. used for evaluating fluid properties
+        'Fluid' class object. Used for evaluating fluid properties
 
     Returns
     -------
-    fluid to pipe thermal resistance (in m-K/W)
+    float
+        fluid to pipe thermal resistance (in m-K/W)
 
     """
 
@@ -3754,7 +3755,7 @@ def fluid_to_fluid_thermal_resistance(pipe_type: PipeType, m_flow_borehole: floa
         Should be one of 'PipeType.COAXIAL_ANNULAR_IN', 'PipeType.COAXIAL_ANNULAR_OUT',
         'PipeType.DOUBLE_UTUBE_PARALLEL', 'PipeType.DOUBLE_UTUBE_SERIES', or 'PipeType.SINGLE_UTUBE'.
     m_flow_borehole : float
-        Fluid mass flow rate the borehole.
+        Fluid mass flow rate the borehole (in kg/s).
     r_in : float
         Inner radius (in meters) of the U-Tube pipes.
     r_out : float
@@ -3764,11 +3765,12 @@ def fluid_to_fluid_thermal_resistance(pipe_type: PipeType, m_flow_borehole: floa
     epsilon : float
         Pipe roughness (in meters).
     fluid : Fluid
-        'Fluid' class object. used for evaluating fluid properties
+        'Fluid' class object. Used for evaluating fluid properties
 
     Returns
     -------
-    fluid to fluid thermal resistance (in m-K/W)
+    float
+        fluid to fluid thermal resistance (in m-K/W)
 
     """
 
