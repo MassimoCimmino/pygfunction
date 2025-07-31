@@ -1,6 +1,6 @@
 # History of changes
 
-## Version 2.4 (in development)
+## Version 2.3.1 (2025-08-04)
 
 ### New features
 
