@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 import warnings
+from typing import Union
 
 import numpy as np
+import numpy.typing as npt
 from scipy.constants import pi
 from scipy.special import binom
 
+from .enums import PipeType
+from .media import Fluid
 from .utilities import _initialize_figure, _format_axes
-
 
 class _BasePipe(object):
     """
@@ -3506,7 +3509,7 @@ def _F_mk(q_p, P, n_p, J, r_b, r_out, z, pikg, sigma):
     P : array
         Multipoles.
     n_p : int
-        Total numper of pipes.
+        Total number of pipes.
     J : int
         Number of multipoles per pipe to evaluate the thermal resistances.
         J=1 or J=2 usually gives sufficient accuracy. J=0 corresponds to the
@@ -3613,3 +3616,224 @@ def _Nusselt_number_turbulent_flow(Re, Pr, fDarcy):
     Nu = 0.125 * fDarcy * (Re - 1.0e3) * Pr / \
         (1.0 + 12.7 * np.sqrt(0.125*fDarcy) * (Pr**(2.0/3.0) - 1.0))
     return Nu
+
+
+def fluid_to_pipe_thermal_resistance(
+        pipe_type: PipeType, m_flow_borehole: float,
+        r_in: Union[float, tuple, npt.ArrayLike], r_out: Union[float, tuple, npt.ArrayLike],
+        k_p: Union[float, tuple, npt.ArrayLike], epsilon: float,
+        fluid: Fluid) -> float:
+    """
+    Computes the fluid to pipe thermal resistance.
+
+    Parameters
+    ----------
+    pipe_type : PipeType
+        Should be one of 'PipeType.COAXIAL_ANNULAR_IN', 'PipeType.COAXIAL_ANNULAR_OUT',
+        'PipeType.DOUBLE_UTUBE_PARALLEL', 'PipeType.DOUBLE_UTUBE_SERIES', or 'PipeType.SINGLE_UTUBE'.
+    m_flow_borehole : float
+        Fluid mass flow rate the borehole (in kg/s).
+    r_in : float
+        Inner radius (in meters) of the U-Tube pipes.
+    r_out : float
+        Outer radius (in meters) of the U-Tube pipes.
+    k_p : float
+        Pipe thermal conductivity (in W/m-K).
+    epsilon : float
+        Pipe roughness (in meters).
+    fluid : Fluid
+        'Fluid' class object. Used for evaluating fluid properties
+
+    Returns
+    -------
+    float
+        fluid to pipe thermal resistance (in m-K/W)
+
+    """
+
+    if pipe_type in [PipeType.SINGLE_UTUBE, PipeType.DOUBLE_UTUBE_SERIES]:
+
+        # The fluid mass flow rate corresponds to the total flow
+        m_flow_pipe = m_flow_borehole
+
+        # Pipe thermal resistance
+        R_p = conduction_thermal_resistance_circular_pipe(
+            r_in, r_out, k_p)
+        # Convection heat transfer coefficient [W/m2.K]
+        h_f = convective_heat_transfer_coefficient_circular_pipe(
+            m_flow_pipe, r_in, fluid.mu, fluid.rho, fluid.k, fluid.cp,
+            epsilon)
+        # Film thermal resistance [m.K/W]
+        R_f = 1.0 / (h_f * 2 * np.pi * r_in)
+
+        return R_p + R_f
+
+    elif pipe_type == PipeType.DOUBLE_UTUBE_PARALLEL:
+
+        # The fluid mass flow rate is divided into the two parallel pipes
+        m_flow_pipe = m_flow_borehole / 2
+
+        # Pipe thermal resistance
+        R_p = conduction_thermal_resistance_circular_pipe(
+            r_in, r_out, k_p)
+        # Convection heat transfer coefficient [W/m2.K]
+        h_f = convective_heat_transfer_coefficient_circular_pipe(
+            m_flow_pipe, r_in, fluid.mu, fluid.rho, fluid.k, fluid.cp,
+            epsilon)
+        # Film thermal resistance [m.K/W]
+        R_f = 1.0 / (h_f * 2 * np.pi * r_in)
+
+        return R_p + R_f
+
+    elif pipe_type == PipeType.COAXIAL_ANNULAR_IN:
+
+        # The fluid mass flow rate corresponds to the total flow
+        m_flow_pipe = m_flow_borehole
+
+        # The annular channel is at index 0
+        r_in_out = r_out[1]
+        r_out_in = r_in[0]
+        r_out_out = r_out[0]
+        k_p_out = k_p[0]
+
+        # Outer pipe
+        R_p_out = conduction_thermal_resistance_circular_pipe(
+            r_out_in, r_out_out, k_p_out)
+
+        # Outer pipe
+        h_f_a_in, h_f_a_out = \
+            convective_heat_transfer_coefficient_concentric_annulus(
+                m_flow_pipe, r_in_out, r_out_in, fluid.mu, fluid.rho, fluid.k,
+                fluid.cp, epsilon)
+
+        # Coaxial GHE in borehole
+        R_f_out_out = 1.0 / (h_f_a_out * 2 * np.pi * r_out_in)
+        return R_p_out + R_f_out_out
+
+    elif pipe_type == PipeType.COAXIAL_ANNULAR_OUT:
+
+        # The fluid mass flow rate corresponds to the total flow
+        m_flow_pipe = m_flow_borehole
+
+        # The annular channel is at index 1
+        r_in_out = r_out[0]
+        r_out_in = r_in[1]
+        r_out_out = r_out[1]
+        k_p_out = k_p[1]
+
+        # Outer pipe
+        R_p_out = conduction_thermal_resistance_circular_pipe(
+            r_out_in, r_out_out, k_p_out)
+        # Fluid-to-fluid thermal resistance [m.K/W]
+
+        # Outer pipe
+        h_f_a_in, h_f_a_out = \
+            convective_heat_transfer_coefficient_concentric_annulus(
+                m_flow_pipe, r_in_out, r_out_in, fluid.mu, fluid.rho, fluid.k,
+                fluid.cp, epsilon)
+
+        # Coaxial GHE in borehole
+        R_f_out_out = 1.0 / (h_f_a_out * 2 * np.pi * r_out_in)
+
+        return R_p_out + R_f_out_out
+
+    else:
+        raise ValueError(f"Unsupported pipe_type: '{pipe_type.name}'")
+
+
+def fluid_to_fluid_thermal_resistance(pipe_type: PipeType, m_flow_borehole: float,
+                                      r_in: Union[float, tuple, npt.ArrayLike],
+                                      r_out: Union[float, tuple, npt.ArrayLike],
+                                      k_p: Union[float, tuple, npt.ArrayLike], epsilon: float,
+                                      fluid: Fluid) -> float:
+    """
+    Computes the fluid to fluid thermal resistance.
+
+    Parameters
+    ----------
+    pipe_type : PipeType
+        Should be one of 'PipeType.COAXIAL_ANNULAR_IN', 'PipeType.COAXIAL_ANNULAR_OUT',
+        'PipeType.DOUBLE_UTUBE_PARALLEL', 'PipeType.DOUBLE_UTUBE_SERIES', or 'PipeType.SINGLE_UTUBE'.
+    m_flow_borehole : float
+        Fluid mass flow rate the borehole (in kg/s).
+    r_in : float
+        Inner radius (in meters) of the U-Tube pipes.
+    r_out : float
+        Outer radius (in meters) of the U-Tube pipes.
+    k_p : float
+        Pipe thermal conductivity (in W/m-K).
+    epsilon : float
+        Pipe roughness (in meters).
+    fluid : Fluid
+        'Fluid' class object. Used for evaluating fluid properties
+
+    Returns
+    -------
+    float
+        fluid to fluid thermal resistance (in m-K/W)
+
+    """
+
+    if pipe_type == PipeType.COAXIAL_ANNULAR_IN:
+
+        # The fluid mass flow rate corresponds to the total flow
+        m_flow_pipe = m_flow_borehole
+
+        # The annular channel is at index 0
+        r_in_in = r_in[1]
+        r_in_out = r_out[1]
+        r_out_in = r_in[0]
+        k_p_in = k_p[1]
+
+        # Inner pipe
+        R_p_in = conduction_thermal_resistance_circular_pipe(
+            r_in_in, r_in_out, k_p_in)
+
+        # Fluid-to-fluid thermal resistance [m.K/W]
+        # Inner pipe
+        h_f_in = convective_heat_transfer_coefficient_circular_pipe(
+            m_flow_pipe, r_in_in, fluid.mu, fluid.rho, fluid.k, fluid.cp, epsilon)
+        R_f_in = 1.0 / (h_f_in * 2 * np.pi * r_in_in)
+
+        # Outer pipe
+        h_f_a_in, h_f_a_out = \
+            convective_heat_transfer_coefficient_concentric_annulus(
+                m_flow_borehole, r_in_out, r_out_in, fluid.mu, fluid.rho, fluid.k,
+                fluid.cp, epsilon)
+        R_f_out_in = 1.0 / (h_f_a_in * 2 * np.pi * r_in_out)
+
+        return R_f_in + R_p_in + R_f_out_in
+
+    elif pipe_type == PipeType.COAXIAL_ANNULAR_OUT:
+
+        # The fluid mass flow rate corresponds to the total flow
+        m_flow_pipe = m_flow_borehole
+
+        # The annular channel is at index 1
+        r_in_in = r_in[0]
+        r_in_out = r_out[0]
+        r_out_in = r_in[1]
+        k_p_in = k_p[0]
+
+        # Pipe thermal resistances [m.K/W]
+        # Inner pipe
+        R_p_in = conduction_thermal_resistance_circular_pipe(
+            r_in_in, r_in_out, k_p_in)
+
+        # Fluid-to-fluid thermal resistance [m.K/W]
+        # Inner pipe
+        h_f_in = convective_heat_transfer_coefficient_circular_pipe(
+            m_flow_pipe, r_in_in, fluid.mu, fluid.rho, fluid.k, fluid.cp, epsilon)
+        R_f_in = 1.0 / (h_f_in * 2 * np.pi * r_in_in)
+
+        # Outer pipe
+        h_f_a_in, h_f_a_out = \
+            convective_heat_transfer_coefficient_concentric_annulus(
+                m_flow_pipe, r_in_out, r_out_in, fluid.mu, fluid.rho, fluid.k,
+                fluid.cp, epsilon)
+        R_f_out_in = 1.0 / (h_f_a_in * 2 * np.pi * r_in_out)
+
+        return R_f_in + R_p_in + R_f_out_in
+
+    else:
+        raise ValueError(f"Unsupported pipe_type: '{pipe_type.name}'")

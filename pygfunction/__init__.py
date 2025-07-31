@@ -7,5 +7,6 @@ from . import (
     media,
     networks,
     pipes,
+    solvers,
     utilities,
 )

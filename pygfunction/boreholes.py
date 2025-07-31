@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+from typing import Union
 import warnings
 
 import numpy as np
 from scipy.spatial.distance import pdist
+from typing_extensions import Self  # for compatibility with Python <= 3.10
 
 from .utilities import _initialize_figure, _format_axes, _format_axes_3d
 
@@ -53,6 +55,56 @@ class Borehole(object):
              f' y={self.y}, tilt={self.tilt},'
              f' orientation={self.orientation})')
         return s
+
+    def __add__(self, other: Union[Self, list]):
+        """
+        Adds two boreholes together to form a borefield
+        """
+        if not isinstance(other, (self.__class__, list)):
+            # Check if other is a borefield and try the operation using
+            # other.__radd__
+            try:
+                field = other.__radd__(self)
+            except:
+                # Invalid input
+                raise TypeError(
+                    f'Expected Borefield, list or Borehole input;'
+                    f' got {other}'
+                    )
+        elif isinstance(other, list):
+            # Create a borefield from the borehole and a list
+            from .borefield import Borefield
+            field = Borefield.from_boreholes([self] + other)
+        else:
+            # Create a borefield from the two boreholes
+            from .borefield import Borefield
+            field = Borefield.from_boreholes([self, other])
+        return field
+
+    def __radd__(self, other: Union[Self, list]):
+        """
+        Adds two boreholes together to form a borefield
+        """
+        if not isinstance(other, (self.__class__, list)):
+            # Check if other is a borefield and try the operation using
+            # other.__radd__
+            try:
+                field = other.__add__(self)
+            except:
+                # Invalid input
+                raise TypeError(
+                    f'Expected Borefield, list or Borehole input;'
+                    f' got {other}'
+                    )
+        elif isinstance(other, list):
+            # Create a borefield from the borehole and a list
+            from .borefield import Borefield
+            field = Borefield.from_boreholes(other + [self])
+        else:
+            # Create a borefield from the two boreholes
+            from .borefield import Borefield
+            field = Borefield.from_boreholes([other, self])
+        return field
 
     def distance(self, target):
         """

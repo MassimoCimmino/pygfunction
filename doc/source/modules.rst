@@ -14,4 +14,5 @@ Modules
    modules/media
    modules/networks
    modules/pipes
+   modules/solvers
    modules/utilities
