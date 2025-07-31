@@ -372,11 +372,13 @@ class gFunction(object):
             Pipe thermal conductivity (in W/m-K).
         fluid_str: str, optional
             The mixer for this application should be one of:
+
                 - 'Water' - Complete water solution
                 - 'MEG' - Ethylene glycol mixed with water
                 - 'MPG' - Propylene glycol mixed with water
                 - 'MEA' - Ethanol mixed with water
                 - 'MMA' - Methanol mixed with water
+
         fluid_concentration_pct: float, optional
             Mass fraction of the mixing fluid added to water (in %).
             Lower bound = 0. Upper bound is dependent on the mixture.
