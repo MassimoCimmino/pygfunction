@@ -73,7 +73,8 @@ def exp1(x):
     return E1
 
 
-def segment_ratios(nSegments, end_length_ratio=0.02):
+
+def segment_ratios(nSegments, end_length_ratio=None):
     """
     Discretize a borehole into segments of different lengths using a
     geometrically expanding mesh from the provided end-length-ratio towards the
@@ -89,7 +90,11 @@ def segment_ratios(nSegments, end_length_ratio=0.02):
     end_length_ratio: float, optional
         The ratio of the height of the borehole that accounts for the end
         segment lengths.
-        Default is 0.02.
+        Default is dependent on the number of segments,
+        for number of segments between 3 and 34 the end_length_ratio
+        is taken from a list with proposed values that in most cases
+        minimize the relative error of the g-function.
+        For number of segments between 35 and 500 the default is 0.002.
 
     Returns
     -------
@@ -107,6 +112,22 @@ def segment_ratios(nSegments, end_length_ratio=0.02):
         extraction boreholes. PhD Thesis. University of Lund, Department of
         Mathematical Physics. Lund, Sweden.
     """
+    _optimal_elr = [0.0498, 0.0366, 0.0212, 0.0176, 0.0108, 0.0093, 
+                0.0057, 0.0054, 0.0042, 0.0039, 0.0032, 0.0027, 
+                0.0026, 0.0021, 0.0013, 0.001, 0.0009, 0.0011, 
+                0.0013, 0.0014, 0.0015, 0.0016, 0.0017, 0.0017, 
+                0.0018, 0.0018, 0.0018, 0.0019, 0.0019, 0.0019, 
+                0.0019, 0.0019, 0.002]
+
+    # For nSegments between 3 and 34, the proposed end_length_ratio is taken
+    # from _optimal_elr.
+    if end_length_ratio == None:
+        if nSegments >= 3 and nSegments <= 34:
+            end_length_ratio = _optimal_elr[nSegments - 3]
+        else:
+            # For nSegments between 35 and 500, the end_length_ratio is 0.002
+            end_length_ratio = _optimal_elr[-1]
+
     def is_even(n):
         "Returns True if n is even."
         return not(n & 0x1)
