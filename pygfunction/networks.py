@@ -1,6 +1,16 @@
 # -*- coding: utf-8 -*-
+from typing import Union, List
+
 import numpy as np
+import numpy.typing as npt
 from scipy.linalg import block_diag
+
+from .borefield import Borefield
+from .boreholes import Borehole
+from .enums import PipeType
+from .media import Fluid
+from .pipes import SingleUTube, MultipleUTube, Coaxial
+from .pipes import fluid_to_pipe_thermal_resistance, fluid_to_fluid_thermal_resistance
 
 
 class Network(object):
@@ -9,7 +19,7 @@ class Network(object):
     connections between the boreholes.
 
     Contains information regarding the physical dimensions and thermal
-    characteristics of the pipes and the grout material in each boreholes, the
+    characteristics of the pipes and the grout material in each borehole, the
     topology of the connections between boreholes, as well as methods to
     evaluate fluid temperatures and heat extraction rates based on the work of
     Cimmino (2018, 2019, 2024) [#Network-Cimmin2018]_, [#Network-Cimmin2019]_,
@@ -92,6 +102,150 @@ class Network(object):
         self._initialize_coefficients_connectivity()
         self._initialize_stored_coefficients(
             m_flow_network, cp_f, nSegments, segment_ratios)
+
+    @classmethod
+    def from_static_params(cls,
+                           boreholes: Union[List[Borehole], Borefield],
+                           pipe_type_str: str,
+                           pos: List[tuple],
+                           r_in: Union[float, tuple, npt.ArrayLike],
+                           r_out: Union[float, tuple, npt.ArrayLike],
+                           k_s: float,
+                           k_g: float,
+                           k_p: Union[float, tuple, npt.ArrayLike],
+                           m_flow_network: float,
+                           epsilon: float,
+                           fluid_str: str,
+                           fluid_concentraton_percent: float,
+                           fluid_temperature: float,
+                           reversible_flow: bool = True,
+                           bore_connectivity: list = None,
+                           J: int = 2):
+        """
+        Constructs the 'Network' class from static parameters.
+
+        Parameters
+        ----------
+        boreholes : list of Borehole objects
+            List of boreholes included in the bore field.
+        pipe_type_str : str
+            Should be one of 'COAXIAL_ANNULAR_IN', 'COAXIAL_ANNULAR_OUT',
+            'DOUBLE_UTUBE_PARALLEL', 'DOUBLE_UTUBE_SERIES', or 'SINGLE_UTUBE'.
+        pos : list of tuples
+            Position (x, y) (in meters) of the pipes inside the borehole.
+        r_in : float
+            Inner radius (in meters) of the U-Tube pipes.
+        r_out : float
+            Outer radius (in meters) of the U-Tube pipes.
+        k_s : float
+            Soil thermal conductivity (in W/m-K).
+        k_g : float
+            Grout thermal conductivity (in W/m-K).
+        k_p : float, tuple, or (2,) array
+            Pipe thermal conductivity (in W/m-K).
+        m_flow_network : float
+            Fluid mass flow rate into the network of boreholes (in kg/s).
+        epsilon : float
+            Pipe roughness (in meters).
+        fluid_str: str
+            The mixer for this application should be one of:
+
+                - 'Water' - Complete water solution
+                - 'MEG' - Ethylene glycol mixed with water
+                - 'MPG' - Propylene glycol mixed with water
+                - 'MEA' - Ethanol mixed with water
+                - 'MMA' - Methanol mixed with water
+
+        fluid_concentration_pct: float
+            Mass fraction of the mixing fluid added to water (in %).
+            Lower bound = 0. Upper bound is dependent on the mixture.
+        fluid_temperature: float, optional
+            Temperature used for evaluating fluid properties (in degC).
+            Default is 20.
+        reversible_flow : bool, optional
+            True to treat a negative mass flow rate as the reversal of flow
+            direction within the borehole. If False, the direction of flow is not
+            reversed when the mass flow rate is negative, and the absolute value is
+            used for calculations.
+            Default is True.
+        bore_connectivity : list, optional
+            Index of fluid inlet into each borehole. -1 corresponds to a borehole
+            connected to the bore field inlet. If this parameter is not provided,
+            parallel connections between boreholes is used.
+            Default is None.
+        J : int, optional
+            Number of multipoles per pipe to evaluate the thermal resistances.
+            J=1 or J=2 usually gives sufficient accuracy. J=0 corresponds to the
+            line source approximation.
+            Default is 2.
+
+        Returns
+        -------
+        Network : 'Network' object.
+            The network.
+
+        """
+        # Convert borefield to list
+        if isinstance(boreholes, Borefield):
+            boreholes = boreholes.to_boreholes()
+
+        # The total fluid mass flow rate is divided equally amongst inlets
+        if bore_connectivity is None:
+            m_flow_borehole = abs(m_flow_network / len(boreholes))
+        else:
+            m_flow_borehole = abs(m_flow_network / bore_connectivity.count(-1))
+
+        # Pipe and fluid types
+        pipe_type = PipeType[pipe_type_str.upper()]
+        fluid = Fluid(fluid_str, fluid_concentraton_percent, fluid_temperature)
+
+        if pipe_type == PipeType.SINGLE_UTUBE:
+            # Single U-tube borehole
+            R_fp = fluid_to_pipe_thermal_resistance(
+                pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+            pipes = [
+                SingleUTube(
+                    pos, r_in, r_out, borehole, k_s, k_g, R_fp, J, reversible_flow)
+                for borehole in boreholes
+                ]
+
+        elif pipe_type == PipeType.DOUBLE_UTUBE_PARALLEL:
+            # Double U-tube borehole (parallel)
+            R_fp = fluid_to_pipe_thermal_resistance(
+                pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+            pipes = [
+                MultipleUTube(
+                    pos, r_in, r_out, borehole, k_s, k_g, R_fp, 2, 'parallel', J, reversible_flow)
+                for borehole in boreholes
+                ]
+
+        elif pipe_type == PipeType.DOUBLE_UTUBE_SERIES:
+            # Double U-tube borehole (series)
+            R_fp = fluid_to_pipe_thermal_resistance(
+                pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+            pipes = [
+                MultipleUTube(
+                    pos, r_in, r_out, borehole, k_s, k_g, R_fp, 2, 'series', J, reversible_flow)
+                for borehole in boreholes
+                ]
+
+        elif pipe_type in [PipeType.COAXIAL_ANNULAR_IN, PipeType.COAXIAL_ANNULAR_OUT]:
+            # Coaxial borehole
+            R_fp = fluid_to_pipe_thermal_resistance(
+                pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+            R_ff = fluid_to_fluid_thermal_resistance(
+                pipe_type, m_flow_borehole, r_in, r_out, k_p, epsilon, fluid)
+            pipes = [
+                Coaxial(
+                    pos, np.array(r_in), np.array(r_out), borehole, k_s, k_g, R_ff, R_fp, J, reversible_flow)
+                for borehole in boreholes
+                ]
+
+        else:
+            raise ValueError(f"Unsupported pipe_type: '{pipe_type_str}'")
+
+        return cls(boreholes=boreholes, pipes=pipes, m_flow_network=m_flow_network, bore_connectivity=bore_connectivity,
+                   cp_f=fluid.cp)
 
     def get_inlet_temperature(
             self, T_f_in, T_b, m_flow_network, cp_f, nSegments,
@@ -577,7 +731,7 @@ class Network(object):
     def coefficients_network_inlet_temperature(
             self, m_flow_network, cp_f, nSegments, segment_ratios=None):
         """
-        Build coefficient matrices to evaluate intlet fluid temperature of the
+        Build coefficient matrices to evaluate inlet fluid temperature of the
         network.
 
         Returns coefficients for the relation:
@@ -992,11 +1146,11 @@ class Network(object):
     def _initialize_stored_coefficients(
             self, m_flow_network, cp_f, nSegments, segment_ratios):
         nMethods = 7    # Number of class methods
-        self._stored_coefficients = [() for i in range(nMethods)]
+        self._stored_coefficients = [() for _ in range(nMethods)]
         self._stored_m_flow_cp = [np.empty(self.nInlets)*np.nan
-                                  for i in range(nMethods)]
-        self._stored_nSegments = [np.nan for i in range(nMethods)]
-        self._stored_segment_ratios = [np.nan for i in range(nMethods)]
+                                  for _ in range(nMethods)]
+        self._stored_nSegments = [np.nan for _ in range(nMethods)]
+        self._stored_segment_ratios = [np.nan for _ in range(nMethods)]
         self._m_flow_cp_model_variables = np.empty(self.nInlets)*np.nan
         self._nSegments_model_variables = np.nan
         self._segment_ratios_model_variables = np.nan
