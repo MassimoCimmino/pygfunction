@@ -2,6 +2,8 @@
 
 ## Version 2.4 (in development)
 
+## Version 2.3.1 (2025-08-04)
+
 ### New features
 
 * [Pull Request 325](https://github.com/MassimoCimmino/pygfunction/pull/325) - Borefields and boreholes can now be concatenated using the `+` operator, e.g. using `new_field = field_1 + field_2`.

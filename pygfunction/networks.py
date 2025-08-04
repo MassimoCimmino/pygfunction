@@ -147,13 +147,15 @@ class Network(object):
             Fluid mass flow rate into the network of boreholes (in kg/s).
         epsilon : float
             Pipe roughness (in meters).
-       fluid_str: str
+        fluid_str: str
             The mixer for this application should be one of:
+
                 - 'Water' - Complete water solution
                 - 'MEG' - Ethylene glycol mixed with water
                 - 'MPG' - Propylene glycol mixed with water
                 - 'MEA' - Ethanol mixed with water
                 - 'MMA' - Methanol mixed with water
+
         fluid_concentration_pct: float
             Mass fraction of the mixing fluid added to water (in %).
             Lower bound = 0. Upper bound is dependent on the mixture.

@@ -5,10 +5,12 @@ on:
     branches:
       - master
       - maintenance/2.2.x
+      - maintenance/2.3.x
   pull_request:
     branches:
       - master
       - maintenance/2.2.x
+      - maintenance/2.3.x
     types: [opened, synchronize, reopened]
 
 jobs:
