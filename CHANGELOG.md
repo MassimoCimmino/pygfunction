@@ -1,5 +1,11 @@
 # History of changes
 
+## Version 2.3.2 (in development)
+
+### Bug fixes
+
+* [Issue 333](https://github.com/MassimoCimmino/pygfunction/issues/333) - Fixed the evaluation of the Darcy friction factor in concentric annulus due to an incorrect evaluation of the hydraulic diameter.
+
 ## Version 2.3.1 (2025-08-04)
 
 ### New features
