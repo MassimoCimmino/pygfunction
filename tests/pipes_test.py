@@ -36,11 +36,11 @@ def test_convective_heat_transfer_coefficient_circular_pipe(m_flow, expected):
 # Test convective_heat_transfer_coefficient_concentric_annulus
 @pytest.mark.parametrize("m_flow, expected", [
     (0.05, (141.4907984705223, 110.95487746200112)),    # Laminar flow
-    (0.40, (904.4869811625874, 904.4869811625874)),     # Transition flow
-    (0.60, (1411.2063074288633, 1411.2063074288633)),    # Turbulent flow
+    (0.40, (1079.8952259636283, 1079.8952259636283)),     # Transition flow
+    (0.60, (1672.089453655635, 1672.089453655635)),    # Turbulent flow
     (-0.05, (141.4907984705223, 110.95487746200112)),    # Laminar flow
-    (-0.40, (904.4869811625874, 904.4869811625874)),     # Transition flow
-    (-0.60, (1411.2063074288633, 1411.2063074288633)),    # Turbulent flow
+    (-0.40, (1079.8952259636283, 1079.8952259636283)),     # Transition flow
+    (-0.60, (1672.089453655635, 1672.089453655635)),    # Turbulent flow
     ])
 def test_convective_heat_transfer_coefficient_concentric_annulus(
         m_flow, expected):

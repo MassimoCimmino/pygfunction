@@ -11,6 +11,7 @@ from .enums import PipeType
 from .media import Fluid
 from .utilities import _initialize_figure, _format_axes
 
+
 class _BasePipe(object):
     """
     Template for pipe classes.
@@ -3039,7 +3040,7 @@ def borehole_thermal_resistance(pipe, m_flow_borehole, cp_f):
 def fluid_friction_factor_circular_pipe(
         m_flow_pipe, r_in, mu_f, rho_f, epsilon, tol=1.0e-6):
     """
-    Evaluate the Darcy-Weisbach friction factor.
+    Evaluate the Darcy-Weisbach friction factor in a circular pipe.
 
     Parameters
     ----------
@@ -3085,8 +3086,70 @@ def fluid_friction_factor_circular_pipe(
         fDarcy = 0.02
         df = 1.0e99
         while abs(df/fDarcy) > tol:
-            one_over_sqrt_f = -2.0 * np.log10(E / 3.7
-                                              + 2.51/(Re*np.sqrt(fDarcy)))
+            one_over_sqrt_f = -2.0 * np.log10(
+                E / 3.7 + 2.51/(Re*np.sqrt(fDarcy))
+                )
+            fDarcy_new = 1.0 / one_over_sqrt_f**2
+            df = fDarcy_new - fDarcy
+            fDarcy = fDarcy_new
+
+    return fDarcy
+
+
+def fluid_friction_factor_concentric_annulus(
+        m_flow_pipe, r_a_in, r_a_out, mu_f, rho_f, epsilon, tol=1.0e-6):
+    """
+    Evaluate the Darcy-Weisbach friction factor in a concentric annulus.
+
+    Parameters
+    ----------
+    m_flow_pipe : float
+        Fluid mass flow rate (in kg/s) into the pipe.
+    r_a_in: float
+        Pipe annulus inner radius (in meters).
+    r_a_out: float
+        Pipe annulus outer radius (in meters).
+    mu_f : float
+        Fluid dynamic viscosity (in kg/m-s).
+    rho_f : float
+        Fluid density (in kg/m3).
+    epsilon : float
+        Pipe roughness (in meters).
+    tol : float
+        Relative convergence tolerance on Darcy friction factor.
+        Default is 1.0e-6.
+
+    Returns
+    -------
+    fDarcy : float
+        Darcy friction factor.
+
+    Examples
+    --------
+
+    """
+    # Hydraulic diameter
+    D = 2. * (r_a_out - r_a_in)
+    # Relative roughness
+    E = epsilon / D
+    # Fluid velocity
+    V_flow = np.abs(m_flow_pipe) / rho_f
+    A_cs = pi * (r_a_out**2 - r_a_in**2)
+    V = V_flow / A_cs
+    # Reynolds number
+    Re = rho_f * V * D / mu_f
+
+    if Re < 2.3e3:
+        # Darcy friction factor for laminar flow
+        fDarcy = 64.0 / Re
+    else:
+        # Colebrook-White equation for rough pipes
+        fDarcy = 0.02
+        df = 1.0e99
+        while abs(df/fDarcy) > tol:
+            one_over_sqrt_f = -2.0 * np.log10(
+                E / 3.7 + 2.51/(Re*np.sqrt(fDarcy))
+                )
             fDarcy_new = 1.0 / one_over_sqrt_f**2
             df = fDarcy_new - fDarcy
             fDarcy = fDarcy_new
@@ -3256,7 +3319,6 @@ def convective_heat_transfer_coefficient_concentric_annulus(
     """
     # Hydraulic diameter and radius for concentric tube annulus region
     D_h = 2 * (r_a_out - r_a_in)
-    r_h = D_h / 2
     # Cross-sectional area of the annulus region
     A_c = pi * ((r_a_out ** 2) - (r_a_in ** 2))
     # Volume flow rate
@@ -3270,8 +3332,8 @@ def convective_heat_transfer_coefficient_concentric_annulus(
     # Ratio of radii (Grundmann, 2016)
     r_star = r_a_in / r_a_out
     # Darcy-Wiesbach friction factor
-    fDarcy = fluid_friction_factor_circular_pipe(
-        m_flow_pipe, r_h, mu_f, rho_f, epsilon)
+    fDarcy = fluid_friction_factor_concentric_annulus(
+        m_flow_pipe, r_a_in, r_a_out, mu_f, rho_f, epsilon)
 
     # To ensure there are no dramatic jumps in the equation, an interpolation
     # in a transition region of 2300 <= Re <= 4000 will be used.
